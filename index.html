@@ -1,603 +1,230 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    >
-
-    <meta
-        name="theme-color"
-        content="#111827"
-    >
-
-    <title>
-        Cannon Blast 3D
-    </title>
-
-
-    <!-- ==========================================
-         FONT
-         ========================================== -->
-
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    >
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap"
-        rel="stylesheet"
-    >
-
-
-    <!-- ==========================================
-         STYLE
-         ========================================== -->
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
-
-    <!-- ==========================================
-         THREE.JS
-         ========================================== -->
-
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-    ></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cannon Blast 3D</title>
+    
+    <!-- פונט Rubik מודרני -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- ספריית Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-
-
 <body>
 
-
-    <!-- ==========================================
-         LANDSCAPE WARNING
-         ========================================== -->
-
-    <div
-        id="landscape-warning"
-        class="hidden"
-    >
-
-        <div class="rotate-icon">
-            ↻
-        </div>
-
-        <h2>
-            סובב את הטלפון
-        </h2>
-
-        <p>
-            Cannon Blast 3D מיועד למשחק
-            במסך אנכי.
-        </p>
-
-    </div>
-
-
-    <!-- ==========================================
-         CINEMATIC INTRO
-         ========================================== -->
-
-    <div id="intro-screen">
-
-        <div class="intro-image"></div>
-
-        <div class="intro-overlay"></div>
-
-        <div class="intro-vignette"></div>
-
-
-        <div class="intro-content">
-
-            <div class="intro-small-title">
-                CANNON DEFENSE
-            </div>
-
-
-            <div class="intro-main-title">
-
-                CANNON BLAST
-
-                <span>
-                    3D
-                </span>
-
-            </div>
-
-
-            <div class="intro-subtitle">
-                THE DESERT BATTLE BEGINS
-            </div>
-
-
-            <button
-                id="intro-btn"
-                class="intro-btn"
-                type="button"
-            >
-                היכנס למשחק
-            </button>
-
-
-            <div class="intro-loading">
-
-                <span></span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         SCREEN EFFECTS
-         ========================================== -->
-
-    <div id="vignette"></div>
-
-    <div id="damage-flash"></div>
-
-
-    <!-- ==========================================
-         TOP HUD
-         ========================================== -->
-
+    <!-- UI עליון בזמן משחק -->
     <div id="ui-container">
-
         <div class="ui-card">
-
-            <span class="ui-title">
-                SCORE
-            </span>
-
-            <strong
-                id="score-val"
-                class="ui-value"
-            >
-                0
-            </strong>
-
+            <span class="ui-title">SCORE</span>
+            <span id="score-val" class="ui-value">0</span>
         </div>
 
-
         <div class="ui-card">
-
-            <span class="ui-title">
-                COINS
-            </span>
-
-            <strong
-                id="coins-val"
-                class="ui-value gold"
-            >
-                0
-            </strong>
-
+            <span class="ui-title">COINS</span>
+            <span id="coins-val" class="ui-value">0</span>
         </div>
 
-
         <div class="ui-card">
-
-            <span class="ui-title">
-                LEVEL
-            </span>
-
-            <strong
-                id="level-text"
-                class="ui-value"
-            >
-                1
-            </strong>
-
+            <span class="ui-title">LEVEL</span>
+            <span id="level-text" class="ui-value">1</span>
         </div>
 
-
-        <div class="ui-card hp-card">
-
-            <div class="hp-head">
-
-                <span>
-                    HP
-                </span>
-
-                <span id="hp-text">
-                    1000 / 1000
-                </span>
-
+        <div class="ui-card" id="hp-container">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #a1a1aa;">
+                <span>HP</span>
+                <span id="hp-text">1000 / 1000</span>
             </div>
-
 
             <div class="hp-bar-bg">
-
                 <div id="hp-bar"></div>
-
             </div>
-
         </div>
-
     </div>
 
-
-    <!-- ==========================================
-         COMBAT UI
-         ========================================== -->
-
-    <div
-        id="combat-ui"
-        class="hidden"
-    >
-
-        <span
-            id="wave-badge"
-            class="combat-badge"
-        >
-            WAVE 1
-        </span>
-
-
-        <span
-            id="combo-badge"
-            class="combat-badge combo"
-        >
-            COMBO x1
-        </span>
-
-    </div>
-
-
-    <!-- ==========================================
-         PAUSE
-         ========================================== -->
-
-    <button
-        id="pause-btn"
-        class="icon-btn hidden"
-        type="button"
-    >
-        Ⅱ
-    </button>
-
-
-    <!-- ==========================================
-         MAIN MENU
-         ========================================== -->
-
-    <div
-        id="splash-screen"
-        class="modal-overlay hidden"
-    >
-
-        <div class="modal-card hero-card">
-
-            <div class="eyebrow">
-                CANNON DEFENSE • MOBILE 3D
-            </div>
-
+    <!-- מסך פתיחה -->
+    <div id="splash-screen" class="modal-overlay">
+        <div class="modal-card">
 
             <h1 class="game-title">
-
-                CANNON
-
-                <br>
-
-                <span>
-                    BLAST
-                </span>
-
+                CANNON<br>
+                <span>BLAST 3D</span>
             </h1>
 
-
-            <p class="subtitle">
-                הגן על העמק, השמד את הסלעים
-                ואסוף כמה שיותר מטבעות.
-            </p>
-
-
             <div class="stats-box">
-
                 <div>
-
-                    <span>
-                        שיא אישי
-                    </span>
-
-                    <strong
-                        id="start-best-score"
-                    >
-                        0
-                    </strong>
-
+                    שיא אישי:
+                    <strong id="start-best-score">0</strong>
                 </div>
 
-
                 <div>
-
-                    <span>
-                        מטבעות
-                    </span>
-
-                    <strong
-                        id="start-coins"
-                    >
-                        0
-                    </strong>
-
+                    מטבעות:
+                    <strong id="start-coins">0</strong>
                 </div>
-
             </div>
 
+            <!-- ============================= -->
+            <!-- שדרוגים -->
+            <!-- ============================= -->
 
-            <div class="section-title">
-                שדרוגים
-            </div>
-
+            <div class="shop-section-title">שדרוגים</div>
 
             <div class="upgrades-list">
 
-
-                <!-- POWER -->
-
+                <!-- עוצמת ירייה -->
                 <div class="upgrade-item">
-
-                    <div class="upgrade-icon power">
-                        ⚡
-                    </div>
-
-
-                    <div class="upgrade-copy">
-
-                        <strong class="upg-name">
-                            עוצמת ירייה
-                        </strong>
-
-                        <span
-                            id="power-lvl-text"
-                            class="upg-lvl"
-                        >
+                    <div>
+                        <div class="upg-name">עוצמת ירייה</div>
+                        <div id="power-lvl-text" class="upg-lvl">
                             Lvl 1
-                        </span>
-
+                        </div>
                     </div>
 
-
-                    <button
-                        id="buy-power-btn"
-                        class="btn-upg"
-                        type="button"
-                    >
+                    <button id="buy-power-btn" class="btn-upg">
                         50 C
                     </button>
-
                 </div>
 
-
-                <!-- FIRE RATE -->
-
+                <!-- קצב אש -->
                 <div class="upgrade-item">
-
-                    <div class="upgrade-icon rate">
-                        »
-                    </div>
-
-
-                    <div class="upgrade-copy">
-
-                        <strong class="upg-name">
-                            קצב אש
-                        </strong>
-
-                        <span
-                            id="rate-lvl-text"
-                            class="upg-lvl"
-                        >
+                    <div>
+                        <div class="upg-name">קצב אש</div>
+                        <div id="rate-lvl-text" class="upg-lvl">
                             Lvl 1
-                        </span>
-
+                        </div>
                     </div>
 
-
-                    <button
-                        id="buy-rate-btn"
-                        class="btn-upg"
-                        type="button"
-                    >
+                    <button id="buy-rate-btn" class="btn-upg">
                         60 C
                     </button>
-
                 </div>
 
-
-                <!-- MAGNET -->
-
+                <!-- מגנט -->
                 <div class="upgrade-item">
-
-                    <div class="upgrade-icon magnet">
-                        ✦
-                    </div>
-
-
-                    <div class="upgrade-copy">
-
-                        <strong class="upg-name">
-                            מגנט מטבעות
-                        </strong>
-
-                        <span
-                            id="magnet-lvl-text"
-                            class="upg-lvl"
-                        >
+                    <div>
+                        <div class="upg-name">מגנט מטבעות</div>
+                        <div id="magnet-lvl-text" class="upg-lvl">
                             Lvl 0
-                        </span>
-
+                        </div>
                     </div>
 
-
-                    <button
-                        id="buy-magnet-btn"
-                        class="btn-upg"
-                        type="button"
-                    >
+                    <button id="buy-magnet-btn" class="btn-upg">
                         100 C
                     </button>
-
                 </div>
 
             </div>
 
+            <!-- ============================= -->
+            <!-- חנות מפות -->
+            <!-- ============================= -->
 
-            <button
-                id="start-btn"
-                class="btn-primary"
-                type="button"
-            >
+            <div class="shop-section-title maps-title">
+                מפות
+            </div>
+
+            <div class="maps-grid">
+
+                <!-- DESERT -->
+                <button
+                    class="map-card selected owned"
+                    data-map-id="desert"
+                >
+                    <span class="map-icon">🏜️</span>
+
+                    <span class="map-info">
+                        <strong>DESERT</strong>
+                        <small>מדבר</small>
+                    </span>
+
+                    <span class="map-action">
+                        נבחרה
+                    </span>
+
+                    <span class="map-state">
+                        ACTIVE
+                    </span>
+                </button>
+
+                <!-- FOREST -->
+                <button
+                    class="map-card"
+                    data-map-id="forest"
+                >
+                    <span class="map-icon">🌲</span>
+
+                    <span class="map-info">
+                        <strong>FOREST</strong>
+                        <small>יער</small>
+                    </span>
+
+                    <span class="map-action">
+                        500 C
+                    </span>
+
+                    <span class="map-state">
+                        LOCKED
+                    </span>
+                </button>
+
+                <!-- ICE -->
+                <button
+                    class="map-card"
+                    data-map-id="ice"
+                >
+                    <span class="map-icon">❄️</span>
+
+                    <span class="map-info">
+                        <strong>ICE</strong>
+                        <small>קרח</small>
+                    </span>
+
+                    <span class="map-action">
+                        1500 C
+                    </span>
+
+                    <span class="map-state">
+                        LOCKED
+                    </span>
+                </button>
+
+                <!-- VOLCANO -->
+                <button
+                    class="map-card"
+                    data-map-id="volcano"
+                >
+                    <span class="map-icon">🌋</span>
+
+                    <span class="map-info">
+                        <strong>VOLCANO</strong>
+                        <small>הר געש</small>
+                    </span>
+
+                    <span class="map-action">
+                        3000 C
+                    </span>
+
+                    <span class="map-state">
+                        LOCKED
+                    </span>
+                </button>
+
+            </div>
+
+            <!-- כפתור התחלה -->
+            <button id="start-btn" class="btn-primary">
                 התחל משחק
             </button>
 
-
-            <div class="tip">
-                גרור ימינה ושמאלה כדי להזיז את התותח
-            </div>
-
         </div>
-
     </div>
 
-
-    <!-- ==========================================
-         PAUSE SCREEN
-         ========================================== -->
-
-    <div
-        id="pause-screen"
-        class="modal-overlay hidden"
-    >
-
-        <div class="modal-card small-modal">
-
-            <div class="eyebrow">
-                PAUSED
-            </div>
-
-            <h2>
-                המשחק נעצר
-            </h2>
-
-            <p>
-                חזור לקרב מתי שנוח לך.
-            </p>
-
-            <button
-                id="resume-btn"
-                class="btn-primary"
-                type="button"
-            >
-                המשך
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         GAME OVER
-         ========================================== -->
-
-    <div
-        id="game-over-screen"
-        class="modal-overlay hidden"
-    >
-
-        <div class="modal-card small-modal">
-
-            <div class="eyebrow danger-text">
-                RUN OVER
-            </div>
-
-            <h2>
-                GAME OVER
-            </h2>
-
-
-            <div class="result-grid">
-
-                <div>
-
-                    <span>
-                        SCORE
-                    </span>
-
-                    <strong id="final-score">
-                        0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span>
-                        LEVEL
-                    </span>
-
-                    <strong id="final-level">
-                        1
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span>
-                        COINS
-                    </span>
-
-                    <strong id="final-coins">
-                        0
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <button
-                id="restart-btn"
-                class="btn-primary"
-                type="button"
-            >
-                נסה שוב
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         GAME SCRIPT
-         ========================================== -->
-
+    <!-- קובץ המשחק -->
     <script src="main.js"></script>
 
 </body>
-
 </html>

@@ -1,1693 +1,570 @@
-/* =========================================================
-   ROOT
-   ========================================================= */
-
-:root {
-
-    --blue:
-        #38bdf8;
-
-    --blue-dark:
-        #075985;
-
-    --gold:
-        #facc15;
-
-    --gold-light:
-        #fde68a;
-
-    --green:
-        #22c55e;
-
-    --red:
-        #fb7185;
-
-    --text:
-        #f8fafc;
-
-    --muted:
-        #94a3b8;
-
-    --line:
-        rgba(255, 255, 255, 0.14);
-
-    --panel:
-        rgba(8, 18, 31, 0.70);
-}
-
-
-/* =========================================================
-   RESET
-   ========================================================= */
-
 * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 
-    box-sizing:
-        border-box;
+    user-select: none;
+    -webkit-user-select: none;
 
-    margin:
-        0;
+    touch-action: manipulation;
 
-    padding:
-        0;
-
-    user-select:
-        none;
-
-    -webkit-user-select:
-        none;
-
-    -webkit-tap-highlight-color:
-        transparent;
+    font-family: 'Rubik', sans-serif;
 }
-
 
 html,
 body {
+    width: 100%;
+    height: 100%;
 
-    width:
-        100%;
+    overflow: hidden;
 
-    height:
-        100%;
-
-    overflow:
-        hidden;
-
-    background:
-        #080d14;
-
-    font-family:
-        "Rubik",
-        sans-serif;
-
-    overscroll-behavior:
-        none;
+    background-color: #1e1b18;
 }
-
-
-body {
-
-    position:
-        relative;
-
-    touch-action:
-        none;
-}
-
-
-/* =========================================================
-   CANVAS
-   ========================================================= */
 
 canvas {
+    display: block;
 
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    width:
-        100vw;
-
-    height:
-        100vh;
-
-    display:
-        block;
-
-    touch-action:
-        none;
+    width: 100vw;
+    height: 100vh;
 }
 
-
-/* =========================================================
-   LANDSCAPE WARNING
-   ========================================================= */
-
-#landscape-warning {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    z-index:
-        1000;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    align-items:
-        center;
-
-    text-align:
-        center;
-
-    padding:
-        30px;
-
-    background:
-        #07101c;
-
-    color:
-        white;
-}
-
-
-#landscape-warning.hidden {
-
-    display:
-        none;
-}
-
-
-.rotate-icon {
-
-    width:
-        70px;
-
-    height:
-        70px;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    border-radius:
-        20px;
-
-    margin-bottom:
-        18px;
-
-    color:
-        #67e8f9;
-
-    background:
-        rgba(56, 189, 248, 0.12);
-
-    border:
-        1px solid
-        rgba(125, 211, 252, 0.2);
-
-    font-size:
-        38px;
-}
-
-
-#landscape-warning h2 {
-
-    font-size:
-        24px;
-
-    font-weight:
-        900;
-}
-
-
-#landscape-warning p {
-
-    max-width:
-        270px;
-
-    margin-top:
-        9px;
-
-    color:
-        #94a3b8;
-
-    font-size:
-        12px;
-
-    line-height:
-        1.5;
-}
-
-
-/* =========================================================
-   MAIN VIGNETTE
-   ========================================================= */
-
-#vignette {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    z-index:
-        2;
-
-    pointer-events:
-        none;
-
-    background:
-
-        radial-gradient(
-            circle at 50% 42%,
-            transparent 25%,
-            rgba(0, 0, 0, 0.08) 60%,
-            rgba(0, 0, 0, 0.44) 100%
-        ),
-
-        linear-gradient(
-            180deg,
-            rgba(8, 14, 21, 0.12),
-            transparent 32%,
-            rgba(37, 12, 3, 0.15)
-        );
-}
-
-
-/* =========================================================
-   DAMAGE FLASH
-   ========================================================= */
-
-#damage-flash {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    z-index:
-        50;
-
-    pointer-events:
-        none;
-
-    background:
-        rgba(239, 68, 68, 0.36);
-
-    opacity:
-        0;
-
-    transition:
-        opacity 0.08s linear;
-}
-
-
-/* =========================================================
-   CINEMATIC INTRO
-   ========================================================= */
-
-#intro-screen {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    z-index:
-        300;
-
-    overflow:
-        hidden;
-
-    background:
-        #05080d;
-
-    opacity:
-        1;
-
-    visibility:
-        visible;
-
-    transition:
-        opacity 0.9s ease,
-        visibility 0.9s ease;
-}
-
-
-#intro-screen.intro-hidden {
-
-    opacity:
-        0;
-
-    visibility:
-        hidden;
-
-    pointer-events:
-        none;
-}
-
-
-/* =========================================================
-   INTRO IMAGE
-   ========================================================= */
-
-.intro-image {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    background-image:
-        url("splash-bg.jpg");
-
-    background-size:
-        cover;
-
-    background-position:
-        center;
-
-    transform:
-        scale(1.02);
-
-    animation:
-        introZoom
-        7s
-        ease-out
-        forwards;
-
-    filter:
-        saturate(1.08)
-        contrast(1.04)
-        brightness(0.98);
-}
-
-
-/* =========================================================
-   INTRO OVERLAY
-   ========================================================= */
-
-.intro-overlay {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    background:
-
-        linear-gradient(
-            180deg,
-            rgba(4, 8, 12, 0.08),
-            transparent 30%,
-            rgba(4, 7, 10, 0.80) 100%
-        ),
-
-        radial-gradient(
-            circle at 50% 38%,
-            rgba(255, 192, 88, 0.10),
-            transparent 48%
-        );
-}
-
-
-.intro-vignette {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    pointer-events:
-        none;
-
-    background:
-
-        radial-gradient(
-            circle,
-            transparent 24%,
-            rgba(0, 0, 0, 0.44) 100%
-        );
-}
-
-
-/* =========================================================
-   INTRO CONTENT
-   ========================================================= */
-
-.intro-content {
-
-    position:
-        absolute;
-
-    left:
-        50%;
-
-    bottom:
-        max(
-            30px,
-            env(safe-area-inset-bottom)
-        );
-
-    transform:
-        translateX(-50%);
-
-    width:
-        min(
-            88vw,
-            520px
-        );
-
-    text-align:
-        center;
-
-    color:
-        white;
-}
-
-
-.intro-small-title {
-
-    font-size:
-        9px;
-
-    font-weight:
-        900;
-
-    letter-spacing:
-        2.7px;
-
-    color:
-        #f8fafc;
-
-    text-shadow:
-        0 2px 12px
-        rgba(0, 0, 0, 0.8);
-}
-
-
-.intro-main-title {
-
-    margin-top:
-        8px;
-
-    font-size:
-        clamp(
-            28px,
-            7vw,
-            43px
-        );
-
-    line-height:
-        0.94;
-
-    font-weight:
-        900;
-
-    letter-spacing:
-        -0.8px;
-
-    text-shadow:
-
-        0 4px 18px
-        rgba(0, 0, 0, 0.7),
-
-        0 0 28px
-        rgba(255, 194, 91, 0.14);
-}
-
-
-.intro-main-title span {
-
-    color:
-        var(--gold);
-}
-
-
-.intro-subtitle {
-
-    margin-top:
-        8px;
-
-    font-size:
-        8px;
-
-    font-weight:
-        800;
-
-    letter-spacing:
-        2px;
-
-    color:
-        #ffe0a1;
-
-    text-shadow:
-        0 2px 12px
-        rgba(0, 0, 0, 0.75);
-}
-
-
-/* =========================================================
-   INTRO BUTTON
-   ========================================================= */
-
-.intro-btn {
-
-    width:
-        min(
-            82vw,
-            320px
-        );
-
-    margin-top:
-        18px;
-
-    padding:
-        14px 20px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.24);
-
-    border-radius:
-        16px;
-
-    color:
-        #18202a;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #ffe9ae,
-            #facc15 60%,
-            #e3a600
-        );
-
-    box-shadow:
-
-        0 12px 34px
-        rgba(0, 0, 0, 0.4),
-
-        0 0 24px
-        rgba(250, 204, 21, 0.13),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.40);
-
-    font-family:
-        inherit;
-
-    font-size:
-        16px;
-
-    font-weight:
-        900;
-
-    cursor:
-        pointer;
-}
-
-
-.intro-btn:active {
-
-    transform:
-        scale(0.97);
-}
-
-
-/* =========================================================
-   INTRO LOADING
-   ========================================================= */
-
-.intro-loading {
-
-    width:
-        min(
-            55vw,
-            190px
-        );
-
-    height:
-        3px;
-
-    margin:
-        13px auto 0;
-
-    overflow:
-        hidden;
-
-    border-radius:
-        99px;
-
-    background:
-        rgba(255, 255, 255, 0.18);
-}
-
-
-.intro-loading span {
-
-    display:
-        block;
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    transform:
-        scaleX(0);
-
-    transform-origin:
-        left;
-
-    background:
-        white;
-
-    animation:
-        introLoading
-        5s
-        linear
-        forwards;
-}
-
-
-@keyframes introZoom {
-
-    from {
-
-        transform:
-            scale(1.02);
-    }
-
-
-    to {
-
-        transform:
-            scale(1.09);
-    }
-}
-
-
-@keyframes introLoading {
-
-    from {
-
-        transform:
-            scaleX(0);
-    }
-
-
-    to {
-
-        transform:
-            scaleX(1);
-    }
-}
-
-
-/* =========================================================
-   TOP UI
-   ========================================================= */
+/* ==========================================
+   UI עליון
+   ========================================== */
 
 #ui-container {
+    position: absolute;
 
-    position:
-        fixed;
+    top: 15px;
+    left: 50%;
 
-    top:
-        max(
-            10px,
-            env(safe-area-inset-top)
-        );
+    transform: translateX(-50%);
 
-    left:
-        50%;
+    width: 92%;
+    max-width: 480px;
 
-    transform:
-        translateX(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-    width:
-        95vw;
+    gap: 6px;
 
-    display:
-        grid;
+    z-index: 10;
 
-    grid-template-columns:
-        0.9fr
-        0.9fr
-        0.9fr
-        1.35fr;
-
-    gap:
-        5px;
-
-    z-index:
-        10;
-
-    pointer-events:
-        none;
+    pointer-events: none;
 }
-
 
 .ui-card {
+    background: rgba(30, 27, 24, 0.55);
 
-    min-width:
-        0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
-    min-height:
-        50px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
 
-    padding:
-        6px 7px;
+    border-radius: 14px;
 
-    border:
-        1px solid
-        var(--line);
+    padding: 6px 12px;
 
-    border-radius:
-        13px;
+    color: #ffffff;
 
-    background:
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-        linear-gradient(
-            180deg,
-            rgba(18, 35, 53, 0.72),
-            rgba(5, 15, 26, 0.55)
-        );
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 
-    box-shadow:
+    pointer-events: auto;
 
-        0 9px 20px
-        rgba(0, 0, 0, 0.20),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.07);
-
-    backdrop-filter:
-        blur(9px);
-
-    -webkit-backdrop-filter:
-        blur(9px);
-
-    color:
-        white;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
+    flex: 1;
 }
-
 
 .ui-title {
+    font-size: 10px;
 
-    color:
-        #a8b6c8;
+    color: #cbd5e1;
 
-    font-size:
-        8px;
+    font-weight: 600;
 
-    font-weight:
-        800;
-
-    letter-spacing:
-        0.8px;
+    letter-spacing: 0.5px;
 }
-
 
 .ui-value {
+    font-size: 16px;
 
-    margin-top:
-        2px;
+    font-weight: 800;
 
-    color:
-        #e0f2fe;
-
-    font-size:
-        14px;
-
-    line-height:
-        1;
-
-    font-weight:
-        900;
-
-    white-space:
-        nowrap;
+    color: #fde047;
 }
 
-
-.ui-value.gold {
-
-    color:
-        var(--gold);
-}
-
-
-/* =========================================================
+/* ==========================================
    HP
-   ========================================================= */
+   ========================================== */
 
-.hp-card {
+#hp-container {
+    flex: 1.5;
 
-    align-items:
-        stretch;
+    align-items: stretch;
 }
-
-
-.hp-head {
-
-    display:
-        flex;
-
-    justify-content:
-        space-between;
-
-    gap:
-        5px;
-
-    color:
-        #dce7f2;
-
-    font-size:
-        8px;
-
-    font-weight:
-        800;
-}
-
 
 .hp-bar-bg {
+    width: 100%;
 
-    height:
-        8px;
+    height: 8px;
 
-    width:
-        100%;
+    background: rgba(255, 255, 255, 0.15);
 
-    margin-top:
-        5px;
+    border-radius: 10px;
 
-    border-radius:
-        99px;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    margin-top: 4px;
 
-    background:
-        rgba(255, 255, 255, 0.08);
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
 
 #hp-bar {
+    width: 100%;
+    height: 100%;
 
-    width:
-        100%;
+    background: linear-gradient(
+        90deg,
+        #22c55e,
+        #4ade80
+    );
 
-    height:
-        100%;
+    border-radius: 10px;
 
-    border-radius:
-        inherit;
-
-    background:
-
-        linear-gradient(
-            90deg,
-            #16a34a,
-            #22c55e,
-            #67e8f9
-        );
-
-    box-shadow:
-        0 0 12px
-        rgba(34, 197, 94, 0.32);
-
-    transition:
-        width 0.15s ease;
+    transition: width 0.2s ease;
 }
 
-
-/* =========================================================
-   COMBAT UI
-   ========================================================= */
-
-#combat-ui {
-
-    position:
-        fixed;
-
-    top:
-        73px;
-
-    left:
-        50%;
-
-    transform:
-        translateX(-50%);
-
-    z-index:
-        9;
-
-    display:
-        flex;
-
-    gap:
-        7px;
-
-    pointer-events:
-        none;
-}
-
-
-.combat-badge {
-
-    padding:
-        6px 9px;
-
-    border-radius:
-        999px;
-
-    color:
-        #e0f2fe;
-
-    background:
-        rgba(8, 20, 35, 0.62);
-
-    border:
-        1px solid
-        rgba(125, 211, 252, 0.18);
-
-    backdrop-filter:
-        blur(8px);
-
-    -webkit-backdrop-filter:
-        blur(8px);
-
-    font-size:
-        9px;
-
-    font-weight:
-        900;
-}
-
-
-.combat-badge.combo {
-
-    color:
-        var(--gold-light);
-}
-
-
-/* =========================================================
-   PAUSE
-   ========================================================= */
-
-.icon-btn {
-
-    position:
-        fixed;
-
-    top:
-        73px;
-
-    right:
-        10px;
-
-    z-index:
-        12;
-
-    width:
-        39px;
-
-    height:
-        39px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.13);
-
-    border-radius:
-        12px;
-
-    color:
-        white;
-
-    background:
-        rgba(8, 19, 34, 0.74);
-
-    backdrop-filter:
-        blur(8px);
-
-    -webkit-backdrop-filter:
-        blur(8px);
-
-    font-size:
-        16px;
-
-    font-weight:
-        900;
-}
-
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
-
-.hidden {
-
-    display:
-        none !important;
-}
-
-
-/* =========================================================
-   MODALS
-   ========================================================= */
+/* ==========================================
+   מסך פתיחה
+   ========================================== */
 
 .modal-overlay {
+    position: absolute;
 
-    position:
-        fixed;
+    inset: 0;
 
-    inset:
-        0;
+    background: rgba(15, 13, 11, 0.75);
 
-    z-index:
-        100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
-    display:
-        flex;
+    display: flex;
 
-    justify-content:
-        center;
+    justify-content: center;
+    align-items: center;
 
-    align-items:
-        center;
-
-    padding:
-        18px;
-
-    background:
-        rgba(4, 8, 13, 0.72);
-
-    backdrop-filter:
-        blur(13px);
-
-    -webkit-backdrop-filter:
-        blur(13px);
+    z-index: 100;
 }
-
 
 .modal-card {
+    background: rgba(30, 27, 24, 0.88);
 
-    width:
-        min(
-            91vw,
-            390px
-        );
+    border: 1px solid rgba(255, 255, 255, 0.18);
 
-    padding:
-        20px 16px;
+    border-radius: 24px;
 
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.16);
+    padding: 24px 20px;
 
-    border-radius:
-        25px;
+    width: 88%;
+    max-width: 360px;
 
-    color:
-        white;
+    max-height: 92vh;
 
-    text-align:
-        center;
+    overflow-y: auto;
 
-    background:
+    -webkit-overflow-scrolling: touch;
 
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(56, 189, 248, 0.13),
-            transparent 42%
-        ),
+    text-align: center;
 
-        linear-gradient(
-            180deg,
-            rgba(17, 31, 48, 0.97),
-            rgba(5, 13, 22, 0.96)
-        );
+    color: #ffffff;
 
     box-shadow:
-
-        0 28px 70px
-        rgba(0, 0, 0, 0.58),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.06);
+        0 20px 50px
+        rgba(0, 0, 0, 0.6);
 }
 
-
-.small-modal {
-
-    width:
-        min(
-            88vw,
-            350px
-        );
-}
-
-
-/* =========================================================
-   MENU TEXT
-   ========================================================= */
-
-.eyebrow {
-
-    color:
-        #67e8f9;
-
-    font-size:
-        8px;
-
-    font-weight:
-        900;
-
-    letter-spacing:
-        1.6px;
-}
-
+/* ==========================================
+   כותרת משחק
+   ========================================== */
 
 .game-title {
+    font-size: 28px;
 
-    margin-top:
-        6px;
+    font-weight: 900;
 
-    font-size:
-        clamp(
-            35px,
-            10vw,
-            50px
-        );
+    line-height: 1.1;
 
-    line-height:
-        0.92;
+    color: #ffffff;
 
-    font-weight:
-        900;
-
-    letter-spacing:
-        -1px;
+    margin-bottom: 16px;
 }
-
 
 .game-title span {
-
-    color:
-        var(--gold);
+    color: #facc15;
 }
 
-
-.subtitle {
-
-    max-width:
-        300px;
-
-    margin:
-        9px auto 15px;
-
-    color:
-        #9caabd;
-
-    font-size:
-        10px;
-
-    line-height:
-        1.5;
-}
-
-
-/* =========================================================
-   STATS
-   ========================================================= */
+/* ==========================================
+   סטטיסטיקות
+   ========================================== */
 
 .stats-box {
+    display: flex;
 
-    display:
-        grid;
+    justify-content: space-around;
 
-    grid-template-columns:
-        1fr 1fr;
+    background: rgba(255, 255, 255, 0.05);
 
-    gap:
-        8px;
+    border-radius: 12px;
 
-    margin-bottom:
-        15px;
+    padding: 10px;
+
+    margin-bottom: 16px;
+
+    font-size: 13px;
+
+    color: #cbd5e1;
 }
-
-
-.stats-box > div {
-
-    padding:
-        10px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-    border-radius:
-        14px;
-
-    background:
-        rgba(255, 255, 255, 0.045);
-}
-
-
-.stats-box span {
-
-    display:
-        block;
-
-    margin-bottom:
-        3px;
-
-    color:
-        #8092a8;
-
-    font-size:
-        8px;
-
-    font-weight:
-        700;
-}
-
 
 .stats-box strong {
-
-    color:
-        var(--gold);
-
-    font-size:
-        17px;
-
-    font-weight:
-        900;
+    color: #facc15;
 }
 
+/* ==========================================
+   כותרות חנות
+   ========================================== */
 
-/* =========================================================
-   UPGRADES
-   ========================================================= */
+.shop-section-title {
+    text-align: right;
 
-.section-title {
+    font-size: 12px;
 
-    margin-bottom:
-        8px;
+    font-weight: 900;
 
-    color:
-        #dbeafe;
+    color: #f8fafc;
 
-    text-align:
-        right;
+    margin: 4px 2px 8px;
 
-    font-size:
-        10px;
-
-    font-weight:
-        900;
+    letter-spacing: 0.4px;
 }
 
+.maps-title {
+    margin-top: 2px;
+}
+
+/* ==========================================
+   שדרוגים
+   ========================================== */
 
 .upgrades-list {
+    display: flex;
 
-    display:
-        flex;
+    flex-direction: column;
 
-    flex-direction:
-        column;
+    gap: 10px;
 
-    gap:
-        7px;
+    margin-bottom: 20px;
 }
-
 
 .upgrade-item {
+    display: flex;
 
-    display:
-        grid;
+    justify-content: space-between;
+    align-items: center;
 
-    grid-template-columns:
-        35px
-        1fr
-        auto;
+    background: rgba(255, 255, 255, 0.06);
 
-    align-items:
-        center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 
-    gap:
-        9px;
+    padding: 10px 14px;
 
-    padding:
-        8px 9px;
+    border-radius: 14px;
 
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-    border-radius:
-        14px;
-
-    background:
-        rgba(255, 255, 255, 0.045);
-
-    text-align:
-        right;
+    text-align: right;
 }
-
-
-.upgrade-icon {
-
-    width:
-        35px;
-
-    height:
-        35px;
-
-    display:
-        grid;
-
-    place-items:
-        center;
-
-    border-radius:
-        11px;
-
-    background:
-        rgba(56, 189, 248, 0.12);
-
-    border:
-        1px solid
-        rgba(125, 211, 252, 0.14);
-
-    font-size:
-        15px;
-
-    font-weight:
-        900;
-}
-
-
-.upgrade-icon.power {
-
-    color:
-        var(--gold-light);
-}
-
-
-.upgrade-icon.rate {
-
-    color:
-        #7dd3fc;
-}
-
-
-.upgrade-icon.magnet {
-
-    color:
-        #c4b5fd;
-}
-
 
 .upg-name {
+    font-size: 14px;
 
-    display:
-        block;
-
-    color:
-        white;
-
-    font-size:
-        11px;
-
-    font-weight:
-        800;
+    font-weight: 600;
 }
-
 
 .upg-lvl {
+    font-size: 11px;
 
-    display:
-        block;
-
-    margin-top:
-        2px;
-
-    color:
-        #7f91a8;
-
-    font-size:
-        8px;
-
-    font-weight:
-        700;
+    color: #94a3b8;
 }
 
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-
-.btn-upg,
-.btn-primary {
-
-    border:
-        0;
-
-    cursor:
-        pointer;
-
-    font-family:
-        inherit;
-
-    font-weight:
-        900;
-}
-
+/* ==========================================
+   כפתורי שדרוג
+   ========================================== */
 
 .btn-upg {
+    background: linear-gradient(
+        135deg,
+        #eab308,
+        #ca8a04
+    );
 
-    min-width:
-        62px;
+    border: none;
 
-    padding:
-        7px 9px;
+    color: #0f172a;
 
-    border-radius:
-        10px;
+    font-weight: 800;
 
-    color:
-        #172033;
+    padding: 8px 14px;
 
-    background:
+    border-radius: 10px;
 
-        linear-gradient(
-            135deg,
-            #fde68a,
-            #facc15 56%,
-            #eab308
-        );
+    font-size: 13px;
 
-    font-size:
-        10px;
-}
-
-
-.btn-upg:disabled {
-
-    opacity:
-        0.3;
-
-    cursor:
-        not-allowed;
-
-    filter:
-        grayscale(0.4);
-}
-
-
-.btn-primary {
-
-    width:
-        100%;
-
-    margin-top:
-        15px;
-
-    padding:
-        13px;
-
-    border-radius:
-        15px;
-
-    color:
-        white;
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #0ea5e9,
-            #0284c7 56%,
-            #0369a1
-        );
+    cursor: pointer;
 
     box-shadow:
-        0 10px 26px
-        rgba(14, 165, 233, 0.25);
+        0 4px 12px
+        rgba(234, 179, 8, 0.25);
 
-    font-size:
-        16px;
+    transition:
+        transform 0.1s,
+        opacity 0.2s;
 }
 
+.btn-upg:disabled {
+    opacity: 0.4;
 
-.btn-primary:active {
-
-    transform:
-        scale(0.98);
+    cursor: not-allowed;
 }
 
+/* ==========================================
+   כפתור התחלה
+   ========================================== */
 
-.tip {
+.btn-primary {
+    width: 100%;
 
-    margin-top:
-        9px;
+    padding: 14px;
 
-    color:
-        #72849a;
+    border: none;
 
-    font-size:
-        8px;
+    border-radius: 16px;
+
+    background: linear-gradient(
+        135deg,
+        #22c55e,
+        #16a34a
+    );
+
+    color: #ffffff;
+
+    font-size: 18px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 6px 20px
+        rgba(34, 197, 94, 0.35);
+
+    transition: transform 0.1s;
 }
 
-
-/* =========================================================
-   SMALL MODAL
-   ========================================================= */
-
-.small-modal h2 {
-
-    margin-top:
-        6px;
-
-    font-size:
-        29px;
-
-    font-weight:
-        900;
+.btn-primary:active,
+.btn-upg:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
+/* ==========================================
+   Hidden
+   ========================================== */
 
-.small-modal p {
-
-    margin-top:
-        7px;
-
-    color:
-        #8fa1b7;
-
-    font-size:
-        10px;
+.hidden {
+    display: none !important;
 }
 
+/* ==========================================
+   חנות מפות
+   ========================================== */
 
-/* =========================================================
-   GAME OVER
-   ========================================================= */
+.maps-grid {
+    display: grid;
 
-.danger-text {
+    grid-template-columns: 1fr 1fr;
 
-    color:
-        var(--red);
+    gap: 8px;
+
+    margin-bottom: 18px;
 }
 
+.map-card {
+    position: relative;
 
-.result-grid {
+    min-height: 74px;
 
-    display:
-        grid;
+    border: 1px solid rgba(255, 255, 255, 0.10);
 
-    grid-template-columns:
-        repeat(3, 1fr);
+    border-radius: 14px;
 
-    gap:
-        7px;
+    padding: 10px;
 
-    margin-top:
-        16px;
+    background: rgba(255, 255, 255, 0.055);
+
+    color: #ffffff;
+
+    text-align: right;
+
+    cursor: pointer;
+
+    display: grid;
+
+    grid-template-columns: auto 1fr;
+
+    grid-template-rows: auto auto;
+
+    column-gap: 8px;
+
+    align-items: center;
+
+    transition:
+        transform 0.12s ease,
+        border-color 0.2s ease,
+        opacity 0.2s ease,
+        background 0.2s ease;
 }
 
-
-.result-grid > div {
-
-    padding:
-        9px 6px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.08);
-
-    border-radius:
-        12px;
-
-    background:
-        rgba(255, 255, 255, 0.045);
+.map-card:not(:disabled):active {
+    transform: scale(0.97);
 }
 
+/* מפה נבחרת */
+.map-card.selected {
+    border-color: rgba(34, 197, 94, 0.75);
 
-.result-grid span {
+    background: rgba(34, 197, 94, 0.12);
 
-    display:
-        block;
-
-    color:
-        #73869e;
-
-    font-size:
-        7px;
-
-    font-weight:
-        700;
+    box-shadow:
+        inset 0 0 0 1px
+        rgba(34, 197, 94, 0.12);
 }
 
+/* מפה נעולה */
+.map-card:disabled {
+    opacity: 0.52;
 
-.result-grid strong {
+    cursor: not-allowed;
+}
 
-    display:
-        block;
+/* מפה שנקנתה */
+.map-card.owned:not(.selected) {
+    border-color:
+        rgba(250, 204, 21, 0.30);
+}
 
-    margin-top:
-        3px;
+/* ==========================================
+   אייקון מפה
+   ========================================== */
 
-    color:
-        #e2e8f0;
+.map-icon {
+    grid-row: 1 / span 2;
 
-    font-size:
-        15px;
+    font-size: 26px;
 
-    font-weight:
-        900;
+    line-height: 1;
+}
+
+/* ==========================================
+   מידע מפה
+   ========================================== */
+
+.map-info {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+.map-info strong {
+    font-size: 11px;
+
+    font-weight: 900;
+
+    line-height: 1.1;
+}
+
+.map-info small {
+    margin-top: 2px;
+
+    font-size: 10px;
+
+    color: #94a3b8;
+}
+
+/* ==========================================
+   מחיר / פעולה
+   ========================================== */
+
+.map-action {
+    justify-self: end;
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    color: #fde047;
+}
+
+.map-card.selected .map-action {
+    color: #4ade80;
+}
+
+/* ==========================================
+   מצב מפה
+   ========================================== */
+
+.map-state {
+    justify-self: end;
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    color: #64748b;
+
+    letter-spacing: 0.7px;
+}
+
+.map-card.selected .map-state {
+    color: #4ade80;
+}
+
+/* ==========================================
+   התאמה למסכים נמוכים
+   ========================================== */
+
+@media (max-height: 720px) {
+
+    .modal-card {
+        padding: 18px 16px;
+    }
+
+    .game-title {
+        font-size: 24px;
+
+        margin-bottom: 10px;
+    }
+
+    .upgrade-item {
+        padding: 8px 12px;
+    }
+
+    .map-card {
+        min-height: 66px;
+
+        padding: 8px;
+    }
 }
