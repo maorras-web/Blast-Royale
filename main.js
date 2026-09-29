@@ -64,13 +64,49 @@ window.addEventListener(
 
 
         // =====================================================
+        // SCENE
+        // =====================================================
+
+        const scene =
+            new THREE.Scene();
+
+
+        // =====================================================
+        // CAMERA
+        // =====================================================
+
+        const camera =
+            new THREE.PerspectiveCamera(
+                50,
+                window.innerWidth /
+                window.innerHeight,
+                0.1,
+                250
+            );
+
+
+        let screenLimitX =
+            7.5;
+
+
+        let cameraY =
+            8.6;
+
+
+        let cameraZ =
+            19.5;
+
+
+        // =====================================================
         // RENDERER
         // =====================================================
 
         const renderer =
             new THREE.WebGLRenderer({
+
                 antialias:
-                    window.innerWidth > 650,
+                    window.innerWidth >
+                    650,
 
                 powerPreference:
                     'high-performance',
@@ -106,7 +142,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // HD RENDER SIZE
+        // HD RESOLUTION
         // =====================================================
 
         function setHDResolution() {
@@ -119,42 +155,38 @@ window.addEventListener(
                 );
 
 
-            let renderWidth;
-            let renderHeight;
+            let width;
 
+            let height;
+
+
+            /*
+             * Landscape:
+             * 1920 x 1080
+             *
+             * Portrait:
+             * 1080 x 1920
+             */
 
             if (
                 aspect >= 1
             ) {
 
-                // 1920 × 1080
-
-                renderWidth =
+                width =
                     1920;
 
-                renderHeight =
+                height =
                     1080;
 
             } else {
 
-                // 1080 × 1920
-
-                renderWidth =
+                width =
                     1080;
 
-                renderHeight =
+                height =
                     1920;
             }
 
-
-            /*
-             * Keep the render buffer at the
-             * requested HD resolution.
-             *
-             * This prevents a phone with
-             * DPR 2 or 3 from rendering
-             * unnecessarily huge buffers.
-             */
 
             renderer.setPixelRatio(
                 1
@@ -162,8 +194,8 @@ window.addEventListener(
 
 
             renderer.setSize(
-                renderWidth,
-                renderHeight,
+                width,
+                height,
                 false
             );
         }
@@ -173,30 +205,8 @@ window.addEventListener(
 
 
         // =====================================================
-        // CAMERA
+        // RESPONSIVE CAMERA
         // =====================================================
-
-        const camera =
-            new THREE.PerspectiveCamera(
-                50,
-                window.innerWidth /
-                window.innerHeight,
-                0.1,
-                250
-            );
-
-
-        let screenLimitX =
-            7.5;
-
-
-        let cameraY =
-            8.6;
-
-
-        let cameraZ =
-            19.5;
-
 
         function resize() {
 
@@ -288,15 +298,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // SCENE
-        // =====================================================
-
-        const scene =
-            new THREE.Scene();
-
-
-        // =====================================================
-        // SKY TEXTURE
+        // SKY
         // =====================================================
 
         function createSkyTexture() {
@@ -309,7 +311,6 @@ window.addEventListener(
 
             canvas.width =
                 8;
-
 
             canvas.height =
                 768;
@@ -378,7 +379,7 @@ window.addEventListener(
             );
 
 
-            // Cloud layers.
+            // Atmospheric clouds.
 
             for (
                 let i = 0;
@@ -631,6 +632,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshBasicMaterial({
+
                     color:
                         0xffd55c,
 
@@ -665,6 +667,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshBasicMaterial({
+
                     color:
                         0xffc56b,
 
@@ -703,6 +706,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x725d2b,
 
@@ -752,6 +756,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x3d2516,
 
@@ -781,7 +786,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // GRASS TOP
+        // GRASS GROUND
         // =====================================================
 
         const grassTop =
@@ -794,6 +799,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x4c721a,
 
@@ -823,62 +829,213 @@ window.addEventListener(
 
 
         // =====================================================
-        // GRASS BLADES
+        // 3D GRASS
         // =====================================================
 
         const grassMaterial =
             new THREE.MeshStandardMaterial({
+
                 color:
-                    0x58831e,
+                    0x4d7d18,
 
                 roughness:
-                    1,
+                    0.95,
+
+                metalness:
+                    0,
 
                 flatShading:
-                    true
+                    true,
+
+                side:
+                    THREE.DoubleSide
             });
 
 
-        for (
-            let i = 0;
-            i < 80;
-            i++
-        ) {
-
-            const blade =
-                new THREE.Mesh(
-
-                    new THREE.ConeGeometry(
-                        0.055,
-                        rand(
-                            0.17,
-                            0.34
-                        ),
-                        3
-                    ),
-
-                    grassMaterial
-                );
-
-
-            blade.position.set(
-                rand(-19, 19),
-                0.14,
-                rand(-1.6, 1.8)
+        const grassGeometry =
+            new THREE.ConeGeometry(
+                0.055,
+                0.34,
+                3
             );
 
 
-            blade.rotation.y =
+        const GRASS_COUNT =
+            520;
+
+
+        const grass =
+            new THREE.InstancedMesh(
+
+                grassGeometry,
+
+                grassMaterial,
+
+                GRASS_COUNT
+            );
+
+
+        const grassDummy =
+            new THREE.Object3D();
+
+
+        let grassIndex =
+            0;
+
+
+        // Front grass.
+
+        for (
+            let i = 0;
+            i < 320;
+            i++
+        ) {
+
+            const x =
+                rand(
+                    -19,
+                    19
+                );
+
+
+            const z =
+                rand(
+                    -1.3,
+                    2.2
+                );
+
+
+            grassDummy.position.set(
+                x,
+                0.05,
+                z
+            );
+
+
+            grassDummy.scale.set(
+                rand(
+                    0.7,
+                    1.2
+                ),
+                rand(
+                    0.7,
+                    1.35
+                ),
+                rand(
+                    0.7,
+                    1.2
+                )
+            );
+
+
+            grassDummy.rotation.y =
                 rand(
                     0,
                     Math.PI
                 );
 
 
-            world.add(
-                blade
+            grassDummy.rotation.z =
+                rand(
+                    -0.15,
+                    0.15
+                );
+
+
+            grassDummy.updateMatrix();
+
+
+            grass.setMatrixAt(
+                grassIndex++,
+                grassDummy.matrix
             );
         }
+
+
+        // Valley grass.
+
+        for (
+            let i = 0;
+            i < 200;
+            i++
+        ) {
+
+            const x =
+                rand(
+                    -7,
+                    7
+                );
+
+
+            const z =
+                rand(
+                    -7.5,
+                    -2.0
+                );
+
+
+            grassDummy.position.set(
+                x,
+                0.07,
+                z
+            );
+
+
+            grassDummy.scale.set(
+                rand(
+                    0.65,
+                    1.0
+                ),
+                rand(
+                    0.7,
+                    1.2
+                ),
+                rand(
+                    0.65,
+                    1.0
+                )
+            );
+
+
+            grassDummy.rotation.y =
+                rand(
+                    0,
+                    Math.PI
+                );
+
+
+            grassDummy.rotation.z =
+                rand(
+                    -0.16,
+                    0.16
+                );
+
+
+            grassDummy.updateMatrix();
+
+
+            grass.setMatrixAt(
+                grassIndex++,
+                grassDummy.matrix
+            );
+        }
+
+
+        grass.instanceMatrix.needsUpdate =
+            true;
+
+
+        grass.castShadow =
+            true;
+
+
+        grass.receiveShadow =
+            true;
+
+
+        world.add(
+            grass
+        );
 
 
         // =====================================================
@@ -889,13 +1046,13 @@ window.addEventListener(
             x,
             y,
             z,
-            sx,
-            sy,
-            sz,
+            scaleX,
+            scaleY,
+            scaleZ,
             color
         ) {
 
-            const mesh =
+            const pyramid =
                 new THREE.Mesh(
 
                     new THREE.ConeGeometry(
@@ -905,6 +1062,7 @@ window.addEventListener(
                     ),
 
                     new THREE.MeshStandardMaterial({
+
                         color:
                             color,
 
@@ -920,42 +1078,42 @@ window.addEventListener(
                 );
 
 
-            mesh.position.set(
+            pyramid.position.set(
                 x,
                 y,
                 z
             );
 
 
-            mesh.scale.set(
-                sx,
-                sy,
-                sz
+            pyramid.scale.set(
+                scaleX,
+                scaleY,
+                scaleZ
             );
 
 
-            mesh.rotation.y =
+            pyramid.rotation.y =
                 Math.PI / 4;
 
 
-            mesh.castShadow =
+            pyramid.castShadow =
                 true;
 
 
-            mesh.receiveShadow =
+            pyramid.receiveShadow =
                 true;
 
 
             world.add(
-                mesh
+                pyramid
             );
 
 
-            return mesh;
+            return pyramid;
         }
 
 
-        // Distant pyramids.
+        // Distant.
 
         addPyramid(
             -17,
@@ -990,7 +1148,7 @@ window.addEventListener(
         );
 
 
-        // Middle layer.
+        // Middle.
 
         addPyramid(
             -10.5,
@@ -1025,7 +1183,7 @@ window.addEventListener(
         );
 
 
-        // Foreground rock walls.
+        // Foreground.
 
         addPyramid(
             -8.8,
@@ -1084,6 +1242,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x55781f,
 
@@ -1127,6 +1286,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x26323a,
 
@@ -1177,6 +1337,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x10202a,
 
@@ -1211,6 +1372,7 @@ window.addEventListener(
 
         const ringMaterial =
             new THREE.MeshBasicMaterial({
+
                 color:
                     0x35c3ef,
 
@@ -1220,6 +1382,9 @@ window.addEventListener(
                 opacity:
                     0.7
             });
+
+
+        const arenaRings = [];
 
 
         for (
@@ -1268,6 +1433,11 @@ window.addEventListener(
             world.add(
                 ring
             );
+
+
+            arenaRings.push(
+                ring
+            );
         }
 
 
@@ -1293,6 +1463,7 @@ window.addEventListener(
 
         const metalDark =
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x101820,
 
@@ -1306,6 +1477,7 @@ window.addEventListener(
 
         const metalBlue =
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x0d628f,
 
@@ -1319,6 +1491,7 @@ window.addEventListener(
 
         const cyanMetal =
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x35a8ce,
 
@@ -1336,7 +1509,7 @@ window.addEventListener(
             });
 
 
-        // Cannon base.
+        // Base.
 
         const cannonBase =
             new THREE.Mesh(
@@ -1364,7 +1537,7 @@ window.addEventListener(
         );
 
 
-        // Blue upper section.
+        // Top.
 
         const cannonTop =
             new THREE.Mesh(
@@ -1408,6 +1581,7 @@ window.addEventListener(
                 ),
 
                 new THREE.MeshStandardMaterial({
+
                     color:
                         0x0d8bc3,
 
@@ -1594,8 +1768,7 @@ window.addEventListener(
             );
 
 
-        const muzzleFlashes =
-            [];
+        const muzzleFlashes = [];
 
 
         for (
@@ -1661,6 +1834,7 @@ window.addEventListener(
                     ),
 
                     new THREE.MeshBasicMaterial({
+
                         color:
                             0xffefae,
 
@@ -1728,7 +1902,7 @@ window.addEventListener(
         );
 
 
-        // Cannon glow.
+        // Cannon light.
 
         const cannonGlow =
             new THREE.PointLight(
@@ -1857,7 +2031,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // GAME DATA
+        // GAME VARIABLES
         // =====================================================
 
         let score =
@@ -1868,18 +2042,22 @@ window.addEventListener(
             parseInt(
                 localStorage.getItem(
                     'bb3d_coins'
-                ) || '0',
+                ) ||
+                '0',
                 10
-            ) || 0;
+            ) ||
+            0;
 
 
         let bestScore =
             parseInt(
                 localStorage.getItem(
                     'bb3d_best'
-                ) || '0',
+                ) ||
+                '0',
                 10
-            ) || 0;
+            ) ||
+            0;
 
 
         let level =
@@ -1890,35 +2068,54 @@ window.addEventListener(
             1000;
 
 
+        /*
+         * DEFAULT POWER
+         *
+         * The cannon starts a little stronger
+         * than the original version.
+         */
+
         let powerLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_power'
-                ) || '1',
+                ) ||
+                '1',
                 10
-            ) || 1;
+            ) ||
+            1;
 
 
         let rateLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_rate'
-                ) || '1',
+                ) ||
+                '1',
                 10
-            ) || 1;
+            ) ||
+            1;
 
 
         let magnetLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_magnet'
-                ) || '0',
+                ) ||
+                '0',
                 10
-            ) || 0;
+            ) ||
+            0;
 
+
+        /*
+         * +1 gives the cannon a small
+         * starting damage increase.
+         */
 
         let firePower =
-            powerLevel;
+            powerLevel +
+            1;
 
 
         let fireRate =
@@ -1943,6 +2140,10 @@ window.addEventListener(
 
 
         let introFinished =
+            false;
+
+
+        let dragging =
             false;
 
 
@@ -1978,24 +2179,23 @@ window.addEventListener(
             0;
 
 
-        let introTimer =
+        let saveTimer =
+            0;
+
+
+        let introTimeout =
             null;
 
 
-        const bullets =
-            [];
+        const bullets = [];
 
+        const rocks = [];
 
-        const rocks =
-            [];
-
-
-        const droppedCoins =
-            [];
+        const droppedCoins = [];
 
 
         // =====================================================
-        // STORAGE
+        // SAVE
         // =====================================================
 
         function saveGame() {
@@ -2032,7 +2232,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // UI UPDATE
+        // UPDATE UI
         // =====================================================
 
         function updateUI() {
@@ -2100,20 +2300,17 @@ window.addEventListener(
 
             ui.powerButton.disabled =
                 coins <
-                powerLevel *
-                50;
+                powerLevel * 50;
 
 
             ui.rateButton.disabled =
                 coins <
-                rateLevel *
-                60;
+                rateLevel * 60;
 
 
             ui.magnetButton.disabled =
                 coins <
-                (magnetLevel + 1) *
-                100;
+                (magnetLevel + 1) * 100;
 
 
             ui.wave.textContent =
@@ -2135,7 +2332,7 @@ window.addEventListener(
         // INTRO
         // =====================================================
 
-        function enterGame() {
+        function enterGameMenu() {
 
             if (
                 introFinished
@@ -2150,11 +2347,11 @@ window.addEventListener(
 
 
             if (
-                introTimer
+                introTimeout
             ) {
 
                 clearTimeout(
-                    introTimer
+                    introTimeout
                 );
             }
 
@@ -2179,13 +2376,13 @@ window.addEventListener(
 
         ui.introButton.addEventListener(
             'click',
-            enterGame
+            enterGameMenu
         );
 
 
-        introTimer =
+        introTimeout =
             setTimeout(
-                enterGame,
+                enterGameMenu,
                 5200
             );
 
@@ -2281,7 +2478,8 @@ window.addEventListener(
 
                 oscillator.frequency.exponentialRampToValueAtTime(
                     95,
-                    now + 0.08
+                    now +
+                    0.08
                 );
 
 
@@ -2293,7 +2491,8 @@ window.addEventListener(
 
                 gain.gain.exponentialRampToValueAtTime(
                     0.001,
-                    now + 0.09
+                    now +
+                    0.09
                 );
 
 
@@ -2303,7 +2502,8 @@ window.addEventListener(
 
 
                 oscillator.stop(
-                    now + 0.09
+                    now +
+                    0.09
                 );
 
             } else if (
@@ -2323,7 +2523,8 @@ window.addEventListener(
 
                 oscillator.frequency.exponentialRampToValueAtTime(
                     42,
-                    now + 0.09
+                    now +
+                    0.09
                 );
 
 
@@ -2335,7 +2536,8 @@ window.addEventListener(
 
                 gain.gain.exponentialRampToValueAtTime(
                     0.001,
-                    now + 0.1
+                    now +
+                    0.1
                 );
 
 
@@ -2345,7 +2547,8 @@ window.addEventListener(
 
 
                 oscillator.stop(
-                    now + 0.1
+                    now +
+                    0.1
                 );
 
             } else if (
@@ -2365,7 +2568,8 @@ window.addEventListener(
 
                 oscillator.frequency.setValueAtTime(
                     1320,
-                    now + 0.055
+                    now +
+                    0.055
                 );
 
 
@@ -2377,7 +2581,8 @@ window.addEventListener(
 
                 gain.gain.exponentialRampToValueAtTime(
                     0.001,
-                    now + 0.15
+                    now +
+                    0.15
                 );
 
 
@@ -2387,7 +2592,8 @@ window.addEventListener(
 
 
                 oscillator.stop(
-                    now + 0.15
+                    now +
+                    0.15
                 );
 
             } else if (
@@ -2407,13 +2613,15 @@ window.addEventListener(
 
                 oscillator.frequency.setValueAtTime(
                     780,
-                    now + 0.07
+                    now +
+                    0.07
                 );
 
 
                 oscillator.frequency.setValueAtTime(
                     1040,
-                    now + 0.14
+                    now +
+                    0.14
                 );
 
 
@@ -2425,7 +2633,8 @@ window.addEventListener(
 
                 gain.gain.exponentialRampToValueAtTime(
                     0.001,
-                    now + 0.28
+                    now +
+                    0.28
                 );
 
 
@@ -2435,7 +2644,8 @@ window.addEventListener(
 
 
                 oscillator.stop(
-                    now + 0.28
+                    now +
+                    0.28
                 );
             }
         }
@@ -2455,6 +2665,7 @@ window.addEventListener(
 
         const bulletCoreMaterial =
             new THREE.MeshBasicMaterial({
+
                 color:
                     0xffefa5
             });
@@ -2470,6 +2681,7 @@ window.addEventListener(
 
         const bulletGlowMaterial =
             new THREE.MeshBasicMaterial({
+
                 color:
                     0xffa63d,
 
@@ -2516,7 +2728,7 @@ window.addEventListener(
             );
 
 
-            // Trail particles.
+            // Trail.
 
             for (
                 let i = 0;
@@ -2531,12 +2743,12 @@ window.addEventListener(
                             0.13 -
                             i *
                             0.025,
-
                             8,
                             8
                         ),
 
                         new THREE.MeshBasicMaterial({
+
                             color:
                                 0xffd477,
 
@@ -2556,7 +2768,8 @@ window.addEventListener(
 
                 trail.position.y =
                     -(
-                        i + 1
+                        i +
+                        1
                     ) *
                     0.22;
 
@@ -2690,6 +2903,7 @@ window.addEventListener(
         const rockMaterials = [
 
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x6d655a,
 
@@ -2702,6 +2916,7 @@ window.addEventListener(
 
 
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x745039,
 
@@ -2714,6 +2929,7 @@ window.addEventListener(
 
 
             new THREE.MeshStandardMaterial({
+
                 color:
                     0x515e63,
 
@@ -2844,7 +3060,8 @@ window.addEventListener(
             y,
             hpValue,
             size,
-            materialIndex = 0
+            materialIndex =
+                0
         ) {
 
             const rock =
@@ -2871,7 +3088,8 @@ window.addEventListener(
 
             rock.scale.set(
                 size,
-                size * 1.12,
+                size *
+                1.12,
                 size
             );
 
@@ -2920,14 +3138,25 @@ window.addEventListener(
 
 
             label.position.z =
-                0.86 *
-                size;
+                0.86 * size;
 
 
             rock.add(
                 label
             );
 
+
+            /*
+             * IMPORTANT:
+             *
+             * Gravity is intentionally
+             * slower than before.
+             *
+             * Bounce velocity is restored
+             * every time the rock reaches
+             * the floor, so it keeps bouncing
+             * until destroyed.
+             */
 
             rock.userData = {
 
@@ -2942,14 +3171,14 @@ window.addEventListener(
 
                 vx:
                     rand(
-                        -1.3,
-                        1.3
+                        -1.15,
+                        1.15
                     ),
 
                 vy:
                     rand(
-                        -1.5,
-                        -0.2
+                        -1.0,
+                        0.15
                     ),
 
                 coolDown:
@@ -2957,14 +3186,14 @@ window.addEventListener(
 
                 rotationX:
                     rand(
-                        -1.4,
-                        1.4
+                        -1.1,
+                        1.1
                     ),
 
                 rotationY:
                     rand(
-                        -1.3,
-                        1.3
+                        -1.0,
+                        1.0
                     ),
 
                 label:
@@ -3026,6 +3255,7 @@ window.addEventListener(
 
         const coinMaterial =
             new THREE.MeshStandardMaterial({
+
                 color:
                     0xf3b516,
 
@@ -3170,6 +3400,7 @@ window.addEventListener(
 
         const particleMaterial =
             new THREE.PointsMaterial({
+
                 color:
                     0xffcd76,
 
@@ -3275,9 +3506,7 @@ window.addEventListener(
 
 
                 particleVX[index] =
-                    Math.cos(
-                        angle
-                    ) *
+                    Math.cos(angle) *
                     speed;
 
 
@@ -3289,9 +3518,7 @@ window.addEventListener(
 
 
                 particleVZ[index] =
-                    Math.sin(
-                        angle
-                    ) *
+                    Math.sin(angle) *
                     speed *
                     0.22;
 
@@ -3337,6 +3564,7 @@ window.addEventListener(
                     ),
 
                     new THREE.MeshBasicMaterial({
+
                         color:
                             0xffd166,
 
@@ -3553,7 +3781,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // CLEAR GAME
+        // CLEAR OBJECTS
         // =====================================================
 
         function clearGameObjects() {
@@ -3612,13 +3840,14 @@ window.addEventListener(
 
 
         // =====================================================
-        // WAVE
+        // SPAWN WAVE
         // =====================================================
 
         function spawnWave() {
 
             const count =
                 Math.min(
+
                     3 +
                     Math.floor(
                         (
@@ -3656,8 +3885,9 @@ window.addEventListener(
                     );
 
 
-                const hp =
+                const hpValue =
                     Math.floor(
+
                         baseHp *
                         size *
                         rand(
@@ -3677,14 +3907,14 @@ window.addEventListener(
                         0.86
                     ),
 
-                    11.8 +
+                    12 +
                     i *
                     rand(
-                        1.35,
-                        2
+                        1.25,
+                        1.8
                     ),
 
-                    hp,
+                    hpValue,
 
                     size,
 
@@ -3693,11 +3923,10 @@ window.addEventListener(
             }
 
 
-            // Boss rock every 5th level.
+            // Boss.
 
             if (
-                level %
-                5 ===
+                level % 5 ===
                 0
             ) {
 
@@ -3745,7 +3974,7 @@ window.addEventListener(
                 !introFinished
             ) {
 
-                enterGame();
+                enterGameMenu();
 
                 return;
             }
@@ -3831,7 +4060,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // GAME OVER
+        // END GAME
         // =====================================================
 
         function endGame() {
@@ -3889,20 +4118,8 @@ window.addEventListener(
 
 
         // =====================================================
-        // BUTTONS
+        // PAUSE
         // =====================================================
-
-        ui.startButton.addEventListener(
-            'click',
-            startGame
-        );
-
-
-        ui.restartButton.addEventListener(
-            'click',
-            startGame
-        );
-
 
         function togglePause() {
 
@@ -3932,6 +4149,22 @@ window.addEventListener(
         }
 
 
+        // =====================================================
+        // BUTTONS
+        // =====================================================
+
+        ui.startButton.addEventListener(
+            'click',
+            startGame
+        );
+
+
+        ui.restartButton.addEventListener(
+            'click',
+            startGame
+        );
+
+
         ui.pauseButton.addEventListener(
             'click',
             togglePause
@@ -3945,7 +4178,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // UPGRADES
+        // POWER UPGRADE
         // =====================================================
 
         ui.powerButton.addEventListener(
@@ -3975,7 +4208,8 @@ window.addEventListener(
 
 
                 firePower =
-                    powerLevel;
+                    powerLevel +
+                    1;
 
 
                 saveGame();
@@ -3985,6 +4219,10 @@ window.addEventListener(
             }
         );
 
+
+        // =====================================================
+        // RATE UPGRADE
+        // =====================================================
 
         ui.rateButton.addEventListener(
             'click',
@@ -4029,6 +4267,10 @@ window.addEventListener(
         );
 
 
+        // =====================================================
+        // MAGNET UPGRADE
+        // =====================================================
+
         ui.magnetButton.addEventListener(
             'click',
             () => {
@@ -4069,10 +4311,6 @@ window.addEventListener(
         // =====================================================
         // INPUT
         // =====================================================
-
-        let dragging =
-            false;
-
 
         function setTargetX(
             clientX
@@ -4240,20 +4478,24 @@ window.addEventListener(
             }
 
 
+            // Stronger recoil.
+
             recoil =
-                0.16;
+                0.20;
 
 
-            cannonGlow.intensity =
-                4.5;
-
+            // Stronger camera response.
 
             cameraShake =
                 Math.min(
-                    0.24,
+                    0.28,
                     cameraShake +
-                    0.025
+                    0.04
                 );
+
+
+            cannonGlow.intensity =
+                4.6;
 
 
             createBurst(
@@ -4339,9 +4581,9 @@ window.addEventListener(
             time
         ) {
 
-            // -----------------------------------------------
-            // CANNON MOVEMENT
-            // -----------------------------------------------
+            // =================================================
+            // CANNON
+            // =================================================
 
             cannon.position.x += (
 
@@ -4355,10 +4597,6 @@ window.addEventListener(
                 14
             );
 
-
-            // -----------------------------------------------
-            // CANNON RECOIL
-            // -----------------------------------------------
 
             recoil =
                 Math.max(
@@ -4392,9 +4630,27 @@ window.addEventListener(
                 0.28;
 
 
-            // -----------------------------------------------
+            // Arena animation.
+
+            for (
+                let i = 0;
+                i < arenaRings.length;
+                i++
+            ) {
+
+                arenaRings[i].rotation.z +=
+                    dt *
+                    (
+                        i === 0
+                            ? 0.25
+                            : -0.18
+                    );
+            }
+
+
+            // =================================================
             // MUZZLE FLASH
-            // -----------------------------------------------
+            // =================================================
 
             for (
                 const flash of
@@ -4434,9 +4690,9 @@ window.addEventListener(
             }
 
 
-            // -----------------------------------------------
-            // AUTO FIRE
-            // -----------------------------------------------
+            // =================================================
+            // AUTOMATIC FIRE
+            // =================================================
 
             if (
                 time -
@@ -4544,14 +4800,18 @@ window.addEventListener(
                     );
 
 
-                // Gravity.
+                // =================================================
+                // SLOWER GRAVITY
+                // =================================================
+
+                const rockGravity =
+                    8.5 +
+                    level *
+                    0.035;
+
 
                 data.vy -=
-                    (
-                        16 +
-                        level *
-                        0.08
-                    ) *
+                    rockGravity *
                     dt;
 
 
@@ -4579,46 +4839,70 @@ window.addEventListener(
                     dt;
 
 
-                // ---------------------------------------------
-                // BOUNCE
-                // ---------------------------------------------
+                // =================================================
+                // REPEATING FLOOR BOUNCE
+                // =================================================
+
+                const floorHeight =
+                    0.48 +
+                    data.size;
+
 
                 if (
-                    rock.position.y -
-                    data.size <
-                    0.48
+                    rock.position.y <
+                    floorHeight
                 ) {
 
                     rock.position.y =
-                        0.48 +
-                        data.size;
+                        floorHeight;
+
+
+                    /*
+                     * The rock receives a fresh
+                     * upward velocity every time
+                     * it touches the floor.
+                     *
+                     * This means it will continue
+                     * bouncing until it is destroyed.
+                     */
+
+                    const bounceStrength =
+                        Math.min(
+                            5.2,
+                            3.9 +
+                            level *
+                            0.025
+                        );
 
 
                     data.vy =
                         Math.max(
-
-                            4.2 +
-                            Math.min(
-                                1.2,
-                                level *
-                                0.04
-                            ),
+                            bounceStrength,
 
                             Math.abs(
                                 data.vy
                             ) *
-                            0.68
+                            0.72
                         );
 
 
                     data.vx *=
-                        0.97;
+                        0.985;
+
+
+                    // Small dust effect.
+
+                    createBurst(
+                        rock.position.x,
+                        0.48,
+                        2
+                    );
                 }
 
 
-                // ---------------------------------------------
-                // WALLS
-                // ---------------------------------------------
+                // =================================================
+                // SIDE WALLS
+                // =================================================
 
                 if (
                     Math.abs(
@@ -4640,7 +4924,7 @@ window.addEventListener(
 
 
                 // =================================================
-                // BULLET COLLISIONS
+                // BULLET COLLISION
                 // =================================================
 
                 for (
@@ -4682,7 +4966,13 @@ window.addEventListener(
                     }
 
 
-                    // Remove bullet.
+                    const impactX =
+                        bullet.position.x;
+
+
+                    const impactY =
+                        bullet.position.y;
+
 
                     removeBullet(
                         b
@@ -4719,7 +5009,7 @@ window.addEventListener(
                         );
 
 
-                    // Shake.
+                    // Stronger hit feedback.
 
                     cameraShake =
                         Math.min(
@@ -4729,18 +5019,16 @@ window.addEventListener(
                         );
 
 
-                    // Hit effects.
-
                     createBurst(
-                        rock.position.x,
-                        rock.position.y,
+                        impactX,
+                        impactY,
                         6
                     );
 
 
                     createShockwave(
-                        rock.position.x,
-                        rock.position.y,
+                        impactX,
+                        impactY,
                         0.55
                     );
 
@@ -4759,7 +5047,7 @@ window.addEventListener(
                         0
                     ) {
 
-                        // Coins.
+                        // Reward.
 
                         coins +=
                             5 +
@@ -4769,14 +5057,13 @@ window.addEventListener(
                             );
 
 
-                        // Split big rocks.
+                        // Split large rocks.
 
                         if (
                             data.size >
-                                1.0 &&
-
+                            1.0 &&
                             level <
-                                25
+                            25
                         ) {
 
                             const childSize =
@@ -4799,10 +5086,10 @@ window.addEventListener(
                             spawnRock(
 
                                 rock.position.x -
-                                    0.45,
+                                0.45,
 
                                 rock.position.y +
-                                    0.15,
+                                0.15,
 
                                 childHp,
 
@@ -4815,10 +5102,10 @@ window.addEventListener(
                             spawnRock(
 
                                 rock.position.x +
-                                    0.45,
+                                0.45,
 
                                 rock.position.y +
-                                    0.15,
+                                0.15,
 
                                 childHp,
 
@@ -4829,7 +5116,7 @@ window.addEventListener(
                         }
 
 
-                        // Coin drop.
+                        // Coin.
 
                         spawnCoin(
                             rock.position.x,
@@ -4892,7 +5179,11 @@ window.addEventListener(
                 }
 
 
-                // Rock was destroyed.
+                /*
+                 * If this rock was removed from
+                 * the array, do not continue using
+                 * its old data.
+                 */
 
                 if (
                     !rocks[r]
@@ -4924,16 +5215,16 @@ window.addEventListener(
                 if (
 
                     cannonDx *
-                        cannonDx +
+                    cannonDx +
 
                     cannonDy *
-                        cannonDy <
+                    cannonDy <
 
                     cannonRadius *
-                        cannonRadius &&
+                    cannonRadius &&
 
                     data.coolDown <=
-                        0
+                    0
 
                 ) {
 
@@ -5030,16 +5321,14 @@ window.addEventListener(
                     1.4;
 
 
-                // Magnet.
-
                 if (
 
                     magnetLevel >
-                        0 &&
+                    0 &&
 
                     distanceSq <
-                        magnetRadius *
-                        magnetRadius
+                    magnetRadius *
+                    magnetRadius
 
                 ) {
 
@@ -5093,8 +5382,6 @@ window.addEventListener(
                 }
 
 
-                // Spin.
-
                 coin.rotation.z +=
                     data.spin *
                     dt;
@@ -5105,8 +5392,6 @@ window.addEventListener(
                     0.4 *
                     dt;
 
-
-                // Collected.
 
                 if (
                     distanceSq <
@@ -5159,7 +5444,7 @@ window.addEventListener(
 
 
             // =================================================
-            // COMBO TIMER
+            // COMBO
             // =================================================
 
             comboTimer -=
@@ -5168,10 +5453,9 @@ window.addEventListener(
 
             if (
                 comboTimer <=
-                    0 &&
-
+                0 &&
                 combo !==
-                    0
+                0
             ) {
 
                 combo =
@@ -5215,7 +5499,7 @@ window.addEventListener(
 
 
             // =================================================
-            // CAMERA
+            // CAMERA SHAKE
             // =================================================
 
             cameraShake *=
@@ -5291,7 +5575,7 @@ window.addEventListener(
             camera.lookAt(
 
                 cannon.position.x *
-                    0.025,
+                0.025,
 
                 5.1,
 
@@ -5321,6 +5605,16 @@ window.addEventListener(
                 0.18;
 
 
+            // Gentle grass sway.
+
+            grass.rotation.y =
+                Math.sin(
+                    elapsed *
+                    1.6
+                ) *
+                0.012;
+
+
             elapsed +=
                 dt;
         }
@@ -5332,10 +5626,6 @@ window.addEventListener(
 
         let lastFrameTime =
             performance.now();
-
-
-        let saveTimer =
-            0;
 
 
         function animate(
@@ -5388,8 +5678,6 @@ window.addEventListener(
             }
 
 
-            // Save every couple seconds.
-
             saveTimer +=
                 dt;
 
@@ -5400,6 +5688,7 @@ window.addEventListener(
             ) {
 
                 saveGame();
+
 
                 saveTimer =
                     0;
@@ -5412,8 +5701,6 @@ window.addEventListener(
             );
         }
 
-
-        // Start.
 
         animate(
             performance.now()

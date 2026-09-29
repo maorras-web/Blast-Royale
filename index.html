@@ -46,7 +46,7 @@
 
 
     <!-- ==========================================
-         GAME CSS
+         CSS
          ========================================== -->
 
     <link
@@ -135,15 +135,10 @@
 
 
     <!-- ==========================================
-         TOP GAME UI
+         TOP HUD
          ========================================== -->
 
-    <div
-        id="ui-container"
-        aria-hidden="true"
-    >
-
-        <!-- SCORE -->
+    <div id="ui-container">
 
         <div class="ui-card">
 
@@ -161,8 +156,6 @@
         </div>
 
 
-        <!-- COINS -->
-
         <div class="ui-card">
 
             <span class="ui-title">
@@ -179,8 +172,6 @@
         </div>
 
 
-        <!-- LEVEL -->
-
         <div class="ui-card">
 
             <span class="ui-title">
@@ -196,8 +187,6 @@
 
         </div>
 
-
-        <!-- HP -->
 
         <div class="ui-card hp-card">
 
@@ -260,7 +249,6 @@
         id="pause-btn"
         class="icon-btn hidden"
         type="button"
-        aria-label="Pause"
     >
         Ⅱ
     </button>
@@ -301,8 +289,6 @@
             </p>
 
 
-            <!-- STATS -->
-
             <div class="stats-box">
 
                 <div>
@@ -341,10 +327,6 @@
                 שדרוגים
             </div>
 
-
-            <!-- ==================================
-                 UPGRADE LIST
-                 ================================== -->
 
             <div class="upgrades-list">
 
@@ -385,7 +367,7 @@
                 </div>
 
 
-                <!-- FIRE RATE -->
+                <!-- RATE -->
 
                 <div class="upgrade-item">
 
@@ -458,8 +440,6 @@
 
             </div>
 
-
-            <!-- START -->
 
             <button
                 id="start-btn"
@@ -547,9 +527,7 @@
                         SCORE
                     </span>
 
-                    <strong
-                        id="final-score"
-                    >
+                    <strong id="final-score">
                         0
                     </strong>
 
@@ -562,9 +540,7 @@
                         LEVEL
                     </span>
 
-                    <strong
-                        id="final-level"
-                    >
+                    <strong id="final-level">
                         1
                     </strong>
 
@@ -577,9 +553,7 @@
                         COINS
                     </span>
 
-                    <strong
-                        id="final-coins"
-                    >
+                    <strong id="final-coins">
                         0
                     </strong>
 
@@ -602,7 +576,7 @@
 
 
     <!-- ==========================================
-         GAME SCRIPT
+         GAME
          ========================================== -->
 
     <script src="main.js"></script>
