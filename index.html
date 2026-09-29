@@ -1,81 +1,123 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        content="width=device-width,
+                 initial-scale=1.0,
+                 maximum-scale=1.0,
+                 user-scalable=no,
+                 viewport-fit=cover"
     >
 
-    <meta name="theme-color" content="#111827">
+    <meta
+        name="theme-color"
+        content="#111827"
+    >
 
-    <title>Cannon Blast 3D</title>
+    <title>
+        Cannon Blast 3D
+    </title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- ==========================================
+         FONT
+         ========================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
 
     <link
         href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap"
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="style.css">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- ==========================================
+         GAME CSS
+         ========================================== -->
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+
+    <!-- ==========================================
+         THREE.JS
+         ========================================== -->
+
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+    ></script>
+
 </head>
+
 
 <body>
 
-    <!-- שכבת עומק למסך -->
-    <div id="vignette"></div>
 
-    <!-- הבזק אדום כאשר השחקן נפגע -->
-    <div id="damage-flash"></div>
+    <!-- ==========================================
+         CINEMATIC INTRO
+         ========================================== -->
 
+    <div id="intro-screen">
 
-    <!-- ==============================
-         HUD
-         ============================== -->
+        <div class="intro-image"></div>
 
-    <div id="ui-container">
+        <div class="intro-overlay"></div>
 
-        <div class="ui-card">
-            <span class="ui-title">SCORE</span>
-            <strong id="score-val" class="ui-value">
-                0
-            </strong>
-        </div>
+        <div class="intro-vignette"></div>
 
 
-        <div class="ui-card">
-            <span class="ui-title">COINS</span>
-            <strong id="coins-val" class="ui-value gold">
-                0
-            </strong>
-        </div>
+        <div class="intro-content">
 
-
-        <div class="ui-card">
-            <span class="ui-title">LEVEL</span>
-            <strong id="level-text" class="ui-value">
-                1
-            </strong>
-        </div>
-
-
-        <div class="ui-card hp-card">
-
-            <div class="hp-head">
-                <span>HP</span>
-
-                <span id="hp-text">
-                    1000 / 1000
-                </span>
+            <div class="intro-small-title">
+                CANNON DEFENSE
             </div>
 
-            <div class="hp-bar-bg">
-                <div id="hp-bar"></div>
+
+            <div class="intro-main-title">
+
+                CANNON BLAST
+
+                <span>
+                    3D
+                </span>
+
+            </div>
+
+
+            <div class="intro-subtitle">
+                THE DESERT BATTLE BEGINS
+            </div>
+
+
+            <button
+                id="intro-btn"
+                class="intro-btn"
+                type="button"
+            >
+                היכנס למשחק
+            </button>
+
+
+            <div class="intro-loading">
+
+                <span></span>
+
             </div>
 
         </div>
@@ -83,24 +125,136 @@
     </div>
 
 
-    <!-- ==============================
+    <!-- ==========================================
+         SCREEN EFFECTS
+         ========================================== -->
+
+    <div id="vignette"></div>
+
+    <div id="damage-flash"></div>
+
+
+    <!-- ==========================================
+         TOP GAME UI
+         ========================================== -->
+
+    <div
+        id="ui-container"
+        aria-hidden="true"
+    >
+
+        <!-- SCORE -->
+
+        <div class="ui-card">
+
+            <span class="ui-title">
+                SCORE
+            </span>
+
+            <strong
+                id="score-val"
+                class="ui-value"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <!-- COINS -->
+
+        <div class="ui-card">
+
+            <span class="ui-title">
+                COINS
+            </span>
+
+            <strong
+                id="coins-val"
+                class="ui-value gold"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <!-- LEVEL -->
+
+        <div class="ui-card">
+
+            <span class="ui-title">
+                LEVEL
+            </span>
+
+            <strong
+                id="level-text"
+                class="ui-value"
+            >
+                1
+            </strong>
+
+        </div>
+
+
+        <!-- HP -->
+
+        <div class="ui-card hp-card">
+
+            <div class="hp-head">
+
+                <span>
+                    HP
+                </span>
+
+                <span id="hp-text">
+                    1000 / 1000
+                </span>
+
+            </div>
+
+
+            <div class="hp-bar-bg">
+
+                <div id="hp-bar"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
          COMBAT UI
-         ============================== -->
+         ========================================== -->
 
-    <div id="combat-ui" class="hidden">
+    <div
+        id="combat-ui"
+        class="hidden"
+    >
 
-        <span id="wave-badge" class="combat-badge">
+        <span
+            id="wave-badge"
+            class="combat-badge"
+        >
             WAVE 1
         </span>
 
-        <span id="combo-badge" class="combat-badge combo">
+
+        <span
+            id="combo-badge"
+            class="combat-badge combo"
+        >
             COMBO x1
         </span>
 
     </div>
 
 
-    <!-- כפתור Pause -->
+    <!-- ==========================================
+         PAUSE BUTTON
+         ========================================== -->
 
     <button
         id="pause-btn"
@@ -112,11 +266,14 @@
     </button>
 
 
-    <!-- ==============================
-         START SCREEN
-         ============================== -->
+    <!-- ==========================================
+         MAIN MENU
+         ========================================== -->
 
-    <div id="splash-screen" class="modal-overlay">
+    <div
+        id="splash-screen"
+        class="modal-overlay hidden"
+    >
 
         <div class="modal-card hero-card">
 
@@ -126,34 +283,55 @@
 
 
             <h1 class="game-title">
+
                 CANNON
+
                 <br>
-                <span>BLAST</span>
+
+                <span>
+                    BLAST
+                </span>
+
             </h1>
 
 
             <p class="subtitle">
-                הגן על השטח, פוצץ סלעים ואסוף כמה שיותר מטבעות.
+                הגן על השטח, פוצץ סלעים
+                ואסוף כמה שיותר מטבעות.
             </p>
 
+
+            <!-- STATS -->
 
             <div class="stats-box">
 
                 <div>
-                    <span>שיא אישי</span>
 
-                    <strong id="start-best-score">
+                    <span>
+                        שיא אישי
+                    </span>
+
+                    <strong
+                        id="start-best-score"
+                    >
                         0
                     </strong>
+
                 </div>
 
 
                 <div>
-                    <span>מטבעות</span>
 
-                    <strong id="start-coins">
+                    <span>
+                        מטבעות
+                    </span>
+
+                    <strong
+                        id="start-coins"
+                    >
                         0
                     </strong>
+
                 </div>
 
             </div>
@@ -164,15 +342,21 @@
             </div>
 
 
+            <!-- ==================================
+                 UPGRADE LIST
+                 ================================== -->
+
             <div class="upgrades-list">
 
-                <!-- כוח -->
+
+                <!-- POWER -->
 
                 <div class="upgrade-item">
 
                     <div class="upgrade-icon power">
                         ⚡
                     </div>
+
 
                     <div class="upgrade-copy">
 
@@ -189,6 +373,7 @@
 
                     </div>
 
+
                     <button
                         id="buy-power-btn"
                         class="btn-upg"
@@ -200,13 +385,14 @@
                 </div>
 
 
-                <!-- קצב -->
+                <!-- FIRE RATE -->
 
                 <div class="upgrade-item">
 
                     <div class="upgrade-icon rate">
                         »
                     </div>
+
 
                     <div class="upgrade-copy">
 
@@ -223,6 +409,7 @@
 
                     </div>
 
+
                     <button
                         id="buy-rate-btn"
                         class="btn-upg"
@@ -234,13 +421,14 @@
                 </div>
 
 
-                <!-- מגנט -->
+                <!-- MAGNET -->
 
                 <div class="upgrade-item">
 
                     <div class="upgrade-icon magnet">
                         ✦
                     </div>
+
 
                     <div class="upgrade-copy">
 
@@ -257,6 +445,7 @@
 
                     </div>
 
+
                     <button
                         id="buy-magnet-btn"
                         class="btn-upg"
@@ -269,6 +458,8 @@
 
             </div>
 
+
+            <!-- START -->
 
             <button
                 id="start-btn"
@@ -288,9 +479,9 @@
     </div>
 
 
-    <!-- ==============================
-         PAUSE
-         ============================== -->
+    <!-- ==========================================
+         PAUSE SCREEN
+         ========================================== -->
 
     <div
         id="pause-screen"
@@ -303,13 +494,16 @@
                 PAUSED
             </div>
 
+
             <h2>
                 המשחק נעצר
             </h2>
 
+
             <p>
                 חזור לקרב מתי שנוח לך.
             </p>
+
 
             <button
                 id="resume-btn"
@@ -324,9 +518,9 @@
     </div>
 
 
-    <!-- ==============================
+    <!-- ==========================================
          GAME OVER
-         ============================== -->
+         ========================================== -->
 
     <div
         id="game-over-screen"
@@ -339,6 +533,7 @@
                 RUN OVER
             </div>
 
+
             <h2>
                 GAME OVER
             </h2>
@@ -347,29 +542,47 @@
             <div class="result-grid">
 
                 <div>
-                    <span>SCORE</span>
 
-                    <strong id="final-score">
+                    <span>
+                        SCORE
+                    </span>
+
+                    <strong
+                        id="final-score"
+                    >
                         0
                     </strong>
+
                 </div>
 
 
                 <div>
-                    <span>LEVEL</span>
 
-                    <strong id="final-level">
+                    <span>
+                        LEVEL
+                    </span>
+
+                    <strong
+                        id="final-level"
+                    >
                         1
                     </strong>
+
                 </div>
 
 
                 <div>
-                    <span>COINS</span>
 
-                    <strong id="final-coins">
+                    <span>
+                        COINS
+                    </span>
+
+                    <strong
+                        id="final-coins"
+                    >
                         0
                     </strong>
+
                 </div>
 
             </div>
@@ -388,7 +601,12 @@
     </div>
 
 
+    <!-- ==========================================
+         GAME SCRIPT
+         ========================================== -->
+
     <script src="main.js"></script>
 
 </body>
+
 </html>
