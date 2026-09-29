@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // 1. הגדרת THREE.JS (סצנה, מצלמה, רינדור)
     // ==========================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xd97706); // אווירת שקיעה כתומה-זהובה
+    scene.background = new THREE.Color(0xd97706); // אווירת שקיעה כתומה
     scene.fog = new THREE.FogExp2(0xd97706, 0.015);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -19,7 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(renderer.domElement);
 
     // ==========================================
-    // 2. תאורה (Shading & Atmosphere)
+    // 2. תאורה (Lighting)
     // ==========================================
     const ambientLight = new THREE.AmbientLight(0xffedd5, 0.8);
     scene.add(ambientLight);
@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.add(sunLight);
 
     // ==========================================
-    // 3. בניה תלת-ממדית (דשא, תותח, רקע פירמידות)
+    // 3. אלמנטים תלת-ממדיים (דשא, תותח, רקע)
     // ==========================================
     
     // רצפת דשא
@@ -43,7 +43,7 @@ window.addEventListener('DOMContentLoaded', () => {
     grass.receiveShadow = true;
     scene.add(grass);
 
-    // פירמידות ענקיות ברקע
+    // פירמידות ברקע
     function createBackgroundPyramid(x, z, scale) {
         const geo = new THREE.ConeGeometry(8 * scale, 12 * scale, 4);
         const mat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9, flatShading: true });
@@ -59,7 +59,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- בניית התותח ---
     const cannonGroup = new THREE.Group();
 
-    // בסיס התותח
     const baseGeo = new THREE.BoxGeometry(2.2, 0.6, 1.8);
     const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
     const base = new THREE.Mesh(baseGeo, baseMat);
@@ -67,14 +66,12 @@ window.addEventListener('DOMContentLoaded', () => {
     base.castShadow = true;
     cannonGroup.add(base);
 
-    // כיפה כחולה זוהרת
     const domeGeo = new THREE.SphereGeometry(1.0, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
     const domeMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.2, roughness: 0.1, transparent: true, opacity: 0.85 });
     const dome = new THREE.Mesh(domeGeo, domeMat);
     dome.position.y = 0.6;
     cannonGroup.add(dome);
 
-    // גלגלים
     const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
     const wheelPositions = [[-1.1, 0.2, 0.8], [1.1, 0.2, 0.8], [-1.1, 0.2, -0.8], [1.1, 0.2, -0.8]];
@@ -86,7 +83,6 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.add(wheel);
     });
 
-    // קני ירי
     const barrelGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.0, 16);
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
     const leftBarrel = new THREE.Mesh(barrelGeo, barrelMat);
@@ -100,24 +96,65 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.add(cannonGroup);
 
     // ==========================================
-    // 4. משתני המשחק והסטטיסטיקות
+    // 4. משתני המשחק ומצב (State)
     // ==========================================
-    let score = 0;
-    let coins = 0;
-    let level = 1;
-    let firePower = 1;
-    let fireRate = 1; // קצב ירי (יריות בשניה)
+    let isGameStarted = false; // מונע מ-Game Over לקפוץ מיד בטעינה!
+    let isPaused = false;
     let isGameOver = false;
+
+    let score = 0;
+    let coins = parseInt(localStorage.getItem('bb3d_coins')) || 0;
+    let bestScore = parseInt(localStorage.getItem('bb3d_best')) || 0;
+    let level = 1;
+    let playerHp = 1000;
+    let maxHp = 1000;
+
+    let firePower = 1;
+    let fireRate = 1;
+    let magnetLvl = 0;
+    let hasTripleCannon = false;
 
     let bullets = [];
     let rocks = [];
     let droppedCoins = [];
-    let particles = [];
 
     let lastShotTime = 0;
+    let targetX = 0;
 
     // ==========================================
-    // 5. מערכת סאונד (Web Audio API)
+    // 5. ניהול אלמנטי DOM (ממשק משתמש)
+    // ==========================================
+    const splashScreen = document.getElementById('splash-screen');
+    const startOverlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+    const pauseMenu = document.getElementById('pause-menu');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const restartBtn = document.getElementById('restart-btn');
+    const homeBtn = document.getElementById('home-btn');
+
+    const coinsValEl = document.getElementById('coins-val');
+    const scoreValEl = document.getElementById('score-val');
+    const hpTextEl = document.getElementById('hp-text');
+    const hpBarEl = document.getElementById('hp-bar');
+    const levelTextEl = document.getElementById('level-text');
+    const startCoinsEl = document.getElementById('start-coins');
+    const startBestScoreEl = document.getElementById('start-best-score');
+
+    function updateUI() {
+        if (coinsValEl) coinsValEl.innerText = coins;
+        if (scoreValEl) scoreValEl.innerText = score;
+        if (startCoinsEl) startCoinsEl.innerText = coins;
+        if (startBestScoreEl) startBestScoreEl.innerText = bestScore;
+        if (hpTextEl) hpTextEl.innerText = `${Math.max(0, playerHp)} / ${maxHp}`;
+        if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (playerHp / maxHp) * 100)}%`;
+        if (levelTextEl) levelTextEl.innerText = `LEVEL ${level}`;
+    }
+    updateUI();
+
+    // ==========================================
+    // 6. מערכת סאונד (Web Audio API)
     // ==========================================
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -130,33 +167,28 @@ window.addEventListener('DOMContentLoaded', () => {
         if (type === 'shoot') {
             osc.frequency.setValueAtTime(400, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.08);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.08);
         } else if (type === 'hit') {
             osc.type = 'square';
             osc.frequency.setValueAtTime(120, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.05);
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.05);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
         } else if (type === 'coin') {
             osc.frequency.setValueAtTime(800, audioCtx.currentTime);
             osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.05);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.12);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.12);
         }
     }
 
     // ==========================================
-    // 6. אלמנטים במשחק (יריות, סלעים, מטבעות)
+    // 7. יצירת אלמנטים במשחק (יריות, סלעים, מטבעות)
     // ==========================================
-
-    // יצירת ירייה
     function spawnBullet(x, y, z) {
         const geo = new THREE.SphereGeometry(0.2, 16, 16);
         const mat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
@@ -166,15 +198,13 @@ window.addEventListener('DOMContentLoaded', () => {
         bullets.push(bullet);
     }
 
-    // יצירת סלע-פירמידה
     function spawnRock(x, y, hp, size) {
         const geo = new THREE.ConeGeometry(size, size * 1.4, 4);
         const mat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8, flatShading: true });
         const rock = new THREE.Mesh(geo, mat);
         rock.castShadow = true;
         rock.position.set(x, y, 0);
-        
-        // טקסט תלת ממדי של ה-HP
+
         const canvas = document.createElement('canvas');
         canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d');
@@ -196,8 +226,6 @@ window.addEventListener('DOMContentLoaded', () => {
             size: size,
             vx: (Math.random() - 0.5) * 0.08,
             vy: 0,
-            label: label,
-            canvas: canvas,
             ctx: ctx,
             texture: texture
         };
@@ -217,7 +245,6 @@ window.addEventListener('DOMContentLoaded', () => {
         rock.userData.texture.needsUpdate = true;
     }
 
-    // יצירת מטבע תלת-ממדי
     function spawnCoin(x, y) {
         const geo = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 16);
         const mat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.9, roughness: 0.2 });
@@ -229,24 +256,6 @@ window.addEventListener('DOMContentLoaded', () => {
         droppedCoins.push(coin);
     }
 
-    // ==========================================
-    // 7. בקרת מגע/עכבר (Touch & Drag)
-    // ==========================================
-    let isDragging = false;
-    let targetX = 0;
-
-    function handleMove(clientX) {
-        const normalizedX = (clientX / window.innerWidth) * 2 - 1;
-        targetX = normalizedX * 7.5; // הגבלת גבולות המסך
-    }
-
-    window.addEventListener('pointerdown', (e) => { isDragging = true; handleMove(e.clientX); });
-    window.addEventListener('pointermove', (e) => { if (isDragging) handleMove(e.clientX); });
-    window.addEventListener('pointerup', () => { isDragging = false; });
-
-    // ==========================================
-    // 8. לולאת המשחק הראשת (Game Loop)
-    // ==========================================
     function startNextWave() {
         if (rocks.length === 0) {
             level++;
@@ -256,21 +265,108 @@ window.addEventListener('DOMContentLoaded', () => {
                 const hp = Math.floor((10 + level * 8) * (size / 1.5));
                 spawnRock((Math.random() - 0.5) * 12, 12 + i * 3, hp, size);
             }
+            updateUI();
         }
     }
 
-    // התחלת גל ראשון
-    startNextWave();
+    // ==========================================
+    // 8. שליטה ומגע (Input Handling)
+    // ==========================================
+    let isDragging = false;
+    function handleMove(clientX) {
+        const normalizedX = (clientX / window.innerWidth) * 2 - 1;
+        targetX = normalizedX * 7.5;
+    }
 
+    window.addEventListener('pointerdown', (e) => { isDragging = true; handleMove(e.clientX); });
+    window.addEventListener('pointermove', (e) => { if (isDragging) handleMove(e.clientX); });
+    window.addEventListener('pointerup', () => { isDragging = false; });
+
+    // ==========================================
+    // 9. אירועי כפתורים והתחלת המשחק
+    // ==========================================
+    function startGame() {
+        if (isGameStarted) return;
+        isGameStarted = true;
+        isGameOver = false;
+
+        if (splashScreen) splashScreen.classList.add('hidden');
+        if (startOverlay) startOverlay.classList.add('hidden');
+
+        score = 0;
+        playerHp = maxHp;
+        updateUI();
+
+        // הפעלת הגל הראשון רק בלחיצה!
+        startNextWave();
+    }
+
+    if (splashScreen) splashScreen.addEventListener('click', startGame);
+    if (startBtn) startBtn.addEventListener('click', startGame);
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+            if (!isGameStarted || isGameOver) return;
+            isPaused = true;
+            if (pauseMenu) pauseMenu.classList.remove('hidden');
+        });
+    }
+
+    if (resumeBtn) {
+        resumeBtn.addEventListener('click', () => {
+            isPaused = false;
+            if (pauseMenu) pauseMenu.classList.add('hidden');
+        });
+    }
+
+    function triggerGameOver() {
+        isGameOver = true;
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem('bb3d_best', bestScore);
+        }
+        localStorage.setItem('bb3d_coins', coins);
+
+        document.getElementById('final-score-val').innerText = score;
+        document.getElementById('final-coins-val').innerText = coins;
+        document.getElementById('best-score-val').innerText = bestScore;
+
+        if (gameOverModal) gameOverModal.classList.remove('hidden');
+    }
+
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    }
+
+    if (homeBtn) {
+        homeBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    }
+
+    // שינוי צבע תותח
+    window.changeCannonColor = function(colorHex) {
+        domeMat.color.set(colorHex);
+    };
+
+    // ==========================================
+    // 10. לולאת הרינדור הראשית (Game Loop)
+    // ==========================================
     function animate(time) {
         requestAnimationFrame(animate);
 
-        if (isGameOver) return;
+        // אם המשחק עוד לא התחיל או בעצירה/סיום - לא מריצים פיזיקה
+        if (!isGameStarted || isPaused || isGameOver) {
+            renderer.render(scene, camera);
+            return;
+        }
 
-        // --- 1. תנועת התותח ---
+        // 1. תנועת תותח
         cannonGroup.position.x += (targetX - cannonGroup.position.x) * 0.25;
 
-        // --- 2. מנגנון ירי ---
+        // 2. מנגנון ירי
         if (time - lastShotTime > 1000 / (fireRate * 5)) {
             spawnBullet(cannonGroup.position.x - 0.4, 1.8, 0);
             spawnBullet(cannonGroup.position.x + 0.4, 1.8, 0);
@@ -278,7 +374,7 @@ window.addEventListener('DOMContentLoaded', () => {
             lastShotTime = time;
         }
 
-        // --- 3. עדכון יריות ---
+        // 3. עדכון יריות
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.y += 0.4;
@@ -288,46 +384,40 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- 4. עדכון סלעים פיזיקה והתנגשויות ---
+        // 4. עדכון סלעים
         for (let rIdx = rocks.length - 1; rIdx >= 0; rIdx--) {
             const r = rocks[rIdx];
-            
-            // פיזיקה
-            r.userData.vy -= 0.003; // כוח משיכה
+
+            r.userData.vy -= 0.003;
             r.position.x += r.userData.vx;
             r.position.y += r.userData.vy;
 
-            // פגיעה ברצפה (קפיצה)
+            // bounce מהרצפה
             if (r.position.y - r.userData.size < 0.2) {
                 r.position.y = 0.2 + r.userData.size;
                 r.userData.vy = Math.abs(r.userData.vy) * 0.95;
-                if (r.userData.vy < 0.12) r.userData.vy = 0.18; // גובה קפיצה מינימלי
+                if (r.userData.vy < 0.12) r.userData.vy = 0.18;
             }
 
-            // פגיעה בקירות
+            // bounce מהקירות
             if (Math.abs(r.position.x) > 8) {
                 r.userData.vx *= -1;
             }
 
-            // התנגשות עם יריות
+            // פגיעת ירייה בסלע
             for (let bIdx = bullets.length - 1; bIdx >= 0; bIdx--) {
                 const b = bullets[bIdx];
-                const dist = b.position.distanceTo(r.position);
-                
-                if (dist < r.userData.size * 0.9) {
-                    // פגיעה!
+                if (b.position.distanceTo(r.position) < r.userData.size * 0.9) {
                     scene.remove(b);
                     bullets.splice(bIdx, 1);
-                    
+
                     r.userData.hp -= firePower;
                     score += firePower;
                     playSound('hit');
 
                     if (r.userData.hp <= 0) {
-                        // הפלת מטבע
                         if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
 
-                        // התפצלות
                         if (r.userData.size > 1.1) {
                             spawnRock(r.position.x - 0.5, r.position.y, Math.floor(r.userData.maxHp / 2), r.userData.size * 0.7);
                             spawnRock(r.position.x + 0.5, r.position.y, Math.floor(r.userData.maxHp / 2), r.userData.size * 0.7);
@@ -335,6 +425,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         scene.remove(r);
                         rocks.splice(rIdx, 1);
+                        updateUI();
                         break;
                     } else {
                         updateRockLabel(r);
@@ -342,40 +433,37 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // התנגשות סלע בתותח (Game Over)
-            const distToCannon = Math.hypot(r.position.x - cannonGroup.position.x, r.position.y - 0.5);
-            if (distToCannon < r.userData.size + 0.8) {
-                isGameOver = true;
-                alert(`Game Over! ניקוד סופי: ${score}`);
-                location.reload();
+            // פגיעת סלע בתותח
+            if (Math.hypot(r.position.x - cannonGroup.position.x, r.position.y - 0.5) < r.userData.size + 0.8) {
+                playerHp -= 10;
+                updateUI();
+                if (playerHp <= 0) {
+                    triggerGameOver();
+                }
             }
         }
 
-        // --- 5. עדכון מטבעות ---
+        // 5. איסוף מטבעות
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
             c.position.y += c.userData.vy;
             c.rotation.z += 0.05;
 
-            // איסוף על ידי התותח
             if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.5) < 1.5) {
                 coins += 5;
                 playSound('coin');
                 scene.remove(c);
                 droppedCoins.splice(cIdx, 1);
+                updateUI();
             } else if (c.position.y < 0.2) {
-                // המטבע נשאר על הרצפה
                 c.userData.vy = 0;
             }
         }
 
-        // בדיקה אם השלב הסתיים
         startNextWave();
-
         renderer.render(scene, camera);
     }
 
-    // התאמת גודל חלון
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
