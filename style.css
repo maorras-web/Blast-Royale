@@ -1,24 +1,38 @@
+/* =========================================================
+   ROOT
+   ========================================================= */
+
 :root {
 
-    --blue: #38bdf8;
+    --blue:
+        #38bdf8;
 
-    --blue-deep: #075985;
+    --blue-dark:
+        #075985;
 
-    --gold: #facc15;
+    --gold:
+        #facc15;
 
-    --gold-light: #fde68a;
+    --gold-light:
+        #fde68a;
 
-    --green: #22c55e;
+    --green:
+        #22c55e;
 
-    --red: #fb7185;
+    --red:
+        #fb7185;
 
-    --text: #f8fafc;
+    --text:
+        #f8fafc;
 
-    --muted: #94a3b8;
+    --muted:
+        #94a3b8;
 
-    --line: rgba(255, 255, 255, 0.14);
+    --line:
+        rgba(255, 255, 255, 0.14);
 
-    --panel: rgba(8, 18, 31, 0.68);
+    --panel:
+        rgba(8, 18, 31, 0.70);
 }
 
 
@@ -28,42 +42,57 @@
 
 * {
 
-    box-sizing: border-box;
+    box-sizing:
+        border-box;
 
-    margin: 0;
+    margin:
+        0;
 
-    padding: 0;
+    padding:
+        0;
 
-    user-select: none;
+    user-select:
+        none;
 
-    -webkit-user-select: none;
+    -webkit-user-select:
+        none;
 
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color:
+        transparent;
 }
 
 
 html,
 body {
 
-    width: 100%;
+    width:
+        100%;
 
-    height: 100%;
+    height:
+        100%;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
-    background: #090e15;
+    background:
+        #080d14;
 
-    font-family: "Rubik", sans-serif;
+    font-family:
+        "Rubik",
+        sans-serif;
 
-    overscroll-behavior: none;
+    overscroll-behavior:
+        none;
 }
 
 
 body {
 
-    position: relative;
+    position:
+        relative;
 
-    touch-action: none;
+    touch-action:
+        none;
 }
 
 
@@ -73,48 +102,170 @@ body {
 
 canvas {
 
-    position: fixed;
+    position:
+        fixed;
 
-    inset: 0;
+    inset:
+        0;
 
-    width: 100vw;
+    width:
+        100vw;
 
-    height: 100vh;
+    height:
+        100vh;
 
-    display: block;
+    display:
+        block;
 
-    touch-action: none;
+    touch-action:
+        none;
 }
 
 
 /* =========================================================
-   VIGNETTE
+   LANDSCAPE WARNING
+   ========================================================= */
+
+#landscape-warning {
+
+    position:
+        fixed;
+
+    inset:
+        0;
+
+    z-index:
+        1000;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    text-align:
+        center;
+
+    padding:
+        30px;
+
+    background:
+        #07101c;
+
+    color:
+        white;
+}
+
+
+#landscape-warning.hidden {
+
+    display:
+        none;
+}
+
+
+.rotate-icon {
+
+    width:
+        70px;
+
+    height:
+        70px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border-radius:
+        20px;
+
+    margin-bottom:
+        18px;
+
+    color:
+        #67e8f9;
+
+    background:
+        rgba(56, 189, 248, 0.12);
+
+    border:
+        1px solid
+        rgba(125, 211, 252, 0.2);
+
+    font-size:
+        38px;
+}
+
+
+#landscape-warning h2 {
+
+    font-size:
+        24px;
+
+    font-weight:
+        900;
+}
+
+
+#landscape-warning p {
+
+    max-width:
+        270px;
+
+    margin-top:
+        9px;
+
+    color:
+        #94a3b8;
+
+    font-size:
+        12px;
+
+    line-height:
+        1.5;
+}
+
+
+/* =========================================================
+   MAIN VIGNETTE
    ========================================================= */
 
 #vignette {
 
-    position: fixed;
+    position:
+        fixed;
 
-    inset: 0;
+    inset:
+        0;
 
-    z-index: 2;
+    z-index:
+        2;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     background:
 
         radial-gradient(
             circle at 50% 42%,
-            transparent 28%,
-            rgba(0, 0, 0, 0.06) 62%,
-            rgba(0, 0, 0, 0.43) 100%
+            transparent 25%,
+            rgba(0, 0, 0, 0.08) 60%,
+            rgba(0, 0, 0, 0.44) 100%
         ),
 
         linear-gradient(
             180deg,
-            rgba(5, 12, 20, 0.12),
-            transparent 30%,
-            rgba(25, 10, 4, 0.16)
+            rgba(8, 14, 21, 0.12),
+            transparent 32%,
+            rgba(37, 12, 3, 0.15)
         );
 }
 
@@ -125,18 +276,23 @@ canvas {
 
 #damage-flash {
 
-    position: fixed;
+    position:
+        fixed;
 
-    inset: 0;
+    inset:
+        0;
 
-    z-index: 50;
+    z-index:
+        50;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     background:
         rgba(239, 68, 68, 0.36);
 
-    opacity: 0;
+    opacity:
+        0;
 
     transition:
         opacity 0.08s linear;
@@ -149,19 +305,26 @@ canvas {
 
 #intro-screen {
 
-    position: fixed;
+    position:
+        fixed;
 
-    inset: 0;
+    inset:
+        0;
 
-    z-index: 300;
+    z-index:
+        300;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
-    background: #05080c;
+    background:
+        #05080d;
 
-    opacity: 1;
+    opacity:
+        1;
 
-    visibility: visible;
+    visibility:
+        visible;
 
     transition:
         opacity 0.9s ease,
@@ -171,11 +334,14 @@ canvas {
 
 #intro-screen.intro-hidden {
 
-    opacity: 0;
+    opacity:
+        0;
 
-    visibility: hidden;
+    visibility:
+        hidden;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 }
 
 
@@ -185,25 +351,33 @@ canvas {
 
 .intro-image {
 
-    position: absolute;
+    position:
+        absolute;
 
-    inset: 0;
+    inset:
+        0;
 
     background-image:
         url("splash-bg.jpg");
 
-    background-size: cover;
+    background-size:
+        cover;
 
-    background-position: center;
+    background-position:
+        center;
 
-    transform: scale(1.03);
+    transform:
+        scale(1.02);
 
     animation:
-        introZoom 7s ease-out forwards;
+        introZoom
+        7s
+        ease-out
+        forwards;
 
     filter:
         saturate(1.08)
-        contrast(1.05)
+        contrast(1.04)
         brightness(0.98);
 }
 
@@ -214,9 +388,11 @@ canvas {
 
 .intro-overlay {
 
-    position: absolute;
+    position:
+        absolute;
 
-    inset: 0;
+    inset:
+        0;
 
     background:
 
@@ -229,7 +405,7 @@ canvas {
 
         radial-gradient(
             circle at 50% 38%,
-            rgba(255, 191, 90, 0.10),
+            rgba(255, 192, 88, 0.10),
             transparent 48%
         );
 }
@@ -237,18 +413,21 @@ canvas {
 
 .intro-vignette {
 
-    position: absolute;
+    position:
+        absolute;
 
-    inset: 0;
+    inset:
+        0;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 
     background:
 
         radial-gradient(
             circle,
-            transparent 25%,
-            rgba(0, 0, 0, 0.46) 100%
+            transparent 24%,
+            rgba(0, 0, 0, 0.44) 100%
         );
 }
 
@@ -259,13 +438,15 @@ canvas {
 
 .intro-content {
 
-    position: absolute;
+    position:
+        absolute;
 
-    left: 50%;
+    left:
+        50%;
 
     bottom:
         max(
-            34px,
+            30px,
             env(safe-area-inset-bottom)
         );
 
@@ -273,23 +454,32 @@ canvas {
         translateX(-50%);
 
     width:
-        min(88vw, 530px);
+        min(
+            88vw,
+            520px
+        );
 
-    text-align: center;
+    text-align:
+        center;
 
-    color: white;
+    color:
+        white;
 }
 
 
 .intro-small-title {
 
-    font-size: 10px;
+    font-size:
+        9px;
 
-    font-weight: 900;
+    font-weight:
+        900;
 
-    letter-spacing: 2.8px;
+    letter-spacing:
+        2.7px;
 
-    color: #f8fafc;
+    color:
+        #f8fafc;
 
     text-shadow:
         0 2px 12px
@@ -299,20 +489,24 @@ canvas {
 
 .intro-main-title {
 
-    margin-top: 8px;
+    margin-top:
+        8px;
 
     font-size:
         clamp(
             28px,
             7vw,
-            44px
+            43px
         );
 
-    line-height: 0.94;
+    line-height:
+        0.94;
 
-    font-weight: 900;
+    font-weight:
+        900;
 
-    letter-spacing: -0.8px;
+    letter-spacing:
+        -0.8px;
 
     text-shadow:
 
@@ -320,7 +514,7 @@ canvas {
         rgba(0, 0, 0, 0.7),
 
         0 0 28px
-        rgba(255, 194, 91, 0.15);
+        rgba(255, 194, 91, 0.14);
 }
 
 
@@ -333,15 +527,20 @@ canvas {
 
 .intro-subtitle {
 
-    margin-top: 8px;
+    margin-top:
+        8px;
 
-    font-size: 9px;
+    font-size:
+        8px;
 
-    font-weight: 800;
+    font-weight:
+        800;
 
-    letter-spacing: 2px;
+    letter-spacing:
+        2px;
 
-    color: #ffe0a1;
+    color:
+        #ffe0a1;
 
     text-shadow:
         0 2px 12px
@@ -361,7 +560,8 @@ canvas {
             320px
         );
 
-    margin-top: 19px;
+    margin-top:
+        18px;
 
     padding:
         14px 20px;
@@ -370,9 +570,11 @@ canvas {
         1px solid
         rgba(255, 255, 255, 0.24);
 
-    border-radius: 16px;
+    border-radius:
+        16px;
 
-    color: #18202a;
+    color:
+        #18202a;
 
     background:
 
@@ -386,7 +588,7 @@ canvas {
     box-shadow:
 
         0 12px 34px
-        rgba(0, 0, 0, 0.40),
+        rgba(0, 0, 0, 0.4),
 
         0 0 24px
         rgba(250, 204, 21, 0.13),
@@ -397,22 +599,14 @@ canvas {
     font-family:
         inherit;
 
-    font-size: 16px;
+    font-size:
+        16px;
 
-    font-weight: 900;
+    font-weight:
+        900;
 
-    cursor: pointer;
-
-    transition:
-        transform 0.14s ease,
-        filter 0.14s ease;
-}
-
-
-.intro-btn:hover {
-
-    filter:
-        brightness(1.08);
+    cursor:
+        pointer;
 }
 
 
@@ -424,18 +618,19 @@ canvas {
 
 
 /* =========================================================
-   INTRO LOADING BAR
+   INTRO LOADING
    ========================================================= */
 
 .intro-loading {
 
     width:
         min(
-            56vw,
+            55vw,
             190px
         );
 
-    height: 3px;
+    height:
+        3px;
 
     margin:
         13px auto 0;
@@ -453,11 +648,14 @@ canvas {
 
 .intro-loading span {
 
-    display: block;
+    display:
+        block;
 
-    width: 100%;
+    width:
+        100%;
 
-    height: 100%;
+    height:
+        100%;
 
     transform:
         scaleX(0);
@@ -465,10 +663,14 @@ canvas {
     transform-origin:
         left;
 
-    background: white;
+    background:
+        white;
 
     animation:
-        introLoading 5s linear forwards;
+        introLoading
+        5s
+        linear
+        forwards;
 }
 
 
@@ -477,13 +679,14 @@ canvas {
     from {
 
         transform:
-            scale(1.03);
+            scale(1.02);
     }
+
 
     to {
 
         transform:
-            scale(1.10);
+            scale(1.09);
     }
 }
 
@@ -496,6 +699,7 @@ canvas {
             scaleX(0);
     }
 
+
     to {
 
         transform:
@@ -505,28 +709,31 @@ canvas {
 
 
 /* =========================================================
-   TOP HUD
+   TOP UI
    ========================================================= */
 
 #ui-container {
 
-    position: fixed;
+    position:
+        fixed;
 
     top:
         max(
-            12px,
+            10px,
             env(safe-area-inset-top)
         );
 
-    left: 50%;
+    left:
+        50%;
 
     transform:
         translateX(-50%);
 
     width:
-        min(94vw, 600px);
+        95vw;
 
-    display: grid;
+    display:
+        grid;
 
     grid-template-columns:
         0.9fr
@@ -534,50 +741,59 @@ canvas {
         0.9fr
         1.35fr;
 
-    gap: 7px;
+    gap:
+        5px;
 
-    z-index: 10;
+    z-index:
+        10;
 
-    pointer-events: none;
+    pointer-events:
+        none;
 }
 
 
 .ui-card {
 
-    min-width: 0;
+    min-width:
+        0;
 
-    min-height: 54px;
+    min-height:
+        50px;
 
     padding:
-        7px 10px;
+        6px 7px;
 
     border:
         1px solid
         var(--line);
 
-    border-radius: 15px;
+    border-radius:
+        13px;
 
     background:
 
         linear-gradient(
             180deg,
-            rgba(18, 35, 53, 0.76),
-            rgba(5, 15, 26, 0.58)
+            rgba(18, 35, 53, 0.72),
+            rgba(5, 15, 26, 0.55)
         );
 
     box-shadow:
 
-        0 12px 28px
-        rgba(0, 0, 0, 0.25),
+        0 9px 20px
+        rgba(0, 0, 0, 0.20),
 
         inset 0 1px 0
         rgba(255, 255, 255, 0.07);
 
     backdrop-filter:
-        blur(11px);
+        blur(9px);
 
     -webkit-backdrop-filter:
-        blur(11px);
+        blur(9px);
+
+    color:
+        white;
 
     display:
         flex;
@@ -590,9 +806,6 @@ canvas {
 
     justify-content:
         center;
-
-    color:
-        var(--text);
 }
 
 
@@ -602,29 +815,26 @@ canvas {
         #a8b6c8;
 
     font-size:
-        9px;
+        8px;
 
     font-weight:
         800;
 
     letter-spacing:
-        1px;
+        0.8px;
 }
 
 
 .ui-value {
 
-    margin-top: 2px;
+    margin-top:
+        2px;
 
     color:
         #e0f2fe;
 
     font-size:
-        clamp(
-            13px,
-            2.7vw,
-            17px
-        );
+        14px;
 
     line-height:
         1;
@@ -660,20 +870,17 @@ canvas {
     display:
         flex;
 
-    align-items:
-        center;
-
     justify-content:
         space-between;
 
     gap:
-        8px;
+        5px;
 
     color:
         #dce7f2;
 
     font-size:
-        9px;
+        8px;
 
     font-weight:
         800;
@@ -683,13 +890,13 @@ canvas {
 .hp-bar-bg {
 
     height:
-        9px;
+        8px;
 
     width:
         100%;
 
     margin-top:
-        6px;
+        5px;
 
     border-radius:
         99px;
@@ -698,11 +905,11 @@ canvas {
         hidden;
 
     background:
-        rgba(255, 255, 255, 0.09);
+        rgba(255, 255, 255, 0.08);
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.08);
+        rgba(255, 255, 255, 0.07);
 }
 
 
@@ -727,11 +934,11 @@ canvas {
         );
 
     box-shadow:
-        0 0 16px
-        rgba(34, 197, 94, 0.35);
+        0 0 12px
+        rgba(34, 197, 94, 0.32);
 
     transition:
-        width 0.18s ease;
+        width 0.15s ease;
 }
 
 
@@ -741,25 +948,26 @@ canvas {
 
 #combat-ui {
 
-    position: fixed;
+    position:
+        fixed;
 
-    top: 82px;
+    top:
+        73px;
 
-    left: 50%;
+    left:
+        50%;
 
     transform:
         translateX(-50%);
 
-    z-index: 9;
+    z-index:
+        9;
 
     display:
         flex;
 
-    align-items:
-        center;
-
     gap:
-        8px;
+        7px;
 
     pointer-events:
         none;
@@ -769,7 +977,7 @@ canvas {
 .combat-badge {
 
     padding:
-        7px 11px;
+        6px 9px;
 
     border-radius:
         999px;
@@ -778,94 +986,81 @@ canvas {
         #e0f2fe;
 
     background:
-        rgba(8, 20, 35, 0.64);
+        rgba(8, 20, 35, 0.62);
 
     border:
         1px solid
-        rgba(125, 211, 252, 0.20);
-
-    box-shadow:
-        0 8px 20px
-        rgba(0, 0, 0, 0.18);
+        rgba(125, 211, 252, 0.18);
 
     backdrop-filter:
-        blur(9px);
+        blur(8px);
 
     -webkit-backdrop-filter:
-        blur(9px);
+        blur(8px);
 
     font-size:
-        10px;
+        9px;
 
     font-weight:
         900;
-
-    letter-spacing:
-        0.7px;
 }
 
 
 .combat-badge.combo {
 
     color:
-        #fde68a;
+        var(--gold-light);
 }
 
 
 /* =========================================================
-   PAUSE BUTTON
+   PAUSE
    ========================================================= */
 
 .icon-btn {
 
-    position: fixed;
+    position:
+        fixed;
 
     top:
-        max(
-            84px,
-            calc(
-                76px +
-                env(safe-area-inset-top)
-            )
-        );
+        73px;
 
-    right: 16px;
+    right:
+        10px;
 
-    z-index: 12;
+    z-index:
+        12;
 
-    width: 42px;
+    width:
+        39px;
 
-    height: 42px;
+    height:
+        39px;
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.14);
+        rgba(255, 255, 255, 0.13);
 
-    border-radius: 13px;
+    border-radius:
+        12px;
 
-    color: white;
+    color:
+        white;
 
     background:
-        rgba(8, 19, 34, 0.75);
+        rgba(8, 19, 34, 0.74);
 
     backdrop-filter:
-        blur(10px);
+        blur(8px);
 
     -webkit-backdrop-filter:
-        blur(10px);
-
-    box-shadow:
-        0 10px 24px
-        rgba(0, 0, 0, 0.25);
+        blur(8px);
 
     font-size:
-        17px;
+        16px;
 
     font-weight:
         900;
-
-    cursor:
-        pointer;
 }
 
 
@@ -886,11 +1081,14 @@ canvas {
 
 .modal-overlay {
 
-    position: fixed;
+    position:
+        fixed;
 
-    inset: 0;
+    inset:
+        0;
 
-    z-index: 100;
+    z-index:
+        100;
 
     display:
         flex;
@@ -902,16 +1100,16 @@ canvas {
         center;
 
     padding:
-        20px;
+        18px;
 
     background:
         rgba(4, 8, 13, 0.72);
 
     backdrop-filter:
-        blur(14px);
+        blur(13px);
 
     -webkit-backdrop-filter:
-        blur(14px);
+        blur(13px);
 }
 
 
@@ -919,19 +1117,19 @@ canvas {
 
     width:
         min(
-            92vw,
-            410px
+            91vw,
+            390px
         );
 
     padding:
-        23px;
+        20px 16px;
 
     border:
         1px solid
-        rgba(255, 255, 255, 0.17);
+        rgba(255, 255, 255, 0.16);
 
     border-radius:
-        28px;
+        25px;
 
     color:
         white;
@@ -943,8 +1141,8 @@ canvas {
 
         radial-gradient(
             circle at 50% 0%,
-            rgba(56, 189, 248, 0.14),
-            transparent 40%
+            rgba(56, 189, 248, 0.13),
+            transparent 42%
         ),
 
         linear-gradient(
@@ -955,8 +1153,8 @@ canvas {
 
     box-shadow:
 
-        0 30px 90px
-        rgba(0, 0, 0, 0.62),
+        0 28px 70px
+        rgba(0, 0, 0, 0.58),
 
         inset 0 1px 0
         rgba(255, 255, 255, 0.06);
@@ -967,21 +1165,14 @@ canvas {
 
     width:
         min(
-            90vw,
-            360px
+            88vw,
+            350px
         );
 }
 
 
-.hero-card {
-
-    padding-top:
-        21px;
-}
-
-
 /* =========================================================
-   TEXT
+   MENU TEXT
    ========================================================= */
 
 .eyebrow {
@@ -990,26 +1181,26 @@ canvas {
         #67e8f9;
 
     font-size:
-        9px;
+        8px;
 
     font-weight:
         900;
 
     letter-spacing:
-        1.7px;
+        1.6px;
 }
 
 
 .game-title {
 
     margin-top:
-        7px;
+        6px;
 
     font-size:
         clamp(
-            38px,
-            11vw,
-            52px
+            35px,
+            10vw,
+            50px
         );
 
     line-height:
@@ -1033,19 +1224,19 @@ canvas {
 .subtitle {
 
     max-width:
-        310px;
+        300px;
 
     margin:
-        11px auto 17px;
+        9px auto 15px;
 
     color:
         #9caabd;
 
     font-size:
-        11px;
+        10px;
 
     line-height:
-        1.55;
+        1.5;
 }
 
 
@@ -1062,24 +1253,24 @@ canvas {
         1fr 1fr;
 
     gap:
-        9px;
+        8px;
 
     margin-bottom:
-        17px;
+        15px;
 }
 
 
 .stats-box > div {
 
     padding:
-        11px;
+        10px;
 
     border:
         1px solid
         rgba(255, 255, 255, 0.08);
 
     border-radius:
-        15px;
+        14px;
 
     background:
         rgba(255, 255, 255, 0.045);
@@ -1098,7 +1289,7 @@ canvas {
         #8092a8;
 
     font-size:
-        9px;
+        8px;
 
     font-weight:
         700;
@@ -1111,7 +1302,7 @@ canvas {
         var(--gold);
 
     font-size:
-        18px;
+        17px;
 
     font-weight:
         900;
@@ -1125,16 +1316,16 @@ canvas {
 .section-title {
 
     margin-bottom:
-        9px;
-
-    text-align:
-        right;
+        8px;
 
     color:
         #dbeafe;
 
+    text-align:
+        right;
+
     font-size:
-        11px;
+        10px;
 
     font-weight:
         900;
@@ -1150,7 +1341,7 @@ canvas {
         column;
 
     gap:
-        8px;
+        7px;
 }
 
 
@@ -1160,25 +1351,25 @@ canvas {
         grid;
 
     grid-template-columns:
-        36px
+        35px
         1fr
         auto;
-
-    gap:
-        10px;
 
     align-items:
         center;
 
+    gap:
+        9px;
+
     padding:
-        9px 10px;
+        8px 9px;
 
     border:
         1px solid
         rgba(255, 255, 255, 0.08);
 
     border-radius:
-        15px;
+        14px;
 
     background:
         rgba(255, 255, 255, 0.045);
@@ -1188,17 +1379,13 @@ canvas {
 }
 
 
-/* =========================================================
-   UPGRADE ICON
-   ========================================================= */
-
 .upgrade-icon {
 
     width:
-        36px;
+        35px;
 
     height:
-        36px;
+        35px;
 
     display:
         grid;
@@ -1207,17 +1394,17 @@ canvas {
         center;
 
     border-radius:
-        12px;
+        11px;
 
     background:
         rgba(56, 189, 248, 0.12);
 
     border:
         1px solid
-        rgba(125, 211, 252, 0.15);
+        rgba(125, 211, 252, 0.14);
 
     font-size:
-        16px;
+        15px;
 
     font-weight:
         900;
@@ -1227,7 +1414,7 @@ canvas {
 .upgrade-icon.power {
 
     color:
-        #fde68a;
+        var(--gold-light);
 }
 
 
@@ -1245,17 +1432,6 @@ canvas {
 }
 
 
-/* =========================================================
-   UPGRADE TEXT
-   ========================================================= */
-
-.upgrade-copy {
-
-    min-width:
-        0;
-}
-
-
 .upg-name {
 
     display:
@@ -1265,7 +1441,7 @@ canvas {
         white;
 
     font-size:
-        12px;
+        11px;
 
     font-weight:
         800;
@@ -1284,7 +1460,7 @@ canvas {
         #7f91a8;
 
     font-size:
-        9px;
+        8px;
 
     font-weight:
         700;
@@ -1315,13 +1491,13 @@ canvas {
 .btn-upg {
 
     min-width:
-        66px;
+        62px;
 
     padding:
-        8px 10px;
+        7px 9px;
 
     border-radius:
-        11px;
+        10px;
 
     color:
         #172033;
@@ -1335,12 +1511,8 @@ canvas {
             #eab308
         );
 
-    box-shadow:
-        0 5px 16px
-        rgba(250, 204, 21, 0.18);
-
     font-size:
-        11px;
+        10px;
 }
 
 
@@ -1357,23 +1529,19 @@ canvas {
 }
 
 
-/* =========================================================
-   PRIMARY BUTTON
-   ========================================================= */
-
 .btn-primary {
 
     width:
         100%;
 
     margin-top:
-        17px;
+        15px;
 
     padding:
-        14px;
+        13px;
 
     border-radius:
-        16px;
+        15px;
 
     color:
         white;
@@ -1388,65 +1556,45 @@ canvas {
         );
 
     box-shadow:
-
-        0 11px 30px
-        rgba(14, 165, 233, 0.28),
-
-        inset 0 1px 0
-        rgba(255, 255, 255, 0.13);
+        0 10px 26px
+        rgba(14, 165, 233, 0.25);
 
     font-size:
-        17px;
-
-    transition:
-        transform
-        0.1s ease,
-
-        filter
-        0.1s ease;
+        16px;
 }
 
 
-.btn-primary:hover {
-
-    filter:
-        brightness(1.08);
-}
-
-
-.btn-primary:active,
-.btn-upg:active,
-.icon-btn:active {
+.btn-primary:active {
 
     transform:
-        scale(0.97);
+        scale(0.98);
 }
 
 
 .tip {
 
     margin-top:
-        10px;
+        9px;
 
     color:
         #72849a;
 
     font-size:
-        9px;
+        8px;
 }
 
 
 /* =========================================================
-   PAUSE / GAME OVER
+   SMALL MODAL
    ========================================================= */
 
 .small-modal h2 {
 
     margin-top:
-        7px;
+        6px;
 
     font-size:
-        31px;
+        29px;
 
     font-weight:
         900;
@@ -1462,9 +1610,13 @@ canvas {
         #8fa1b7;
 
     font-size:
-        11px;
+        10px;
 }
 
+
+/* =========================================================
+   GAME OVER
+   ========================================================= */
 
 .danger-text {
 
@@ -1485,21 +1637,21 @@ canvas {
         7px;
 
     margin-top:
-        17px;
+        16px;
 }
 
 
 .result-grid > div {
 
     padding:
-        10px 7px;
+        9px 6px;
 
     border:
         1px solid
         rgba(255, 255, 255, 0.08);
 
     border-radius:
-        13px;
+        12px;
 
     background:
         rgba(255, 255, 255, 0.045);
@@ -1515,7 +1667,7 @@ canvas {
         #73869e;
 
     font-size:
-        8px;
+        7px;
 
     font-weight:
         700;
@@ -1534,116 +1686,8 @@ canvas {
         #e2e8f0;
 
     font-size:
-        16px;
+        15px;
 
     font-weight:
         900;
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 560px) {
-
-    #ui-container {
-
-        width:
-            95vw;
-
-        gap:
-            5px;
-    }
-
-
-    .ui-card {
-
-        min-height:
-            51px;
-
-        padding:
-            6px 7px;
-
-        border-radius:
-            13px;
-    }
-
-
-    .ui-title {
-
-        font-size:
-            8px;
-    }
-
-
-    .hp-head {
-
-        font-size:
-            8px;
-    }
-
-
-    #combat-ui {
-
-        top:
-            77px;
-    }
-
-
-    .icon-btn {
-
-        top:
-            77px;
-
-        right:
-            10px;
-
-        width:
-            39px;
-
-        height:
-            39px;
-    }
-
-
-    .modal-card {
-
-        padding:
-            19px 15px;
-    }
-
-
-    .intro-content {
-
-        bottom:
-            max(
-                28px,
-                env(safe-area-inset-bottom)
-            );
-    }
-}
-
-
-/* =========================================================
-   DESKTOP
-   ========================================================= */
-
-@media (min-width: 900px) {
-
-    #combat-ui {
-
-        top:
-            91px;
-    }
-
-
-    .icon-btn {
-
-        top:
-            91px;
-
-        right:
-            24px;
-    }
 }
