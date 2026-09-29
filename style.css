@@ -4,343 +4,214 @@
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    font-family: 'Rubik', sans-serif;
 }
 
-html, body {
+body, html {
     width: 100%;
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
     overflow: hidden;
-    background-color: #000;
-    font-family: system-ui, -apple-system, sans-serif;
-    touch-action: none;
+    background-color: #1e1b18;
 }
 
 canvas {
     display: block;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    touch-action: none;
+    width: 100vw;
+    height: 100vh;
 }
 
-#splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0f172a;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    flex-direction: column;
-    padding-bottom: 60px;
-    z-index: 200;
-    cursor: pointer;
-    touch-action: manipulation;
-}
-
-.splash-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.splash-tap-text {
-    color: #facc15;
-    font-size: 16px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
-    animation: pulseText 1.5s infinite;
-}
-
-@keyframes pulseText {
-    0%, 100% { opacity: 0.4; transform: scale(0.98); }
-    50% { opacity: 1; transform: scale(1.04); }
-}
-
+/* ==========================================
+   UI עליון במראה זכוכית יוקרתי (Glassmorphism)
+   ========================================== */
 #ui-container {
     position: absolute;
-    top: calc(15px + env(safe-area-inset-top, 0px));
-    left: 0;
-    right: 0;
-    width: 100%;
-    padding: 0 10px;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 480px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 6px;
     z-index: 10;
     pointer-events: none;
 }
 
-#ui-container button {
+.ui-card {
+    background: rgba(30, 27, 24, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 6px 12px;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     pointer-events: auto;
+    flex: 1;
 }
 
+.ui-title {
+    font-size: 10px;
+    color: #cbd5e1;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.ui-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fde047;
+}
+
+/* בר חיים */
 #hp-container {
-    width: 95px;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid #fff;
+    flex: 1.5;
+    align-items: stretch;
+}
+
+.hp-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     overflow: hidden;
-    position: relative;
+    margin-top: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #hp-bar {
     width: 100%;
     height: 100%;
-    background-color: #22c55e;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    border-radius: 10px;
     transition: width 0.2s ease;
 }
 
-#hp-text {
+/* ==========================================
+   מסך פתיחה וחלונות קופצים
+   ========================================== */
+.modal-overlay {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #fff;
-    font-size: 8px;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
-}
-
-#level-bar-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-
-#level-text {
-    color: #fff;
-    font-weight: 900;
-    font-size: 13px;
-    letter-spacing: 1px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-}
-
-.progress-outer {
-    width: 75px;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-#level-progress-fill {
-    width: 0%;
-    height: 100%;
-    background: #eab308;
-    transition: width 0.1s linear;
-}
-
-#coin-card {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(15, 23, 42, 0.75);
-    padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(250, 204, 21, 0.4);
-    color: #facc15;
-    font-weight: 900;
-    font-size: 14px;
-}
-
-#score-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: rgba(15, 23, 42, 0.75);
-    padding: 4px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.score-label {
-    color: #94a3b8;
-    font-size: 8px;
-    font-weight: bold;
-}
-
-#score-val {
-    color: #fff;
-    font-size: 14px;
-    font-weight: 900;
-}
-
-.icon-btn {
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    touch-action: manipulation;
-}
-
-#start-overlay, #pause-menu, #game-over-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(5, 7, 20, 0.85);
-    backdrop-filter: blur(8px);
+    inset: 0;
+    background: rgba(15, 13, 11, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 100;
 }
 
-.hidden {
-    display: none !important;
-}
-
-#start-menu, .pause-card {
-    background: #0f172a;
-    border: 2px solid #1e293b;
-    padding: 24px 18px;
-    border-radius: 20px;
-    text-align: center;
+.modal-card {
+    background: rgba(30, 27, 24, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 24px;
+    padding: 24px 20px;
     width: 88%;
-    max-width: 350px;
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    max-width: 360px;
+    text-align: center;
+    color: #ffffff;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 
 .game-title {
-    color: #38bdf8;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 900;
+    line-height: 1.1;
+    color: #ffffff;
+    margin-bottom: 16px;
 }
 
-.game-subtitle {
-    color: #94a3b8;
-    font-size: 11px;
-    margin-bottom: 12px;
-}
-
-.stats-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.best-badge, .coins-badge {
-    background: rgba(255,255,255,0.06);
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-    color: #e2e8f0;
-}
-
-.coins-badge {
+.game-title span {
     color: #facc15;
 }
 
-.menu-tabs {
+.stats-box {
     display: flex;
-    gap: 6px;
-    margin-bottom: 15px;
+    justify-content: space-around;
     background: rgba(255, 255, 255, 0.05);
-    padding: 4px;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #cbd5e1;
 }
 
-.tab-btn {
-    flex: 1;
-    padding: 8px;
-    border: none;
-    background: #2563eb;
-    color: #fff;
-    font-weight: bold;
-    font-size: 13px;
-    border-radius: 8px;
-    cursor: pointer;
+.stats-box strong {
+    color: #facc15;
+}
+
+/* רשימת שדרוגים בחנות */
+.upgrades-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .upgrade-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.04);
-    padding: 10px 12px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.upgrade-info {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 14px;
+    border-radius: 14px;
     text-align: right;
-    display: flex;
-    flex-direction: column;
 }
 
-.upgrade-info strong {
-    color: #fff;
-    font-size: 12px;
+.upg-name {
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.upgrade-info span {
-    color: #38bdf8;
-    font-size: 10px;
-}
-
-.buy-btn {
-    background: #eab308;
-    color: #000;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-weight: 900;
-    font-size: 12px;
-    cursor: pointer;
-    touch-action: manipulation;
-}
-
-.buy-btn:disabled {
-    background: #475569;
+.upg-lvl {
+    font-size: 11px;
     color: #94a3b8;
+}
+
+.btn-upg {
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    border: none;
+    color: #0f172a;
+    font-weight: 800;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.25);
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.btn-upg:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
-.modal-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.btn {
+.btn-primary {
     width: 100%;
     padding: 14px;
     border: none;
-    border-radius: 12px;
-    background: #2563eb;
-    color: white;
-    font-weight: bold;
-    font-size: 15px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 800;
     cursor: pointer;
-    touch-action: manipulation;
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+    transition: transform 0.1s;
 }
 
-.btn-restart {
-    background: #22c55e;
+.btn-primary:active, .btn-upg:active:not(:disabled) {
+    transform: scale(0.96);
 }
 
-.btn-secondary {
-    background: #475569;
+.hidden {
+    display: none !important;
 }
