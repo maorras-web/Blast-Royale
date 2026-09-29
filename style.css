@@ -10,32 +10,27 @@
 html, body {
     width: 100%;
     height: 100vh;
-    height: 100dvh;
+    height: -webkit-fill-available;
     overflow: hidden;
     background-color: #000;
     font-family: system-ui, -apple-system, sans-serif;
-    touch-action: none;
 }
 
 canvas {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1;
-    touch-action: none;
 }
 
 /* Splash Screen */
 #splash-screen {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0f172a;
+    inset: 0;
+    background: radial-gradient(circle at top, #f97316 0%, #0f172a 55%, #020617 100%);
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -43,8 +38,7 @@ canvas {
     padding-bottom: 60px;
     z-index: 200;
     cursor: pointer;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-    touch-action: manipulation;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
 .splash-content {
@@ -58,22 +52,21 @@ canvas {
     color: #facc15;
     font-size: 16px;
     font-weight: 900;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
     animation: pulseText 1.5s infinite;
 }
 
 @keyframes pulseText {
-    0%, 100% { opacity: 0.4; transform: scale(0.98) translateZ(0); }
-    50% { opacity: 1; transform: scale(1.04) translateZ(0); }
+    0%, 100% { opacity: 0.4; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1.04); }
 }
 
 /* UI Overlay */
 #ui-container {
     position: absolute;
-    top: calc(15px + env(safe-area-inset-top, 0px));
-    left: env(safe-area-inset-left, 0px);
-    right: env(safe-area-inset-right, 0px);
+    top: 15px;
+    left: 0;
     width: 100%;
     padding: 0 10px;
     display: flex;
@@ -101,14 +94,15 @@ canvas {
     width: 100%;
     height: 100%;
     background-color: #22c55e;
-    transition: width 0.2s ease;
+    transition: width 0.2s ease, background-color 0.2s ease;
 }
 
 #hp-text {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #fff;
     font-size: 8px;
     font-weight: bold;
@@ -142,14 +136,14 @@ canvas {
     width: 0%;
     height: 100%;
     background: #eab308;
-    transition: width 0.1s linear;
+    transition: width 0.15s linear;
 }
 
 #coin-card {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.85);
     padding: 4px 8px;
     border-radius: 8px;
     border: 1px solid rgba(250, 204, 21, 0.4);
@@ -162,7 +156,7 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.85);
     padding: 4px 10px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -181,7 +175,7 @@ canvas {
 }
 
 .icon-btn {
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(255,255,255,0.3);
     color: #fff;
     width: 32px;
@@ -189,16 +183,12 @@ canvas {
     border-radius: 8px;
     font-size: 14px;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 /* Modals & Menus */
 #start-overlay, #pause-menu, #game-over-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(5, 7, 20, 0.85);
     backdrop-filter: blur(8px);
     display: flex;
@@ -219,8 +209,6 @@ canvas {
     text-align: center;
     width: 88%;
     max-width: 350px;
-    max-height: 85vh;
-    overflow-y: auto;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
@@ -256,6 +244,7 @@ canvas {
     color: #facc15;
 }
 
+/* Menu Tabs */
 .menu-tabs {
     display: flex;
     gap: 6px;
@@ -269,14 +258,20 @@ canvas {
     flex: 1;
     padding: 8px;
     border: none;
-    background: #2563eb;
-    color: #fff;
+    background: transparent;
+    color: #94a3b8;
     font-weight: bold;
     font-size: 13px;
     border-radius: 8px;
     cursor: pointer;
 }
 
+.tab-btn.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* Shop Items */
 .upgrade-item {
     display: flex;
     justify-content: space-between;
@@ -289,7 +284,7 @@ canvas {
 }
 
 .upgrade-info {
-    text-align: right;
+    text-align: left;
     display: flex;
     flex-direction: column;
 }
@@ -313,7 +308,6 @@ canvas {
     font-weight: 900;
     font-size: 12px;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .buy-btn:disabled {
@@ -338,7 +332,6 @@ canvas {
     font-weight: bold;
     font-size: 15px;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 .btn-restart {
