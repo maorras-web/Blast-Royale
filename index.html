@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cannon Blast 3D</title>
+    <link rel="icon" href="data:,">
     
     <!-- פונט Rubik מודרני -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,192 +40,86 @@
                 <span>HP</span>
                 <span id="hp-text">1000 / 1000</span>
             </div>
-
             <div class="hp-bar-bg">
                 <div id="hp-bar"></div>
             </div>
         </div>
     </div>
 
-    <!-- מסך פתיחה -->
+    <!-- מסך פתיחה (Splash / Start) -->
     <div id="splash-screen" class="modal-overlay">
         <div class="modal-card">
-
-            <h1 class="game-title">
-                CANNON<br>
-                <span>BLAST 3D</span>
-            </h1>
-
+            <h1 class="game-title">CANNON<br><span>BLAST 3D</span></h1>
+            
             <div class="stats-box">
-                <div>
-                    שיא אישי:
-                    <strong id="start-best-score">0</strong>
-                </div>
-
-                <div>
-                    מטבעות:
-                    <strong id="start-coins">0</strong>
-                </div>
+                <div>שיא אישי: <strong id="start-best-score">0</strong></div>
+                <div>מטבעות: <strong id="start-coins">0</strong></div>
             </div>
 
-            <!-- ============================= -->
-            <!-- שדרוגים -->
-            <!-- ============================= -->
-
+            <!-- שדרוגים בחנות -->
             <div class="shop-section-title">שדרוגים</div>
-
             <div class="upgrades-list">
-
-                <!-- עוצמת ירייה -->
                 <div class="upgrade-item">
                     <div>
                         <div class="upg-name">עוצמת ירייה</div>
-                        <div id="power-lvl-text" class="upg-lvl">
-                            Lvl 1
-                        </div>
+                        <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
                     </div>
-
-                    <button id="buy-power-btn" class="btn-upg">
-                        50 C
-                    </button>
+                    <button id="buy-power-btn" class="btn-upg">50 C</button>
                 </div>
 
-                <!-- קצב אש -->
                 <div class="upgrade-item">
                     <div>
                         <div class="upg-name">קצב אש</div>
-                        <div id="rate-lvl-text" class="upg-lvl">
-                            Lvl 1
-                        </div>
+                        <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
                     </div>
-
-                    <button id="buy-rate-btn" class="btn-upg">
-                        60 C
-                    </button>
+                    <button id="buy-rate-btn" class="btn-upg">60 C</button>
                 </div>
 
-                <!-- מגנט -->
                 <div class="upgrade-item">
                     <div>
                         <div class="upg-name">מגנט מטבעות</div>
-                        <div id="magnet-lvl-text" class="upg-lvl">
-                            Lvl 0
-                        </div>
+                        <div id="magnet-lvl-text" class="upg-lvl">Lvl 0</div>
                     </div>
-
-                    <button id="buy-magnet-btn" class="btn-upg">
-                        100 C
-                    </button>
+                    <button id="buy-magnet-btn" class="btn-upg">100 C</button>
                 </div>
-
             </div>
 
-            <!-- ============================= -->
-            <!-- חנות מפות -->
-            <!-- ============================= -->
-
-            <div class="shop-section-title maps-title">
-                מפות
-            </div>
-
+            <div class="shop-section-title maps-title">מפות</div>
             <div class="maps-grid">
-
-                <!-- DESERT -->
-                <button
-                    class="map-card selected owned"
-                    data-map-id="desert"
-                >
+                <button class="map-card selected owned" data-map-id="desert">
                     <span class="map-icon">🏜️</span>
-
-                    <span class="map-info">
-                        <strong>DESERT</strong>
-                        <small>מדבר</small>
-                    </span>
-
-                    <span class="map-action">
-                        נבחרה
-                    </span>
-
-                    <span class="map-state">
-                        ACTIVE
-                    </span>
+                    <span class="map-info"><strong>DESERT</strong><small>מדבר</small></span>
+                    <span class="map-action">נבחרה</span>
+                    <span class="map-state">ACTIVE</span>
                 </button>
 
-                <!-- FOREST -->
-                <button
-                    class="map-card"
-                    data-map-id="forest"
-                >
+                <button class="map-card" data-map-id="forest">
                     <span class="map-icon">🌲</span>
-
-                    <span class="map-info">
-                        <strong>FOREST</strong>
-                        <small>יער</small>
-                    </span>
-
-                    <span class="map-action">
-                        500 C
-                    </span>
-
-                    <span class="map-state">
-                        LOCKED
-                    </span>
+                    <span class="map-info"><strong>FOREST</strong><small>יער</small></span>
+                    <span class="map-action">500 C</span>
+                    <span class="map-state">LOCKED</span>
                 </button>
 
-                <!-- ICE -->
-                <button
-                    class="map-card"
-                    data-map-id="ice"
-                >
+                <button class="map-card" data-map-id="ice">
                     <span class="map-icon">❄️</span>
-
-                    <span class="map-info">
-                        <strong>ICE</strong>
-                        <small>קרח</small>
-                    </span>
-
-                    <span class="map-action">
-                        1500 C
-                    </span>
-
-                    <span class="map-state">
-                        LOCKED
-                    </span>
+                    <span class="map-info"><strong>ICE</strong><small>קרח</small></span>
+                    <span class="map-action">1500 C</span>
+                    <span class="map-state">LOCKED</span>
                 </button>
 
-                <!-- VOLCANO -->
-                <button
-                    class="map-card"
-                    data-map-id="volcano"
-                >
+                <button class="map-card" data-map-id="volcano">
                     <span class="map-icon">🌋</span>
-
-                    <span class="map-info">
-                        <strong>VOLCANO</strong>
-                        <small>הר געש</small>
-                    </span>
-
-                    <span class="map-action">
-                        3000 C
-                    </span>
-
-                    <span class="map-state">
-                        LOCKED
-                    </span>
+                    <span class="map-info"><strong>VOLCANO</strong><small>הר געש</small></span>
+                    <span class="map-action">3000 C</span>
+                    <span class="map-state">LOCKED</span>
                 </button>
-
             </div>
 
-            <!-- כפתור התחלה -->
-            <button id="start-btn" class="btn-primary">
-                התחל משחק
-            </button>
-
+            <button id="start-btn" class="btn-primary">התחל משחק</button>
         </div>
     </div>
 
-    <!-- קובץ המשחק -->
+    <!-- קובץ המשחק הראשי -->
     <script src="main.js"></script>
-
 </body>
 </html>
