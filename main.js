@@ -1,44 +1,89 @@
 window.addEventListener('DOMContentLoaded', () => {
 
+    'use strict';
+
+    // =========================================================
+    // 0. CHECK THREE.JS
+    // =========================================================
+
     if (typeof THREE === 'undefined') {
         console.error('Three.js library is missing!');
         return;
     }
 
-    // ==========================================
-    // 1. הגדרת סצנה וגרפיקה
-    // ==========================================
-    const scene = new THREE.Scene();
 
-    // סביבה צבעונית רכה ושקיעה
-    scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.FogExp2(0xdd8c55, 0.012);
+    // =========================================================
+    // HELPERS
+    // =========================================================
 
-    // מצלמה למובייל
-    const camera = new THREE.PerspectiveCamera(
-        55,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-    );
+    const $ = (id) => document.getElementById(id);
 
-    let screenLimitX = 4.8;
+    const clamp = (value, min, max) =>
+        Math.max(min, Math.min(max, value));
+
+    const rand = (min, max) =>
+        min + Math.random() * (max - min);
+
+
+    // =========================================================
+    // 1. SCENE
+    // =========================================================
+
+    const scene =
+        new THREE.Scene();
+
+    scene.background =
+        new THREE.Color(
+            0xdd8c55
+        );
+
+    scene.fog =
+        new THREE.FogExp2(
+            0xdd8c55,
+            0.012
+        );
+
+
+    // =========================================================
+    // 2. CAMERA
+    // =========================================================
+
+    const camera =
+        new THREE.PerspectiveCamera(
+            55,
+            window.innerWidth /
+            Math.max(
+                1,
+                window.innerHeight
+            ),
+            0.1,
+            1000
+        );
+
+
+    let screenLimitX =
+        4.8;
+
 
     function updateCameraForDevice() {
 
         const aspect =
             window.innerWidth /
-            Math.max(1, window.innerHeight);
+            Math.max(
+                1,
+                window.innerHeight
+            );
 
-        camera.aspect = aspect;
 
-        /*
-         * המשחק מיועד קודם כל לטלפונים.
-         * גם אם פותחים אותו במחשב,
-         * הקומפוזיציה נשארת בסגנון המובייל.
-         */
+        camera.aspect =
+            aspect;
 
-        if (aspect < 1) {
+
+        // Mobile-first.
+
+        if (
+            aspect < 1
+        ) {
 
             camera.position.set(
                 0,
@@ -46,88 +91,146 @@ window.addEventListener('DOMContentLoaded', () => {
                 25
             );
 
+
             camera.lookAt(
                 0,
                 5,
                 0
             );
 
-            screenLimitX = 4.8;
+
+            screenLimitX =
+                4.8;
 
         } else {
 
-            /*
-             * לא משנים את המשחק לגרסת מחשב רחבה.
-             * שומרים על קומפוזיציה צרה יחסית.
-             */
-
             camera.position.set(
                 0,
-                11,
-                23
+                9,
+                18
             );
+
 
             camera.lookAt(
                 0,
-                5,
+                5.5,
                 0
             );
 
-            screenLimitX = 5.3;
+
+            screenLimitX =
+                6.2;
         }
+
 
         camera.updateProjectionMatrix();
 
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
+
+        updateRendererSize();
     }
 
 
-    // ==========================================
-    // Renderer - Mobile Optimized
-    // ==========================================
+    // =========================================================
+    // 3. RENDERER - MOBILE OPTIMIZED
+    // =========================================================
 
     const renderer =
         new THREE.WebGLRenderer({
 
-            antialias: true,
+            antialias:
+                true,
 
             powerPreference:
-                'high-performance'
+                'high-performance',
+
+            alpha:
+                false
         });
 
 
     renderer.setSize(
         window.innerWidth,
-        window.innerHeight
+        window.innerHeight,
+        false
     );
 
 
     /*
-     * הגבלת Pixel Ratio כדי שהטלפון
-     * לא ירנדר עומס מיותר.
+     * Do not force 1080x1920 on every phone.
+     * Instead, keep the visible canvas full screen
+     * and limit the internal pixel density.
      */
 
-    renderer.setPixelRatio(
-        Math.min(
-            window.devicePixelRatio || 1,
+    function getMobilePixelRatio() {
+
+        const dpr =
+            window.devicePixelRatio ||
+            1;
+
+
+        const width =
+            window.innerWidth;
+
+
+        if (
+            width <= 390
+        ) {
+
+            return Math.min(
+                dpr,
+                1.10
+            );
+        }
+
+
+        if (
+            width <= 600
+        ) {
+
+            return Math.min(
+                dpr,
+                1.25
+            );
+        }
+
+
+        return Math.min(
+            dpr,
             1.35
-        )
-    );
+        );
+    }
 
 
-    renderer.shadowMap.enabled = true;
+    function updateRendererSize() {
+
+        renderer.setPixelRatio(
+            getMobilePixelRatio()
+        );
+
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight,
+            false
+        );
+    }
+
+
+    renderer.shadowMap.enabled =
+        true;
+
 
     renderer.shadowMap.type =
         THREE.PCFSoftShadowMap;
 
+
     renderer.toneMapping =
         THREE.ACESFilmicToneMapping;
 
+
     renderer.toneMappingExposure =
-        1.1;
+        1.08;
+
 
     document.body.appendChild(
         renderer.domElement
@@ -137,16 +240,17 @@ window.addEventListener('DOMContentLoaded', () => {
     updateCameraForDevice();
 
 
-    // ==========================================
-    // 2. תאורה
-    // ==========================================
+    // =========================================================
+    // 4. LIGHTING
+    // =========================================================
 
     const hemiLight =
         new THREE.HemisphereLight(
             0xffedd5,
             0x7c2d12,
-            0.75
+            0.78
         );
+
 
     scene.add(
         hemiLight
@@ -155,9 +259,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const sunLight =
         new THREE.DirectionalLight(
-            0xfff7ed,
-            1.3
+            0xfff4df,
+            1.35
         );
+
 
     sunLight.position.set(
         12,
@@ -165,103 +270,249 @@ window.addEventListener('DOMContentLoaded', () => {
         16
     );
 
-    sunLight.castShadow = true;
+
+    sunLight.castShadow =
+        true;
+
+
+    const shadowResolution =
+        window.innerWidth < 600
+            ? 512
+            : 768;
 
 
     sunLight.shadow.mapSize.width =
-        window.innerWidth < 600
-            ? 512
-            : 768;
+        shadowResolution;
+
 
     sunLight.shadow.mapSize.height =
-        window.innerWidth < 600
-            ? 512
-            : 768;
+        shadowResolution;
 
 
     sunLight.shadow.camera.near =
         0.5;
 
+
     sunLight.shadow.camera.far =
-        50;
+        55;
+
+
+    sunLight.shadow.camera.left =
+        -15;
+
+
+    sunLight.shadow.camera.right =
+        15;
+
+
+    sunLight.shadow.camera.top =
+        20;
+
+
+    sunLight.shadow.camera.bottom =
+        -5;
+
 
     sunLight.shadow.bias =
         -0.0005;
+
 
     scene.add(
         sunLight
     );
 
 
-    // ==========================================
-    // 3. סביבה - דשא ופירמידות
-    // ==========================================
-
-    /*
-     * אין יותר פלטפורמה עבה מתחת לתותח.
-     * יש רק משטח דשא שטוח.
-     */
-
-    const grassGeo =
-        new THREE.PlaneGeometry(
-            40,
-            18,
-            1,
-            1
+    const warmLight =
+        new THREE.PointLight(
+            0xffad55,
+            2.0,
+            28
         );
 
 
-    const grassMat =
+    warmLight.position.set(
+        0,
+        8,
+        -18
+    );
+
+
+    scene.add(
+        warmLight
+    );
+
+
+    const cannonLight =
+        new THREE.PointLight(
+            0x38bdf8,
+            1.3,
+            5
+        );
+
+
+    cannonLight.position.set(
+        0,
+        1,
+        1
+    );
+
+
+    scene.add(
+        cannonLight
+    );
+
+
+    // =========================================================
+    // 5. WORLD
+    // =========================================================
+
+    const world =
+        new THREE.Group();
+
+
+    scene.add(
+        world
+    );
+
+
+    // =========================================================
+    // SUN
+    // =========================================================
+
+    const sunDisc =
+        new THREE.Mesh(
+
+            new THREE.SphereGeometry(
+                2.3,
+                18,
+                14
+            ),
+
+            new THREE.MeshBasicMaterial({
+
+                color:
+                    0xffd45f,
+
+                transparent:
+                    true,
+
+                opacity:
+                    0.95
+            })
+        );
+
+
+    sunDisc.position.set(
+        0,
+        10.5,
+        -25
+    );
+
+
+    world.add(
+        sunDisc
+    );
+
+
+    const sunGlow =
+        new THREE.Mesh(
+
+            new THREE.SphereGeometry(
+                4.5,
+                14,
+                10
+            ),
+
+            new THREE.MeshBasicMaterial({
+
+                color:
+                    0xffbd68,
+
+                transparent:
+                    true,
+
+                opacity:
+                    0.07,
+
+                depthWrite:
+                    false
+            })
+        );
+
+
+    sunGlow.position.copy(
+        sunDisc.position
+    );
+
+
+    world.add(
+        sunGlow
+    );
+
+
+    // =========================================================
+    // GRASS GROUND
+    // =========================================================
+
+    /*
+     * IMPORTANT:
+     * No metal platform under the cannon.
+     * The cannon stands directly on grass.
+     */
+
+    const grassGeometry =
+        new THREE.PlaneGeometry(
+            46,
+            22
+        );
+
+
+    const grassMaterial =
         new THREE.MeshStandardMaterial({
 
             color:
-                0x3f6212,
+                0x416b16,
 
             roughness:
-                0.88,
+                0.96,
 
             metalness:
-                0.02
+                0
         });
 
 
-    const grass =
+    const grassGround =
         new THREE.Mesh(
-            grassGeo,
-            grassMat
+            grassGeometry,
+            grassMaterial
         );
 
 
-    grass.rotation.x =
+    grassGround.rotation.x =
         -Math.PI / 2;
 
 
-    grass.position.set(
+    grassGround.position.set(
         0,
         0,
         0
     );
 
 
-    grass.receiveShadow = true;
+    grassGround.receiveShadow =
+        true;
 
 
-    scene.add(
-        grass
+    world.add(
+        grassGround
     );
 
 
-    // ==========================================
+    // =========================================================
     // 3D GRASS
-    // ==========================================
+    // =========================================================
 
-    /*
-     * דשא תלת-ממדי באמצעות InstancedMesh.
-     * כך אפשר להציג הרבה להבים
-     * בלי ליצור מאות Mesh נפרדים.
-     */
-
-    const grassBladeGeo =
+    const grassBladeGeometry =
         new THREE.ConeGeometry(
             0.045,
             0.30,
@@ -269,11 +520,11 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
 
-    const grassBladeMat =
+    const grassBladeMaterial =
         new THREE.MeshStandardMaterial({
 
             color:
-                0x4f7d18,
+                0x4f7d19,
 
             roughness:
                 1,
@@ -288,14 +539,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const grassCount =
         window.innerWidth < 600
-            ? 280
+            ? 260
             : 360;
 
 
     const grass3D =
         new THREE.InstancedMesh(
-            grassBladeGeo,
-            grassBladeMat,
+
+            grassBladeGeometry,
+
+            grassBladeMaterial,
+
             grassCount
         );
 
@@ -310,58 +564,51 @@ window.addEventListener('DOMContentLoaded', () => {
         i++
     ) {
 
-        /*
-         * רוב הדשא בחלק הקדמי,
-         * כדי שיראה מלא יותר סביב התותח.
-         */
-
-        const x =
-            -19 +
-            Math.random() * 38;
-
-
-        const z =
-            -1.5 +
-            Math.random() * 5;
-
-
         grassDummy.position.set(
-            x,
-            0.12,
-            z
+
+            rand(
+                -20,
+                20
+            ),
+
+            0.08,
+
+            rand(
+                -2,
+                3
+            )
         );
 
 
-        const width =
-            0.65 +
-            Math.random() *
-            0.5;
-
-
-        const height =
-            0.65 +
-            Math.random() *
-            0.7;
+        const s =
+            rand(
+                0.7,
+                1.2
+            );
 
 
         grassDummy.scale.set(
-            width,
-            height,
-            width
+            s,
+            rand(
+                0.7,
+                1.35
+            ),
+            s
         );
 
 
         grassDummy.rotation.y =
-            Math.random() *
-            Math.PI;
+            rand(
+                0,
+                Math.PI
+            );
 
 
         grassDummy.rotation.z =
-            (
-                Math.random() -
-                0.5
-            ) *
-            0.24;
+            rand(
+                -0.14,
+                0.14
+            );
 
 
         grassDummy.updateMatrix();
@@ -378,32 +625,33 @@ window.addEventListener('DOMContentLoaded', () => {
         true;
 
 
-    /*
-     * לא מטילים צל מכל להב דשא,
-     * כדי לשמור על ביצועים במובייל.
-     */
+    // Do not cast shadows from every grass blade.
 
-    grass3D.castShadow = false;
-    grass3D.receiveShadow = false;
+    grass3D.castShadow =
+        false;
 
 
-    scene.add(
+    grass3D.receiveShadow =
+        false;
+
+
+    world.add(
         grass3D
     );
 
 
-    // ==========================================
-    // פירמידות
-    // ==========================================
+    // =========================================================
+    // BACKGROUND PYRAMIDS
+    // =========================================================
 
     function createBackgroundPyramid(
         x,
         z,
         scale,
-        colorHex
+        color
     ) {
 
-        const geo =
+        const geometry =
             new THREE.ConeGeometry(
                 8 * scale,
                 13 * scale,
@@ -411,196 +659,361 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
 
-        const mat =
+        const material =
             new THREE.MeshStandardMaterial({
 
                 color:
-                    colorHex,
+                    color,
 
                 roughness:
-                    0.8,
+                    0.88,
 
                 flatShading:
                     true
             });
 
 
-        const pyr =
+        const pyramid =
             new THREE.Mesh(
-                geo,
-                mat
+                geometry,
+                material
             );
 
 
-        pyr.position.set(
+        pyramid.position.set(
             x,
             5.5 * scale,
             z
         );
 
 
-        pyr.rotation.y =
+        pyramid.rotation.y =
             Math.PI / 4;
 
 
-        pyr.castShadow = true;
+        pyramid.castShadow =
+            true;
 
-        pyr.receiveShadow = true;
+
+        pyramid.receiveShadow =
+            true;
 
 
-        scene.add(
-            pyr
+        world.add(
+            pyramid
         );
     }
 
 
     createBackgroundPyramid(
         -16,
-        -12,
-        1.4,
-        0x9a3412
+        -13,
+        1.35,
+        0x8c5135
     );
 
 
     createBackgroundPyramid(
         16,
         -14,
-        1.7,
-        0x9a3412
+        1.60,
+        0x7e4a31
     );
 
 
     createBackgroundPyramid(
         0,
-        -22,
-        2.4,
-        0x7c2d12
+        -23,
+        2.15,
+        0x70432e
     );
 
 
-    // ==========================================
-    // 4. עיצוב התותח - גוף מעוגל
-    // ==========================================
+    // =========================================================
+    // SMALL ROCKS IN ENVIRONMENT
+    // =========================================================
+
+    const sceneryRockGeometry =
+        new THREE.IcosahedronGeometry(
+            0.32,
+            0
+        );
+
+
+    const sceneryRockMaterial =
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0x65594e,
+
+            roughness:
+                0.95,
+
+            flatShading:
+                true
+        });
+
+
+    function addSceneryRock(
+        x,
+        z,
+        scale
+    ) {
+
+        const rock =
+            new THREE.Mesh(
+                sceneryRockGeometry,
+                sceneryRockMaterial
+            );
+
+
+        rock.position.set(
+            x,
+            0.25,
+            z
+        );
+
+
+        rock.scale.set(
+            scale,
+            scale *
+            rand(
+                0.6,
+                1.1
+            ),
+            scale
+        );
+
+
+        rock.rotation.set(
+            rand(
+                0,
+                Math.PI
+            ),
+            rand(
+                0,
+                Math.PI
+            ),
+            rand(
+                0,
+                Math.PI
+            )
+        );
+
+
+        rock.castShadow =
+            true;
+
+
+        rock.receiveShadow =
+            true;
+
+
+        world.add(
+            rock
+        );
+    }
+
+
+    addSceneryRock(
+        -7,
+        -5,
+        0.8
+    );
+
+
+    addSceneryRock(
+        -6.4,
+        -4.4,
+        0.55
+    );
+
+
+    addSceneryRock(
+        7,
+        -5,
+        0.85
+    );
+
+
+    addSceneryRock(
+        6.5,
+        -4.4,
+        0.55
+    );
+
+
+    addSceneryRock(
+        -11,
+        -7,
+        0.75
+    );
+
+
+    addSceneryRock(
+        11,
+        -7,
+        0.75
+    );
+
+
+    // =========================================================
+    // 6. ROUNDED CANNON
+    // =========================================================
 
     const cannonGroup =
         new THREE.Group();
 
 
     /*
-     * גוף תחתון עגול במקום קופסה.
+     * Position directly on grass.
      */
 
-    const baseGeo =
-        new THREE.CylinderGeometry(
-            1.05,
-            1.18,
-            0.48,
-            28
-        );
-
-
-    const baseMat =
-        new THREE.MeshStandardMaterial({
-
-            color:
-                0x1e293b,
-
-            roughness:
-                0.32,
-
-            metalness:
-                0.48
-        });
-
-
-    const base =
-        new THREE.Mesh(
-            baseGeo,
-            baseMat
-        );
-
-
-    base.position.y =
-        0.27;
-
-
-    /*
-     * משטיח מעט את הגוף לאורך Z.
-     */
-
-    base.scale.z =
-        0.76;
-
-
-    base.castShadow = true;
-
-
-    cannonGroup.add(
-        base
+    cannonGroup.position.set(
+        0,
+        0,
+        0.9
     );
 
 
-    /*
-     * גוף כחול מעוגל נוסף.
-     */
-
-    const bodyGeo =
-        new THREE.SphereGeometry(
-            1,
-            20,
-            14
-        );
+    scene.add(
+        cannonGroup
+    );
 
 
-    const bodyMat =
+    const cannonDarkMaterial =
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0x111827,
+
+            roughness:
+                0.30,
+
+            metalness:
+                0.78
+        });
+
+
+    const cannonBlueMaterial =
         new THREE.MeshStandardMaterial({
 
             color:
                 0x075985,
 
             roughness:
-                0.25,
+                0.23,
 
             metalness:
                 0.58
         });
 
 
-    const body =
-        new THREE.Mesh(
-            bodyGeo,
-            bodyMat
+    const cannonCyanMaterial =
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0x38bdf8,
+
+            emissive:
+                0x06465c,
+
+            emissiveIntensity:
+                0.70,
+
+            roughness:
+                0.18,
+
+            metalness:
+                0.50
+        });
+
+
+    // =========================================================
+    // ROUNDED BASE
+    // =========================================================
+
+    const cannonBaseGeometry =
+        new THREE.CylinderGeometry(
+            1.12,
+            1.24,
+            0.45,
+            28
         );
 
 
-    body.position.y =
-        0.54;
+    const cannonBase =
+        new THREE.Mesh(
+            cannonBaseGeometry,
+            cannonDarkMaterial
+        );
 
 
-    body.scale.set(
+    cannonBase.position.y =
+        0.34;
+
+
+    cannonBase.scale.z =
+        0.76;
+
+
+    cannonBase.castShadow =
+        true;
+
+
+    cannonGroup.add(
+        cannonBase
+    );
+
+
+    // =========================================================
+    // ROUNDED BODY
+    // =========================================================
+
+    const cannonBodyGeometry =
+        new THREE.SphereGeometry(
+            1,
+            22,
+            14
+        );
+
+
+    const cannonBody =
+        new THREE.Mesh(
+            cannonBodyGeometry,
+            cannonBlueMaterial
+        );
+
+
+    cannonBody.position.y =
+        0.58;
+
+
+    cannonBody.scale.set(
         1.05,
-        0.58,
+        0.60,
         0.80
     );
 
 
-    body.castShadow = true;
+    cannonBody.castShadow =
+        true;
 
 
     cannonGroup.add(
-        body
+        cannonBody
     );
 
 
-    // ==========================================
-    // כיפה
-    // ==========================================
+    // =========================================================
+    // DOME
+    // =========================================================
 
-    const domeGeo =
+    const cannonDomeGeometry =
         new THREE.SphereGeometry(
-            0.85,
-            24,
-            16,
+            0.84,
+            22,
+            15,
             0,
             Math.PI * 2,
             0,
@@ -608,79 +1021,65 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
 
-    const domeMat =
-        new THREE.MeshStandardMaterial({
-
-            color:
-                0x0284c7,
-
-            roughness:
-                0.18,
-
-            metalness:
-                0.16,
-
-            transparent:
-                true,
-
-            opacity:
-                0.92
-        });
-
-
-    const dome =
+    const cannonDome =
         new THREE.Mesh(
-            domeGeo,
-            domeMat
+
+            cannonDomeGeometry,
+
+            new THREE.MeshStandardMaterial({
+
+                color:
+                    0x0ea5e9,
+
+                emissive:
+                    0x06465e,
+
+                emissiveIntensity:
+                    0.62,
+
+                transparent:
+                    true,
+
+                opacity:
+                    0.93,
+
+                roughness:
+                    0.15,
+
+                metalness:
+                    0.34
+            })
         );
 
 
-    dome.position.y =
-        0.70;
+    cannonDome.position.y =
+        0.76;
+
+
+    cannonDome.castShadow =
+        true;
 
 
     cannonGroup.add(
-        dome
+        cannonDome
     );
 
 
-    // ==========================================
-    // טבעת סביב הכיפה
-    // ==========================================
-
-    const domeRingGeo =
-        new THREE.TorusGeometry(
-            0.86,
-            0.045,
-            8,
-            24
-        );
-
-
-    const domeRingMat =
-        new THREE.MeshStandardMaterial({
-
-            color:
-                0x38bdf8,
-
-            emissive:
-                0x064e67,
-
-            emissiveIntensity:
-                0.7,
-
-            metalness:
-                0.55,
-
-            roughness:
-                0.2
-        });
-
+    // =========================================================
+    // DOME RING
+    // =========================================================
 
     const domeRing =
         new THREE.Mesh(
-            domeRingGeo,
-            domeRingMat
+
+            new THREE.TorusGeometry(
+                0.86,
+                0.045,
+                8,
+                26
+            ),
+
+            cannonCyanMaterial
         );
 
 
@@ -689,7 +1088,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     domeRing.position.y =
-        0.69;
+        0.75;
 
 
     cannonGroup.add(
@@ -697,71 +1096,51 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
 
-    // ==========================================
-    // גלגלים
-    // ==========================================
+    // =========================================================
+    // WHEELS
+    // =========================================================
 
-    const wheelGeo =
+    const wheelGeometry =
         new THREE.CylinderGeometry(
-            0.36,
-            0.36,
-            0.22,
+            0.37,
+            0.37,
+            0.20,
             18
         );
 
 
-    const wheelMat =
+    const wheelMaterial =
         new THREE.MeshStandardMaterial({
 
             color:
                 0x0f172a,
 
             roughness:
-                0.68,
+                0.70,
 
             metalness:
-                0.18
+                0.16
         });
 
 
-    const hubGeo =
+    const hubGeometry =
         new THREE.CylinderGeometry(
             0.12,
             0.12,
-            0.24,
+            0.23,
             14
         );
 
 
-    const hubMat =
-        new THREE.MeshStandardMaterial({
-
-            color:
-                0x38bdf8,
-
-            emissive:
-                0x06384a,
-
-            emissiveIntensity:
-                0.6,
-
-            metalness:
-                0.55,
-
-            roughness:
-                0.22
-        });
-
-
     const wheelPositions = [
 
-        [-1.00, 0.31, 0.62],
+        [-0.98, 0.30, 0.60],
 
-        [ 1.00, 0.31, 0.62],
+        [ 0.98, 0.30, 0.60],
 
-        [-1.00, 0.31, -0.62],
+        [-0.98, 0.30, -0.60],
 
-        [ 1.00, 0.31, -0.62]
+        [ 0.98, 0.30, -0.60]
 
     ];
 
@@ -769,91 +1148,93 @@ window.addEventListener('DOMContentLoaded', () => {
     const cannonWheels = [];
 
 
-    wheelPositions.forEach(
-        pos => {
+    for (
+        const position of
+        wheelPositions
+    ) {
 
-            const wheel =
-                new THREE.Mesh(
-                    wheelGeo,
-                    wheelMat
-                );
-
-
-            /*
-             * כך הגלגל פונה לכיוון
-             * המצלמה ונראה עגול.
-             */
-
-            wheel.rotation.x =
-                Math.PI / 2;
-
-
-            wheel.position.set(
-                pos[0],
-                pos[1],
-                pos[2]
+        const wheel =
+            new THREE.Mesh(
+                wheelGeometry,
+                wheelMaterial
             );
 
 
-            wheel.castShadow = true;
+        /*
+         * Rotate so the wheel faces
+         * the camera properly.
+         */
+
+        wheel.rotation.x =
+            Math.PI / 2;
 
 
-            cannonGroup.add(
-                wheel
+        wheel.position.set(
+            position[0],
+            position[1],
+            position[2]
+        );
+
+
+        wheel.castShadow =
+            true;
+
+
+        cannonGroup.add(
+            wheel
+        );
+
+
+        cannonWheels.push(
+            wheel
+        );
+
+
+        const hub =
+            new THREE.Mesh(
+                hubGeometry,
+                cannonCyanMaterial
             );
 
 
-            cannonWheels.push(
-                wheel
-            );
+        hub.rotation.x =
+            Math.PI / 2;
 
 
-            const hub =
-                new THREE.Mesh(
-                    hubGeo,
-                    hubMat
-                );
+        hub.position.set(
+            position[0],
+            position[1],
+            position[2]
+        );
 
 
-            hub.rotation.x =
-                Math.PI / 2;
+        cannonGroup.add(
+            hub
+        );
+    }
 
 
-            hub.position.set(
-                pos[0],
-                pos[1],
-                pos[2]
-            );
+    // =========================================================
+    // BARRELS
+    // =========================================================
 
-
-            cannonGroup.add(
-                hub
-            );
-        }
-    );
-
-
-    // ==========================================
-    // 4.1 קנים
-    // ==========================================
-
-    const barrelGeo =
+    const barrelGeometry =
         new THREE.CylinderGeometry(
             0.11,
-            0.11,
-            0.85,
+            0.14,
+            0.90,
             16
         );
 
 
-    const barrelMat =
+    const barrelMaterial =
         new THREE.MeshStandardMaterial({
 
             color:
                 0x334155,
 
             metalness:
-                0.72,
+                0.75,
 
             roughness:
                 0.28
@@ -862,36 +1243,38 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const leftBarrel =
         new THREE.Mesh(
-            barrelGeo,
-            barrelMat
+            barrelGeometry,
+            barrelMaterial
         );
 
 
     leftBarrel.position.set(
-        -0.35,
-        1.0,
+        -0.34,
+        1.03,
         0
     );
 
 
-    leftBarrel.castShadow = true;
+    leftBarrel.castShadow =
+        true;
 
 
     const rightBarrel =
         new THREE.Mesh(
-            barrelGeo,
-            barrelMat
+            barrelGeometry,
+            barrelMaterial
         );
 
 
     rightBarrel.position.set(
-        0.35,
-        1.0,
+        0.34,
+        1.03,
         0
     );
 
 
-    rightBarrel.castShadow = true;
+    rightBarrel.castShadow =
+        true;
 
 
     cannonGroup.add(
@@ -904,53 +1287,43 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
 
-    // ==========================================
-    // 4.2 תאורה קטנה לתותח
-    // ==========================================
-
-    const cannonLight =
-        new THREE.PointLight(
-            0x38bdf8,
-            1.2,
-            5
-        );
-
+    // =========================================================
+    // CANNON LIGHT
+    // =========================================================
 
     cannonLight.position.set(
         0,
-        0.8,
-        0.9
+        0.95,
+        1.15
     );
 
 
-    cannonGroup.add(
-        cannonLight
-    );
+    // =========================================================
+    // 7. GAME VARIABLES
+    // =========================================================
+
+    let isGameStarted =
+        false;
 
 
-    scene.add(
-        cannonGroup
-    );
+    let isPaused =
+        false;
 
 
-    // ==========================================
-    // 5. משתני משחק
-    // ==========================================
-
-    let isGameStarted = false;
-
-    let isPaused = false;
-
-    let isGameOver = false;
+    let isGameOver =
+        false;
 
 
-    let score = 0;
+    let score =
+        0;
+
 
     let coins =
         parseInt(
             localStorage.getItem(
                 'bb3d_coins'
-            )
+            ),
+            10
         ) || 0;
 
 
@@ -958,23 +1331,29 @@ window.addEventListener('DOMContentLoaded', () => {
         parseInt(
             localStorage.getItem(
                 'bb3d_best'
-            )
+            ),
+            10
         ) || 0;
 
 
-    let level = 1;
+    let level =
+        1;
 
 
-    let playerHp = 1000;
+    let playerHp =
+        1000;
 
-    let maxHp = 1000;
+
+    const maxHp =
+        1000;
 
 
     let firePowerLvl =
         parseInt(
             localStorage.getItem(
                 'bb3d_upg_power'
-            )
+            ),
+            10
         ) || 1;
 
 
@@ -982,7 +1361,8 @@ window.addEventListener('DOMContentLoaded', () => {
         parseInt(
             localStorage.getItem(
                 'bb3d_upg_rate'
-            )
+            ),
+            10
         ) || 1;
 
 
@@ -990,12 +1370,13 @@ window.addEventListener('DOMContentLoaded', () => {
         parseInt(
             localStorage.getItem(
                 'bb3d_upg_magnet'
-            )
+            ),
+            10
         ) || 0;
 
 
     /*
-     * כוח התחלתי מעט יותר חזק.
+     * Slightly stronger default cannon.
      */
 
     let firePower =
@@ -1010,175 +1391,227 @@ window.addEventListener('DOMContentLoaded', () => {
         0.25;
 
 
-    let bullets = [];
+    const bullets = [];
 
-    let rocks = [];
+    const rocks = [];
 
-    let droppedCoins = [];
-
-
-    let lastShotTime = 0;
-
-    let targetX = 0;
+    const droppedCoins = [];
 
 
-    // ==========================================
-    // 6. UI
-    // ==========================================
+    let lastShotTime =
+        0;
+
+
+    let targetX =
+        0;
+
+
+    let lastFrameTime =
+        performance.now();
+
+
+    // =========================================================
+    // 8. UI
+    // =========================================================
 
     const coinsValEl =
-        document.getElementById(
-            'coins-val'
-        );
+        $('coins-val');
 
 
     const scoreValEl =
-        document.getElementById(
-            'score-val'
-        );
+        $('score-val');
 
 
     const hpTextEl =
-        document.getElementById(
-            'hp-text'
-        );
+        $('hp-text');
 
 
     const hpBarEl =
-        document.getElementById(
-            'hp-bar'
-        );
+        $('hp-bar');
 
 
     const levelTextEl =
-        document.getElementById(
-            'level-text'
-        );
+        $('level-text');
 
 
     const splashScreen =
-        document.getElementById(
-            'splash-screen'
-        );
+        $('splash-screen');
 
 
     const startBtn =
-        document.getElementById(
-            'start-btn'
-        );
+        $('start-btn');
 
 
     const startCoinsEl =
-        document.getElementById(
-            'start-coins'
-        );
+        $('start-coins');
 
 
     const startBestScoreEl =
-        document.getElementById(
-            'start-best-score'
-        );
+        $('start-best-score');
 
 
     const buyPowerBtn =
-        document.getElementById(
-            'buy-power-btn'
-        );
+        $('buy-power-btn');
 
 
     const buyRateBtn =
-        document.getElementById(
-            'buy-rate-btn'
-        );
+        $('buy-rate-btn');
 
 
     const buyMagnetBtn =
-        document.getElementById(
-            'buy-magnet-btn'
-        );
+        $('buy-magnet-btn');
 
+
+    const pauseBtn =
+        $('pause-btn');
+
+
+    const pauseScreen =
+        $('pause-screen');
+
+
+    const resumeBtn =
+        $('resume-btn');
+
+
+    const gameOverScreen =
+        $('game-over-screen');
+
+
+    const restartBtn =
+        $('restart-btn');
+
+
+    const finalScoreEl =
+        $('final-score');
+
+
+    const finalLevelEl =
+        $('final-level');
+
+
+    const finalCoinsEl =
+        $('final-coins');
+
+
+    const introScreen =
+        $('intro-screen');
+
+
+    const introButton =
+        $('intro-btn');
+
+
+    // =========================================================
+    // UI UPDATE
+    // =========================================================
 
     function updateUI() {
 
-        if (coinsValEl) {
+        if (
+            coinsValEl
+        ) {
 
             coinsValEl.innerText =
                 coins;
         }
 
 
-        if (scoreValEl) {
+        if (
+            scoreValEl
+        ) {
 
             scoreValEl.innerText =
                 score;
         }
 
 
-        if (startCoinsEl) {
+        if (
+            startCoinsEl
+        ) {
 
             startCoinsEl.innerText =
                 coins;
         }
 
 
-        if (startBestScoreEl) {
+        if (
+            startBestScoreEl
+        ) {
 
             startBestScoreEl.innerText =
                 bestScore;
         }
 
 
-        if (hpTextEl) {
+        if (
+            hpTextEl
+        ) {
 
             hpTextEl.innerText =
                 `${Math.max(
                     0,
-                    playerHp
+                    Math.ceil(
+                        playerHp
+                    )
                 )} / ${maxHp}`;
         }
 
 
-        if (hpBarEl) {
+        if (
+            hpBarEl
+        ) {
 
             hpBarEl.style.width =
-                `${Math.max(
-                    0,
+                `${clamp(
                     (
                         playerHp /
                         maxHp
                     ) *
+                    100,
+
+                    0,
+
                     100
                 )}%`;
         }
 
 
-        if (levelTextEl) {
+        if (
+            levelTextEl
+        ) {
+
+            /*
+             * Support both "1" and "LEVEL 1"
+             * depending on the user's HTML.
+             */
 
             levelTextEl.innerText =
                 `LEVEL ${level}`;
         }
 
 
-        // ==========================================
-        // מחירי שדרוגים
-        // ==========================================
-
         const powerCost =
-            firePowerLvl * 50;
+            firePowerLvl *
+            50;
 
 
         const rateCost =
-            fireRateLvl * 60;
+            fireRateLvl *
+            60;
 
 
         const magnetCost =
             (
-                magnetLvl + 1
+                magnetLvl +
+                1
             ) *
             100;
 
 
-        if (buyPowerBtn) {
+        if (
+            buyPowerBtn
+        ) {
 
             buyPowerBtn.innerText =
                 `${powerCost} C`;
@@ -1189,21 +1622,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 powerCost;
 
 
-            const el =
-                document.getElementById(
-                    'power-lvl-text'
-                );
+            const levelEl =
+                $('power-lvl-text');
 
 
-            if (el) {
+            if (
+                levelEl
+            ) {
 
-                el.innerText =
+                levelEl.innerText =
                     `Lvl ${firePowerLvl}`;
             }
         }
 
 
-        if (buyRateBtn) {
+        if (
+            buyRateBtn
+        ) {
 
             buyRateBtn.innerText =
                 `${rateCost} C`;
@@ -1214,21 +1649,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 rateCost;
 
 
-            const el =
-                document.getElementById(
-                    'rate-lvl-text'
-                );
+            const levelEl =
+                $('rate-lvl-text');
 
 
-            if (el) {
+            if (
+                levelEl
+            ) {
 
-                el.innerText =
+                levelEl.innerText =
                     `Lvl ${fireRateLvl}`;
             }
         }
 
 
-        if (buyMagnetBtn) {
+        if (
+            buyMagnetBtn
+        ) {
 
             buyMagnetBtn.innerText =
                 `${magnetCost} C`;
@@ -1239,214 +1676,134 @@ window.addEventListener('DOMContentLoaded', () => {
                 magnetCost;
 
 
-            const el =
-                document.getElementById(
-                    'magnet-lvl-text'
-                );
+            const levelEl =
+                $('magnet-lvl-text');
 
 
-            if (el) {
+            if (
+                levelEl
+            ) {
 
-                el.innerText =
+                levelEl.innerText =
                     `Lvl ${magnetLvl}`;
             }
         }
     }
 
 
-    // ==========================================
-    // כפתורי שדרוג
-    // ==========================================
-
-    if (buyPowerBtn) {
-
-        buyPowerBtn.addEventListener(
-            'click',
-            () => {
-
-                const cost =
-                    firePowerLvl *
-                    50;
-
-
-                if (
-                    coins >=
-                    cost
-                ) {
-
-                    coins -=
-                        cost;
-
-
-                    firePowerLvl++;
-
-
-                    /*
-                     * שומר על כוח הפתיחה
-                     * המוגבר גם אחרי שדרוגים.
-                     */
-
-                    firePower =
-                        firePowerLvl + 1;
-
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-
-                    localStorage.setItem(
-                        'bb3d_upg_power',
-                        firePowerLvl
-                    );
-
-
-                    updateUI();
-                }
-            }
-        );
-    }
-
-
-    if (buyRateBtn) {
-
-        buyRateBtn.addEventListener(
-            'click',
-            () => {
-
-                const cost =
-                    fireRateLvl *
-                    60;
-
-
-                if (
-                    coins >=
-                    cost
-                ) {
-
-                    coins -=
-                        cost;
-
-
-                    fireRateLvl++;
-
-
-                    fireRate =
-                        1 +
-                        (
-                            fireRateLvl -
-                            1
-                        ) *
-                        0.25;
-
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-
-                    localStorage.setItem(
-                        'bb3d_upg_rate',
-                        fireRateLvl
-                    );
-
-
-                    updateUI();
-                }
-            }
-        );
-    }
-
-
-    if (buyMagnetBtn) {
-
-        buyMagnetBtn.addEventListener(
-            'click',
-            () => {
-
-                const cost =
-                    (
-                        magnetLvl + 1
-                    ) *
-                    100;
-
-
-                if (
-                    coins >=
-                    cost
-                ) {
-
-                    coins -=
-                        cost;
-
-
-                    magnetLvl++;
-
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-
-                    localStorage.setItem(
-                        'bb3d_upg_magnet',
-                        magnetLvl
-                    );
-
-
-                    updateUI();
-                }
-            }
-        );
-    }
-
-
     updateUI();
 
 
-    // ==========================================
-    // 7. סאונד
-    // ==========================================
+    // =========================================================
+    // 9. AUDIO
+    // =========================================================
 
-    const audioCtx =
-        new (
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT create AudioContext while the
+     * page is loading.
+     *
+     * Some mobile browsers can block or reject
+     * it before a user interaction.
+     */
+
+    let audioCtx =
+        null;
+
+
+    function ensureAudioContext() {
+
+        if (
+            audioCtx
+        ) {
+
+            return audioCtx;
+        }
+
+
+        const AudioContextClass =
             window.AudioContext ||
-            window.webkitAudioContext
-        )();
+            window.webkitAudioContext;
+
+
+        if (
+            !AudioContextClass
+        ) {
+
+            return null;
+        }
+
+
+        try {
+
+            audioCtx =
+                new AudioContextClass();
+
+            return audioCtx;
+
+        } catch (
+            error
+        ) {
+
+            console.warn(
+                'Audio unavailable:',
+                error
+            );
+
+            return null;
+        }
+    }
 
 
     function playSound(
         type
     ) {
 
+        const context =
+            ensureAudioContext();
+
+
         if (
-            audioCtx.state ===
-            'suspended'
+            !context
         ) {
 
-            audioCtx.resume();
+            return;
         }
 
 
-        const osc =
-            audioCtx.createOscillator();
+        if (
+            context.state ===
+            'suspended'
+        ) {
+
+            context.resume()
+                .catch(
+                    () => {}
+                );
+        }
+
+
+        const oscillator =
+            context.createOscillator();
 
 
         const gain =
-            audioCtx.createGain();
+            context.createGain();
 
 
-        osc.connect(
+        oscillator.connect(
             gain
         );
 
 
         gain.connect(
-            audioCtx.destination
+            context.destination
         );
+
+
+        const now =
+            context.currentTime;
 
 
         if (
@@ -1454,130 +1811,162 @@ window.addEventListener('DOMContentLoaded', () => {
             'shoot'
         ) {
 
-            osc.frequency.setValueAtTime(
-                320,
-                audioCtx.currentTime
+            oscillator.type =
+                'sawtooth';
+
+
+            oscillator.frequency.setValueAtTime(
+                300,
+                now
             );
 
 
-            osc.frequency
+            oscillator.frequency
                 .exponentialRampToValueAtTime(
-                    90,
-                    audioCtx.currentTime +
-                    0.07
+                    85,
+                    now +
+                    0.08
                 );
 
 
             gain.gain.setValueAtTime(
-                0.05,
-                audioCtx.currentTime
+                0.035,
+                now
             );
 
 
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime +
-                0.07
+            gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                now +
+                0.09
             );
 
 
-            osc.start();
-
-
-            osc.stop(
-                audioCtx.currentTime +
-                0.07
+            oscillator.start(
+                now
             );
+
+
+            oscillator.stop(
+                now +
+                0.09
+            );
+
 
         } else if (
             type ===
             'hit'
         ) {
 
-            osc.type =
+            oscillator.type =
                 'triangle';
 
 
-            osc.frequency.setValueAtTime(
-                120,
-                audioCtx.currentTime
+            oscillator.frequency.setValueAtTime(
+                140,
+                now
             );
 
 
-            osc.frequency
+            oscillator.frequency
                 .exponentialRampToValueAtTime(
-                    40,
-                    audioCtx.currentTime +
-                    0.06
+                    45,
+                    now +
+                    0.07
                 );
 
 
             gain.gain.setValueAtTime(
-                0.08,
-                audioCtx.currentTime
+                0.05,
+                now
             );
 
 
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime +
-                0.06
+            gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                now +
+                0.08
             );
 
 
-            osc.start();
-
-
-            osc.stop(
-                audioCtx.currentTime +
-                0.06
+            oscillator.start(
+                now
             );
+
+
+            oscillator.stop(
+                now +
+                0.08
+            );
+
 
         } else if (
             type ===
             'coin'
         ) {
 
-            osc.frequency.setValueAtTime(
+            oscillator.type =
+                'sine';
+
+
+            oscillator.frequency.setValueAtTime(
                 850,
-                audioCtx.currentTime
+                now
             );
 
 
-            osc.frequency.setValueAtTime(
-                1250,
-                audioCtx.currentTime +
+            oscillator.frequency.setValueAtTime(
+                1240,
+                now +
                 0.05
             );
 
 
             gain.gain.setValueAtTime(
-                0.07,
-                audioCtx.currentTime
+                0.045,
+                now
             );
 
 
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime +
-                0.12
+            gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                now +
+                0.14
             );
 
 
-            osc.start();
+            oscillator.start(
+                now
+            );
 
 
-            osc.stop(
-                audioCtx.currentTime +
-                0.12
+            oscillator.stop(
+                now +
+                0.14
             );
         }
     }
 
 
-    // ==========================================
-    // 8. יצירת כדורים
-    // ==========================================
+    // =========================================================
+    // 10. BULLETS
+    // =========================================================
+
+    const bulletGeometry =
+        new THREE.SphereGeometry(
+            0.17,
+            10,
+            10
+        );
+
+
+    const bulletMaterial =
+        new THREE.MeshBasicMaterial({
+
+            color:
+                0xfde047
+        });
+
 
     function spawnBullet(
         x,
@@ -1585,25 +1974,10 @@ window.addEventListener('DOMContentLoaded', () => {
         z
     ) {
 
-        const geo =
-            new THREE.SphereGeometry(
-                0.18,
-                12,
-                12
-            );
-
-
-        const mat =
-            new THREE.MeshBasicMaterial({
-                color:
-                    0xfde047
-            });
-
-
         const bullet =
             new THREE.Mesh(
-                geo,
-                mat
+                bulletGeometry,
+                bulletMaterial
             );
 
 
@@ -1612,6 +1986,10 @@ window.addEventListener('DOMContentLoaded', () => {
             y,
             z
         );
+
+
+        bullet.userData.life =
+            2.2;
 
 
         scene.add(
@@ -1625,64 +2003,56 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ==========================================
-    // יצירת סלע
-    // ==========================================
-
-    function spawnRock(
-        x,
-        y,
-        hp,
-        size
+    function removeBullet(
+        index
     ) {
 
-        const geo =
-            new THREE.ConeGeometry(
-                size,
-                size * 1.35,
-                4
-            );
+        const bullet =
+            bullets[index];
 
 
-        const mat =
-            new THREE.MeshStandardMaterial({
+        if (
+            !bullet
+        ) {
 
-                color:
-                    0x64748b,
-
-                roughness:
-                    0.75,
-
-                flatShading:
-                    true
-            });
+            return;
+        }
 
 
-        const rock =
-            new THREE.Mesh(
-                geo,
-                mat
-            );
-
-
-        rock.castShadow =
-            true;
-
-
-        rock.receiveShadow =
-            true;
-
-
-        rock.position.set(
-            x,
-            y,
-            0
+        scene.remove(
+            bullet
         );
 
 
-        // ==========================================
-        // מספר HP
-        // ==========================================
+        bullets.splice(
+            index,
+            1
+        );
+    }
+
+
+    // =========================================================
+    // 11. ROCKS
+    // =========================================================
+
+    const rockMaterial =
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0x64748b,
+
+            roughness:
+                0.76,
+
+            flatShading:
+                true
+        });
+
+
+    function createHpLabel(
+        value,
+        size
+    ) {
 
         const canvas =
             document.createElement(
@@ -1704,12 +2074,20 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
 
+        ctx.clearRect(
+            0,
+            0,
+            128,
+            128
+        );
+
+
         ctx.fillStyle =
             '#ffffff';
 
 
         ctx.font =
-            'Bold 60px Rubik, Arial';
+            '900 58px Arial';
 
 
         ctx.textAlign =
@@ -1720,8 +2098,21 @@ window.addEventListener('DOMContentLoaded', () => {
             'middle';
 
 
+        ctx.shadowColor =
+            'rgba(0,0,0,0.9)';
+
+
+        ctx.shadowBlur =
+            8;
+
+
         ctx.fillText(
-            hp,
+            Math.max(
+                0,
+                Math.ceil(
+                    value
+                )
+            ),
             64,
             64
         );
@@ -1733,68 +2124,48 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
 
-        const spriteMat =
-            new THREE.SpriteMaterial({
-                map:
-                    texture
-            });
+        texture.minFilter =
+            THREE.LinearFilter;
 
 
-        const label =
+        texture.magFilter =
+            THREE.LinearFilter;
+
+
+        const sprite =
             new THREE.Sprite(
-                spriteMat
+
+                new THREE.SpriteMaterial({
+
+                    map:
+                        texture,
+
+                    transparent:
+                        true,
+
+                    depthWrite:
+                        false
+                })
             );
 
 
-        label.scale.set(
-            size * 1.1,
-            size * 1.1,
+        sprite.scale.set(
+            size *
+            1.1,
+
+            size *
+            1.1,
+
             1
         );
 
 
-        rock.add(
-            label
-        );
-
-
-        rock.userData = {
-
-            hp:
-                hp,
-
-            maxHp:
-                hp,
-
-            size:
-                size,
-
-            vx:
-                (
-                    Math.random() -
-                    0.5
-                ) *
-                0.05,
-
-            vy:
-                0,
-
-            ctx:
-                ctx,
-
-            texture:
-                texture
+        return {
+            sprite,
+            canvas,
+            context: ctx,
+            texture
         };
-
-
-        scene.add(
-            rock
-        );
-
-
-        rocks.push(
-            rock
-        );
     }
 
 
@@ -1802,8 +2173,20 @@ window.addEventListener('DOMContentLoaded', () => {
         rock
     ) {
 
+        const info =
+            rock.userData.labelInfo;
+
+
+        if (
+            !info
+        ) {
+
+            return;
+        }
+
+
         const ctx =
-            rock.userData.ctx;
+            info.context;
 
 
         ctx.clearRect(
@@ -1819,7 +2202,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
         ctx.font =
-            'Bold 60px Rubik, Arial';
+            '900 58px Arial';
 
 
         ctx.textAlign =
@@ -1830,16 +2213,124 @@ window.addEventListener('DOMContentLoaded', () => {
             'middle';
 
 
+        ctx.shadowColor =
+            'rgba(0,0,0,0.9)';
+
+
+        ctx.shadowBlur =
+            8;
+
+
         ctx.fillText(
-            rock.userData.hp,
+            Math.max(
+                0,
+                Math.ceil(
+                    rock.userData.hp
+                )
+            ),
             64,
             64
         );
 
 
-        rock.userData.texture
-            .needsUpdate =
+        info.texture.needsUpdate =
             true;
+    }
+
+
+    function spawnRock(
+        x,
+        y,
+        hp,
+        size
+    ) {
+
+        const geometry =
+            new THREE.ConeGeometry(
+                size,
+                size *
+                1.35,
+                4
+            );
+
+
+        const rock =
+            new THREE.Mesh(
+                geometry,
+                rockMaterial
+            );
+
+
+        rock.position.set(
+            x,
+            y,
+            0
+        );
+
+
+        rock.rotation.y =
+            rand(
+                0,
+                Math.PI
+            );
+
+
+        rock.castShadow =
+            true;
+
+
+        rock.receiveShadow =
+            true;
+
+
+        const labelInfo =
+            createHpLabel(
+                hp,
+                size
+            );
+
+
+        rock.add(
+            labelInfo.sprite
+        );
+
+
+        rock.userData = {
+
+            hp:
+                hp,
+
+            maxHp:
+                hp,
+
+            size:
+                size,
+
+            vx:
+                rand(
+                    -0.035,
+                    0.035
+                ),
+
+            vy:
+                0,
+
+            labelInfo:
+                labelInfo,
+
+            hitCooldown:
+                0
+        };
+
+
+        scene.add(
+            rock
+        );
+
+
+        rocks.push(
+            rock
+        );
     }
 
 
@@ -1849,11 +2340,19 @@ window.addEventListener('DOMContentLoaded', () => {
     ) {
 
         if (
-            rock.userData.texture
+            rock.userData.labelInfo
         ) {
 
-            rock.userData.texture
+            rock.userData.labelInfo.texture
                 .dispose();
+        }
+
+
+        if (
+            rock.geometry
+        ) {
+
+            rock.geometry.dispose();
         }
 
 
@@ -1869,42 +2368,42 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ==========================================
-    // מטבע
-    // ==========================================
+    // =========================================================
+    // 12. COINS
+    // =========================================================
+
+    const coinGeometry =
+        new THREE.CylinderGeometry(
+            0.27,
+            0.27,
+            0.08,
+            14
+        );
+
+
+    const coinMaterial =
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0xfacc15,
+
+            metalness:
+                0.82,
+
+            roughness:
+                0.18
+        });
+
 
     function spawnCoin(
         x,
         y
     ) {
 
-        const geo =
-            new THREE.CylinderGeometry(
-                0.28,
-                0.28,
-                0.08,
-                14
-            );
-
-
-        const mat =
-            new THREE.MeshStandardMaterial({
-
-                color:
-                    0xfacc15,
-
-                metalness:
-                    0.8,
-
-                roughness:
-                    0.2
-            });
-
-
         const coin =
             new THREE.Mesh(
-                geo,
-                mat
+                coinGeometry,
+                coinMaterial
             );
 
 
@@ -1919,13 +2418,10 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
 
-        coin.castShadow =
-            true;
-
-
         coin.userData = {
+
             vy:
-                -0.04
+                -0.03
         };
 
 
@@ -1940,87 +2436,145 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ==========================================
-    // WAVE
-    // ==========================================
+    function removeCoin(
+        coin,
+        index
+    ) {
+
+        scene.remove(
+            coin
+        );
+
+
+        droppedCoins.splice(
+            index,
+            1
+        );
+    }
+
+
+    // =========================================================
+    // 13. WAVE SYSTEM
+    // =========================================================
+
+    let firstWaveStarted =
+        false;
+
+
+    function spawnWave() {
+
+        const count =
+            Math.min(
+
+                2 +
+                Math.floor(
+                    (
+                        level -
+                        1
+                    ) /
+                    2
+                ),
+
+                5
+            );
+
+
+        for (
+            let i = 0;
+            i < count;
+            i++
+        ) {
+
+            const size =
+                0.9 +
+                Math.random() *
+                0.72;
+
+
+            const hp =
+                Math.floor(
+
+                    (
+                        8 +
+                        level *
+                        6
+                    ) *
+                    (
+                        size /
+                        1.2
+                    )
+                );
+
+
+            const x =
+                (
+                    Math.random() -
+                    0.5
+                ) *
+                (
+                    screenLimitX *
+                    1.35
+                );
+
+
+            spawnRock(
+                x,
+                11.5 +
+                i *
+                2.5,
+                hp,
+                size
+            );
+        }
+
+
+        updateUI();
+    }
+
 
     function startNextWave() {
 
         if (
-            rocks.length ===
+            rocks.length !==
             0
         ) {
 
-            level++;
-
-
-            const count =
-                Math.min(
-                    2 +
-                    Math.floor(
-                        level /
-                        2
-                    ),
-
-                    5
-                );
-
-
-            for (
-                let i = 0;
-                i < count;
-                i++
-            ) {
-
-                const size =
-                    0.95 +
-                    Math.random() *
-                    0.8;
-
-
-                const hp =
-                    Math.floor(
-                        (
-                            8 +
-                            level *
-                            6
-                        ) *
-                        (
-                            size /
-                            1.2
-                        )
-                    );
-
-
-                const spawnX =
-                    (
-                        Math.random() -
-                        0.5
-                    ) *
-                    (
-                        screenLimitX *
-                        1.4
-                    );
-
-
-                spawnRock(
-                    spawnX,
-                    12 +
-                    i * 3,
-                    hp,
-                    size
-                );
-            }
-
-
-            updateUI();
+            return;
         }
+
+
+        /*
+         * First wave:
+         * keep the player at level 1.
+         */
+
+        if (
+            !firstWaveStarted
+        ) {
+
+            firstWaveStarted =
+                true;
+
+            level =
+                1;
+
+            spawnWave();
+
+            return;
+        }
+
+
+        level +=
+            1;
+
+
+        spawnWave();
     }
 
 
-    // ==========================================
-    // 9. שליטה וגרירה
-    // ==========================================
+    // =========================================================
+    // 14. INPUT
+    // =========================================================
 
     let isDragging =
         false;
@@ -2030,7 +2584,7 @@ window.addEventListener('DOMContentLoaded', () => {
         clientX
     ) {
 
-        const normalizedX =
+        const normalized =
             (
                 clientX /
                 Math.max(
@@ -2043,27 +2597,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
         targetX =
-            Math.max(
+            clamp(
+
+                normalized *
+                (
+                    screenLimitX *
+                    1.18
+                ),
 
                 -screenLimitX,
 
-                Math.min(
-
-                    screenLimitX,
-
-                    normalizedX *
-                    (
-                        screenLimitX *
-                        1.25
-                    )
-                )
+                screenLimitX
             );
     }
 
 
-    window.addEventListener(
+    renderer.domElement.addEventListener(
         'pointerdown',
-        (e) => {
+        (event) => {
 
             if (
                 !isGameStarted ||
@@ -2080,29 +2631,50 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
             handleMove(
-                e.clientX
+                event.clientX
             );
+
+
+            if (
+                renderer.domElement
+                    .setPointerCapture
+            ) {
+
+                try {
+
+                    renderer.domElement
+                        .setPointerCapture(
+                            event.pointerId
+                        );
+
+                } catch (
+                    error
+                ) {
+
+                    // Ignore.
+                }
+            }
         }
     );
 
 
-    window.addEventListener(
+    renderer.domElement.addEventListener(
         'pointermove',
-        (e) => {
+        (event) => {
 
             if (
                 isDragging
             ) {
 
                 handleMove(
-                    e.clientX
+                    event.clientX
                 );
             }
         }
     );
 
 
-    window.addEventListener(
+    renderer.domElement.addEventListener(
         'pointerup',
         () => {
 
@@ -2112,7 +2684,7 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
 
-    window.addEventListener(
+    renderer.domElement.addEventListener(
         'pointercancel',
         () => {
 
@@ -2122,15 +2694,119 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
 
-    // ==========================================
-    // 10. התחלת משחק
-    // ==========================================
+    // =========================================================
+    // 15. INTRO SUPPORT
+    // =========================================================
+
+    let introFinished =
+        !introScreen;
+
+
+    function finishIntro() {
+
+        if (
+            introFinished
+        ) {
+
+            return;
+        }
+
+
+        introFinished =
+            true;
+
+
+        /*
+         * Resume audio only after user interaction.
+         */
+
+        ensureAudioContext();
+
+
+        if (
+            introScreen
+        ) {
+
+            introScreen.classList.add(
+                'intro-hidden'
+            );
+        }
+
+
+        /*
+         * Give CSS animation a moment to finish.
+         */
+
+        setTimeout(
+            () => {
+
+                if (
+                    splashScreen
+                ) {
+
+                    splashScreen.classList.remove(
+                        'hidden'
+                    );
+                }
+
+            },
+            350
+        );
+    }
+
+
+    if (
+        introButton
+    ) {
+
+        introButton.addEventListener(
+            'click',
+            finishIntro
+        );
+    }
+
+
+    /*
+     * Automatically continue after the intro,
+     * but only if an intro actually exists.
+     */
+
+    if (
+        introScreen
+    ) {
+
+        setTimeout(
+            finishIntro,
+            5200
+        );
+    }
+
+
+    // =========================================================
+    // 16. START GAME
+    // =========================================================
 
     function startGame() {
 
         if (
             isGameStarted
         ) {
+
+            return;
+        }
+
+
+        /*
+         * If the new intro exists,
+         * clicking start too early simply
+         * finishes the intro.
+         */
+
+        if (
+            !introFinished
+        ) {
+
+            finishIntro();
 
             return;
         }
@@ -2144,16 +2820,8 @@ window.addEventListener('DOMContentLoaded', () => {
             false;
 
 
-        if (
-            splashScreen
-        ) {
-
-            splashScreen
-                .classList
-                .add(
-                    'hidden'
-                );
-        }
+        isPaused =
+            false;
 
 
         score =
@@ -2162,6 +2830,87 @@ window.addEventListener('DOMContentLoaded', () => {
 
         playerHp =
             maxHp;
+
+
+        firstWaveStarted =
+            false;
+
+
+        /*
+         * Start at level 1.
+         */
+
+        level =
+            1;
+
+
+        targetX =
+            0;
+
+
+        cannonGroup.position.x =
+            0;
+
+
+        if (
+            splashScreen
+        ) {
+
+            splashScreen.classList.add(
+                'hidden'
+            );
+        }
+
+
+        if (
+            gameOverScreen
+        ) {
+
+            gameOverScreen.classList.add(
+                'hidden'
+            );
+        }
+
+
+        if (
+            pauseScreen
+        ) {
+
+            pauseScreen.classList.add(
+                'hidden'
+            );
+        }
+
+
+        if (
+            pauseBtn
+        ) {
+
+            pauseBtn.classList.remove(
+                'hidden'
+            );
+        }
+
+
+        /*
+         * User interaction unlocks audio.
+         */
+
+        const audio =
+            ensureAudioContext();
+
+
+        if (
+            audio &&
+            audio.state ===
+            'suspended'
+        ) {
+
+            audio.resume()
+                .catch(
+                    () => {}
+                );
+        }
 
 
         updateUI();
@@ -2182,38 +2931,376 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ==========================================
-    // 11. לולאת המשחק
-    // ==========================================
-
-    function animate(
-        time
+    if (
+        restartBtn
     ) {
 
-        requestAnimationFrame(
-            animate
-        );
+        restartBtn.addEventListener(
+            'click',
+            () => {
 
+                if (
+                    gameOverScreen
+                ) {
+
+                    gameOverScreen.classList.add(
+                        'hidden'
+                    );
+                }
+
+
+                isGameStarted =
+                    false;
+
+
+                startGame();
+            }
+        );
+    }
+
+
+    // =========================================================
+    // 17. PAUSE
+    // =========================================================
+
+    function togglePause() {
 
         if (
             !isGameStarted ||
-            isPaused ||
             isGameOver
         ) {
-
-            renderer.render(
-                scene,
-                camera
-            );
-
 
             return;
         }
 
 
-        // ==========================================
-        // תנועת התותח
-        // ==========================================
+        isPaused =
+            !isPaused;
+
+
+        if (
+            pauseScreen
+        ) {
+
+            pauseScreen.classList.toggle(
+                'hidden',
+                !isPaused
+            );
+        }
+
+
+        if (
+            pauseBtn
+        ) {
+
+            pauseBtn.classList.toggle(
+                'hidden',
+                isPaused
+            );
+        }
+    }
+
+
+    if (
+        pauseBtn
+    ) {
+
+        pauseBtn.addEventListener(
+            'click',
+            togglePause
+        );
+    }
+
+
+    if (
+        resumeBtn
+    ) {
+
+        resumeBtn.addEventListener(
+            'click',
+            togglePause
+        );
+    }
+
+
+    // =========================================================
+    // 18. UPGRADES
+    // =========================================================
+
+    if (
+        buyPowerBtn
+    ) {
+
+        buyPowerBtn.addEventListener(
+            'click',
+            () => {
+
+                const cost =
+                    firePowerLvl *
+                    50;
+
+
+                if (
+                    coins <
+                    cost
+                ) {
+
+                    return;
+                }
+
+
+                coins -=
+                    cost;
+
+
+                firePowerLvl +=
+                    1;
+
+
+                firePower =
+                    firePowerLvl +
+                    1;
+
+
+                localStorage.setItem(
+                    'bb3d_coins',
+                    String(coins)
+                );
+
+
+                localStorage.setItem(
+                    'bb3d_upg_power',
+                    String(
+                        firePowerLvl
+                    )
+                );
+
+
+                updateUI();
+            }
+        );
+    }
+
+
+    if (
+        buyRateBtn
+    ) {
+
+        buyRateBtn.addEventListener(
+            'click',
+            () => {
+
+                const cost =
+                    fireRateLvl *
+                    60;
+
+
+                if (
+                    coins <
+                    cost
+                ) {
+
+                    return;
+                }
+
+
+                coins -=
+                    cost;
+
+
+                fireRateLvl +=
+                    1;
+
+
+                fireRate =
+                    1 +
+                    (
+                        fireRateLvl -
+                        1
+                    ) *
+                    0.25;
+
+
+                localStorage.setItem(
+                    'bb3d_coins',
+                    String(coins)
+                );
+
+
+                localStorage.setItem(
+                    'bb3d_upg_rate',
+                    String(
+                        fireRateLvl
+                    )
+                );
+
+
+                updateUI();
+            }
+        );
+    }
+
+
+    if (
+        buyMagnetBtn
+    ) {
+
+        buyMagnetBtn.addEventListener(
+            'click',
+            () => {
+
+                const cost =
+                    (
+                        magnetLvl +
+                        1
+                    ) *
+                    100;
+
+
+                if (
+                    coins <
+                    cost
+                ) {
+
+                    return;
+                }
+
+
+                coins -=
+                    cost;
+
+
+                magnetLvl +=
+                    1;
+
+
+                localStorage.setItem(
+                    'bb3d_coins',
+                    String(coins)
+                );
+
+
+                localStorage.setItem(
+                    'bb3d_upg_magnet',
+                    String(
+                        magnetLvl
+                    )
+                );
+
+
+                updateUI();
+            }
+        );
+    }
+
+
+    // =========================================================
+    // 19. GAME OVER
+    // =========================================================
+
+    function showGameOver() {
+
+        isGameOver =
+            true;
+
+
+        isPaused =
+            false;
+
+
+        if (
+            score >
+            bestScore
+        ) {
+
+            bestScore =
+                score;
+
+
+            localStorage.setItem(
+                'bb3d_best',
+                String(
+                    bestScore
+                )
+            );
+        }
+
+
+        localStorage.setItem(
+            'bb3d_coins',
+            String(
+                coins
+            )
+        );
+
+
+        if (
+            finalScoreEl
+        ) {
+
+            finalScoreEl.innerText =
+                score;
+        }
+
+
+        if (
+            finalLevelEl
+        ) {
+
+            finalLevelEl.innerText =
+                level;
+        }
+
+
+        if (
+            finalCoinsEl
+        ) {
+
+            finalCoinsEl.innerText =
+                coins;
+        }
+
+
+        if (
+            gameOverScreen
+        ) {
+
+            gameOverScreen.classList.remove(
+                'hidden'
+            );
+        }
+
+
+        if (
+            pauseBtn
+        ) {
+
+            pauseBtn.classList.add(
+                'hidden'
+            );
+        }
+    }
+
+
+    // =========================================================
+    // 20. GAME UPDATE
+    // =========================================================
+
+    function updateGame(
+        dt,
+        time
+    ) {
+
+        // -----------------------------------------------------
+        // CANNON MOVEMENT
+        // -----------------------------------------------------
+
+        const movementSpeed =
+            Math.min(
+                1,
+                dt * 12
+            );
+
 
         cannonGroup.position.x += (
 
@@ -2221,12 +3308,12 @@ window.addEventListener('DOMContentLoaded', () => {
             cannonGroup.position.x
 
         ) *
-        0.2;
+        movementSpeed;
 
 
-        // ==========================================
-        // תזוזת גלגלים
-        // ==========================================
+        // -----------------------------------------------------
+        // WHEEL MOVEMENT
+        // -----------------------------------------------------
 
         if (
             isDragging
@@ -2238,47 +3325,57 @@ window.addEventListener('DOMContentLoaded', () => {
             ) {
 
                 wheel.rotation.z +=
-                    0.16;
+                    dt * 4.5;
             }
         }
 
 
-        // ==========================================
-        // תאורת תותח
-        // ==========================================
+        // -----------------------------------------------------
+        // CANNON LIGHT
+        // -----------------------------------------------------
 
         cannonLight.intensity =
-            1.15 +
+            1.2 +
             Math.sin(
                 time *
                 0.003
             ) *
-            0.12;
+            0.10;
 
 
         domeRing.rotation.z +=
-            0.003;
+            dt *
+            0.18;
 
 
-        // ==========================================
-        // ירי
-        // ==========================================
+        // -----------------------------------------------------
+        // AUTO FIRE
+        // -----------------------------------------------------
+
+        const shotsPerSecond =
+            fireRate *
+            4;
+
+
+        const shotInterval =
+            1000 /
+            Math.max(
+                0.1,
+                shotsPerSecond
+            );
+
 
         if (
             time -
-            lastShotTime >
-            1000 /
-            (
-                fireRate *
-                4
-            )
+            lastShotTime >=
+            shotInterval
         ) {
 
             spawnBullet(
                 cannonGroup.position.x -
-                0.35,
+                0.34,
 
-                1.5,
+                1.48,
 
                 0
             );
@@ -2286,9 +3383,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             spawnBullet(
                 cannonGroup.position.x +
-                0.35,
+                0.34,
 
-                1.5,
+                1.48,
 
                 0
             );
@@ -2304,9 +3401,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        // ==========================================
-        // כדורים
-        // ==========================================
+        // -----------------------------------------------------
+        // BULLETS
+        // -----------------------------------------------------
 
         for (
             let i =
@@ -2317,40 +3414,37 @@ window.addEventListener('DOMContentLoaded', () => {
             i--
         ) {
 
-            const b =
+            const bullet =
                 bullets[i];
 
 
-            b.position.y +=
-                0.42;
+            bullet.position.y +=
+                14 *
+                dt;
+
+
+            bullet.userData.life -=
+                dt;
 
 
             if (
-                b.position.y >
-                18
+                bullet.userData.life <=
+                0 ||
+
+                bullet.position.y >
+                25
             ) {
 
-                scene.remove(
-                    b
-                );
-
-
-                b.geometry.dispose();
-
-                b.material.dispose();
-
-
-                bullets.splice(
-                    i,
-                    1
+                removeBullet(
+                    i
                 );
             }
         }
 
 
-        // ==========================================
-        // סלעים
-        // ==========================================
+        // -----------------------------------------------------
+        // ROCKS
+        // -----------------------------------------------------
 
         for (
             let rIdx =
@@ -2361,96 +3455,145 @@ window.addEventListener('DOMContentLoaded', () => {
             rIdx--
         ) {
 
-            const r =
+            const rock =
                 rocks[rIdx];
 
 
-            // ==========================================
-            // נפילה איטית יותר
-            // ==========================================
-
-            /*
-             * הגרסה המקורית הייתה:
-             *
-             * r.userData.vy -= 0.0025;
-             *
-             * עכשיו הסלעים יורדים לאט יותר.
-             */
-
-            r.userData.vy -=
-                0.00125;
-
-
-            r.position.x +=
-                r.userData.vx;
-
-
-            r.position.y +=
-                r.userData.vy;
-
-
-            // ==========================================
-            // קפיצה מהרצפה
-            // ==========================================
-
             if (
-                r.position.y -
-                r.userData.size <
-                0.2
+                !rock
             ) {
 
-                r.position.y =
-                    0.2 +
-                    r.userData.size;
-
-
-                /*
-                 * בכל מגע עם הרצפה
-                 * הסלע מקבל קפיצה חדשה.
-                 *
-                 * לכן הוא ממשיך לקפוץ
-                 * עד שהשחקן משמיד אותו.
-                 */
-
-                r.userData.vy =
-                    Math.max(
-
-                        0.14,
-
-                        Math.abs(
-                            r.userData.vy
-                        ) *
-                        0.88
-                    );
+                continue;
             }
 
 
-            // ==========================================
-            // קירות צד
-            // ==========================================
+            const data =
+                rock.userData;
+
+
+            data.hitCooldown =
+                Math.max(
+                    0,
+                    data.hitCooldown -
+                    dt
+                );
+
+
+            // =================================================
+            // SLOWER FALLING
+            // =================================================
+
+            const gravity =
+                8.0 +
+                level *
+                0.025;
+
+
+            data.vy -=
+                gravity *
+                dt;
+
+
+            rock.position.x +=
+                data.vx *
+                dt;
+
+
+            rock.position.y +=
+                data.vy *
+                dt;
+
+
+            // Rotate slowly.
+
+            rock.rotation.y +=
+                dt *
+                0.8;
+
+
+            rock.rotation.x +=
+                dt *
+                0.22;
+
+
+            // =================================================
+            // REPEATED BOUNCE
+            // =================================================
+
+            const floor =
+                0.20 +
+                data.size;
+
+
+            if (
+                rock.position.y <=
+                floor
+            ) {
+
+                rock.position.y =
+                    floor;
+
+
+                /*
+                 * New upward velocity on every
+                 * floor collision.
+                 *
+                 * The rock continues bouncing
+                 * until it is destroyed.
+                 */
+
+                const bounceStrength =
+                    Math.min(
+                        5.2,
+                        3.65 +
+                        level *
+                        0.025
+                    );
+
+
+                data.vy =
+                    Math.max(
+
+                        bounceStrength,
+
+                        Math.abs(
+                            data.vy
+                        ) *
+                        0.78
+                    );
+
+
+                data.vx *=
+                    0.985;
+            }
+
+
+            // =================================================
+            // SIDE WALLS
+            // =================================================
 
             if (
                 Math.abs(
-                    r.position.x
+                    rock.position.x
                 ) >
                 screenLimitX
             ) {
 
-                r.userData.vx *=
-                    -1;
-
-
-                r.position.x =
+                rock.position.x =
                     Math.sign(
-                        r.position.x
+                        rock.position.x
                     ) *
                     screenLimitX;
+
+
+                data.vx *=
+                    -1;
             }
 
 
-            // ==========================================
-            // פגיעה של כדור בסלע
-            // ==========================================
+            // =================================================
+            // BULLET COLLISIONS
+            // =================================================
 
             for (
                 let bIdx =
@@ -2461,37 +3604,36 @@ window.addEventListener('DOMContentLoaded', () => {
                 bIdx--
             ) {
 
-                const b =
+                const bullet =
                     bullets[bIdx];
 
 
                 if (
-                    b.position.distanceTo(
-                        r.position
-                    ) <
-                    r.userData.size *
-                    0.9
+                    !bullet
                 ) {
 
-                    scene.remove(
-                        b
+                    continue;
+                }
+
+
+                const distance =
+                    bullet.position.distanceTo(
+                        rock.position
                     );
 
 
-                    b.geometry.dispose();
+                if (
+                    distance <
+                    data.size *
+                    0.92
+                ) {
 
-                    b.material.dispose();
-
-
-                    bullets.splice(
-                        bIdx,
-                        1
+                    removeBullet(
+                        bIdx
                     );
 
 
-                    // נזק.
-
-                    r.userData.hp -=
+                    data.hp -=
                         firePower;
 
 
@@ -2504,78 +3646,91 @@ window.addEventListener('DOMContentLoaded', () => {
                     );
 
 
-                    // ==========================================
-                    // הסלע נהרס
-                    // ==========================================
+                    // Small knockback.
+
+                    data.vy +=
+                        0.35;
+
+
+                    // -------------------------------------------------
+                    // ROCK DESTROYED
+                    // -------------------------------------------------
 
                     if (
-                        r.userData.hp <=
+                        data.hp <=
                         0
                     ) {
 
                         /*
-                         * מטבע.
+                         * Coin drop.
                          */
 
                         if (
                             Math.random() >
-                            0.3
+                            0.30
                         ) {
 
                             spawnCoin(
-                                r.position.x,
-                                r.position.y
+                                rock.position.x,
+                                rock.position.y
                             );
                         }
 
 
                         /*
-                         * סלע גדול מתפצל
-                         * לשני סלעים קטנים.
+                         * Split big rocks.
                          */
 
                         if (
-                            r.userData.size >
-                            0.9
+                            data.size >
+                            0.95
                         ) {
+
+                            const childSize =
+                                data.size *
+                                0.68;
+
+
+                            const childHp =
+                                Math.max(
+                                    4,
+
+                                    Math.floor(
+                                        data.maxHp *
+                                        0.5
+                                    )
+                                );
+
 
                             spawnRock(
 
-                                r.position.x -
+                                rock.position.x -
                                 0.35,
 
-                                r.position.y,
+                                rock.position.y,
 
-                                Math.floor(
-                                    r.userData.maxHp /
-                                    2
-                                ),
+                                childHp,
 
-                                r.userData.size *
-                                0.7
+                                childSize
                             );
 
 
                             spawnRock(
 
-                                r.position.x +
+                                rock.position.x +
                                 0.35,
 
-                                r.position.y,
+                                rock.position.y,
 
-                                Math.floor(
-                                    r.userData.maxHp /
-                                    2
-                                ),
+                                childHp,
 
-                                r.userData.size *
-                                0.7
+                                childSize
                             );
                         }
 
 
                         removeRock(
-                            r,
+                            rock,
                             rIdx
                         );
 
@@ -2588,21 +3743,24 @@ window.addEventListener('DOMContentLoaded', () => {
                     } else {
 
                         updateRockLabel(
-                            r
+                            rock
                         );
+
+
+                        updateUI();
                     }
                 }
             }
 
 
             /*
-             * ייתכן שהסלע כבר נמחק
-             * אחרי הפגיעה.
+             * It may have been removed
+             * after a bullet hit.
              */
 
             if (
                 !rocks.includes(
-                    r
+                    rock
                 )
             ) {
 
@@ -2610,77 +3768,93 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
 
-            // ==========================================
-            // הסלע פוגע בתותח
-            // ==========================================
+            // =================================================
+            // CANNON COLLISION
+            // =================================================
 
             if (
-                Math.hypot(
-
-                    r.position.x -
-                    cannonGroup.position.x,
-
-                    r.position.y -
-                    0.5
-
-                ) <
-
-                r.userData.size +
-                0.6
+                data.hitCooldown <=
+                0
             ) {
 
-                playerHp -=
-                    10;
+                const dx =
+                    rock.position.x -
+                    cannonGroup.position.x;
 
 
-                updateUI();
+                const dy =
+                    rock.position.y -
+                    0.7;
+
+
+                const distance =
+                    Math.hypot(
+                        dx,
+                        dy
+                    );
 
 
                 if (
-                    playerHp <=
-                    0
+                    distance <
+                    data.size +
+                    0.55
                 ) {
 
-                    isGameOver =
-                        true;
+                    playerHp -=
+                        10;
+
+
+                    data.hitCooldown =
+                        0.8;
+
+
+                    /*
+                     * Knock rock back upward.
+                     */
+
+                    data.vy =
+                        Math.max(
+                            4.0,
+                            data.vy
+                        );
+
+
+                    /*
+                     * Push rock sideways.
+                     */
+
+                    data.vx +=
+                        Math.sign(
+                            dx ||
+                            rand(
+                                -1,
+                                1
+                            )
+                        ) *
+                        0.06;
+
+
+                    updateUI();
 
 
                     if (
-                        score >
-                        bestScore
+                        playerHp <=
+                        0
                     ) {
 
-                        bestScore =
-                            score;
+                        showGameOver();
 
 
-                        localStorage.setItem(
-                            'bb3d_best',
-                            bestScore
-                        );
+                        break;
                     }
-
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-
-                    alert(
-                        `Game Over!\nScore: ${score}`
-                    );
-
-
-                    location.reload();
                 }
             }
         }
 
 
-        // ==========================================
-        // מטבעות
-        // ==========================================
+        // =====================================================
+        // COINS
+        // =====================================================
 
         for (
             let cIdx =
@@ -2691,86 +3865,92 @@ window.addEventListener('DOMContentLoaded', () => {
             cIdx--
         ) {
 
-            const c =
+            const coin =
                 droppedCoins[cIdx];
 
 
             if (
-                magnetLvl >
-                0
+                !coin
             ) {
 
-                const distToPlayer =
-                    Math.hypot(
-
-                        c.position.x -
-                        cannonGroup.position.x,
-
-                        c.position.y -
-                        0.5
-                    );
-
-
-                const magnetRadius =
-                    2 +
-                    magnetLvl *
-                    1.5;
-
-
-                if (
-                    distToPlayer <
-                    magnetRadius
-                ) {
-
-                    c.position.x += (
-
-                        cannonGroup.position.x -
-                        c.position.x
-
-                    ) *
-                    0.12;
-
-
-                    c.position.y += (
-
-                        0.5 -
-                        c.position.y
-
-                    ) *
-                    0.12;
-
-                } else {
-
-                    c.position.y +=
-                        c.userData.vy;
-                }
-
-            } else {
-
-                c.position.y +=
-                    c.userData.vy;
+                continue;
             }
 
 
-            c.rotation.z +=
-                0.05;
+            const dx =
+                cannonGroup.position.x -
+                coin.position.x;
+
+
+            const dy =
+                0.55 -
+                coin.position.y;
+
+
+            const distance =
+                Math.hypot(
+                    dx,
+                    dy
+                );
+
+
+            const magnetRadius =
+                2 +
+                magnetLvl *
+                1.5;
 
 
             if (
-                Math.hypot(
+                magnetLvl >
+                0 &&
+                distance <
+                magnetRadius
+            ) {
 
-                    c.position.x -
-                    cannonGroup.position.x,
+                const pull =
+                    Math.min(
+                        1,
+                        dt *
+                        (
+                            7 +
+                            magnetLvl *
+                            1.25
+                        )
+                    );
 
-                    c.position.y -
-                    0.5
 
-                ) <
-                1.0
+                coin.position.x +=
+                    dx *
+                    pull;
+
+
+                coin.position.y +=
+                    dy *
+                    pull;
+
+            } else {
+
+                coin.position.y +=
+                    coin.userData.vy;
+            }
+
+
+            coin.rotation.z +=
+                dt *
+                4.5;
+
+
+            if (
+                distance <
+                0.9
             ) {
 
                 coins +=
                     5;
+
+
+                score +=
+                    10;
 
 
                 playSound(
@@ -2778,19 +3958,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 );
 
 
-                scene.remove(
-                    c
-                );
-
-
-                c.geometry.dispose();
-
-                c.material.dispose();
-
-
-                droppedCoins.splice(
-                    cIdx,
-                    1
+                removeCoin(
+                    coin,
+                    cIdx
                 );
 
 
@@ -2798,38 +3968,168 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
             } else if (
-                c.position.y <
-                0.2
+                coin.position.y <
+                0.20
             ) {
 
-                c.userData.vy =
+                coin.position.y =
+                    0.20;
+
+
+                coin.userData.vy =
                     0;
             }
         }
 
 
-        // ==========================================
-        // Wave חדש
-        // ==========================================
+        // =====================================================
+        // NEXT WAVE
+        // =====================================================
 
-        startNextWave();
+        if (
+            rocks.length ===
+            0
+        ) {
+
+            startNextWave();
+        }
 
 
-        // ==========================================
-        // דשא - תנועה קלה
-        // ==========================================
+        // =====================================================
+        // GRASS BREEZE
+        // =====================================================
 
         grass3D.rotation.z =
             Math.sin(
                 time *
-                0.0013
+                0.0012
             ) *
             0.005;
 
 
-        // ==========================================
-        // Render
-        // ==========================================
+        // =====================================================
+        // WARM LIGHT
+        // =====================================================
+
+        warmLight.intensity =
+            2.0 +
+            Math.sin(
+                time *
+                0.0005
+            ) *
+            0.10;
+    }
+
+
+    // =========================================================
+    // 21. KEYBOARD PAUSE
+    // =========================================================
+
+    window.addEventListener(
+        'keydown',
+        (event) => {
+
+            if (
+                event.code ===
+                'KeyP' ||
+
+                event.code ===
+                'Escape'
+            ) {
+
+                togglePause();
+            }
+        }
+    );
+
+
+    // =========================================================
+    // 22. RESIZE
+    // =========================================================
+
+    window.addEventListener(
+        'resize',
+        () => {
+
+            updateCameraForDevice();
+
+        },
+        {
+            passive:
+                true
+        }
+    );
+
+
+    window.addEventListener(
+        'orientationchange',
+        () => {
+
+            setTimeout(
+                updateCameraForDevice,
+                100
+            );
+
+        },
+        {
+            passive:
+                true
+        }
+    );
+
+
+    // =========================================================
+    // 23. MAIN LOOP
+    // =========================================================
+
+    function animate(
+        time
+    ) {
+
+        requestAnimationFrame(
+            animate
+        );
+
+
+        /*
+         * Delta time makes the game behave
+         * consistently on different phones.
+         */
+
+        const delta =
+            Math.min(
+
+                0.033,
+
+                Math.max(
+
+                    0,
+
+                    (
+                        time -
+                        lastFrameTime
+                    ) /
+                    1000
+                )
+            );
+
+
+        lastFrameTime =
+            time;
+
+
+        if (
+            isGameStarted &&
+            !isPaused &&
+            !isGameOver
+        ) {
+
+            updateGame(
+                delta,
+                time
+            );
+        }
+
 
         renderer.render(
             scene,
@@ -2838,14 +4138,29 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    window.addEventListener(
-        'resize',
-        updateCameraForDevice
+    // =========================================================
+    // 24. CLEAN STARTUP
+    // =========================================================
+
+    /*
+     * Render immediately.
+     *
+     * This guarantees the 3D scene is alive
+     * even before pressing "Start".
+     */
+
+    renderer.render(
+        scene,
+        camera
     );
 
 
+    /*
+     * Start animation loop.
+     */
+
     animate(
-        0
+        performance.now()
     );
 
 });
