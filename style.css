@@ -10,27 +10,31 @@
 html, body {
     width: 100%;
     height: 100vh;
-    height: -webkit-fill-available;
+    height: 100dvh;
     overflow: hidden;
     background-color: #000;
     font-family: system-ui, -apple-system, sans-serif;
+    touch-action: none;
 }
 
 canvas {
     display: block;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1;
+    touch-action: none;
 }
 
-/* Splash Screen */
 #splash-screen {
     position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at top, #f97316 0%, #0f172a 55%, #020617 100%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0f172a;
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -38,7 +42,7 @@ canvas {
     padding-bottom: 60px;
     z-index: 200;
     cursor: pointer;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    touch-action: manipulation;
 }
 
 .splash-content {
@@ -52,7 +56,7 @@ canvas {
     color: #facc15;
     font-size: 16px;
     font-weight: 900;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
     animation: pulseText 1.5s infinite;
 }
@@ -62,11 +66,11 @@ canvas {
     50% { opacity: 1; transform: scale(1.04); }
 }
 
-/* UI Overlay */
 #ui-container {
     position: absolute;
-    top: 15px;
+    top: calc(15px + env(safe-area-inset-top, 0px));
     left: 0;
+    right: 0;
     width: 100%;
     padding: 0 10px;
     display: flex;
@@ -94,15 +98,14 @@ canvas {
     width: 100%;
     height: 100%;
     background-color: #22c55e;
-    transition: width 0.2s ease, background-color 0.2s ease;
+    transition: width 0.2s ease;
 }
 
 #hp-text {
     position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     color: #fff;
     font-size: 8px;
     font-weight: bold;
@@ -136,14 +139,14 @@ canvas {
     width: 0%;
     height: 100%;
     background: #eab308;
-    transition: width 0.15s linear;
+    transition: width 0.1s linear;
 }
 
 #coin-card {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.75);
     padding: 4px 8px;
     border-radius: 8px;
     border: 1px solid rgba(250, 204, 21, 0.4);
@@ -156,7 +159,7 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.75);
     padding: 4px 10px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -175,7 +178,7 @@ canvas {
 }
 
 .icon-btn {
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(255,255,255,0.3);
     color: #fff;
     width: 32px;
@@ -183,12 +186,15 @@ canvas {
     border-radius: 8px;
     font-size: 14px;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
-/* Modals & Menus */
 #start-overlay, #pause-menu, #game-over-modal {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(5, 7, 20, 0.85);
     backdrop-filter: blur(8px);
     display: flex;
@@ -209,6 +215,8 @@ canvas {
     text-align: center;
     width: 88%;
     max-width: 350px;
+    max-height: 85vh;
+    overflow-y: auto;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
@@ -244,7 +252,6 @@ canvas {
     color: #facc15;
 }
 
-/* Menu Tabs */
 .menu-tabs {
     display: flex;
     gap: 6px;
@@ -258,20 +265,14 @@ canvas {
     flex: 1;
     padding: 8px;
     border: none;
-    background: transparent;
-    color: #94a3b8;
+    background: #2563eb;
+    color: #fff;
     font-weight: bold;
     font-size: 13px;
     border-radius: 8px;
     cursor: pointer;
 }
 
-.tab-btn.active {
-    background: #2563eb;
-    color: #fff;
-}
-
-/* Shop Items */
 .upgrade-item {
     display: flex;
     justify-content: space-between;
@@ -284,7 +285,7 @@ canvas {
 }
 
 .upgrade-info {
-    text-align: left;
+    text-align: right;
     display: flex;
     flex-direction: column;
 }
@@ -308,6 +309,7 @@ canvas {
     font-weight: 900;
     font-size: 12px;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .buy-btn:disabled {
@@ -332,6 +334,7 @@ canvas {
     font-weight: bold;
     font-size: 15px;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 .btn-restart {

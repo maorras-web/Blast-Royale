@@ -2,19 +2,21 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cannon Blast 3D</title>
     <link rel="stylesheet" href="style.css">
-    <!-- טעינת Three.js לפני main.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    
+    <!-- טעינת Three.js קודם כל -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- טעינת קוד המשחק רק לאחר מכן -->
+    <script src="main.js" defer></script>
 </head>
 <body>
 
     <!-- Splash Screen -->
     <div id="splash-screen">
         <div class="splash-content">
-            <div class="splash-tap-text">לחץ להתחלת המשחק במסך מלא</div>
+            <div class="splash-tap-text">לחץ למעבר למסך מלא והתחלת המשחק</div>
         </div>
     </div>
 
@@ -59,6 +61,7 @@
                 <button class="tab-btn active">שדרוגים</button>
             </div>
 
+            <!-- Upgrades List -->
             <div class="upgrade-item">
                 <div class="upgrade-info">
                     <strong>עוצמת ירי</strong>
@@ -111,7 +114,5 @@
         </div>
     </div>
 
-    <!-- main.js נטען אחרי Three.js -->
-    <script src="main.js"></script>
 </body>
 </html>
