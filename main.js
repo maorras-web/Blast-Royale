@@ -1,1898 +1,1564 @@
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded',()=>{
+'use strict';
+if(typeof THREE==='undefined') return console.error('Three.js is missing');
+const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rand=(a,b)=>a+Math.random()*(b-a);
 
-    if (typeof THREE === 'undefined') {
-        console.error('Three.js library is missing!');
-        return;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(52,1,.1,300);
+const renderer=new THREE.WebGLRenderer({antialias:innerWidth>650,powerPreference:'high-performance'});
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.08;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
+renderer.setSize(innerWidth,innerHeight,false);
+document.body.appendChild(renderer.domElement);
+
+let limitX=7.5,baseY=9,baseZ=21,lookY=5.1;
+
+function resize(){
+    const a=innerWidth/Math.max(1,innerHeight);
+    camera.aspect=a;
+    if(a<.76){
+        limitX=4.7;baseY=12.4;baseZ=25.5;lookY=5.4;
+    }else if(a<1.05){
+        limitX=5.4;baseY=11;baseZ=23.2;lookY=5.1;
+    }else{
+        limitX=7.7;baseY=8.9;baseZ=20.5;lookY=5;
     }
+    camera.position.set(0,baseY,baseZ);
+    camera.lookAt(0,lookY,0);
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight,false);
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<600?1.2:1.5));
+}
+resize();
+addEventListener('resize',resize,{passive:true});
 
-    // ==========================================
-    // 1. הגדרת סצנה וגרפיקה
-    // ==========================================
-    const scene = new THREE.Scene();
+function sky(){
+    const c=document.createElement('canvas');
+    c.width=2;
+    c.height=512;
+    const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,0,512);
+    g.addColorStop(0,'#040918');
+    g.addColorStop(.4,'#10344d');
+    g.addColorStop(.72,'#1d6076');
+    g.addColorStop(1,'#d88048');
+    x.fillStyle=g;
+    x.fillRect(0,0,2,512);
+    const t=new THREE.CanvasTexture(c);
+    t.encoding=THREE.sRGBEncoding;
+    return t;
+}
 
-    scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.FogExp2(0xdd8c55, 0.012);
+scene.background=sky();
+scene.fog=new THREE.FogExp2(0x17435b,.017);
 
-    const camera = new THREE.PerspectiveCamera(
-        55,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
+scene.add(new THREE.HemisphereLight(0xa8eaff,0x32180c,.9));
+
+const sun=new THREE.DirectionalLight(0xfff0d1,1.55);
+sun.position.set(12,24,14);
+sun.castShadow=true;
+const sm=innerWidth<650?768:1024;
+sun.shadow.mapSize.set(sm,sm);
+sun.shadow.camera.left=-18;
+sun.shadow.camera.right=18;
+sun.shadow.camera.top=22;
+sun.shadow.camera.bottom=-5;
+sun.shadow.camera.far=70;
+sun.shadow.bias=-.0004;
+scene.add(sun);
+
+const fill=new THREE.DirectionalLight(0x5bd6ff,.42);
+fill.position.set(-14,10,8);
+scene.add(fill);
+
+const arenaLight=new THREE.PointLight(0x22d3ee,2,12,2);
+arenaLight.position.set(0,2.2,2.5);
+scene.add(arenaLight);
+
+const world=new THREE.Group();
+scene.add(world);
+
+const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(58,44),
+    new THREE.MeshStandardMaterial({
+        color:0x18322f,
+        roughness:.96,
+        metalness:.02,
+        flatShading:true
+    })
+);
+ground.rotation.x=-Math.PI/2;
+ground.position.set(0,-.2,-7);
+ground.receiveShadow=true;
+world.add(ground);
+
+const platform=new THREE.Mesh(
+    new THREE.CylinderGeometry(5.7,6.3,.48,56),
+    new THREE.MeshStandardMaterial({
+        color:0x17263a,
+        roughness:.48,
+        metalness:.3,
+        flatShading:true
+    })
+);
+platform.position.set(0,.05,.1);
+platform.scale.z=.68;
+platform.castShadow=true;
+platform.receiveShadow=true;
+world.add(platform);
+
+const inner=new THREE.Mesh(
+    new THREE.CylinderGeometry(4.8,5.05,.13,56),
+    new THREE.MeshStandardMaterial({
+        color:0x0d1a2b,
+        roughness:.7,
+        metalness:.18
+    })
+);
+inner.position.set(0,.34,.1);
+inner.scale.z=.67;
+world.add(inner);
+
+const ringMat=new THREE.MeshBasicMaterial({
+    color:0x38bdf8,
+    transparent:true,
+    opacity:.75
+});
+
+for(let i=0;i<2;i++){
+    const r=new THREE.Mesh(
+        new THREE.TorusGeometry(
+            3.8+i*.72,
+            i?.03:.045,
+            8,
+            56
+        ),
+        ringMat
     );
+    r.rotation.x=Math.PI/2;
+    r.position.set(0,.38+i*.01,.1);
+    r.scale.z=.66;
+    world.add(r);
+}
 
-    let screenLimitX = 7.5;
+function cluster(x,z,s,c){
+    const g=new THREE.Group();
+    const m=new THREE.MeshStandardMaterial({
+        color:c,
+        roughness:.92,
+        flatShading:true
+    });
 
-    function updateCameraForDevice() {
-        const aspect = window.innerWidth / window.innerHeight;
+    for(let i=0;i<3;i++){
+        const q=new THREE.IcosahedronGeometry(1,1);
+        const p=q.attributes.position;
 
-        camera.aspect = aspect;
-
-        if (aspect < 1) {
-            camera.position.set(0, 12, 25);
-            camera.lookAt(0, 5, 0);
-            screenLimitX = 4.8;
-        } else {
-            camera.position.set(0, 8, 17);
-            camera.lookAt(0, 6, 0);
-            screenLimitX = 7.5;
+        for(let j=0;j<p.count;j++){
+            const f=.78+(j*7%10)/28;
+            p.setXYZ(
+                j,
+                p.getX(j)*f,
+                p.getY(j)*(.88+(j%5)/26),
+                p.getZ(j)*f
+            );
         }
 
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(
-            Math.min(window.devicePixelRatio || 1, 1.5)
+        p.needsUpdate=true;
+        q.computeVertexNormals();
+
+        const o=new THREE.Mesh(q,m);
+        o.position.set(
+            rand(-2.4,2.4),
+            rand(.3,.9),
+            rand(-.2,1.4)
         );
+        o.scale.setScalar(s*rand(.65,1.08));
+        o.rotation.set(
+            rand(-.25,.25),
+            rand(0,Math.PI),
+            rand(-.25,.25)
+        );
+        o.castShadow=true;
+        o.receiveShadow=true;
+        g.add(o);
     }
 
-    const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: "high-performance"
-    });
+    g.position.set(x,0,z);
+    world.add(g);
+}
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
+cluster(-14,-10,2.25,0x573a24);
+cluster(14,-11,2.55,0x573a24);
+cluster(-9,-17,1.7,0x3b2a20);
+cluster(9,-18,1.9,0x3b2a20);
 
-    renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio || 1, 1.5)
-    );
+const crystalMat=new THREE.MeshStandardMaterial({
+    color:0x22d3ee,
+    emissive:0x075985,
+    emissiveIntensity:.9,
+    roughness:.2,
+    metalness:.35,
+    flatShading:true
+});
 
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+function crystal(x,y,z,s){
+    const g=new THREE.Group();
+    const q=new THREE.OctahedronGeometry(1,0);
 
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-
-    renderer.outputEncoding = THREE.sRGBEncoding;
-
-    document.body.appendChild(renderer.domElement);
-
-    updateCameraForDevice();
-
-    // ==========================================
-    // 2. תאורה מתקדמת
-    // ==========================================
-    const hemiLight = new THREE.HemisphereLight(
-        0xffedd5,
-        0x7c2d12,
-        0.75
-    );
-
-    scene.add(hemiLight);
-
-    const sunLight = new THREE.DirectionalLight(
-        0xfff7ed,
-        1.3
-    );
-
-    sunLight.position.set(12, 22, 16);
-    sunLight.castShadow = true;
-
-    const shadowResolution =
-        window.innerWidth < 700 ? 512 : 1024;
-
-    sunLight.shadow.mapSize.width = shadowResolution;
-    sunLight.shadow.mapSize.height = shadowResolution;
-
-    sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 50;
-    sunLight.shadow.bias = -0.0005;
-
-    scene.add(sunLight);
-
-    // תאורת מילוי רכה
-    const fillLight = new THREE.DirectionalLight(
-        0x7dd3fc,
-        0.35
-    );
-
-    fillLight.position.set(-10, 8, 6);
-    scene.add(fillLight);
-
-    // אור צבעוני מהתותח
-    const cannonLight = new THREE.PointLight(
-        0x38bdf8,
-        1.6,
-        8,
-        2
-    );
-
-    cannonLight.position.set(0, 1.1, 1.2);
-    scene.add(cannonLight);
-
-    // ==========================================
-    // 3. אלמנטים בסצנה
-    // ==========================================
-    const grassGeo = new THREE.BoxGeometry(
-        40,
-        1,
-        14
-    );
-
-    const grassMat = new THREE.MeshStandardMaterial({
-        color: 0x3f6212,
-        roughness: 0.85,
-        metalness: 0.05
-    });
-
-    const grass = new THREE.Mesh(
-        grassGeo,
-        grassMat
-    );
-
-    grass.position.set(0, -0.5, 0);
-    grass.receiveShadow = true;
-
-    scene.add(grass);
-
-    function createBackgroundPyramid(
-        x,
-        z,
-        scale,
-        colorHex
-    ) {
-        const geo = new THREE.ConeGeometry(
-            8 * scale,
-            13 * scale,
-            4
+    for(let i=0;i<2;i++){
+        const m=new THREE.Mesh(q,crystalMat);
+        m.position.set((i-.5)*.45,i*.14,0);
+        m.scale.set(
+            s*(i?.58:.82),
+            s*(i?1.35:1.7),
+            s*(i?.58:.82)
         );
-
-        const mat = new THREE.MeshStandardMaterial({
-            color: colorHex,
-            roughness: 0.8,
-            flatShading: true
-        });
-
-        const pyr = new THREE.Mesh(
-            geo,
-            mat
-        );
-
-        pyr.position.set(
-            x,
-            5.5 * scale,
-            z
-        );
-
-        pyr.rotation.y = Math.PI / 4;
-
-        pyr.castShadow = true;
-        pyr.receiveShadow = true;
-
-        scene.add(pyr);
+        m.rotation.z=i*.35;
+        m.castShadow=true;
+        g.add(m);
     }
 
-    createBackgroundPyramid(
-        -16,
-        -12,
-        1.4,
-        0x9a3412
-    );
+    g.position.set(x,y,z);
+    world.add(g);
+}
 
-    createBackgroundPyramid(
-        16,
-        -14,
-        1.7,
-        0x9a3412
-    );
+crystal(-5.7,.4,-4.8,.55);
+crystal(6,.4,-4.8,.58);
+crystal(-10,.1,-13,.82);
+crystal(10.5,.1,-14,.9);
 
-    createBackgroundPyramid(
-        0,
-        -22,
-        2.4,
-        0x7c2d12
-    );
+const cannon=new THREE.Group();
+cannon.position.z=1;
+scene.add(cannon);
 
-    // שכבת קרקע ליצירת עומק
-    const platformGeo =
-        new THREE.CylinderGeometry(
-            5.4,
-            6.1,
-            0.35,
-            48
-        );
+const darkMat=new THREE.MeshStandardMaterial({
+    color:0x0b1220,
+    roughness:.3,
+    metalness:.82
+});
 
-    const platformMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            roughness: 0.62,
-            metalness: 0.18
-        });
+const blueMat=new THREE.MeshStandardMaterial({
+    color:0x0d6e9e,
+    roughness:.24,
+    metalness:.5
+});
 
-    const platform =
-        new THREE.Mesh(
-            platformGeo,
-            platformMat
-        );
+const edgeMat=new THREE.MeshStandardMaterial({
+    color:0x67e8f9,
+    emissive:0x0a4b60,
+    emissiveIntensity:.9,
+    roughness:.22,
+    metalness:.3
+});
 
-    platform.position.set(
-        0,
-        0.05,
-        0
-    );
+function add(g){
+    g.castShadow=true;
+    g.receiveShadow=true;
+    cannon.add(g);
+    return g;
+}
 
-    platform.scale.set(
-        1.45,
-        1,
-        0.62
-    );
+add(
+    new THREE.Mesh(
+        new THREE.BoxGeometry(2.5,.55,1.8),
+        darkMat
+    )
+).position.y=.36;
 
-    platform.receiveShadow = true;
-    platform.castShadow = true;
+add(
+    new THREE.Mesh(
+        new THREE.BoxGeometry(2.08,.15,1.95),
+        blueMat
+    )
+).position.y=.63;
 
-    scene.add(platform);
+add(
+    new THREE.Mesh(
+        new THREE.CylinderGeometry(1.05,1.15,.24,24),
+        edgeMat
+    )
+).position.y=.79;
 
-    // טבעת זירה
-    const ringGeo =
-        new THREE.TorusGeometry(
-            3.8,
-            0.08,
-            8,
-            48
-        );
-
-    const ringMat =
-        new THREE.MeshBasicMaterial({
-            color: 0x38bdf8
-        });
-
-    const arenaRing =
-        new THREE.Mesh(
-            ringGeo,
-            ringMat
-        );
-
-    arenaRing.rotation.x =
-        Math.PI / 2;
-
-    arenaRing.position.y = 0.27;
-
-    arenaRing.scale.set(
-        1.45,
-        0.62,
-        1
-    );
-
-    scene.add(arenaRing);
-
-    // ==========================================
-    // 4. עיצוב התותח
-    // ==========================================
-    const cannonGroup =
-        new THREE.Group();
-
-    const baseGeo =
-        new THREE.BoxGeometry(
-            2.1,
-            0.55,
-            1.6
-        );
-
-    const baseMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            roughness: 0.4,
-            metalness: 0.3
-        });
-
-    const base =
-        new THREE.Mesh(
-            baseGeo,
-            baseMat
-        );
-
-    base.position.y = 0.3;
-    base.castShadow = true;
-
-    cannonGroup.add(base);
-
-    const domeGeo =
+const dome=add(
+    new THREE.Mesh(
         new THREE.SphereGeometry(
-            0.85,
+            .9,
             24,
             16,
             0,
-            Math.PI * 2,
+            Math.PI*2,
             0,
-            Math.PI / 2
-        );
-
-    const domeMat =
+            Math.PI/2
+        ),
         new THREE.MeshStandardMaterial({
-            color: 0x0284c7,
-            roughness: 0.2,
-            metalness: 0.1,
-            transparent: true,
-            opacity: 0.9
-        });
+            color:0x0ea5e9,
+            emissive:0x075985,
+            emissiveIntensity:.7,
+            metalness:.32,
+            roughness:.18,
+            transparent:true,
+            opacity:.94
+        })
+    )
+);
 
-    const dome =
-        new THREE.Mesh(
-            domeGeo,
-            domeMat
-        );
+dome.position.y=.74;
 
-    dome.position.y = 0.55;
+const axle=add(
+    new THREE.Mesh(
+        new THREE.CylinderGeometry(.18,.18,2.45,16),
+        darkMat
+    )
+);
+axle.rotation.z=Math.PI/2;
+axle.position.y=.28;
 
-    cannonGroup.add(dome);
+const wheelGeo=new THREE.CylinderGeometry(.38,.38,.22,18);
 
-    const wheelGeo =
-        new THREE.CylinderGeometry(
-            0.35,
-            0.35,
-            0.22,
-            16
-        );
+for(const z of[-.72,.72]){
+    const w=add(new THREE.Mesh(wheelGeo,darkMat));
+    w.rotation.z=Math.PI/2;
+    w.position.set(0,.29,z);
+}
 
-    const wheelMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x0f172a,
-            roughness: 0.7
-        });
+const barrels=new THREE.Group();
+barrels.position.y=.79;
+cannon.add(barrels);
 
-    const wheelPositions = [
-        [-1.05, 0.2, 0.65],
-        [1.05, 0.2, 0.65],
-        [-1.05, 0.2, -0.65],
-        [1.05, 0.2, -0.65]
-    ];
+const barrelGeo=new THREE.CylinderGeometry(.16,.21,1.36,16);
+const muzzleGeo=new THREE.CylinderGeometry(.2,.2,.23,16);
+const collarGeo=new THREE.TorusGeometry(.23,.045,8,18);
+const flashes=[];
 
-    wheelPositions.forEach(pos => {
+for(const x of[-.39,.39]){
+    const b=new THREE.Mesh(barrelGeo,darkMat);
+    b.position.set(x,.86,.02);
+    b.castShadow=true;
+    barrels.add(b);
 
-        const wheel =
-            new THREE.Mesh(
-                wheelGeo,
-                wheelMat
+    const m=new THREE.Mesh(muzzleGeo,blueMat);
+    m.position.set(x,1.57,.02);
+    m.castShadow=true;
+    barrels.add(m);
+
+    const c=new THREE.Mesh(collarGeo,edgeMat);
+    c.rotation.x=Math.PI/2;
+    c.position.set(x,1.45,.02);
+    barrels.add(c);
+
+    const f=new THREE.Mesh(
+        new THREE.IcosahedronGeometry(.34,0),
+        new THREE.MeshBasicMaterial({
+            color:0xfff4b2,
+            transparent:true,
+            opacity:0,
+            depthWrite:false
+        })
+    );
+    f.position.set(x,1.74,.02);
+    f.visible=false;
+    barrels.add(f);
+    flashes.push(f);
+}
+
+const cannonGlow=new THREE.PointLight(0x22d3ee,1.2,5,2);
+cannonGlow.position.set(0,1,.7);
+cannon.add(cannonGlow);
+
+const ui={
+    score:$('score-val'),
+    coins:$('coins-val'),
+    hp:$('hp-text'),
+    bar:$('hp-bar'),
+    level:$('level-text'),
+    start:$('splash-screen'),
+    startBtn:$('start-btn'),
+    startCoins:$('start-coins'),
+    best:$('start-best-score'),
+    powerBtn:$('buy-power-btn'),
+    rateBtn:$('buy-rate-btn'),
+    magnetBtn:$('buy-magnet-btn'),
+    powerLvl:$('power-lvl-text'),
+    rateLvl:$('rate-lvl-text'),
+    magnetLvl:$('magnet-lvl-text'),
+    combat:$('combat-ui'),
+    combo:$('combo-badge'),
+    wave:$('wave-badge'),
+    pauseBtn:$('pause-btn'),
+    pause:$('pause-screen'),
+    resume:$('resume-btn'),
+    over:$('game-over-screen'),
+    restart:$('restart-btn'),
+    finalScore:$('final-score'),
+    finalLevel:$('final-level'),
+    finalCoins:$('final-coins'),
+    damage:$('damage-flash')
+};
+
+let score=0;
+let coins=parseInt(localStorage.getItem('bb3d_coins')||'0',10)||0;
+let best=parseInt(localStorage.getItem('bb3d_best')||'0',10)||0;
+let level=1;
+let hp=1000;
+let saveTimer=0;
+
+let powerLvl=parseInt(localStorage.getItem('bb3d_upg_power')||'1',10)||1;
+let rateLvl=parseInt(localStorage.getItem('bb3d_upg_rate')||'1',10)||1;
+let magnetLvl=parseInt(localStorage.getItem('bb3d_upg_magnet')||'0',10)||0;
+
+let power=powerLvl;
+let rate=1+(rateLvl-1)*.25;
+
+let bullets=[];
+let rocks=[];
+let coinsDrop=[];
+
+let started=false;
+let paused=false;
+let gameOver=false;
+let targetX=0;
+let lastShot=0;
+let combo=0;
+let comboTime=0;
+let waveTime=0;
+let recoil=0;
+let shake=0;
+let elapsed=0;
+let lastFrame=performance.now();
+
+function save(){
+    localStorage.setItem('bb3d_coins',coins);
+    localStorage.setItem('bb3d_best',best);
+    localStorage.setItem('bb3d_upg_power',powerLvl);
+    localStorage.setItem('bb3d_upg_rate',rateLvl);
+    localStorage.setItem('bb3d_upg_magnet',magnetLvl);
+}
+
+function updateUI(){
+    ui.score.textContent=score;
+    ui.coins.textContent=coins;
+    ui.hp.textContent=`${Math.max(0,Math.round(hp))} / 1000`;
+    ui.bar.style.width=`${clamp(hp/10,0,100)}%`;
+    ui.level.textContent=`LEVEL ${level}`;
+    ui.startCoins.textContent=coins;
+    ui.best.textContent=best;
+
+    ui.powerLvl.textContent=`Lvl ${powerLvl}`;
+    ui.rateLvl.textContent=`Lvl ${rateLvl}`;
+    ui.magnetLvl.textContent=`Lvl ${magnetLvl}`;
+
+    ui.powerBtn.textContent=`${powerLvl*50} C`;
+    ui.rateBtn.textContent=`${rateLvl*60} C`;
+    ui.magnetBtn.textContent=`${(magnetLvl+1)*100} C`;
+
+    ui.powerBtn.disabled=coins<powerLvl*50;
+    ui.rateBtn.disabled=coins<rateLvl*60;
+    ui.magnetBtn.disabled=coins<(magnetLvl+1)*100;
+
+    ui.combo.textContent=`COMBO x${Math.max(1,combo)}`;
+    ui.wave.textContent=`WAVE ${level}`;
+}
+
+updateUI();
+
+let audio=null;
+
+function sound(t){
+    if(!audio){
+        const A=window.AudioContext||window.webkitAudioContext;
+        if(!A) return;
+        try{audio=new A()}catch(e){return}
+    }
+
+    if(audio.state==='suspended') audio.resume();
+
+    const o=audio.createOscillator();
+    const g=audio.createGain();
+    const n=audio.currentTime;
+
+    o.connect(g);
+    g.connect(audio.destination);
+
+    if(t==='shoot'){
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(380,n);
+        o.frequency.exponentialRampToValueAtTime(95,n+.07);
+        g.gain.setValueAtTime(.045,n);
+        g.gain.exponentialRampToValueAtTime(.001,n+.08);
+        o.start(n);
+        o.stop(n+.08);
+    }else if(t==='hit'){
+        o.type='triangle';
+        o.frequency.setValueAtTime(160,n);
+        o.frequency.exponentialRampToValueAtTime(45,n+.08);
+        g.gain.setValueAtTime(.07,n);
+        g.gain.exponentialRampToValueAtTime(.001,n+.09);
+        o.start(n);
+        o.stop(n+.09);
+    }else if(t==='coin'){
+        o.type='sine';
+        o.frequency.setValueAtTime(900,n);
+        o.frequency.setValueAtTime(1320,n+.06);
+        g.gain.setValueAtTime(.06,n);
+        g.gain.exponentialRampToValueAtTime(.001,n+.14);
+        o.start(n);
+        o.stop(n+.14);
+    }else{
+        o.type='sine';
+        o.frequency.setValueAtTime(520,n);
+        o.frequency.setValueAtTime(780,n+.08);
+        o.frequency.setValueAtTime(1040,n+.16);
+        g.gain.setValueAtTime(.06,n);
+        g.gain.exponentialRampToValueAtTime(.001,n+.3);
+        o.start(n);
+        o.stop(n+.3);
+    }
+}
+
+const bulletGeo=new THREE.SphereGeometry(.16,10,10);
+const bulletMat=new THREE.MeshBasicMaterial({color:0xfff1a8});
+const bulletGlowGeo=new THREE.SphereGeometry(.3,8,8);
+const bulletGlowMat=new THREE.MeshBasicMaterial({
+    color:0x38bdf8,
+    transparent:true,
+    opacity:.32,
+    depthWrite:false
+});
+
+const coinGeo=new THREE.CylinderGeometry(.28,.28,.09,14);
+
+const coinMat=new THREE.MeshStandardMaterial({
+    color:0xfacc15,
+    metalness:.86,
+    roughness:.18,
+    emissive:0x6b4a00,
+    emissiveIntensity:.18
+});
+
+const rockGeo=new THREE.IcosahedronGeometry(1,1);
+const pos=rockGeo.attributes.position;
+
+for(let i=0;i<pos.count;i++){
+    const f=.8+(i*9%11)/30;
+    pos.setXYZ(
+        i,
+        pos.getX(i)*f,
+        pos.getY(i)*(.9+(i%5)/24),
+        pos.getZ(i)*f
+    );
+}
+
+pos.needsUpdate=true;
+rockGeo.computeVertexNormals();
+
+const rockMats=[
+    new THREE.MeshStandardMaterial({
+        color:0x728398,
+        roughness:.8,
+        flatShading:true
+    }),
+    new THREE.MeshStandardMaterial({
+        color:0x8c5f45,
+        roughness:.86,
+        flatShading:true
+    }),
+    new THREE.MeshStandardMaterial({
+        color:0x53677d,
+        roughness:.76,
+        metalness:.08,
+        flatShading:true
+    })
+];
+
+const hpCache=new Map();
+
+function hpTex(v){
+    v=String(Math.max(0,Math.ceil(v)));
+
+    if(hpCache.has(v)) return hpCache.get(v);
+
+    const c=document.createElement('canvas');
+    c.width=128;
+    c.height=64;
+
+    const x=c.getContext('2d');
+    x.font='900 42px Rubik,Arial';
+    x.textAlign='center';
+    x.textBaseline='middle';
+    x.shadowColor='rgba(0,0,0,.75)';
+    x.shadowBlur=7;
+    x.fillStyle='#fff';
+    x.fillText(v,64,32);
+
+    const t=new THREE.CanvasTexture(c);
+    t.minFilter=THREE.LinearFilter;
+    t.magFilter=THREE.LinearFilter;
+    t.encoding=THREE.sRGBEncoding;
+
+    hpCache.set(v,t);
+    return t;
+}
+
+function spawnBullet(x){
+    const g=new THREE.Group();
+    g.add(
+        new THREE.Mesh(bulletGeo,bulletMat),
+        new THREE.Mesh(bulletGlowGeo,bulletGlowMat)
+    );
+    g.position.set(x,2.45,1.05);
+    g.userData.life=2;
+    scene.add(g);
+    bullets.push(g);
+}
+
+function spawnRock(x,y,h,s,t=0){
+    const r=new THREE.Mesh(
+        rockGeo,
+        rockMats[t%3]
+    );
+
+    r.position.set(
+        x,
+        y,
+        rand(-.22,.22)
+    );
+
+    r.scale.set(
+        s,
+        s*1.12,
+        s
+    );
+
+    r.rotation.set(
+        rand(-1,1),
+        rand(0,6.28),
+        rand(-1,1)
+    );
+
+    r.castShadow=true;
+    r.receiveShadow=true;
+
+    const lab=new THREE.Sprite(
+        new THREE.SpriteMaterial({
+            map:hpTex(h),
+            transparent:true,
+            depthWrite:false
+        })
+    );
+
+    lab.scale.set(
+        1.3*s,
+        .65*s,
+        1
+    );
+
+    lab.position.z=.78*s;
+    r.add(lab);
+
+    r.userData={
+        hp:h,
+        maxHp:h,
+        size:s,
+        vx:rand(-1.1,1.1),
+        vy:rand(-1.5,-.2),
+        cool:0,
+        sx:rand(-1.2,1.2),
+        sy:rand(-1.5,1.5),
+        lab
+    };
+
+    scene.add(r);
+    rocks.push(r);
+}
+
+function spawnCoin(x,y){
+    const c=new THREE.Mesh(
+        coinGeo,
+        coinMat
+    );
+
+    c.position.set(x,y,1);
+    c.rotation.x=Math.PI/2;
+    c.userData={
+        vy:rand(1.5,2.4),
+        spin:rand(4,6)
+    };
+
+    scene.add(c);
+    coinsDrop.push(c);
+}
+
+const particleCount=120;
+const particlePos=new Float32Array(particleCount*3);
+const particleLife=new Float32Array(particleCount);
+const particleVX=new Float32Array(particleCount);
+const particleVY=new Float32Array(particleCount);
+const particleVZ=new Float32Array(particleCount);
+
+const pGeo=new THREE.BufferGeometry();
+
+pGeo.setAttribute(
+    'position',
+    new THREE.BufferAttribute(particlePos,3)
+);
+
+const particles=new THREE.Points(
+    pGeo,
+    new THREE.PointsMaterial({
+        color:0x7dd3fc,
+        size:.14,
+        transparent:true,
+        opacity:.9,
+        depthWrite:false
+    })
+);
+
+scene.add(particles);
+
+function burst(x,y,n=10){
+    for(let i=0;i<n;i++){
+        let k=-1;
+
+        for(let j=0;j<particleCount;j++){
+            if(particleLife[j]<=0){
+                k=j;
+                break;
+            }
+        }
+
+        if(k<0) break;
+
+        const a=Math.random()*6.28;
+        const s=rand(1.5,5);
+
+        particlePos[k*3]=x;
+        particlePos[k*3+1]=y;
+        particlePos[k*3+2]=rand(.55,1.1);
+
+        particleLife[k]=rand(.25,.55);
+        particleVX[k]=Math.cos(a)*s;
+        particleVY[k]=rand(1.4,4.2);
+        particleVZ[k]=Math.sin(a)*s*.3;
+    }
+
+    pGeo.attributes.position.needsUpdate=true;
+}
+
+const shockPool=[];
+const shockGeo=new THREE.TorusGeometry(.48,.05,8,28);
+
+for(let i=0;i<7;i++){
+    const q=new THREE.Mesh(
+        shockGeo,
+        new THREE.MeshBasicMaterial({
+            color:0x67e8f9,
+            transparent:true,
+            opacity:0,
+            depthWrite:false
+        })
+    );
+
+    q.rotation.x=Math.PI/2;
+    q.visible=false;
+    scene.add(q);
+    shockPool.push(q);
+}
+
+function shock(x,y,s=1){
+    const q=shockPool.find(o=>!o.visible);
+    if(!q) return;
+
+    q.visible=true;
+    q.position.set(x,y,.92);
+    q.scale.setScalar(.2*s);
+    q.material.opacity=.85;
+    q.userData={
+        life:.28,
+        grow:3.2*s
+    };
+}
+
+function updateFx(dt){
+    for(let i=0;i<particleCount;i++){
+        if(particleLife[i]>0){
+            particleLife[i]-=dt;
+            particlePos[i*3]+=particleVX[i]*dt;
+            particlePos[i*3+1]+=particleVY[i]*dt;
+            particlePos[i*3+2]+=particleVZ[i]*dt;
+            particleVY[i]-=8*dt;
+        }
+    }
+
+    pGeo.attributes.position.needsUpdate=true;
+
+    for(const q of shockPool){
+        if(q.visible){
+            q.userData.life-=dt;
+
+            const t=1-q.userData.life/.28;
+
+            q.scale.setScalar(
+                .2+t*q.userData.grow
             );
 
-        wheel.rotation.z =
-            Math.PI / 2;
+            q.material.opacity=Math.max(
+                0,
+                .85*(1-t)
+            );
 
-        wheel.position.set(...pos);
+            if(q.userData.life<=0){
+                q.visible=false;
+                q.material.opacity=0;
+            }
+        }
+    }
+}
 
-        wheel.castShadow = true;
+function clearGame(){
+    for(const b of bullets) scene.remove(b);
+    for(const r of rocks) scene.remove(r);
+    for(const c of coinsDrop) scene.remove(c);
 
-        cannonGroup.add(wheel);
-    });
+    bullets=[];
+    rocks=[];
+    coinsDrop=[];
 
-    const barrelGeo =
-        new THREE.CylinderGeometry(
-            0.11,
-            0.11,
-            0.85,
-            16
-        );
+    particleLife.fill(0);
 
-    const barrelMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x334155,
-            metalness: 0.7,
-            roughness: 0.3
-        });
+    for(const q of shockPool){
+        q.visible=false;
+        q.material.opacity=0;
+    }
+}
 
-    const leftBarrel =
-        new THREE.Mesh(
-            barrelGeo,
-            barrelMat
-        );
-
-    leftBarrel.position.set(
-        -0.35,
-        1.0,
-        0
+function waveSpawn(){
+    const count=Math.min(
+        3+Math.floor((level-1)*.65),
+        7
     );
 
-    const rightBarrel =
-        new THREE.Mesh(
-            barrelGeo,
-            barrelMat
-        );
-
-    rightBarrel.position.set(
-        0.35,
-        1.0,
-        0
-    );
-
-    cannonGroup.add(leftBarrel);
-    cannonGroup.add(rightBarrel);
-
-    scene.add(cannonGroup);
-
-    // ליבה זוהרת
-    const coreGeo =
-        new THREE.SphereGeometry(
-            0.12,
-            12,
-            12
-        );
-
-    const coreMat =
-        new THREE.MeshBasicMaterial({
-            color: 0x67e8f9
-        });
-
-    const cannonCore =
-        new THREE.Mesh(
-            coreGeo,
-            coreMat
-        );
-
-    cannonCore.position.set(
-        0,
-        0.83,
-        0.58
-    );
-
-    cannonGroup.add(cannonCore);
-
-    // ==========================================
-    // 5. משתני משחק
-    // ==========================================
-    let isGameStarted = false;
-    let isPaused = false;
-    let isGameOver = false;
-
-    let score = 0;
-
-    let coins =
-        parseInt(
-            localStorage.getItem('bb3d_coins')
-        ) || 0;
-
-    let bestScore =
-        parseInt(
-            localStorage.getItem('bb3d_best')
-        ) || 0;
-
-    let level = 1;
-
-    let playerHp = 1000;
-    let maxHp = 1000;
-
-    let firePowerLvl =
-        parseInt(
-            localStorage.getItem(
-                'bb3d_upg_power'
-            )
-        ) || 1;
-
-    let fireRateLvl =
-        parseInt(
-            localStorage.getItem(
-                'bb3d_upg_rate'
-            )
-        ) || 1;
-
-    let magnetLvl =
-        parseInt(
-            localStorage.getItem(
-                'bb3d_upg_magnet'
-            )
-        ) || 0;
-
-    let firePower =
-        firePowerLvl;
-
-    let fireRate =
-        1 + (fireRateLvl - 1) * 0.25;
-
-    let bullets = [];
-    let rocks = [];
-    let droppedCoins = [];
-
-    let lastShotTime = 0;
-    let targetX = 0;
-
-    // ==========================================
-    // 6. UI
-    // ==========================================
-    const coinsValEl =
-        document.getElementById(
-            'coins-val'
-        );
-
-    const scoreValEl =
-        document.getElementById(
-            'score-val'
-        );
-
-    const hpTextEl =
-        document.getElementById(
-            'hp-text'
-        );
-
-    const hpBarEl =
-        document.getElementById(
-            'hp-bar'
-        );
-
-    const levelTextEl =
-        document.getElementById(
-            'level-text'
-        );
-
-    const splashScreen =
-        document.getElementById(
-            'splash-screen'
-        );
-
-    const startBtn =
-        document.getElementById(
-            'start-btn'
-        );
-
-    const startCoinsEl =
-        document.getElementById(
-            'start-coins'
-        );
-
-    const startBestScoreEl =
-        document.getElementById(
-            'start-best-score'
-        );
-
-    const buyPowerBtn =
-        document.getElementById(
-            'buy-power-btn'
-        );
-
-    const buyRateBtn =
-        document.getElementById(
-            'buy-rate-btn'
-        );
-
-    const buyMagnetBtn =
-        document.getElementById(
-            'buy-magnet-btn'
-        );
-
-    function updateUI() {
-
-        if (coinsValEl) {
-            coinsValEl.innerText =
-                coins;
-        }
-
-        if (scoreValEl) {
-            scoreValEl.innerText =
-                score;
-        }
-
-        if (startCoinsEl) {
-            startCoinsEl.innerText =
-                coins;
-        }
-
-        if (startBestScoreEl) {
-            startBestScoreEl.innerText =
-                bestScore;
-        }
-
-        if (hpTextEl) {
-            hpTextEl.innerText =
-                `${Math.max(0, playerHp)} / ${maxHp}`;
-        }
-
-        if (hpBarEl) {
-            hpBarEl.style.width =
-                `${Math.max(
-                    0,
-                    (playerHp / maxHp) * 100
-                )}%`;
-        }
-
-        if (levelTextEl) {
-            levelTextEl.innerText =
-                `LEVEL ${level}`;
-        }
-
-        // מחירי שדרוגים
-        const powerCost =
-            firePowerLvl * 50;
-
-        const rateCost =
-            fireRateLvl * 60;
-
-        const magnetCost =
-            (magnetLvl + 1) * 100;
-
-        if (buyPowerBtn) {
-
-            buyPowerBtn.innerText =
-                `${powerCost} C`;
-
-            buyPowerBtn.disabled =
-                coins < powerCost;
-
-            const el =
-                document.getElementById(
-                    'power-lvl-text'
-                );
-
-            if (el) {
-                el.innerText =
-                    `Lvl ${firePowerLvl}`;
-            }
-        }
-
-        if (buyRateBtn) {
-
-            buyRateBtn.innerText =
-                `${rateCost} C`;
-
-            buyRateBtn.disabled =
-                coins < rateCost;
-
-            const el =
-                document.getElementById(
-                    'rate-lvl-text'
-                );
-
-            if (el) {
-                el.innerText =
-                    `Lvl ${fireRateLvl}`;
-            }
-        }
-
-        if (buyMagnetBtn) {
-
-            buyMagnetBtn.innerText =
-                `${magnetCost} C`;
-
-            buyMagnetBtn.disabled =
-                coins < magnetCost;
-
-            const el =
-                document.getElementById(
-                    'magnet-lvl-text'
-                );
-
-            if (el) {
-                el.innerText =
-                    `Lvl ${magnetLvl}`;
-            }
-        }
-    }
-
-    // ==========================================
-    // שדרוג כוח
-    // ==========================================
-    if (buyPowerBtn) {
-
-        buyPowerBtn.addEventListener(
-            'click',
-            () => {
-
-                const cost =
-                    firePowerLvl * 50;
-
-                if (coins >= cost) {
-
-                    coins -= cost;
-
-                    firePowerLvl++;
-
-                    firePower =
-                        firePowerLvl;
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-                    localStorage.setItem(
-                        'bb3d_upg_power',
-                        firePowerLvl
-                    );
-
-                    updateUI();
-                }
-            }
+    const base=18+level*8;
+
+    for(let i=0;i<count;i++){
+        const s=rand(.8,1.18)+Math.min(.35,level*.02);
+
+        spawnRock(
+            rand(-limitX*.85,limitX*.85),
+            11.5+i*rand(1.45,2),
+            Math.floor(
+                base*s*rand(.9,1.12)
+            ),
+            s,
+            Math.random()<
+            Math.min(.38,.2+level*.012)
+            ?1:0
         );
     }
 
-    // ==========================================
-    // שדרוג קצב אש
-    // ==========================================
-    if (buyRateBtn) {
-
-        buyRateBtn.addEventListener(
-            'click',
-            () => {
-
-                const cost =
-                    fireRateLvl * 60;
-
-                if (coins >= cost) {
-
-                    coins -= cost;
-
-                    fireRateLvl++;
-
-                    fireRate =
-                        1 +
-                        (fireRateLvl - 1) *
-                        0.25;
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-                    localStorage.setItem(
-                        'bb3d_upg_rate',
-                        fireRateLvl
-                    );
-
-                    updateUI();
-                }
-            }
+    if(level%5===0){
+        spawnRock(
+            0,
+            15.5,
+            Math.floor(base*2.8),
+            1.5,
+            2
         );
     }
 
-    // ==========================================
-    // שדרוג מגנט
-    // ==========================================
-    if (buyMagnetBtn) {
+    waveTime=0;
+    sound('level');
+    updateUI();
+}
 
-        buyMagnetBtn.addEventListener(
-            'click',
-            () => {
+function gameStart(){
+    clearGame();
 
-                const cost =
-                    (magnetLvl + 1) * 100;
+    started=true;
+    paused=false;
+    gameOver=false;
 
-                if (coins >= cost) {
+    score=0;
+    level=1;
+    hp=1000;
+    combo=0;
+    comboTime=0;
+    targetX=0;
+    cannon.position.x=0;
 
-                    coins -= cost;
+    ui.start.classList.add('hidden');
+    ui.pause.classList.add('hidden');
+    ui.over.classList.add('hidden');
 
-                    magnetLvl++;
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-                    localStorage.setItem(
-                        'bb3d_upg_magnet',
-                        magnetLvl
-                    );
-
-                    updateUI();
-                }
-            }
-        );
-    }
+    ui.pauseBtn.classList.remove('hidden');
+    ui.combat.classList.remove('hidden');
 
     updateUI();
+    waveSpawn();
+}
 
-    // ==========================================
-    // 7. סאונד
-    // ==========================================
-    const audioCtx =
-        new (
-            window.AudioContext ||
-            window.webkitAudioContext
-        )();
+function finish(){
+    gameOver=true;
+    paused=false;
 
-    function playSound(type) {
+    if(score>best) best=score;
 
-        if (
-            audioCtx.state ===
-            'suspended'
-        ) {
-            audioCtx.resume();
-        }
+    save();
 
-        const osc =
-            audioCtx.createOscillator();
+    ui.finalScore.textContent=score;
+    ui.finalLevel.textContent=level;
+    ui.finalCoins.textContent=coins;
 
-        const gain =
-            audioCtx.createGain();
+    ui.pauseBtn.classList.add('hidden');
+    ui.combat.classList.add('hidden');
+    ui.over.classList.remove('hidden');
 
-        osc.connect(gain);
-        gain.connect(
-            audioCtx.destination
-        );
+    updateUI();
+}
 
-        if (type === 'shoot') {
+ui.startBtn.onclick=gameStart;
+ui.restart.onclick=gameStart;
 
-            osc.frequency.setValueAtTime(
-                320,
-                audioCtx.currentTime
-            );
+ui.pauseBtn.onclick=()=>{
+    if(!started||gameOver) return;
 
-            osc.frequency.exponentialRampToValueAtTime(
-                90,
-                audioCtx.currentTime + 0.07
-            );
+    paused=!paused;
 
-            gain.gain.setValueAtTime(
-                0.05,
-                audioCtx.currentTime
-            );
-
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime + 0.07
-            );
-
-            osc.start();
-
-            osc.stop(
-                audioCtx.currentTime + 0.07
-            );
-
-        } else if (type === 'hit') {
-
-            osc.type = 'triangle';
-
-            osc.frequency.setValueAtTime(
-                120,
-                audioCtx.currentTime
-            );
-
-            osc.frequency.exponentialRampToValueAtTime(
-                40,
-                audioCtx.currentTime + 0.06
-            );
-
-            gain.gain.setValueAtTime(
-                0.08,
-                audioCtx.currentTime
-            );
-
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime + 0.06
-            );
-
-            osc.start();
-
-            osc.stop(
-                audioCtx.currentTime + 0.06
-            );
-
-        } else if (type === 'coin') {
-
-            osc.frequency.setValueAtTime(
-                850,
-                audioCtx.currentTime
-            );
-
-            osc.frequency.setValueAtTime(
-                1250,
-                audioCtx.currentTime + 0.05
-            );
-
-            gain.gain.setValueAtTime(
-                0.07,
-                audioCtx.currentTime
-            );
-
-            gain.gain.linearRampToValueAtTime(
-                0.01,
-                audioCtx.currentTime + 0.12
-            );
-
-            osc.start();
-
-            osc.stop(
-                audioCtx.currentTime + 0.12
-            );
-        }
-    }
-
-    // ==========================================
-    // 8. יצירת אובייקטים עם שימוש חוזר
-    // ==========================================
-
-    // שימוש חוזר ב-Geometry/Material
-    // מפחית הקצאות וזעזועים של GC
-    const bulletGeo =
-        new THREE.SphereGeometry(
-            0.18,
-            10,
-            10
-        );
-
-    const bulletMat =
-        new THREE.MeshBasicMaterial({
-            color: 0xfef08a
-        });
-
-    const rockMaterial =
-        new THREE.MeshStandardMaterial({
-            color: 0x64748b,
-            roughness: 0.8,
-            metalness: 0.05,
-            flatShading: true
-        });
-
-    const coinGeo =
-        new THREE.CylinderGeometry(
-            0.28,
-            0.28,
-            0.08,
-            12
-        );
-
-    const coinMat =
-        new THREE.MeshStandardMaterial({
-            color: 0xfacc15,
-            metalness: 0.75,
-            roughness: 0.22
-        });
-
-    const rockGeometryCache =
-        new Map();
-
-    function getRockGeometry(size) {
-
-        const key =
-            Math.round(size * 1000) /
-            1000;
-
-        if (
-            !rockGeometryCache.has(key)
-        ) {
-
-            rockGeometryCache.set(
-                key,
-                new THREE.ConeGeometry(
-                    size,
-                    size * 1.35,
-                    4
-                )
-            );
-        }
-
-        return rockGeometryCache.get(key);
-    }
-
-    // Cache לטקסט HP
-    const labelTextureCache =
-        new Map();
-
-    function getHpTexture(hp) {
-
-        const key =
-            String(hp);
-
-        if (
-            labelTextureCache.has(key)
-        ) {
-            return labelTextureCache.get(
-                key
-            );
-        }
-
-        const canvas =
-            document.createElement(
-                'canvas'
-            );
-
-        canvas.width = 96;
-        canvas.height = 96;
-
-        const ctx =
-            canvas.getContext('2d');
-
-        ctx.clearRect(
-            0,
-            0,
-            96,
-            96
-        );
-
-        ctx.fillStyle =
-            '#ffffff';
-
-        ctx.font =
-            '800 46px Rubik, Arial';
-
-        ctx.textAlign =
-            'center';
-
-        ctx.textBaseline =
-            'middle';
-
-        ctx.shadowColor =
-            'rgba(0,0,0,0.65)';
-
-        ctx.shadowBlur = 6;
-
-        ctx.fillText(
-            key,
-            48,
-            48
-        );
-
-        const texture =
-            new THREE.CanvasTexture(
-                canvas
-            );
-
-        texture.minFilter =
-            THREE.LinearFilter;
-
-        texture.magFilter =
-            THREE.LinearFilter;
-
-        labelTextureCache.set(
-            key,
-            texture
-        );
-
-        return texture;
-    }
-
-    function spawnBullet(
-        x,
-        y,
-        z
-    ) {
-
-        const bullet =
-            new THREE.Mesh(
-                bulletGeo,
-                bulletMat
-            );
-
-        bullet.position.set(
-            x,
-            y,
-            z
-        );
-
-        bullet.userData.vy =
-            24;
-
-        scene.add(bullet);
-
-        bullets.push(bullet);
-    }
-
-    function spawnRock(
-        x,
-        y,
-        hp,
-        size
-    ) {
-
-        const rock =
-            new THREE.Mesh(
-                getRockGeometry(size),
-                rockMaterial
-            );
-
-        rock.castShadow = true;
-        rock.receiveShadow = true;
-
-        rock.position.set(
-            x,
-            y,
-            0
-        );
-
-        const spriteMat =
-            new THREE.SpriteMaterial({
-                map: getHpTexture(hp),
-                transparent: true,
-                depthWrite: false
-            });
-
-        const label =
-            new THREE.Sprite(
-                spriteMat
-            );
-
-        label.scale.set(
-            size * 1.1,
-            size * 1.1,
-            1
-        );
-
-        label.position.z =
-            0.35;
-
-        rock.add(label);
-
-        rock.userData = {
-            hp: hp,
-            maxHp: hp,
-            size: size,
-            vx:
-                (Math.random() - 0.5) *
-                1.8,
-            vy: -1.5,
-            label: label
-        };
-
-        scene.add(rock);
-
-        rocks.push(rock);
-    }
-
-    function updateRockLabel(rock) {
-
-        const label =
-            rock.userData.label;
-
-        if (!label) return;
-
-        label.material.map =
-            getHpTexture(
-                rock.userData.hp
-            );
-
-        label.material.needsUpdate =
-            true;
-    }
-
-    function removeRock(
-        rock,
-        index
-    ) {
-
-        scene.remove(rock);
-
-        if (rock.userData.label) {
-            rock.userData.label.material.dispose();
-        }
-
-        rocks.splice(
-            index,
-            1
-        );
-    }
-
-    function spawnCoin(
-        x,
-        y
-    ) {
-
-        const coin =
-            new THREE.Mesh(
-                coinGeo,
-                coinMat
-            );
-
-        coin.rotation.x =
-            Math.PI / 2;
-
-        coin.position.set(
-            x,
-            y,
-            0
-        );
-
-        coin.castShadow =
-            true;
-
-        coin.userData = {
-            vy: -2.4
-        };
-
-        scene.add(coin);
-
-        droppedCoins.push(
-            coin
-        );
-    }
-
-    function startNextWave() {
-
-        if (rocks.length > 0)
-            return;
-
-        const count =
-            Math.min(
-                2 +
-                Math.floor(
-                    (level - 1) / 2
-                ),
-                5
-            );
-
-        for (
-            let i = 0;
-            i < count;
-            i++
-        ) {
-
-            const size =
-                0.95 +
-                Math.random() *
-                0.8;
-
-            const hp =
-                Math.floor(
-                    (8 + level * 6) *
-                    (size / 1.2)
-                );
-
-            const spawnX =
-                (Math.random() - 0.5) *
-                (screenLimitX * 1.35);
-
-            spawnRock(
-                spawnX,
-                12 + i * 2.6,
-                hp,
-                size
-            );
-        }
-
-        updateUI();
-    }
-
-    // ==========================================
-    // 9. שליטה וגרירה
-    // ==========================================
-    let isDragging = false;
-
-    function handleMove(
-        clientX
-    ) {
-
-        const normalizedX =
-            (clientX /
-                window.innerWidth) *
-            2 -
-            1;
-
-        targetX =
-            Math.max(
-                -screenLimitX,
-                Math.min(
-                    screenLimitX,
-                    normalizedX *
-                    (screenLimitX * 1.25)
-                )
-            );
-    }
-
-    window.addEventListener(
-        'pointerdown',
-        (e) => {
-
-            if (
-                !isGameStarted ||
-                isPaused ||
-                isGameOver
-            ) {
-                return;
-            }
-
-            isDragging = true;
-
-            handleMove(
-                e.clientX
-            );
-        }
+    ui.pause.classList.toggle(
+        'hidden',
+        !paused
     );
 
-    window.addEventListener(
-        'pointermove',
-        (e) => {
+    ui.pauseBtn.classList.toggle(
+        'hidden',
+        paused
+    );
+};
 
-            if (isDragging) {
-                handleMove(
-                    e.clientX
-                );
-            }
+ui.resume.onclick=ui.pauseBtn.onclick;
+
+ui.powerBtn.onclick=()=>{
+    const c=powerLvl*50;
+    if(coins<c) return;
+
+    coins-=c;
+    power=++powerLvl;
+
+    save();
+    updateUI();
+};
+
+ui.rateBtn.onclick=()=>{
+    const c=rateLvl*60;
+    if(coins<c) return;
+
+    coins-=c;
+    rateLvl++;
+    rate=1+(rateLvl-1)*.25;
+
+    save();
+    updateUI();
+};
+
+ui.magnetBtn.onclick=()=>{
+    const c=(magnetLvl+1)*100;
+    if(coins<c) return;
+
+    coins-=c;
+    magnetLvl++;
+
+    save();
+    updateUI();
+};
+
+let drag=false;
+
+renderer.domElement.addEventListener(
+    'pointerdown',
+    e=>{
+        if(!started||paused||gameOver) return;
+
+        drag=true;
+
+        renderer.domElement.setPointerCapture?.(
+            e.pointerId
+        );
+
+        move(e.clientX);
+    }
+);
+
+renderer.domElement.addEventListener(
+    'pointermove',
+    e=>{
+        if(drag) move(e.clientX);
+    }
+);
+
+renderer.domElement.addEventListener(
+    'pointerup',
+    ()=>drag=false
+);
+
+renderer.domElement.addEventListener(
+    'pointercancel',
+    ()=>drag=false
+);
+
+function move(x){
+    const n=x/Math.max(
+        1,
+        innerWidth
+    )*2-1;
+
+    targetX=clamp(
+        n*limitX*1.15,
+        -limitX,
+        limitX
+    );
+}
+
+addEventListener(
+    'keydown',
+    e=>{
+        if(
+            ['Space','Escape','KeyP']
+            .includes(e.code)
+        ){
+            e.preventDefault();
+            ui.pauseBtn.click();
         }
+    }
+);
+
+document.addEventListener(
+    'contextmenu',
+    e=>e.preventDefault()
+);
+
+function shoot(){
+    spawnBullet(
+        cannon.position.x-.39
     );
 
-    window.addEventListener(
-        'pointerup',
-        () => {
-            isDragging = false;
-        }
+    spawnBullet(
+        cannon.position.x+.39
     );
 
-    // ==========================================
-    // 10. התחלת משחק
-    // ==========================================
-    function startGame() {
-
-        if (isGameStarted)
-            return;
-
-        isGameStarted = true;
-        isGameOver = false;
-
-        if (splashScreen) {
-            splashScreen.classList.add(
-                'hidden'
-            );
-        }
-
-        score = 0;
-        level = 1;
-        playerHp = maxHp;
-
-        cannonGroup.position.x =
-            0;
-
-        targetX = 0;
-
-        updateUI();
-
-        startNextWave();
-    }
-
-    if (startBtn) {
-        startBtn.addEventListener(
-            'click',
-            startGame
+    for(const f of flashes){
+        f.visible=true;
+        f.material.opacity=1;
+        f.scale.setScalar(
+            rand(.8,1.2)
         );
     }
 
-    // ==========================================
-    // 11. לולאת המשחק
-    // ==========================================
-    let lastFrameTime = 0;
-    let waveCooldown = 0;
+    recoil=.14;
+    cannonGlow.intensity=4;
+    shake=Math.min(
+        .18,
+        shake+.025
+    );
 
-    function animate(time) {
+    sound('shoot');
+}
 
-        requestAnimationFrame(
-            animate
-        );
+function update(dt,time){
+    cannon.position.x+=(
+        targetX-cannon.position.x
+    )*Math.min(
+        1,
+        dt*15
+    );
 
-        // Delta Time:
-        // גורם למשחק להתנהג בצורה
-        // עקבית גם ב-FPS שונה.
-        const dt =
-            Math.min(
-                (time - lastFrameTime) /
-                    1000 ||
-                    0,
-                0.033
-            );
+    recoil=Math.max(
+        0,
+        recoil-dt*3
+    );
 
-        lastFrameTime = time;
+    barrels.position.y=.79-recoil;
 
-        if (
-            !isGameStarted ||
-            isPaused ||
-            isGameOver
-        ) {
+    for(const f of flashes){
+        if(!f.visible) continue;
 
-            renderer.render(
-                scene,
-                camera
-            );
+        f.material.opacity-=dt*18;
+        f.scale.multiplyScalar(.88);
 
-            return;
+        if(f.material.opacity<=0){
+            f.visible=false;
+            f.material.opacity=0;
+        }
+    }
+
+    cannonGlow.intensity+=(
+        1.2-cannonGlow.intensity
+    )*Math.min(
+        1,
+        dt*9
+    );
+
+    for(let i=bullets.length-1;i>=0;i--){
+        const b=bullets[i];
+
+        b.position.y+=24*dt;
+        b.userData.life-=dt;
+
+        if(
+            b.userData.life<=0 ||
+            b.position.y>24
+        ){
+            scene.remove(b);
+            bullets.splice(i,1);
+            continue;
         }
 
-        // תנועת התותח
-        cannonGroup.position.x +=
-            (
-                targetX -
-                cannonGroup.position.x
-            ) *
-            Math.min(
-                1,
-                dt * 14
-            );
+        let hit=false;
 
-        // תנועת מצלמה עדינה
-        camera.position.x +=
-            (
-                cannonGroup.position.x *
-                    0.035 -
-                camera.position.x
-            ) *
-            Math.min(
-                1,
-                dt * 4
-            );
+        for(let j=rocks.length-1;j>=0;j--){
+            const r=rocks[j];
 
-        camera.lookAt(
-            cannonGroup.position.x *
-                0.02,
-            5,
-            0
-        );
+            const dx=
+                b.position.x-
+                r.position.x;
 
-        // =====================================
-        // ירי
-        // =====================================
-        if (
-            time -
-            lastShotTime >
-            1000 /
-                (fireRate * 4)
-        ) {
+            const dy=
+                b.position.y-
+                r.position.y;
 
-            spawnBullet(
-                cannonGroup.position.x -
-                    0.35,
-                1.5,
-                0
-            );
+            const rad=
+                r.userData.size*.9;
 
-            spawnBullet(
-                cannonGroup.position.x +
-                    0.35,
-                1.5,
-                0
-            );
+            if(
+                dx*dx+
+                dy*dy<=
+                rad*rad
+            ){
+                scene.remove(b);
+                bullets.splice(i,1);
 
-            playSound('shoot');
+                hit=true;
 
-            lastShotTime =
-                time;
-        }
+                r.userData.hp-=power;
 
-        // =====================================
-        // כדורים
-        // =====================================
-        for (
-            let i = bullets.length - 1;
-            i >= 0;
-            i--
-        ) {
-
-            const b =
-                bullets[i];
-
-            b.position.y +=
-                b.userData.vy *
-                dt;
-
-            if (
-                b.position.y >
-                24
-            ) {
-
-                scene.remove(
-                    b
-                );
-
-                bullets.splice(
-                    i,
-                    1
-                );
-            }
-        }
-
-        // =====================================
-        // סלעים
-        // =====================================
-        for (
-            let rIdx = rocks.length - 1;
-            rIdx >= 0;
-            rIdx--
-        ) {
-
-            const r =
-                rocks[rIdx];
-
-            // כוח משיכה
-            r.userData.vy -=
-                18 * dt;
-
-            r.position.x +=
-                r.userData.vx *
-                dt;
-
-            r.position.y +=
-                r.userData.vy *
-                dt;
-
-            // סיבוב
-            r.rotation.x +=
-                0.8 * dt;
-
-            r.rotation.z +=
-                1.1 * dt;
-
-            // קפיצה מהקרקע
-            if (
-                r.position.y -
-                    r.userData.size <
-                0.2
-            ) {
-
-                r.position.y =
-                    0.2 +
-                    r.userData.size;
-
-                r.userData.vy =
+                score+=
+                    power*
                     Math.max(
-                        5.5,
-                        Math.abs(
-                            r.userData.vy
-                        ) *
-                        0.72
-                    );
-            }
-
-            // גבולות הצדדים
-            if (
-                Math.abs(
-                    r.position.x
-                ) >
-                screenLimitX
-            ) {
-
-                r.userData.vx *=
-                    -1;
-
-                r.position.x =
-                    Math.sign(
-                        r.position.x
-                    ) *
-                    screenLimitX;
-            }
-
-            // =================================
-            // התנגשויות כדור-סלע
-            // =================================
-            for (
-                let bIdx = bullets.length - 1;
-                bIdx >= 0;
-                bIdx--
-            ) {
-
-                const b =
-                    bullets[bIdx];
-
-                const dx =
-                    b.position.x -
-                    r.position.x;
-
-                const dy =
-                    b.position.y -
-                    r.position.y;
-
-                const hitRadius =
-                    r.userData.size *
-                    0.9;
-
-                if (
-                    dx * dx +
-                    dy * dy <
-                    hitRadius *
-                    hitRadius
-                ) {
-
-                    scene.remove(
-                        b
+                        1,
+                        combo
                     );
 
-                    bullets.splice(
-                        bIdx,
-                        1
-                    );
-
-                    r.userData.hp -=
-                        firePower;
-
-                    score +=
-                        firePower;
-
-                    playSound('hit');
-
-                    // סלע נהרס
-                    if (
-                        r.userData.hp <=
-                        0
-                    ) {
-
-                        // מטבע
-                        if (
-                            Math.random() >
-                            0.3
-                        ) {
-
-                            spawnCoin(
-                                r.position.x,
-                                r.position.y
-                            );
-                        }
-
-                        // פיצול
-                        if (
-                            r.userData.size >
-                            0.9
-                        ) {
-
-                            spawnRock(
-                                r.position.x -
-                                    0.35,
-                                r.position.y,
-                                Math.floor(
-                                    r.userData
-                                        .maxHp /
-                                        2
-                                ),
-                                r.userData
-                                    .size *
-                                    0.7
-                            );
-
-                            spawnRock(
-                                r.position.x +
-                                    0.35,
-                                r.position.y,
-                                Math.floor(
-                                    r.userData
-                                        .maxHp /
-                                        2
-                                ),
-                                r.userData
-                                    .size *
-                                    0.7
-                            );
-                        }
-
-                        removeRock(
-                            r,
-                            rIdx
-                        );
-
-                        updateUI();
-
-                        break;
-
-                    } else {
-
-                        updateRockLabel(
-                            r
-                        );
-                    }
-                }
-            }
-
-            // =================================
-            // פגיעה בתותח
-            // =================================
-            const rcx =
-                r.position.x -
-                cannonGroup.position.x;
-
-            const rcy =
-                r.position.y -
-                0.5;
-
-            const rcRadius =
-                r.userData.size +
-                0.6;
-
-            if (
-                rcx * rcx +
-                rcy * rcy <
-                rcRadius *
-                rcRadius
-            ) {
-
-                playerHp -= 10;
-
-                updateUI();
-
-                if (
-                    playerHp <=
-                    0
-                ) {
-
-                    isGameOver =
-                        true;
-
-                    if (
-                        score >
-                        bestScore
-                    ) {
-
-                        bestScore =
-                            score;
-
-                        localStorage.setItem(
-                            'bb3d_best',
-                            bestScore
-                        );
-                    }
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-                    alert(
-                        `Game Over!\nScore: ${score}`
-                    );
-
-                    location.reload();
-                }
-            }
-        }
-
-        // ==========================================
-        // מטבעות
-        // ==========================================
-        for (
-            let cIdx =
-                droppedCoins.length - 1;
-            cIdx >= 0;
-            cIdx--
-        ) {
-
-            const c =
-                droppedCoins[cIdx];
-
-            if (
-                magnetLvl > 0
-            ) {
-
-                const mdx =
-                    c.position.x -
-                    cannonGroup.position.x;
-
-                const mdy =
-                    c.position.y -
-                    0.5;
-
-                const magnetRadius =
-                    2 +
-                    magnetLvl *
-                    1.5;
-
-                if (
-                    mdx * mdx +
-                    mdy * mdy <
-                    magnetRadius *
-                    magnetRadius
-                ) {
-
-                    const pull =
-                        Math.min(
-                            1,
-                            dt *
-                                (
-                                    7 +
-                                    magnetLvl *
-                                    1.2
-                                )
-                        );
-
-                    c.position.x +=
-                        (
-                            cannonGroup
-                                .position
-                                .x -
-                            c.position.x
-                        ) *
-                        pull;
-
-                    c.position.y +=
-                        (
-                            0.5 -
-                            c.position.y
-                        ) *
-                        pull;
-
-                } else {
-
-                    c.userData.vy -=
-                        10 * dt;
-
-                    c.position.y +=
-                        c.userData.vy *
-                        dt;
-                }
-
-            } else {
-
-                c.position.y +=
-                    c.userData.vy;
-            }
-
-            c.rotation.z +=
-                3.5 * dt;
-
-            const ccx =
-                c.position.x -
-                cannonGroup.position.x;
-
-            const ccy =
-                c.position.y -
-                0.5;
-
-            if (
-                ccx * ccx +
-                ccy * ccy <
-                1.0
-            ) {
-
-                coins += 5;
-
-                playSound('coin');
-
-                scene.remove(c);
-
-                droppedCoins.splice(
-                    cIdx,
-                    1
+                combo=Math.min(
+                    99,
+                    combo+1
                 );
 
+                comboTime=1.15;
+
+                shake=Math.min(
+                    .28,
+                    shake+.045
+                );
+
+                burst(
+                    b.position.x,
+                    b.position.y,
+                    5
+                );
+
+                shock(
+                    b.position.x,
+                    b.position.y,
+                    .55
+                );
+
+                sound('hit');
+
+                if(r.userData.hp<=0){
+                    coins+=
+                        5+
+                        Math.min(
+                            level,
+                            20
+                        );
+
+                    if(
+                        r.userData.size>1 &&
+                        level<18
+                    ){
+                        const s=
+                            r.userData.size*.58;
+
+                        const h=
+                            Math.max(
+                                6,
+                                Math.floor(
+                                    r.userData.maxHp*.36
+                                )
+                            );
+
+                        spawnRock(
+                            r.position.x-.42,
+                            r.position.y+.15,
+                            h,
+                            s
+                        );
+
+                        spawnRock(
+                            r.position.x+.42,
+                            r.position.y+.15,
+                            h,
+                            s
+                        );
+                    }
+
+                    spawnCoin(
+                        r.position.x,
+                        r.position.y+.15
+                    );
+
+                    burst(
+                        r.position.x,
+                        r.position.y,
+                        14
+                    );
+
+                    shock(
+                        r.position.x,
+                        r.position.y,
+                        1.2+
+                        r.userData.size*.25
+                    );
+
+                    sound('coin');
+
+                    scene.remove(r);
+                    rocks.splice(j,1);
+                }else{
+                    r.userData.lab.material.map=
+                        hpTex(r.userData.hp);
+
+                    r.userData.lab.material.needsUpdate=true;
+                }
+
                 updateUI();
-
-            } else if (
-                c.position.y <
-                0.2
-            ) {
-
-                c.position.y =
-                    0.2;
-
-                c.userData.vy =
-                    0;
+                break;
             }
         }
 
-        // ==========================================
-        // מעבר לשלב הבא
-        // ==========================================
-        if (
-            rocks.length === 0
-        ) {
-
-            waveCooldown -=
-                dt;
-
-            if (
-                waveCooldown <=
-                0
-            ) {
-
-                level++;
-
-                waveCooldown =
-                    0.45;
-
-                startNextWave();
-            }
-
-        } else {
-
-            waveCooldown =
-                0.45;
-        }
-
-        renderer.render(
-            scene,
-            camera
-        );
+        if(hit) continue;
     }
 
-    window.addEventListener(
-        'resize',
-        updateCameraForDevice
+    for(let i=rocks.length-1;i>=0;i--){
+        const r=rocks[i];
+        const d=r.userData;
+
+        d.cool=Math.max(
+            0,
+            d.cool-dt
+        );
+
+        d.vy-=
+            (16.5+level*.1)*
+            dt;
+
+        r.position.x+=
+            d.vx*dt;
+
+        r.position.y+=
+            d.vy*dt;
+
+        r.rotation.x+=
+            d.sx*dt;
+
+        r.rotation.y+=
+            d.sy*dt;
+
+        if(
+            r.position.y-
+            d.size<
+            .43
+        ){
+            r.position.y=
+                .43+
+                d.size;
+
+            d.vy=Math.max(
+                4.2+
+                Math.min(
+                    1,
+                    level*.04
+                ),
+                Math.abs(d.vy)*.66
+            );
+
+            d.vx*=.97;
+        }
+
+        if(
+            Math.abs(
+                r.position.x
+            )>limitX
+        ){
+            r.position.x=
+                Math.sign(
+                    r.position.x
+                )*
+                limitX;
+
+            d.vx*=-1;
+        }
+
+        const dx=
+            r.position.x-
+            cannon.position.x;
+
+        const dy=
+            r.position.y-
+            .95;
+
+        const rad=
+            d.size+.72;
+
+        if(
+            dx*dx+
+            dy*dy<
+            rad*rad &&
+            d.cool<=0
+        ){
+            d.cool=.78;
+
+            hp-=20;
+            combo=0;
+            comboTime=0;
+
+            d.vy=Math.max(
+                d.vy,
+                4.5
+            );
+
+            d.vx+=
+                Math.sign(
+                    dx||
+                    rand(-1,1)
+                )*
+                1.8;
+
+            shake=Math.min(
+                .5,
+                shake+.2
+            );
+
+            ui.damage.style.opacity=.55;
+
+            setTimeout(
+                ()=>ui.damage.style.opacity=0,
+                80
+            );
+
+            sound('hit');
+            updateUI();
+
+            if(hp<=0)
+                return finish();
+        }
+    }
+
+    for(let i=coinsDrop.length-1;i>=0;i--){
+        const c=coinsDrop[i];
+        const d=c.userData;
+
+        const dx=
+            cannon.position.x-
+            c.position.x;
+
+        const dy=
+            .95-
+            c.position.y;
+
+        const ds=
+            dx*dx+
+            dy*dy;
+
+        const mr=
+            1.8+
+            magnetLvl*1.4;
+
+        if(
+            magnetLvl &&
+            ds<mr*mr
+        ){
+            const p=
+                Math.min(
+                    1,
+                    dt*
+                    (8+
+                    magnetLvl*1.4)
+                );
+
+            c.position.x+=
+                dx*p;
+
+            c.position.y+=
+                dy*p;
+        }else{
+            d.vy-=
+                9.5*
+                dt;
+
+            c.position.y+=
+                d.vy*
+                dt;
+
+            if(
+                c.position.y<
+                .5
+            ){
+                c.position.y=.5;
+                d.vy=0;
+            }
+        }
+
+        c.rotation.z+=
+            d.spin*dt;
+
+        c.rotation.y+=
+            d.spin*.42*dt;
+
+        if(ds<1.25){
+            coins+=5;
+            score+=12;
+
+            sound('coin');
+
+            burst(
+                c.position.x,
+                c.position.y,
+                6
+            );
+
+            scene.remove(c);
+            coinsDrop.splice(i,1);
+
+            updateUI();
+        }
+    }
+
+    updateFx(dt);
+
+    comboTime-=dt;
+
+    if(
+        comboTime<=0 &&
+        combo
+    ){
+        combo=0;
+        updateUI();
+    }
+
+    if(!rocks.length){
+        waveTime+=dt;
+
+        if(waveTime>.55){
+            level++;
+            waveSpawn();
+        }
+    }else{
+        waveTime=0;
+    }
+
+    elapsed+=dt;
+    saveTimer+=dt;
+
+    if(saveTimer>2){
+        save();
+        saveTimer=0;
+    }
+
+    shake*=Math.max(
+        0,
+        1-dt*7
     );
 
-    animate(0);
+    camera.position.x+=(
+        cannon.position.x*.075+
+        rand(-shake,shake)-
+        camera.position.x
+    )*
+    Math.min(
+        1,
+        dt*5
+    );
+
+    camera.position.y+=(
+        baseY+
+        Math.sin(elapsed*.6)*.03+
+        rand(
+            -shake*.4,
+            shake*.4
+        )-
+        camera.position.y
+    )*
+    Math.min(
+        1,
+        dt*3
+    );
+
+    camera.position.z+=(
+        baseZ-
+        camera.position.z
+    )*
+    Math.min(
+        1,
+        dt*3
+    );
+
+    camera.lookAt(
+        cannon.position.x*.025,
+        lookY,
+        0
+    );
+
+    arenaLight.intensity=
+        1.9+
+        Math.sin(elapsed*2)*.25;
+
+    if(
+        time-lastShot>=
+        1000/(rate*4)
+    ){
+        shoot();
+        lastShot=time;
+    }
+}
+
+function loop(time){
+    requestAnimationFrame(loop);
+
+    const dt=Math.min(
+        .033,
+        (time-lastFrame)/1000||0
+    );
+
+    lastFrame=time;
+
+    if(
+        started &&
+        !paused &&
+        !gameOver
+    ){
+        update(dt,time);
+    }else{
+        updateFx(dt);
+    }
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+loop(performance.now());
 });

@@ -2,40 +2,37 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#07111f">
     <title>Cannon Blast 3D</title>
-    
-    <!-- פונט Rubik מודרני -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- ספריית Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <div id="vignette"></div>
+    <div id="damage-flash"></div>
 
-    <!-- UI עליון בזמן משחק -->
-    <div id="ui-container">
-        <div class="ui-card">
+    <div id="ui-container" aria-hidden="true">
+        <div class="ui-card compact-card">
             <span class="ui-title">SCORE</span>
             <span id="score-val" class="ui-value">0</span>
         </div>
 
-        <div class="ui-card">
+        <div class="ui-card compact-card">
             <span class="ui-title">COINS</span>
-            <span id="coins-val" class="ui-value">0</span>
+            <span id="coins-val" class="ui-value gold">0</span>
         </div>
 
-        <div class="ui-card">
+        <div class="ui-card compact-card">
             <span class="ui-title">LEVEL</span>
-            <span id="level-text" class="ui-value">1</span>
+            <span id="level-text" class="ui-value">LEVEL 1</span>
         </div>
 
-        <div class="ui-card" id="hp-container">
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #a1a1aa;">
+        <div class="ui-card hp-card">
+            <div class="hp-head">
                 <span>HP</span>
                 <span id="hp-text">1000 / 1000</span>
             </div>
@@ -45,48 +42,90 @@
         </div>
     </div>
 
-    <!-- מסך פתיחה -->
+    <div id="combat-ui" class="combat-ui hidden">
+        <div id="combo-badge" class="combat-badge">COMBO x1</div>
+        <div id="wave-badge" class="combat-badge wave">WAVE 1</div>
+    </div>
+
+    <button id="pause-btn" class="icon-btn hidden" type="button" aria-label="Pause">Ⅱ</button>
+
     <div id="splash-screen" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card hero-card">
+            <div class="eyebrow">3D ARCADE • CANNON DEFENSE</div>
             <h1 class="game-title">CANNON<br><span>BLAST 3D</span></h1>
-            
+            <p class="subtitle">השמד את הסלעים • אסוף מטבעות • שרוד כמה שיותר שלבים</p>
+
             <div class="stats-box">
-                <div>שיא אישי: <strong id="start-best-score">0</strong></div>
-                <div>מטבעות: <strong id="start-coins">0</strong></div>
+                <div>
+                    <span class="stat-label">שיא אישי</span>
+                    <strong id="start-best-score">0</strong>
+                </div>
+                <div>
+                    <span class="stat-label">מטבעות</span>
+                    <strong id="start-coins">0</strong>
+                </div>
             </div>
 
-            <!-- שדרוגים בחנות -->
+            <div class="section-title">שדרוגים</div>
+
             <div class="upgrades-list">
                 <div class="upgrade-item">
-                    <div>
+                    <div class="upgrade-icon power">⚡</div>
+                    <div class="upgrade-copy">
                         <div class="upg-name">עוצמת ירייה</div>
                         <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
                     </div>
-                    <button id="buy-power-btn" class="btn-upg">50 C</button>
+                    <button id="buy-power-btn" class="btn-upg" type="button">50 C</button>
                 </div>
 
                 <div class="upgrade-item">
-                    <div>
+                    <div class="upgrade-icon rate">»</div>
+                    <div class="upgrade-copy">
                         <div class="upg-name">קצב אש</div>
                         <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
                     </div>
-                    <button id="buy-rate-btn" class="btn-upg">60 C</button>
+                    <button id="buy-rate-btn" class="btn-upg" type="button">60 C</button>
                 </div>
 
                 <div class="upgrade-item">
-                    <div>
+                    <div class="upgrade-icon magnet">✦</div>
+                    <div class="upgrade-copy">
                         <div class="upg-name">מגנט מטבעות</div>
                         <div id="magnet-lvl-text" class="upg-lvl">Lvl 0</div>
                     </div>
-                    <button id="buy-magnet-btn" class="btn-upg">100 C</button>
+                    <button id="buy-magnet-btn" class="btn-upg" type="button">100 C</button>
                 </div>
             </div>
 
-            <button id="start-btn" class="btn-primary">התחל משחק</button>
+            <button id="start-btn" class="btn-primary" type="button">התחל משחק</button>
+            <div class="tip">גרור את התותח ימינה ושמאלה כדי לכוון</div>
         </div>
     </div>
 
-    <!-- קובץ המשחק הראשי -->
+    <div id="pause-screen" class="modal-overlay hidden">
+        <div class="modal-card small-modal">
+            <div class="eyebrow">GAME PAUSED</div>
+            <h2>המשחק נעצר</h2>
+            <p>קח רגע… וחזור לקרב.</p>
+            <button id="resume-btn" class="btn-primary" type="button">המשך</button>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="modal-overlay hidden">
+        <div class="modal-card small-modal">
+            <div class="eyebrow danger-text">RUN OVER</div>
+            <h2>GAME OVER</h2>
+
+            <div class="result-grid">
+                <div><span>Score</span><strong id="final-score">0</strong></div>
+                <div><span>Level</span><strong id="final-level">1</strong></div>
+                <div><span>Coins</span><strong id="final-coins">0</strong></div>
+            </div>
+
+            <button id="restart-btn" class="btn-primary" type="button">נסה שוב</button>
+        </div>
+    </div>
+
     <script src="main.js"></script>
 </body>
 </html>

@@ -1,228 +1,908 @@
+:root {
+    --glass: rgba(5, 15, 28, 0.64);
+    --glass-strong: rgba(4, 11, 22, 0.88);
+    --line: rgba(255, 255, 255, 0.12);
+
+    --text: #f8fafc;
+    --muted: #94a3b8;
+
+    --blue: #38bdf8;
+    --blue-2: #0ea5e9;
+
+    --gold: #facc15;
+    --green: #22c55e;
+}
+
+/* ==========================================
+   RESET
+   ========================================== */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+
+    -webkit-tap-highlight-color: transparent;
+
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
-    font-family: 'Rubik', sans-serif;
 }
 
-body, html {
+html,
+body {
     width: 100%;
     height: 100%;
+
     overflow: hidden;
-    background: radial-gradient(circle at 50% 18%, #475569 0%, #1e293b 46%, #0f172a 100%);
+
+    background: #050b14;
+
+    font-family: "Rubik", sans-serif;
+
+    overscroll-behavior: none;
 }
 
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    contain: strict;
-    will-change: transform;
+body {
+    position: relative;
+    touch-action: none;
 }
 
 /* ==========================================
-   UI עליון במראה זכוכית
+   THREE.JS CANVAS
    ========================================== */
+
+canvas {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    display: block;
+
+    touch-action: none;
+}
+
+/* ==========================================
+   SCREEN VIGNETTE
+   ========================================== */
+
+#vignette {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 3;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 50% 42%,
+            transparent 28%,
+            rgba(0, 0, 0, 0.1) 62%,
+            rgba(0, 0, 0, 0.45) 100%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(2, 8, 20, 0.18),
+            transparent 28%,
+            rgba(0, 0, 0, 0.16)
+        );
+}
+
+/* ==========================================
+   DAMAGE FLASH
+   ========================================== */
+
+#damage-flash {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    background: rgba(239, 68, 68, 0.38);
+
+    opacity: 0;
+
+    transition: opacity 0.08s linear;
+}
+
+/* ==========================================
+   TOP UI
+   ========================================== */
+
 #ui-container {
-    position: absolute;
-    top: 15px;
+    position: fixed;
+
+    top: max(12px, env(safe-area-inset-top));
     left: 50%;
+
     transform: translateX(-50%);
-    width: 92%;
-    max-width: 480px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
+
+    width: min(94vw, 590px);
+
+    display: grid;
+
+    grid-template-columns:
+        0.9fr
+        0.9fr
+        0.95fr
+        1.35fr;
+
+    gap: 7px;
+
     z-index: 10;
+
     pointer-events: none;
 }
 
+/* ==========================================
+   UI CARD
+   ========================================== */
+
 .ui-card {
-    background: rgba(15, 23, 42, 0.58);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
-    padding: 6px 12px;
-    color: #ffffff;
+    min-width: 0;
+    min-height: 56px;
+
+    padding: 8px 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 15px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(12, 28, 48, 0.76),
+            rgba(4, 12, 24, 0.58)
+        );
+
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    color: var(--text);
+
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow:
-        0 10px 28px rgba(0, 0, 0, 0.32),
-        inset 0 1px 0 rgba(255,255,255,0.06);
-    pointer-events: auto;
-    flex: 1;
+
+    flex-direction: column;
 }
+
+/* ==========================================
+   UI TITLE
+   ========================================== */
 
 .ui-title {
-    font-size: 10px;
-    color: #cbd5e1;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    color: #9fb0c4;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
 }
+
+/* ==========================================
+   UI VALUE
+   ========================================== */
 
 .ui-value {
-    font-size: 16px;
-    font-weight: 800;
-    color: #fde047;
+    margin-top: 2px;
+
+    color: #e0f2fe;
+
+    font-size: clamp(
+        13px,
+        2.8vw,
+        17px
+    );
+
+    font-weight: 900;
+
+    white-space: nowrap;
 }
 
-/* בר חיים */
-#hp-container {
-    flex: 1.5;
+.ui-value.gold {
+    color: var(--gold);
+}
+
+/* ==========================================
+   HP CARD
+   ========================================== */
+
+.hp-card {
     align-items: stretch;
 }
 
+.hp-head {
+    width: 100%;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 8px;
+
+    color: #d7e2ee;
+
+    font-size: 9px;
+
+    font-weight: 800;
+}
+
+/* ==========================================
+   HP BAR
+   ========================================== */
+
 .hp-bar-bg {
     width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+
+    height: 9px;
+
+    margin-top: 6px;
+
     overflow: hidden;
-    margin-top: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #hp-bar {
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, #22c55e, #4ade80);
-    border-radius: 10px;
-    transition: width 0.2s ease;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            #16a34a,
+            #22c55e,
+            #67e8f9
+        );
+
+    box-shadow:
+        0 0 15px rgba(34, 197, 94, 0.42);
+
+    transition: width 0.18s ease;
 }
 
 /* ==========================================
-   מסך פתיחה וחלונות
+   COMBAT UI
    ========================================== */
-.modal-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 13, 11, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+
+.combat-ui {
+    position: fixed;
+
+    top: 84px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 9;
+
     display: flex;
-    justify-content: center;
+
     align-items: center;
-    z-index: 100;
+
+    gap: 8px;
+
+    pointer-events: none;
 }
+
+.combat-badge {
+    padding: 7px 11px;
+
+    border-radius: 999px;
+
+    color: #ffffff;
+
+    background: rgba(15, 23, 42, 0.66);
+
+    border: 1px solid rgba(125, 211, 252, 0.22);
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    font-size: 10px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.6px;
+}
+
+.combat-badge.wave {
+    color: #7dd3fc;
+}
+
+/* ==========================================
+   PAUSE BUTTON
+   ========================================== */
+
+.icon-btn {
+    position: fixed;
+
+    top: max(
+        84px,
+        calc(76px + env(safe-area-inset-top))
+    );
+
+    right: 16px;
+
+    z-index: 12;
+
+    width: 42px;
+    height: 42px;
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+
+    border-radius: 13px;
+
+    color: #ffffff;
+
+    background: rgba(8, 19, 34, 0.76);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    font-size: 18px;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* ==========================================
+   HIDDEN
+   ========================================== */
+
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   MODAL OVERLAY
+   ========================================== */
+
+.modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 100;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(1, 7, 16, 0.7);
+
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+/* ==========================================
+   MODAL CARD
+   ========================================== */
 
 .modal-card {
-    background: linear-gradient(
-        180deg,
-        rgba(15, 23, 42, 0.94),
-        rgba(15, 23, 42, 0.86)
-    );
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 24px;
-    padding: 24px 20px;
-    width: 88%;
-    max-width: 360px;
+    width: min(92vw, 400px);
+
+    border: 1px solid rgba(148, 163, 184, 0.18);
+
+    border-radius: 28px;
+
+    padding: 23px;
+
+    color: var(--text);
+
     text-align: center;
-    color: #ffffff;
+
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(56, 189, 248, 0.13),
+            transparent 38%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(9, 23, 40, 0.97),
+            rgba(3, 10, 20, 0.95)
+        );
+
     box-shadow:
-        0 24px 60px rgba(0, 0, 0, 0.65),
-        inset 0 1px 0 rgba(255,255,255,0.06);
+        0 28px 90px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.game-title {
-    font-size: 28px;
+.small-modal {
+    width: min(90vw, 360px);
+}
+
+.hero-card {
+    padding-top: 21px;
+}
+
+/* ==========================================
+   EYEBROW
+   ========================================== */
+
+.eyebrow {
+    color: #67e8f9;
+
+    font-size: 9px;
+
     font-weight: 900;
-    line-height: 1.1;
+
+    letter-spacing: 1.8px;
+}
+
+/* ==========================================
+   GAME TITLE
+   ========================================== */
+
+.game-title {
+    margin-top: 7px;
+
     color: #ffffff;
-    margin-bottom: 16px;
+
+    font-size: clamp(
+        34px,
+        10vw,
+        48px
+    );
+
+    font-weight: 900;
+
+    line-height: 0.98;
+
+    letter-spacing: -1px;
+
+    text-shadow:
+        0 9px 30px rgba(56, 189, 248, 0.12);
 }
 
 .game-title span {
     color: #facc15;
 }
 
+/* ==========================================
+   SUBTITLE
+   ========================================== */
+
+.subtitle {
+    margin: 10px auto 17px;
+
+    max-width: 300px;
+
+    color: #9fb0c4;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+}
+
+/* ==========================================
+   START SCREEN STATS
+   ========================================== */
+
 .stats-box {
-    display: flex;
-    justify-content: space-around;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 16px;
-    font-size: 13px;
-    color: #cbd5e1;
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+
+    margin-bottom: 17px;
+}
+
+.stats-box > div {
+    padding: 11px 10px;
+
+    border-radius: 15px;
+
+    background: rgba(255, 255, 255, 0.045);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stat-label {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: #8092a8;
+
+    font-size: 9px;
+
+    font-weight: 700;
 }
 
 .stats-box strong {
     color: #facc15;
+
+    font-size: 18px;
+
+    font-weight: 900;
 }
 
-/* רשימת שדרוגים */
+/* ==========================================
+   SECTION TITLE
+   ========================================== */
+
+.section-title {
+    margin-bottom: 9px;
+
+    color: #dbeafe;
+
+    text-align: right;
+
+    font-size: 11px;
+
+    font-weight: 900;
+}
+
+/* ==========================================
+   UPGRADES
+   ========================================== */
+
 .upgrades-list {
     display: flex;
+
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
+
+    gap: 8px;
 }
 
 .upgrade-item {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+
+    grid-template-columns:
+        36px
+        1fr
+        auto;
+
     align-items: center;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 10px 14px;
-    border-radius: 14px;
+
+    gap: 10px;
+
+    padding: 9px 10px;
+
+    border-radius: 15px;
+
     text-align: right;
+
+    background: rgba(255, 255, 255, 0.045);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ==========================================
+   UPGRADE ICON
+   ========================================== */
+
+.upgrade-icon {
+    display: grid;
+
+    place-items: center;
+
+    width: 36px;
+    height: 36px;
+
+    border-radius: 12px;
+
+    color: #ffffff;
+
+    background: rgba(56, 189, 248, 0.13);
+
+    border: 1px solid rgba(125, 211, 252, 0.15);
+
+    font-size: 17px;
+
+    font-weight: 900;
+}
+
+.upgrade-icon.power {
+    color: #fde68a;
+}
+
+.upgrade-icon.rate {
+    color: #7dd3fc;
+}
+
+.upgrade-icon.magnet {
+    color: #c4b5fd;
+}
+
+/* ==========================================
+   UPGRADE TEXT
+   ========================================== */
+
 .upg-name {
-    font-size: 14px;
-    font-weight: 600;
+    color: #f8fafc;
+
+    font-size: 12px;
+
+    font-weight: 800;
 }
 
 .upg-lvl {
-    font-size: 11px;
-    color: #94a3b8;
+    margin-top: 2px;
+
+    color: #7f91a8;
+
+    font-size: 9px;
+
+    font-weight: 700;
 }
 
-.btn-upg {
-    background: linear-gradient(135deg, #eab308, #ca8a04);
-    border: none;
-    color: #0f172a;
-    font-weight: 800;
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 13px;
+/* ==========================================
+   BUTTON RESET
+   ========================================== */
+
+.btn-upg,
+.btn-primary {
+    border: 0;
+
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.25);
-    transition: transform 0.1s, opacity 0.2s;
+
+    font-family: inherit;
+
+    font-weight: 900;
+}
+
+/* ==========================================
+   UPGRADE BUTTON
+   ========================================== */
+
+.btn-upg {
+    min-width: 66px;
+
+    padding: 8px 10px;
+
+    border-radius: 11px;
+
+    color: #172033;
+
+    background:
+        linear-gradient(
+            135deg,
+            #fde68a,
+            #facc15 55%,
+            #eab308
+        );
+
+    box-shadow:
+        0 5px 16px rgba(250, 204, 21, 0.19);
+
+    font-size: 11px;
 }
 
 .btn-upg:disabled {
-    opacity: 0.4;
+    opacity: 0.3;
+
     cursor: not-allowed;
+
+    filter: grayscale(0.45);
 }
+
+/* ==========================================
+   PRIMARY BUTTON
+   ========================================== */
 
 .btn-primary {
     width: 100%;
+
+    margin-top: 17px;
+
     padding: 14px;
-    border: none;
+
     border-radius: 16px;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
+
     color: #ffffff;
-    font-size: 18px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
-    transition: transform 0.1s;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0ea5e9,
+            #0284c7 55%,
+            #0369a1
+        );
+
+    box-shadow:
+        0 10px 28px rgba(14, 165, 233, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+    font-size: 17px;
+
+    transition:
+        transform 0.12s ease,
+        filter 0.12s ease;
 }
 
 .btn-primary:active,
-.btn-upg:active:not(:disabled) {
-    transform: scale(0.96);
+.btn-upg:active,
+.icon-btn:active {
+    transform: scale(0.97);
 }
 
-.hidden {
-    display: none !important;
+.btn-primary:hover {
+    filter: brightness(1.08);
+}
+
+/* ==========================================
+   TIP
+   ========================================== */
+
+.tip {
+    margin-top: 10px;
+
+    color: #72849a;
+
+    font-size: 9px;
+}
+
+/* ==========================================
+   SMALL MODAL
+   ========================================== */
+
+.small-modal h2 {
+    margin-top: 6px;
+
+    font-size: 31px;
+
+    font-weight: 900;
+}
+
+.small-modal p {
+    margin-top: 7px;
+
+    color: #8fa1b7;
+
+    font-size: 11px;
+}
+
+/* ==========================================
+   GAME OVER
+   ========================================== */
+
+.danger-text {
+    color: #fb7185;
+}
+
+.result-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 7px;
+
+    margin-top: 17px;
+}
+
+.result-grid > div {
+    padding: 10px 7px;
+
+    border-radius: 13px;
+
+    background: rgba(255, 255, 255, 0.045);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.result-grid span {
+    display: block;
+
+    color: #73869e;
+
+    font-size: 8px;
+
+    font-weight: 700;
+}
+
+.result-grid strong {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #e2e8f0;
+
+    font-size: 16px;
+
+    font-weight: 900;
+}
+
+/* ==========================================
+   MOBILE
+   ========================================== */
+
+@media (max-width: 420px) {
+
+    #ui-container {
+        width: 95vw;
+
+        gap: 5px;
+    }
+
+    .ui-card {
+        min-height: 52px;
+
+        padding: 6px 7px;
+
+        border-radius: 13px;
+    }
+
+    .ui-title {
+        font-size: 8px;
+    }
+
+    .hp-head {
+        font-size: 8px;
+    }
+
+    .hp-bar-bg {
+        height: 8px;
+    }
+
+    .combat-ui {
+        top: 78px;
+    }
+
+    .icon-btn {
+        top: 78px;
+
+        right: 10px;
+
+        width: 38px;
+        height: 38px;
+    }
+
+    .hero-card {
+        padding: 19px 15px;
+    }
+}
+
+/* ==========================================
+   DESKTOP
+   ========================================== */
+
+@media (min-width: 800px) {
+
+    #ui-container {
+        top: 18px;
+    }
+
+    .combat-ui {
+        top: 92px;
+    }
+
+    .icon-btn {
+        top: 92px;
+
+        right: 24px;
+    }
 }
