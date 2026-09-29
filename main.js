@@ -228,7 +228,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // גיאומטריות משותפות ליריות/מטבעות
+    // גיאומטריות משותפות
     const bulletGeo = new THREE.SphereGeometry(0.2, 16, 16);
     const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
 
