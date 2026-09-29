@@ -11,7 +11,7 @@ window.addEventListener('DOMContentLoaded', () => {
     camera.position.set(0, 7, 16);
     camera.lookAt(0, 6, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -34,8 +34,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3. אלמנטים תלת-ממדיים (דשא, תותח, רקע)
     // ==========================================
-    
-    // רצפת דשא
     const grassGeo = new THREE.BoxGeometry(30, 1, 10);
     const grassMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.9 });
     const grass = new THREE.Mesh(grassGeo, grassMat);
@@ -43,7 +41,6 @@ window.addEventListener('DOMContentLoaded', () => {
     grass.receiveShadow = true;
     scene.add(grass);
 
-    // פירמידות ברקע
     function createBackgroundPyramid(x, z, scale) {
         const geo = new THREE.ConeGeometry(8 * scale, 12 * scale, 4);
         const mat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9, flatShading: true });
@@ -96,9 +93,9 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.add(cannonGroup);
 
     // ==========================================
-    // 4. משתני המשחק ומצב (State)
+    // 4. משתני המשחק ומצב (State & Upgrades)
     // ==========================================
-    let isGameStarted = false; // מונע מ-Game Over לקפוץ מיד בטעינה!
+    let isGameStarted = false;
     let isPaused = false;
     let isGameOver = false;
 
@@ -109,10 +106,13 @@ window.addEventListener('DOMContentLoaded', () => {
     let playerHp = 1000;
     let maxHp = 1000;
 
-    let firePower = 1;
-    let fireRate = 1;
-    let magnetLvl = 0;
-    let hasTripleCannon = false;
+    // רמות שדרוגים
+    let firePowerLvl = parseInt(localStorage.getItem('bb3d_upg_power')) || 1;
+    let fireRateLvl = parseInt(localStorage.getItem('bb3d_upg_rate')) || 1;
+    let magnetLvl = parseInt(localStorage.getItem('bb3d_upg_magnet')) || 0;
+
+    let firePower = firePowerLvl;
+    let fireRate = 1 + (fireRateLvl - 1) * 0.25;
 
     let bullets = [];
     let rocks = [];
@@ -139,8 +139,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const hpTextEl = document.getElementById('hp-text');
     const hpBarEl = document.getElementById('hp-bar');
     const levelTextEl = document.getElementById('level-text');
+    const levelProgressFill = document.getElementById('level-progress-fill');
     const startCoinsEl = document.getElementById('start-coins');
     const startBestScoreEl = document.getElementById('start-best-score');
+
+    // אלמנטים בחנות שדרוגים
+    const buyPowerBtn = document.getElementById('buy-power-btn');
+    const buyRateBtn = document.getElementById('buy-rate-btn');
+    const buyMagnetBtn = document.getElementById('buy-magnet-btn');
 
     function updateUI() {
         if (coinsValEl) coinsValEl.innerText = coins;
@@ -150,7 +156,71 @@ window.addEventListener('DOMContentLoaded', () => {
         if (hpTextEl) hpTextEl.innerText = `${Math.max(0, playerHp)} / ${maxHp}`;
         if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (playerHp / maxHp) * 100)}%`;
         if (levelTextEl) levelTextEl.innerText = `LEVEL ${level}`;
+
+        // עדכון מחירים וכפתורי שדרוג בחנות
+        const powerCost = firePowerLvl * 50;
+        const rateCost = fireRateLvl * 60;
+        const magnetCost = (magnetLvl + 1) * 100;
+
+        if (buyPowerBtn) {
+            buyPowerBtn.innerText = `${powerCost} C`;
+            buyPowerBtn.disabled = coins < powerCost;
+            document.getElementById('power-lvl-text').innerText = `Lvl ${firePowerLvl}`;
+        }
+        if (buyRateBtn) {
+            buyRateBtn.innerText = `${rateCost} C`;
+            buyRateBtn.disabled = coins < rateCost;
+            document.getElementById('rate-lvl-text').innerText = `Lvl ${fireRateLvl}`;
+        }
+        if (buyMagnetBtn) {
+            buyMagnetBtn.innerText = `${magnetCost} C`;
+            buyMagnetBtn.disabled = coins < magnetCost;
+            document.getElementById('magnet-lvl-text').innerText = `Lvl ${magnetLvl}`;
+        }
     }
+
+    // ניהול רכישות בחנות
+    if (buyPowerBtn) {
+        buyPowerBtn.addEventListener('click', () => {
+            const cost = firePowerLvl * 50;
+            if (coins >= cost) {
+                coins -= cost;
+                firePowerLvl++;
+                firePower = firePowerLvl;
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_upg_power', firePowerLvl);
+                updateUI();
+            }
+        });
+    }
+
+    if (buyRateBtn) {
+        buyRateBtn.addEventListener('click', () => {
+            const cost = fireRateLvl * 60;
+            if (coins >= cost) {
+                coins -= cost;
+                fireRateLvl++;
+                fireRate = 1 + (fireRateLvl - 1) * 0.25;
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_upg_rate', fireRateLvl);
+                updateUI();
+            }
+        });
+    }
+
+    if (buyMagnetBtn) {
+        buyMagnetBtn.addEventListener('click', () => {
+            const cost = (magnetLvl + 1) * 100;
+            if (coins >= cost) {
+                coins -= cost;
+                magnetLvl++;
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_upg_magnet', magnetLvl);
+                updateUI();
+            }
+        });
+    }
+
     updateUI();
 
     // ==========================================
@@ -245,6 +315,12 @@ window.addEventListener('DOMContentLoaded', () => {
         rock.userData.texture.needsUpdate = true;
     }
 
+    function removeRock(rock, index) {
+        if (rock.userData.texture) rock.userData.texture.dispose();
+        scene.remove(rock);
+        rocks.splice(index, 1);
+    }
+
     function spawnCoin(x, y) {
         const geo = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 16);
         const mat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.9, roughness: 0.2 });
@@ -270,10 +346,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 8. שליטה ומגע (Input Handling)
+    // 8. שליטה ומגע (Input & Fullscreen)
     // ==========================================
     let isDragging = false;
     function handleMove(clientX) {
+        // חישוב מנורמל ומדויק מצד שמאל לימין של המסך
         const normalizedX = (clientX / window.innerWidth) * 2 - 1;
         targetX = normalizedX * 7.5;
     }
@@ -281,6 +358,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('pointerdown', (e) => { isDragging = true; handleMove(e.clientX); });
     window.addEventListener('pointermove', (e) => { if (isDragging) handleMove(e.clientX); });
     window.addEventListener('pointerup', () => { isDragging = false; });
+
+    function requestFullscreenMode() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        }
+    }
 
     // ==========================================
     // 9. אירועי כפתורים והתחלת המשחק
@@ -290,6 +376,8 @@ window.addEventListener('DOMContentLoaded', () => {
         isGameStarted = true;
         isGameOver = false;
 
+        requestFullscreenMode();
+
         if (splashScreen) splashScreen.classList.add('hidden');
         if (startOverlay) startOverlay.classList.add('hidden');
 
@@ -297,7 +385,6 @@ window.addEventListener('DOMContentLoaded', () => {
         playerHp = maxHp;
         updateUI();
 
-        // הפעלת הגל הראשון רק בלחיצה!
         startNextWave();
     }
 
@@ -327,29 +414,19 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         localStorage.setItem('bb3d_coins', coins);
 
-        document.getElementById('final-score-val').innerText = score;
-        document.getElementById('final-coins-val').innerText = coins;
-        document.getElementById('best-score-val').innerText = bestScore;
+        const finalScoreEl = document.getElementById('final-score-val');
+        const finalCoinsEl = document.getElementById('final-coins-val');
+        const bestScoreEl = document.getElementById('best-score-val');
+
+        if (finalScoreEl) finalScoreEl.innerText = score;
+        if (finalCoinsEl) finalCoinsEl.innerText = coins;
+        if (bestScoreEl) bestScoreEl.innerText = bestScore;
 
         if (gameOverModal) gameOverModal.classList.remove('hidden');
     }
 
-    if (restartBtn) {
-        restartBtn.addEventListener('click', () => {
-            location.reload();
-        });
-    }
-
-    if (homeBtn) {
-        homeBtn.addEventListener('click', () => {
-            location.reload();
-        });
-    }
-
-    // שינוי צבע תותח
-    window.changeCannonColor = function(colorHex) {
-        domeMat.color.set(colorHex);
-    };
+    if (restartBtn) restartBtn.addEventListener('click', () => location.reload());
+    if (homeBtn) homeBtn.addEventListener('click', () => location.reload());
 
     // ==========================================
     // 10. לולאת הרינדור הראשית (Game Loop)
@@ -357,7 +434,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function animate(time) {
         requestAnimationFrame(animate);
 
-        // אם המשחק עוד לא התחיל או בעצירה/סיום - לא מריצים פיזיקה
         if (!isGameStarted || isPaused || isGameOver) {
             renderer.render(scene, camera);
             return;
@@ -367,7 +443,7 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.position.x += (targetX - cannonGroup.position.x) * 0.25;
 
         // 2. מנגנון ירי
-        if (time - lastShotTime > 1000 / (fireRate * 5)) {
+        if (time - lastShotTime > 1000 / (fireRate * 4)) {
             spawnBullet(cannonGroup.position.x - 0.4, 1.8, 0);
             spawnBullet(cannonGroup.position.x + 0.4, 1.8, 0);
             playSound('shoot');
@@ -384,7 +460,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 4. עדכון סלעים
+        // 4. עדכון סלעים ופגיעות
         for (let rIdx = rocks.length - 1; rIdx >= 0; rIdx--) {
             const r = rocks[rIdx];
 
@@ -392,14 +468,14 @@ window.addEventListener('DOMContentLoaded', () => {
             r.position.x += r.userData.vx;
             r.position.y += r.userData.vy;
 
-            // bounce מהרצפה
+            // קפיצה (Bounce) מהרצפה
             if (r.position.y - r.userData.size < 0.2) {
                 r.position.y = 0.2 + r.userData.size;
                 r.userData.vy = Math.abs(r.userData.vy) * 0.95;
                 if (r.userData.vy < 0.12) r.userData.vy = 0.18;
             }
 
-            // bounce מהקירות
+            // קפיצה מהקירות
             if (Math.abs(r.position.x) > 8) {
                 r.userData.vx *= -1;
             }
@@ -423,8 +499,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             spawnRock(r.position.x + 0.5, r.position.y, Math.floor(r.userData.maxHp / 2), r.userData.size * 0.7);
                         }
 
-                        scene.remove(r);
-                        rocks.splice(rIdx, 1);
+                        removeRock(r, rIdx);
                         updateUI();
                         break;
                     } else {
@@ -443,13 +518,28 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 5. איסוף מטבעות
+        // 5. איסוף מטבעות (כולל חישוב מגנט אם שודרג)
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
-            c.position.y += c.userData.vy;
+            
+            // מנגנון מגנט למטבעות
+            if (magnetLvl > 0) {
+                const distToPlayer = Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.5);
+                const magnetRadius = 2 + magnetLvl * 1.5;
+                if (distToPlayer < magnetRadius) {
+                    c.position.x += (cannonGroup.position.x - c.position.x) * 0.1;
+                    c.position.y += (0.5 - c.position.y) * 0.1;
+                } else {
+                    c.position.y += c.userData.vy;
+                }
+            } else {
+                c.position.y += c.userData.vy;
+            }
+
             c.rotation.z += 0.05;
 
-            if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.5) < 1.5) {
+            // נקודת איסוף
+            if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.5) < 1.2) {
                 coins += 5;
                 playSound('coin');
                 scene.remove(c);
