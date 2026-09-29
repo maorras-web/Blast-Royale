@@ -1,17 +1,22 @@
 :root {
-    --glass: rgba(5, 15, 28, 0.64);
-    --glass-strong: rgba(4, 11, 22, 0.88);
-    --line: rgba(255, 255, 255, 0.12);
-
-    --text: #f8fafc;
-    --muted: #94a3b8;
-
     --blue: #38bdf8;
-    --blue-2: #0ea5e9;
+    --blue-deep: #075985;
 
     --gold: #facc15;
+
     --green: #22c55e;
+
+    --red: #fb7185;
+
+    --text: #f8fafc;
+
+    --muted: #94a3b8;
+
+    --panel: rgba(8, 18, 31, 0.68);
+
+    --line: rgba(255, 255, 255, 0.14);
 }
+
 
 /* ==========================================
    RESET
@@ -19,14 +24,16 @@
 
 * {
     box-sizing: border-box;
+
     margin: 0;
     padding: 0;
 
-    -webkit-tap-highlight-color: transparent;
-
     user-select: none;
     -webkit-user-select: none;
+
+    -webkit-tap-highlight-color: transparent;
 }
+
 
 html,
 body {
@@ -35,17 +42,20 @@ body {
 
     overflow: hidden;
 
-    background: #050b14;
+    background: #0b111b;
 
     font-family: "Rubik", sans-serif;
 
     overscroll-behavior: none;
 }
 
+
 body {
     position: relative;
+
     touch-action: none;
 }
+
 
 /* ==========================================
    THREE.JS CANVAS
@@ -64,6 +74,7 @@ canvas {
     touch-action: none;
 }
 
+
 /* ==========================================
    SCREEN VIGNETTE
    ========================================== */
@@ -73,7 +84,7 @@ canvas {
 
     inset: 0;
 
-    z-index: 3;
+    z-index: 2;
 
     pointer-events: none;
 
@@ -81,16 +92,18 @@ canvas {
         radial-gradient(
             circle at 50% 42%,
             transparent 28%,
-            rgba(0, 0, 0, 0.1) 62%,
-            rgba(0, 0, 0, 0.45) 100%
+            rgba(0, 0, 0, 0.06) 62%,
+            rgba(0, 0, 0, 0.43) 100%
         ),
+
         linear-gradient(
             180deg,
-            rgba(2, 8, 20, 0.18),
-            transparent 28%,
-            rgba(0, 0, 0, 0.16)
+            rgba(5, 12, 20, 0.12),
+            transparent 30%,
+            rgba(25, 10, 4, 0.16)
         );
 }
+
 
 /* ==========================================
    DAMAGE FLASH
@@ -101,37 +114,42 @@ canvas {
 
     inset: 0;
 
-    z-index: 20;
+    z-index: 50;
 
     pointer-events: none;
 
-    background: rgba(239, 68, 68, 0.38);
+    background:
+        rgba(239, 68, 68, 0.34);
 
     opacity: 0;
-
-    transition: opacity 0.08s linear;
 }
 
+
 /* ==========================================
-   TOP UI
+   TOP HUD
    ========================================== */
 
 #ui-container {
     position: fixed;
 
-    top: max(12px, env(safe-area-inset-top));
+    top:
+        max(
+            12px,
+            env(safe-area-inset-top)
+        );
+
     left: 50%;
 
     transform: translateX(-50%);
 
-    width: min(94vw, 590px);
+    width: min(94vw, 600px);
 
     display: grid;
 
     grid-template-columns:
         0.9fr
         0.9fr
-        0.95fr
+        0.9fr
         1.35fr;
 
     gap: 7px;
@@ -141,127 +159,137 @@ canvas {
     pointer-events: none;
 }
 
+
 /* ==========================================
    UI CARD
    ========================================== */
 
 .ui-card {
-    min-width: 0;
-    min-height: 56px;
+    min-height: 54px;
 
-    padding: 8px 10px;
+    padding: 7px 10px;
 
-    border: 1px solid var(--line);
+    border:
+        1px solid
+        var(--line);
 
     border-radius: 15px;
 
     background:
         linear-gradient(
             180deg,
-            rgba(12, 28, 48, 0.76),
-            rgba(4, 12, 24, 0.58)
+            rgba(18, 35, 53, 0.76),
+            rgba(5, 15, 26, 0.58)
         );
 
     box-shadow:
-        0 12px 28px rgba(0, 0, 0, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        0 12px 28px
+        rgba(0, 0, 0, 0.25),
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.07);
 
-    color: var(--text);
+    backdrop-filter:
+        blur(11px);
+
+    -webkit-backdrop-filter:
+        blur(11px);
 
     display: flex;
-    align-items: center;
-    justify-content: center;
 
     flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    color: white;
 }
 
-/* ==========================================
-   UI TITLE
-   ========================================== */
 
 .ui-title {
-    color: #9fb0c4;
+    color: #a8b6c8;
 
     font-size: 9px;
 
-    font-weight: 700;
+    font-weight: 800;
 
     letter-spacing: 1px;
 }
 
-/* ==========================================
-   UI VALUE
-   ========================================== */
 
 .ui-value {
     margin-top: 2px;
 
-    color: #e0f2fe;
+    font-size:
+        clamp(
+            13px,
+            2.7vw,
+            17px
+        );
 
-    font-size: clamp(
-        13px,
-        2.8vw,
-        17px
-    );
+    line-height: 1;
 
     font-weight: 900;
 
+    color: #e0f2fe;
+
     white-space: nowrap;
 }
+
 
 .ui-value.gold {
     color: var(--gold);
 }
 
+
 /* ==========================================
-   HP CARD
+   HP
    ========================================== */
 
 .hp-card {
     align-items: stretch;
 }
 
-.hp-head {
-    width: 100%;
 
+.hp-head {
     display: flex;
 
     justify-content: space-between;
 
     gap: 8px;
 
-    color: #d7e2ee;
+    color: #dce7f2;
 
     font-size: 9px;
 
     font-weight: 800;
 }
 
-/* ==========================================
-   HP BAR
-   ========================================== */
 
 .hp-bar-bg {
-    width: 100%;
-
     height: 9px;
+
+    width: 100%;
 
     margin-top: 6px;
 
+    border-radius: 99px;
+
     overflow: hidden;
 
-    border-radius: 999px;
+    background:
+        rgba(255, 255, 255, 0.09);
 
-    background: rgba(255, 255, 255, 0.08);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
 }
+
 
 #hp-bar {
     width: 100%;
+
     height: 100%;
 
     border-radius: inherit;
@@ -275,62 +303,75 @@ canvas {
         );
 
     box-shadow:
-        0 0 15px rgba(34, 197, 94, 0.42);
+        0 0 16px
+        rgba(34, 197, 94, 0.35);
 
-    transition: width 0.18s ease;
+    transition:
+        width 0.18s ease;
 }
 
+
 /* ==========================================
-   COMBAT UI
+   COMBAT
    ========================================== */
 
-.combat-ui {
+#combat-ui {
     position: fixed;
 
-    top: 84px;
+    top: 82px;
+
     left: 50%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     z-index: 9;
 
     display: flex;
-
-    align-items: center;
 
     gap: 8px;
 
     pointer-events: none;
 }
 
+
 .combat-badge {
-    padding: 7px 11px;
+    padding:
+        7px 11px;
 
     border-radius: 999px;
 
-    color: #ffffff;
+    color: #e0f2fe;
 
-    background: rgba(15, 23, 42, 0.66);
+    background:
+        rgba(8, 20, 35, 0.64);
 
-    border: 1px solid rgba(125, 211, 252, 0.22);
+    border:
+        1px solid
+        rgba(125, 211, 252, 0.2);
 
     box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 8px 20px
+        rgba(0, 0, 0, 0.18);
 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter:
+        blur(9px);
+
+    -webkit-backdrop-filter:
+        blur(9px);
 
     font-size: 10px;
 
     font-weight: 900;
 
-    letter-spacing: 0.6px;
+    letter-spacing: 0.7px;
 }
 
-.combat-badge.wave {
-    color: #7dd3fc;
+
+.combat-badge.combo {
+    color: #fde68a;
 }
+
 
 /* ==========================================
    PAUSE BUTTON
@@ -339,10 +380,14 @@ canvas {
 .icon-btn {
     position: fixed;
 
-    top: max(
-        84px,
-        calc(76px + env(safe-area-inset-top))
-    );
+    top:
+        max(
+            84px,
+            calc(
+                76px +
+                env(safe-area-inset-top)
+            )
+        );
 
     right: 16px;
 
@@ -351,26 +396,34 @@ canvas {
     width: 42px;
     height: 42px;
 
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.13);
 
     border-radius: 13px;
 
-    color: #ffffff;
+    color: white;
 
-    background: rgba(8, 19, 34, 0.76);
+    background:
+        rgba(8, 19, 34, 0.75);
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter:
+        blur(10px);
 
-    font-size: 18px;
+    -webkit-backdrop-filter:
+        blur(10px);
+
+    box-shadow:
+        0 10px 24px
+        rgba(0, 0, 0, 0.25);
+
+    font-size: 17px;
 
     font-weight: 900;
 
     cursor: pointer;
-
-    box-shadow:
-        0 10px 24px rgba(0, 0, 0, 0.25);
 }
+
 
 /* ==========================================
    HIDDEN
@@ -380,8 +433,9 @@ canvas {
     display: none !important;
 }
 
+
 /* ==========================================
-   MODAL OVERLAY
+   MODAL
    ========================================== */
 
 .modal-overlay {
@@ -393,61 +447,75 @@ canvas {
 
     display: flex;
 
-    align-items: center;
     justify-content: center;
+
+    align-items: center;
 
     padding: 20px;
 
-    background: rgba(1, 7, 16, 0.7);
+    background:
+        rgba(4, 8, 13, 0.72);
 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter:
+        blur(14px);
+
+    -webkit-backdrop-filter:
+        blur(14px);
 }
 
-/* ==========================================
-   MODAL CARD
-   ========================================== */
 
 .modal-card {
-    width: min(92vw, 400px);
-
-    border: 1px solid rgba(148, 163, 184, 0.18);
-
-    border-radius: 28px;
+    width:
+        min(
+            92vw,
+            410px
+        );
 
     padding: 23px;
 
-    color: var(--text);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.17);
+
+    border-radius: 28px;
+
+    color: white;
 
     text-align: center;
 
     background:
         radial-gradient(
             circle at 50% 0%,
-            rgba(56, 189, 248, 0.13),
-            transparent 38%
+            rgba(56, 189, 248, 0.14),
+            transparent 40%
         ),
+
         linear-gradient(
             180deg,
-            rgba(9, 23, 40, 0.97),
-            rgba(3, 10, 20, 0.95)
+            rgba(17, 31, 48, 0.97),
+            rgba(5, 13, 22, 0.96)
         );
 
     box-shadow:
-        0 28px 90px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        0 30px 90px
+        rgba(0, 0, 0, 0.62),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.06);
 }
+
 
 .small-modal {
-    width: min(90vw, 360px);
+    width:
+        min(
+            90vw,
+            360px
+        );
 }
 
-.hero-card {
-    padding-top: 21px;
-}
 
 /* ==========================================
-   EYEBROW
+   TITLE
    ========================================== */
 
 .eyebrow {
@@ -457,79 +525,82 @@ canvas {
 
     font-weight: 900;
 
-    letter-spacing: 1.8px;
+    letter-spacing: 1.7px;
 }
 
-/* ==========================================
-   GAME TITLE
-   ========================================== */
 
 .game-title {
     margin-top: 7px;
 
-    color: #ffffff;
+    font-size:
+        clamp(
+            38px,
+            11vw,
+            52px
+        );
 
-    font-size: clamp(
-        34px,
-        10vw,
-        48px
-    );
+    line-height: 0.92;
 
     font-weight: 900;
-
-    line-height: 0.98;
 
     letter-spacing: -1px;
 
     text-shadow:
-        0 9px 30px rgba(56, 189, 248, 0.12);
+        0 7px 28px
+        rgba(0, 0, 0, 0.3);
 }
+
 
 .game-title span {
-    color: #facc15;
+    color: var(--gold);
 }
 
-/* ==========================================
-   SUBTITLE
-   ========================================== */
 
 .subtitle {
-    margin: 10px auto 17px;
+    max-width: 310px;
 
-    max-width: 300px;
+    margin:
+        11px auto 17px;
 
-    color: #9fb0c4;
+    color: #9caabd;
 
     font-size: 11px;
 
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
+
 /* ==========================================
-   START SCREEN STATS
+   STATS
    ========================================== */
 
 .stats-box {
     display: grid;
 
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+        1fr 1fr;
 
-    gap: 10px;
+    gap: 9px;
 
     margin-bottom: 17px;
 }
 
+
 .stats-box > div {
-    padding: 11px 10px;
+    padding: 11px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
 
     border-radius: 15px;
 
-    background: rgba(255, 255, 255, 0.045);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        rgba(255, 255, 255, 0.045);
 }
 
-.stat-label {
+
+.stats-box span {
     display: block;
 
     margin-bottom: 3px;
@@ -541,29 +612,32 @@ canvas {
     font-weight: 700;
 }
 
+
 .stats-box strong {
-    color: #facc15;
+    color: var(--gold);
 
     font-size: 18px;
 
     font-weight: 900;
 }
 
+
 /* ==========================================
-   SECTION TITLE
+   SECTION
    ========================================== */
 
 .section-title {
     margin-bottom: 9px;
 
-    color: #dbeafe;
-
     text-align: right;
+
+    color: #dbeafe;
 
     font-size: 11px;
 
     font-weight: 900;
 }
+
 
 /* ==========================================
    UPGRADES
@@ -577,6 +651,7 @@ canvas {
     gap: 8px;
 }
 
+
 .upgrade-item {
     display: grid;
 
@@ -585,71 +660,91 @@ canvas {
         1fr
         auto;
 
-    align-items: center;
-
     gap: 10px;
 
-    padding: 9px 10px;
+    align-items: center;
+
+    padding:
+        9px 10px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
 
     border-radius: 15px;
 
+    background:
+        rgba(255, 255, 255, 0.045);
+
     text-align: right;
-
-    background: rgba(255, 255, 255, 0.045);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+
 /* ==========================================
-   UPGRADE ICON
+   ICONS
    ========================================== */
 
 .upgrade-icon {
+    width: 36px;
+    height: 36px;
+
     display: grid;
 
     place-items: center;
 
-    width: 36px;
-    height: 36px;
-
     border-radius: 12px;
 
-    color: #ffffff;
+    background:
+        rgba(56, 189, 248, 0.12);
 
-    background: rgba(56, 189, 248, 0.13);
+    border:
+        1px solid
+        rgba(125, 211, 252, 0.15);
 
-    border: 1px solid rgba(125, 211, 252, 0.15);
-
-    font-size: 17px;
+    font-size: 16px;
 
     font-weight: 900;
 }
+
 
 .upgrade-icon.power {
     color: #fde68a;
 }
 
+
 .upgrade-icon.rate {
     color: #7dd3fc;
 }
+
 
 .upgrade-icon.magnet {
     color: #c4b5fd;
 }
 
+
 /* ==========================================
-   UPGRADE TEXT
+   TEXT
    ========================================== */
 
+.upgrade-copy {
+    min-width: 0;
+}
+
+
 .upg-name {
-    color: #f8fafc;
+    display: block;
+
+    color: white;
 
     font-size: 12px;
 
     font-weight: 800;
 }
 
+
 .upg-lvl {
+    display: block;
+
     margin-top: 2px;
 
     color: #7f91a8;
@@ -659,8 +754,9 @@ canvas {
     font-weight: 700;
 }
 
+
 /* ==========================================
-   BUTTON RESET
+   BUTTONS
    ========================================== */
 
 .btn-upg,
@@ -674,6 +770,7 @@ canvas {
     font-weight: 900;
 }
 
+
 /* ==========================================
    UPGRADE BUTTON
    ========================================== */
@@ -681,7 +778,8 @@ canvas {
 .btn-upg {
     min-width: 66px;
 
-    padding: 8px 10px;
+    padding:
+        8px 10px;
 
     border-radius: 11px;
 
@@ -691,23 +789,27 @@ canvas {
         linear-gradient(
             135deg,
             #fde68a,
-            #facc15 55%,
+            #facc15 56%,
             #eab308
         );
 
     box-shadow:
-        0 5px 16px rgba(250, 204, 21, 0.19);
+        0 5px 16px
+        rgba(250, 204, 21, 0.18);
 
     font-size: 11px;
 }
+
 
 .btn-upg:disabled {
     opacity: 0.3;
 
     cursor: not-allowed;
 
-    filter: grayscale(0.45);
+    filter:
+        grayscale(0.4);
 }
+
 
 /* ==========================================
    PRIMARY BUTTON
@@ -722,36 +824,44 @@ canvas {
 
     border-radius: 16px;
 
-    color: #ffffff;
+    color: white;
 
     background:
         linear-gradient(
             135deg,
             #0ea5e9,
-            #0284c7 55%,
+            #0284c7 56%,
             #0369a1
         );
 
     box-shadow:
-        0 10px 28px rgba(14, 165, 233, 0.28),
-        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+        0 11px 30px
+        rgba(14, 165, 233, 0.28),
+
+        inset 0 1px 0
+        rgba(255, 255, 255, 0.13);
 
     font-size: 17px;
 
     transition:
-        transform 0.12s ease,
-        filter 0.12s ease;
+        transform 0.1s ease,
+        filter 0.1s ease;
 }
+
+
+.btn-primary:hover {
+    filter:
+        brightness(1.08);
+}
+
 
 .btn-primary:active,
 .btn-upg:active,
 .icon-btn:active {
-    transform: scale(0.97);
+    transform:
+        scale(0.97);
 }
 
-.btn-primary:hover {
-    filter: brightness(1.08);
-}
 
 /* ==========================================
    TIP
@@ -765,17 +875,19 @@ canvas {
     font-size: 9px;
 }
 
+
 /* ==========================================
    SMALL MODAL
    ========================================== */
 
 .small-modal h2 {
-    margin-top: 6px;
+    margin-top: 7px;
 
     font-size: 31px;
 
     font-weight: 900;
 }
+
 
 .small-modal p {
     margin-top: 7px;
@@ -785,13 +897,15 @@ canvas {
     font-size: 11px;
 }
 
+
 /* ==========================================
    GAME OVER
    ========================================== */
 
 .danger-text {
-    color: #fb7185;
+    color: var(--red);
 }
+
 
 .result-grid {
     display: grid;
@@ -804,15 +918,21 @@ canvas {
     margin-top: 17px;
 }
 
+
 .result-grid > div {
-    padding: 10px 7px;
+    padding:
+        10px 7px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
 
     border-radius: 13px;
 
-    background: rgba(255, 255, 255, 0.045);
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        rgba(255, 255, 255, 0.045);
 }
+
 
 .result-grid span {
     display: block;
@@ -823,6 +943,7 @@ canvas {
 
     font-weight: 700;
 }
+
 
 .result-grid strong {
     display: block;
@@ -836,11 +957,12 @@ canvas {
     font-weight: 900;
 }
 
+
 /* ==========================================
    MOBILE
    ========================================== */
 
-@media (max-width: 420px) {
+@media (max-width: 560px) {
 
     #ui-container {
         width: 95vw;
@@ -848,60 +970,62 @@ canvas {
         gap: 5px;
     }
 
-    .ui-card {
-        min-height: 52px;
 
-        padding: 6px 7px;
+    .ui-card {
+        min-height: 51px;
+
+        padding:
+            6px 7px;
 
         border-radius: 13px;
     }
+
 
     .ui-title {
         font-size: 8px;
     }
 
+
     .hp-head {
         font-size: 8px;
     }
 
-    .hp-bar-bg {
-        height: 8px;
+
+    #combat-ui {
+        top: 77px;
     }
 
-    .combat-ui {
-        top: 78px;
-    }
 
     .icon-btn {
-        top: 78px;
+        top: 77px;
 
         right: 10px;
 
-        width: 38px;
-        height: 38px;
+        width: 39px;
+        height: 39px;
     }
 
-    .hero-card {
-        padding: 19px 15px;
+
+    .modal-card {
+        padding:
+            19px 15px;
     }
 }
+
 
 /* ==========================================
    DESKTOP
    ========================================== */
 
-@media (min-width: 800px) {
+@media (min-width: 900px) {
 
-    #ui-container {
-        top: 18px;
+    #combat-ui {
+        top: 91px;
     }
 
-    .combat-ui {
-        top: 92px;
-    }
 
     .icon-btn {
-        top: 92px;
+        top: 91px;
 
         right: 24px;
     }

@@ -2,130 +2,393 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#07111f">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    >
+
+    <meta name="theme-color" content="#111827">
+
     <title>Cannon Blast 3D</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700;800;900&display=swap"
+        rel="stylesheet"
+    >
+
     <link rel="stylesheet" href="style.css">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
+
 <body>
+
+    <!-- שכבת עומק למסך -->
     <div id="vignette"></div>
+
+    <!-- הבזק אדום כאשר השחקן נפגע -->
     <div id="damage-flash"></div>
 
-    <div id="ui-container" aria-hidden="true">
-        <div class="ui-card compact-card">
+
+    <!-- ==============================
+         HUD
+         ============================== -->
+
+    <div id="ui-container">
+
+        <div class="ui-card">
             <span class="ui-title">SCORE</span>
-            <span id="score-val" class="ui-value">0</span>
+            <strong id="score-val" class="ui-value">
+                0
+            </strong>
         </div>
 
-        <div class="ui-card compact-card">
+
+        <div class="ui-card">
             <span class="ui-title">COINS</span>
-            <span id="coins-val" class="ui-value gold">0</span>
+            <strong id="coins-val" class="ui-value gold">
+                0
+            </strong>
         </div>
 
-        <div class="ui-card compact-card">
+
+        <div class="ui-card">
             <span class="ui-title">LEVEL</span>
-            <span id="level-text" class="ui-value">LEVEL 1</span>
+            <strong id="level-text" class="ui-value">
+                1
+            </strong>
         </div>
+
 
         <div class="ui-card hp-card">
+
             <div class="hp-head">
                 <span>HP</span>
-                <span id="hp-text">1000 / 1000</span>
+
+                <span id="hp-text">
+                    1000 / 1000
+                </span>
             </div>
+
             <div class="hp-bar-bg">
                 <div id="hp-bar"></div>
             </div>
+
         </div>
+
     </div>
 
-    <div id="combat-ui" class="combat-ui hidden">
-        <div id="combo-badge" class="combat-badge">COMBO x1</div>
-        <div id="wave-badge" class="combat-badge wave">WAVE 1</div>
+
+    <!-- ==============================
+         COMBAT UI
+         ============================== -->
+
+    <div id="combat-ui" class="hidden">
+
+        <span id="wave-badge" class="combat-badge">
+            WAVE 1
+        </span>
+
+        <span id="combo-badge" class="combat-badge combo">
+            COMBO x1
+        </span>
+
     </div>
 
-    <button id="pause-btn" class="icon-btn hidden" type="button" aria-label="Pause">Ⅱ</button>
+
+    <!-- כפתור Pause -->
+
+    <button
+        id="pause-btn"
+        class="icon-btn hidden"
+        type="button"
+        aria-label="Pause"
+    >
+        Ⅱ
+    </button>
+
+
+    <!-- ==============================
+         START SCREEN
+         ============================== -->
 
     <div id="splash-screen" class="modal-overlay">
+
         <div class="modal-card hero-card">
-            <div class="eyebrow">3D ARCADE • CANNON DEFENSE</div>
-            <h1 class="game-title">CANNON<br><span>BLAST 3D</span></h1>
-            <p class="subtitle">השמד את הסלעים • אסוף מטבעות • שרוד כמה שיותר שלבים</p>
+
+            <div class="eyebrow">
+                CANNON DEFENSE • 3D
+            </div>
+
+
+            <h1 class="game-title">
+                CANNON
+                <br>
+                <span>BLAST</span>
+            </h1>
+
+
+            <p class="subtitle">
+                הגן על השטח, פוצץ סלעים ואסוף כמה שיותר מטבעות.
+            </p>
+
 
             <div class="stats-box">
+
                 <div>
-                    <span class="stat-label">שיא אישי</span>
-                    <strong id="start-best-score">0</strong>
+                    <span>שיא אישי</span>
+
+                    <strong id="start-best-score">
+                        0
+                    </strong>
                 </div>
+
+
                 <div>
-                    <span class="stat-label">מטבעות</span>
-                    <strong id="start-coins">0</strong>
+                    <span>מטבעות</span>
+
+                    <strong id="start-coins">
+                        0
+                    </strong>
                 </div>
+
             </div>
 
-            <div class="section-title">שדרוגים</div>
+
+            <div class="section-title">
+                שדרוגים
+            </div>
+
 
             <div class="upgrades-list">
-                <div class="upgrade-item">
-                    <div class="upgrade-icon power">⚡</div>
-                    <div class="upgrade-copy">
-                        <div class="upg-name">עוצמת ירייה</div>
-                        <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
-                    </div>
-                    <button id="buy-power-btn" class="btn-upg" type="button">50 C</button>
-                </div>
+
+                <!-- כוח -->
 
                 <div class="upgrade-item">
-                    <div class="upgrade-icon rate">»</div>
-                    <div class="upgrade-copy">
-                        <div class="upg-name">קצב אש</div>
-                        <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
+
+                    <div class="upgrade-icon power">
+                        ⚡
                     </div>
-                    <button id="buy-rate-btn" class="btn-upg" type="button">60 C</button>
+
+                    <div class="upgrade-copy">
+
+                        <strong class="upg-name">
+                            עוצמת ירייה
+                        </strong>
+
+                        <span
+                            id="power-lvl-text"
+                            class="upg-lvl"
+                        >
+                            Lvl 1
+                        </span>
+
+                    </div>
+
+                    <button
+                        id="buy-power-btn"
+                        class="btn-upg"
+                        type="button"
+                    >
+                        50 C
+                    </button>
+
                 </div>
 
+
+                <!-- קצב -->
+
                 <div class="upgrade-item">
-                    <div class="upgrade-icon magnet">✦</div>
-                    <div class="upgrade-copy">
-                        <div class="upg-name">מגנט מטבעות</div>
-                        <div id="magnet-lvl-text" class="upg-lvl">Lvl 0</div>
+
+                    <div class="upgrade-icon rate">
+                        »
                     </div>
-                    <button id="buy-magnet-btn" class="btn-upg" type="button">100 C</button>
+
+                    <div class="upgrade-copy">
+
+                        <strong class="upg-name">
+                            קצב אש
+                        </strong>
+
+                        <span
+                            id="rate-lvl-text"
+                            class="upg-lvl"
+                        >
+                            Lvl 1
+                        </span>
+
+                    </div>
+
+                    <button
+                        id="buy-rate-btn"
+                        class="btn-upg"
+                        type="button"
+                    >
+                        60 C
+                    </button>
+
                 </div>
+
+
+                <!-- מגנט -->
+
+                <div class="upgrade-item">
+
+                    <div class="upgrade-icon magnet">
+                        ✦
+                    </div>
+
+                    <div class="upgrade-copy">
+
+                        <strong class="upg-name">
+                            מגנט מטבעות
+                        </strong>
+
+                        <span
+                            id="magnet-lvl-text"
+                            class="upg-lvl"
+                        >
+                            Lvl 0
+                        </span>
+
+                    </div>
+
+                    <button
+                        id="buy-magnet-btn"
+                        class="btn-upg"
+                        type="button"
+                    >
+                        100 C
+                    </button>
+
+                </div>
+
             </div>
 
-            <button id="start-btn" class="btn-primary" type="button">התחל משחק</button>
-            <div class="tip">גרור את התותח ימינה ושמאלה כדי לכוון</div>
+
+            <button
+                id="start-btn"
+                class="btn-primary"
+                type="button"
+            >
+                התחל משחק
+            </button>
+
+
+            <div class="tip">
+                גרור ימינה ושמאלה כדי להזיז את התותח
+            </div>
+
         </div>
+
     </div>
 
-    <div id="pause-screen" class="modal-overlay hidden">
+
+    <!-- ==============================
+         PAUSE
+         ============================== -->
+
+    <div
+        id="pause-screen"
+        class="modal-overlay hidden"
+    >
+
         <div class="modal-card small-modal">
-            <div class="eyebrow">GAME PAUSED</div>
-            <h2>המשחק נעצר</h2>
-            <p>קח רגע… וחזור לקרב.</p>
-            <button id="resume-btn" class="btn-primary" type="button">המשך</button>
+
+            <div class="eyebrow">
+                PAUSED
+            </div>
+
+            <h2>
+                המשחק נעצר
+            </h2>
+
+            <p>
+                חזור לקרב מתי שנוח לך.
+            </p>
+
+            <button
+                id="resume-btn"
+                class="btn-primary"
+                type="button"
+            >
+                המשך
+            </button>
+
         </div>
+
     </div>
 
-    <div id="game-over-screen" class="modal-overlay hidden">
+
+    <!-- ==============================
+         GAME OVER
+         ============================== -->
+
+    <div
+        id="game-over-screen"
+        class="modal-overlay hidden"
+    >
+
         <div class="modal-card small-modal">
-            <div class="eyebrow danger-text">RUN OVER</div>
-            <h2>GAME OVER</h2>
+
+            <div class="eyebrow danger-text">
+                RUN OVER
+            </div>
+
+            <h2>
+                GAME OVER
+            </h2>
+
 
             <div class="result-grid">
-                <div><span>Score</span><strong id="final-score">0</strong></div>
-                <div><span>Level</span><strong id="final-level">1</strong></div>
-                <div><span>Coins</span><strong id="final-coins">0</strong></div>
+
+                <div>
+                    <span>SCORE</span>
+
+                    <strong id="final-score">
+                        0
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>LEVEL</span>
+
+                    <strong id="final-level">
+                        1
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>COINS</span>
+
+                    <strong id="final-coins">
+                        0
+                    </strong>
+                </div>
+
             </div>
 
-            <button id="restart-btn" class="btn-primary" type="button">נסה שוב</button>
+
+            <button
+                id="restart-btn"
+                class="btn-primary"
+                type="button"
+            >
+                נסה שוב
+            </button>
+
         </div>
+
     </div>
 
+
     <script src="main.js"></script>
+
 </body>
 </html>
