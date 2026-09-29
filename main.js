@@ -4,15 +4,11 @@ window.addEventListener(
 
         'use strict';
 
-
         // =====================================================
         // BASIC CHECK
         // =====================================================
 
-        if (
-            typeof THREE ===
-            'undefined'
-        ) {
+        if (typeof THREE === 'undefined') {
 
             console.error(
                 'Three.js לא נטען.'
@@ -27,10 +23,7 @@ window.addEventListener(
         // =====================================================
 
         const $ = (id) => {
-
-            return document.getElementById(
-                id
-            );
+            return document.getElementById(id);
         };
 
 
@@ -105,8 +98,7 @@ window.addEventListener(
             new THREE.WebGLRenderer({
 
                 antialias:
-                    window.innerWidth >
-                    650,
+                    window.innerWidth > 650,
 
                 powerPreference:
                     'high-performance',
@@ -156,17 +148,8 @@ window.addEventListener(
 
 
             let width;
-
             let height;
 
-
-            /*
-             * Landscape:
-             * 1920 x 1080
-             *
-             * Portrait:
-             * 1080 x 1920
-             */
 
             if (
                 aspect >= 1
@@ -201,9 +184,6 @@ window.addEventListener(
         }
 
 
-        setHDResolution();
-
-
         // =====================================================
         // RESPONSIVE CAMERA
         // =====================================================
@@ -223,8 +203,7 @@ window.addEventListener(
 
 
             if (
-                aspect <
-                0.72
+                aspect < 0.72
             ) {
 
                 screenLimitX =
@@ -237,8 +216,7 @@ window.addEventListener(
                     25.5;
 
             } else if (
-                aspect <
-                1
+                aspect < 1
             ) {
 
                 screenLimitX =
@@ -333,25 +311,25 @@ window.addEventListener(
 
             gradient.addColorStop(
                 0,
-                '#626b73'
+                '#66717a'
             );
 
 
             gradient.addColorStop(
-                0.20,
-                '#807874'
+                0.18,
+                '#817b76'
             );
 
 
             gradient.addColorStop(
-                0.40,
-                '#a86f58'
+                0.38,
+                '#a96d56'
             );
 
 
             gradient.addColorStop(
-                0.58,
-                '#db8d4f'
+                0.56,
+                '#dc8f50'
             );
 
 
@@ -379,17 +357,17 @@ window.addEventListener(
             );
 
 
-            // Atmospheric clouds.
+            // Soft clouds.
 
             for (
                 let i = 0;
-                i < 14;
+                i < 16;
                 i++
             ) {
 
                 const y =
-                    90 +
-                    i * 48;
+                    65 +
+                    i * 46;
 
 
                 const cloud =
@@ -408,19 +386,19 @@ window.addEventListener(
 
 
                 cloud.addColorStop(
-                    0.35,
-                    'rgba(255,222,188,0.09)'
+                    0.30,
+                    'rgba(255,230,203,0.08)'
                 );
 
 
                 cloud.addColorStop(
-                    0.60,
-                    'rgba(90,81,77,0.11)'
+                    0.52,
+                    'rgba(87,78,74,0.13)'
                 );
 
 
                 cloud.addColorStop(
-                    1,
+                    0.80,
                     'rgba(255,255,255,0)'
                 );
 
@@ -458,8 +436,8 @@ window.addEventListener(
 
         scene.fog =
             new THREE.FogExp2(
-                0xd68a57,
-                0.014
+                0xd58a57,
+                0.013
             );
 
 
@@ -469,9 +447,9 @@ window.addEventListener(
 
         const hemisphere =
             new THREE.HemisphereLight(
-                0xffe7c5,
-                0x29170e,
-                0.88
+                0xffebcf,
+                0x2a170d,
+                0.92
             );
 
 
@@ -482,15 +460,15 @@ window.addEventListener(
 
         const sun =
             new THREE.DirectionalLight(
-                0xffefc9,
-                1.72
+                0xffecc4,
+                1.78
             );
 
 
         sun.position.set(
-            12,
-            21,
-            14
+            14,
+            22,
+            15
         );
 
 
@@ -499,8 +477,7 @@ window.addEventListener(
 
 
         const shadowSize =
-            window.innerWidth <
-            650
+            window.innerWidth < 650
                 ? 768
                 : 1024;
 
@@ -512,19 +489,19 @@ window.addEventListener(
 
 
         sun.shadow.camera.left =
-            -20;
+            -22;
 
 
         sun.shadow.camera.right =
-            20;
+            22;
 
 
         sun.shadow.camera.top =
-            24;
+            25;
 
 
         sun.shadow.camera.bottom =
-            -4;
+            -5;
 
 
         sun.shadow.camera.near =
@@ -532,11 +509,11 @@ window.addEventListener(
 
 
         sun.shadow.camera.far =
-            70;
+            75;
 
 
         sun.shadow.bias =
-            -0.0005;
+            -0.0004;
 
 
         scene.add(
@@ -546,13 +523,13 @@ window.addEventListener(
 
         const blueFill =
             new THREE.DirectionalLight(
-                0x8ddcff,
-                0.34
+                0x8fdcff,
+                0.35
             );
 
 
         blueFill.position.set(
-            -13,
+            -15,
             10,
             8
         );
@@ -565,9 +542,9 @@ window.addEventListener(
 
         const sunsetLight =
             new THREE.PointLight(
-                0xffb15e,
-                2.8,
-                28,
+                0xffb45f,
+                3.0,
+                32,
                 2
             );
 
@@ -575,7 +552,7 @@ window.addEventListener(
         sunsetLight.position.set(
             0,
             8,
-            -18
+            -19
         );
 
 
@@ -584,29 +561,29 @@ window.addEventListener(
         );
 
 
-        const cannonLight =
+        const environmentFill =
             new THREE.PointLight(
-                0x38bdf8,
-                2,
-                7,
+                0xf7cf90,
+                0.55,
+                20,
                 2
             );
 
 
-        cannonLight.position.set(
+        environmentFill.position.set(
             0,
-            1.2,
-            2
+            4,
+            -7
         );
 
 
         scene.add(
-            cannonLight
+            environmentFill
         );
 
 
         // =====================================================
-        // WORLD
+        // WORLD GROUP
         // =====================================================
 
         const world =
@@ -619,41 +596,40 @@ window.addEventListener(
 
 
         // =====================================================
-        // SUN
+        // SUN DISK
         // =====================================================
 
-        const sunDisc =
+        const sunDisk =
             new THREE.Mesh(
 
                 new THREE.SphereGeometry(
-                    2.6,
+                    2.7,
                     24,
-                    16
+                    18
                 ),
 
                 new THREE.MeshBasicMaterial({
-
                     color:
-                        0xffd55c,
+                        0xffd45f,
 
                     transparent:
                         true,
 
                     opacity:
-                        0.95
+                        0.96
                 })
             );
 
 
-        sunDisc.position.set(
+        sunDisk.position.set(
             0,
             10.7,
-            -26
+            -27
         );
 
 
         world.add(
-            sunDisc
+            sunDisk
         );
 
 
@@ -661,7 +637,7 @@ window.addEventListener(
             new THREE.Mesh(
 
                 new THREE.SphereGeometry(
-                    5,
+                    5.2,
                     20,
                     14
                 ),
@@ -669,13 +645,13 @@ window.addEventListener(
                 new THREE.MeshBasicMaterial({
 
                     color:
-                        0xffc56b,
+                        0xffbf69,
 
                     transparent:
                         true,
 
                     opacity:
-                        0.09,
+                        0.10,
 
                     depthWrite:
                         false
@@ -684,7 +660,7 @@ window.addEventListener(
 
 
         sunGlow.position.copy(
-            sunDisc.position
+            sunDisk.position
         );
 
 
@@ -701,14 +677,14 @@ window.addEventListener(
             new THREE.Mesh(
 
                 new THREE.PlaneGeometry(
-                    62,
-                    50
+                    68,
+                    54
                 ),
 
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x725d2b,
+                        0x75602d,
 
                     roughness:
                         1,
@@ -729,7 +705,7 @@ window.addEventListener(
         ground.position.set(
             0,
             -0.28,
-            -6
+            -7
         );
 
 
@@ -750,15 +726,15 @@ window.addEventListener(
             new THREE.Mesh(
 
                 new THREE.BoxGeometry(
-                    54,
-                    2.8,
-                    7
+                    56,
+                    3,
+                    8
                 ),
 
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x3d2516,
+                        0x3f2718,
 
                     roughness:
                         1,
@@ -771,7 +747,7 @@ window.addEventListener(
 
         soil.position.set(
             0,
-            -1.55,
+            -1.58,
             1
         );
 
@@ -789,19 +765,19 @@ window.addEventListener(
         // GRASS GROUND
         // =====================================================
 
-        const grassTop =
+        const grassGround =
             new THREE.Mesh(
 
                 new THREE.BoxGeometry(
-                    54,
-                    0.56,
-                    7.08
+                    56,
+                    0.55,
+                    8.08
                 ),
 
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x4c721a,
+                        0x4d741b,
 
                     roughness:
                         1,
@@ -812,19 +788,374 @@ window.addEventListener(
             );
 
 
-        grassTop.position.set(
+        grassGround.position.set(
             0,
-            -0.16,
+            -0.18,
             1
         );
 
 
-        grassTop.receiveShadow =
+        grassGround.receiveShadow =
             true;
 
 
         world.add(
-            grassTop
+            grassGround
+        );
+
+
+        // =====================================================
+        // TERRAIN RIDGES
+        // =====================================================
+
+        function addTerrainRidge(
+            x,
+            z,
+            width,
+            height,
+            depth,
+            color
+        ) {
+
+            const ridge =
+                new THREE.Mesh(
+
+                    new THREE.ConeGeometry(
+                        1,
+                        1,
+                        7
+                    ),
+
+                    new THREE.MeshStandardMaterial({
+
+                        color:
+                            color,
+
+                        roughness:
+                            0.97,
+
+                        flatShading:
+                            true
+                    })
+                );
+
+
+            ridge.position.set(
+                x,
+                height / 2 - 0.1,
+                z
+            );
+
+
+            ridge.scale.set(
+                width,
+                height,
+                depth
+            );
+
+
+            ridge.rotation.y =
+                rand(
+                    -0.15,
+                    0.15
+                );
+
+
+            ridge.castShadow =
+                true;
+
+
+            ridge.receiveShadow =
+                true;
+
+
+            world.add(
+                ridge
+            );
+
+
+            return ridge;
+        }
+
+
+        // Distant desert mountains.
+
+        addTerrainRidge(
+            -19,
+            -18,
+            11,
+            10,
+            4,
+            0x77513b
+        );
+
+
+        addTerrainRidge(
+            19,
+            -18,
+            11,
+            9,
+            4,
+            0x744d38
+        );
+
+
+        addTerrainRidge(
+            -13,
+            -13,
+            8,
+            7,
+            4,
+            0x644536
+        );
+
+
+        addTerrainRidge(
+            13,
+            -14,
+            8,
+            7,
+            4,
+            0x614133
+        );
+
+
+        // =====================================================
+        // PYRAMID FUNCTION
+        // =====================================================
+
+        function addPyramid(
+            x,
+            y,
+            z,
+            width,
+            height,
+            depth,
+            color
+        ) {
+
+            const pyramid =
+                new THREE.Mesh(
+
+                    new THREE.ConeGeometry(
+                        1,
+                        1,
+                        4
+                    ),
+
+                    new THREE.MeshStandardMaterial({
+
+                        color:
+                            color,
+
+                        roughness:
+                            0.88,
+
+                        metalness:
+                            0.02,
+
+                        flatShading:
+                            true
+                    })
+                );
+
+
+            pyramid.position.set(
+                x,
+                y,
+                z
+            );
+
+
+            pyramid.scale.set(
+                width,
+                height,
+                depth
+            );
+
+
+            pyramid.rotation.y =
+                Math.PI / 4;
+
+
+            pyramid.castShadow =
+                true;
+
+
+            pyramid.receiveShadow =
+                true;
+
+
+            world.add(
+                pyramid
+            );
+
+
+            return pyramid;
+        }
+
+
+        // =====================================================
+        // DISTANT PYRAMIDS
+        // =====================================================
+
+        addPyramid(
+            -17,
+            5.2,
+            -20,
+            7.7,
+            11,
+            7.7,
+            0x895234
+        );
+
+
+        addPyramid(
+            17,
+            5.0,
+            -20,
+            7.5,
+            10.5,
+            7.5,
+            0x7a4a31
+        );
+
+
+        addPyramid(
+            0,
+            4.3,
+            -25,
+            6.5,
+            8.7,
+            6.5,
+            0x704832
+        );
+
+
+        // =====================================================
+        // MIDDLE PYRAMIDS
+        // =====================================================
+
+        addPyramid(
+            -10.2,
+            3.6,
+            -13,
+            5.1,
+            7.1,
+            5.1,
+            0x5e483b
+        );
+
+
+        addPyramid(
+            10.2,
+            3.5,
+            -13.2,
+            5.3,
+            7.3,
+            5.3,
+            0x594338
+        );
+
+
+        addPyramid(
+            0,
+            2.6,
+            -16.2,
+            4.2,
+            5.7,
+            4.2,
+            0x504036
+        );
+
+
+        // =====================================================
+        // FOREGROUND ROCK WALLS
+        // =====================================================
+
+        addPyramid(
+            -9.0,
+            2.1,
+            -6.2,
+            3.7,
+            4.8,
+            3.0,
+            0x302b26
+        );
+
+
+        addPyramid(
+            9.0,
+            2.0,
+            -6.0,
+            3.7,
+            4.7,
+            3.0,
+            0x2d2925
+        );
+
+
+        addPyramid(
+            -14,
+            1.55,
+            -4.2,
+            2.75,
+            3.2,
+            2.25,
+            0x382d27
+        );
+
+
+        addPyramid(
+            14,
+            1.55,
+            -4.0,
+            2.75,
+            3.2,
+            2.25,
+            0x342b27
+        );
+
+
+        // =====================================================
+        // VALLEY
+        // =====================================================
+
+        const valley =
+            new THREE.Mesh(
+
+                new THREE.PlaneGeometry(
+                    14,
+                    8.5
+                ),
+
+                new THREE.MeshStandardMaterial({
+
+                    color:
+                        0x5d8122,
+
+                    roughness:
+                        1,
+
+                    flatShading:
+                        true
+                })
+            );
+
+
+        valley.rotation.x =
+            -Math.PI / 2;
+
+
+        valley.position.set(
+            0,
+            0.028,
+            -4.7
+        );
+
+
+        world.add(
+            valley
         );
 
 
@@ -836,7 +1167,7 @@ window.addEventListener(
             new THREE.MeshStandardMaterial({
 
                 color:
-                    0x4d7d18,
+                    0x4e7e1a,
 
                 roughness:
                     0.95,
@@ -855,13 +1186,13 @@ window.addEventListener(
         const grassGeometry =
             new THREE.ConeGeometry(
                 0.055,
-                0.34,
+                0.36,
                 3
             );
 
 
         const GRASS_COUNT =
-            520;
+            700;
 
 
         const grass =
@@ -883,47 +1214,45 @@ window.addEventListener(
             0;
 
 
-        // Front grass.
+        // Front field.
 
         for (
             let i = 0;
-            i < 320;
+            i < 420;
             i++
         ) {
 
-            const x =
-                rand(
-                    -19,
-                    19
-                );
-
-
-            const z =
-                rand(
-                    -1.3,
-                    2.2
-                );
-
-
             grassDummy.position.set(
-                x,
-                0.05,
-                z
+
+                rand(
+                    -20,
+                    20
+                ),
+
+                0.06,
+
+                rand(
+                    -1.5,
+                    2.7
+                )
             );
 
 
             grassDummy.scale.set(
+
                 rand(
-                    0.7,
-                    1.2
+                    0.65,
+                    1.15
                 ),
+
                 rand(
-                    0.7,
-                    1.35
+                    0.65,
+                    1.45
                 ),
+
                 rand(
-                    0.7,
-                    1.2
+                    0.65,
+                    1.15
                 )
             );
 
@@ -937,8 +1266,8 @@ window.addEventListener(
 
             grassDummy.rotation.z =
                 rand(
-                    -0.15,
-                    0.15
+                    -0.18,
+                    0.18
                 );
 
 
@@ -952,44 +1281,42 @@ window.addEventListener(
         }
 
 
-        // Valley grass.
+        // Valley.
 
         for (
             let i = 0;
-            i < 200;
+            i < 280;
             i++
         ) {
 
-            const x =
+            grassDummy.position.set(
+
                 rand(
                     -7,
                     7
-                );
+                ),
 
+                0.075,
 
-            const z =
                 rand(
-                    -7.5,
-                    -2.0
-                );
-
-
-            grassDummy.position.set(
-                x,
-                0.07,
-                z
+                    -8,
+                    -2
+                )
             );
 
 
             grassDummy.scale.set(
+
                 rand(
                     0.65,
                     1.0
                 ),
+
                 rand(
                     0.7,
-                    1.2
+                    1.25
                 ),
+
                 rand(
                     0.65,
                     1.0
@@ -1006,8 +1333,8 @@ window.addEventListener(
 
             grassDummy.rotation.z =
                 rand(
-                    -0.16,
-                    0.16
+                    -0.18,
+                    0.18
                 );
 
 
@@ -1039,262 +1366,342 @@ window.addEventListener(
 
 
         // =====================================================
-        // PYRAMIDS
+        // SMALL ROCK CLUSTERS
         // =====================================================
 
-        function addPyramid(
+        const smallRockMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color:
+                    0x6f675d,
+
+                roughness:
+                    0.94,
+
+                flatShading:
+                    true
+            });
+
+
+        const smallRockGeometry =
+            new THREE.IcosahedronGeometry(
+                0.34,
+                0
+            );
+
+
+        function addRockCluster(
             x,
-            y,
             z,
-            scaleX,
-            scaleY,
-            scaleZ,
-            color
+            count,
+            scale
         ) {
 
-            const pyramid =
-                new THREE.Mesh(
+            const group =
+                new THREE.Group();
 
-                    new THREE.ConeGeometry(
-                        1,
-                        1,
-                        4
+
+            for (
+                let i = 0;
+                i < count;
+                i++
+            ) {
+
+                const rock =
+                    new THREE.Mesh(
+                        smallRockGeometry,
+                        smallRockMaterial
+                    );
+
+
+                rock.position.set(
+                    rand(
+                        -0.9,
+                        0.9
                     ),
-
-                    new THREE.MeshStandardMaterial({
-
-                        color:
-                            color,
-
-                        roughness:
-                            0.9,
-
-                        metalness:
-                            0.02,
-
-                        flatShading:
-                            true
-                    })
+                    rand(
+                        0.15,
+                        0.4
+                    ),
+                    rand(
+                        -0.45,
+                        0.45
+                    )
                 );
 
 
-            pyramid.position.set(
+                rock.scale.set(
+
+                    rand(
+                        0.65,
+                        1.25
+                    ) *
+                    scale,
+
+                    rand(
+                        0.55,
+                        1.2
+                    ) *
+                    scale,
+
+                    rand(
+                        0.65,
+                        1.15
+                    ) *
+                    scale
+                );
+
+
+                rock.rotation.set(
+
+                    rand(
+                        0,
+                        Math.PI
+                    ),
+
+                    rand(
+                        0,
+                        Math.PI
+                    ),
+
+                    rand(
+                        0,
+                        Math.PI
+                    )
+                );
+
+
+                rock.castShadow =
+                    true;
+
+
+                rock.receiveShadow =
+                    true;
+
+
+                group.add(
+                    rock
+                );
+            }
+
+
+            group.position.set(
                 x,
-                y,
+                0,
                 z
             );
 
 
-            pyramid.scale.set(
-                scaleX,
-                scaleY,
-                scaleZ
-            );
-
-
-            pyramid.rotation.y =
-                Math.PI / 4;
-
-
-            pyramid.castShadow =
-                true;
-
-
-            pyramid.receiveShadow =
-                true;
-
-
             world.add(
-                pyramid
+                group
             );
-
-
-            return pyramid;
         }
 
 
-        // Distant.
-
-        addPyramid(
-            -17,
-            5.1,
-            -19,
-            7.8,
-            11.1,
-            7.8,
-            0x875033
-        );
-
-
-        addPyramid(
-            17,
-            5,
-            -20,
-            7.4,
-            10.7,
-            7.4,
-            0x7c4a32
-        );
-
-
-        addPyramid(
-            0,
-            4.2,
-            -24,
-            6.6,
-            8.8,
-            6.6,
-            0x704832
-        );
-
-
-        // Middle.
-
-        addPyramid(
-            -10.5,
-            3.7,
-            -12,
-            5.2,
-            7.2,
-            5.2,
-            0x594338
-        );
-
-
-        addPyramid(
-            10.5,
-            3.6,
-            -12.5,
-            5.5,
-            7.5,
-            5.5,
-            0x584237
-        );
-
-
-        addPyramid(
-            0,
-            2.7,
-            -16,
-            4.3,
-            5.7,
-            4.3,
-            0x504036
-        );
-
-
-        // Foreground.
-
-        addPyramid(
-            -8.8,
-            2.2,
+        addRockCluster(
             -5.8,
-            3.7,
-            4.8,
-            3.1,
-            0x302924
+            -5.0,
+            8,
+            1.15
         );
 
 
-        addPyramid(
-            8.8,
-            2.1,
-            -5.7,
-            3.7,
-            4.7,
-            3.1,
-            0x2d2824
+        addRockCluster(
+            5.9,
+            -5.2,
+            8,
+            1.2
         );
 
 
-        addPyramid(
-            -14,
-            1.6,
-            -4.5,
-            2.7,
-            3.2,
-            2.3,
-            0x352a25
+        addRockCluster(
+            -11.5,
+            -7.4,
+            6,
+            0.9
         );
 
 
-        addPyramid(
-            14,
-            1.6,
-            -4.2,
-            2.7,
-            3.3,
-            2.3,
-            0x342a25
+        addRockCluster(
+            11.8,
+            -7.2,
+            6,
+            0.95
         );
 
 
         // =====================================================
-        // GREEN VALLEY
+        // CRYSTALS
         // =====================================================
 
-        const valley =
-            new THREE.Mesh(
+        const crystalMaterial =
+            new THREE.MeshStandardMaterial({
 
-                new THREE.PlaneGeometry(
-                    14,
-                    8
-                ),
+                color:
+                    0x34d7e8,
 
-                new THREE.MeshStandardMaterial({
+                emissive:
+                    0x07586d,
 
-                    color:
-                        0x55781f,
+                emissiveIntensity:
+                    0.95,
 
-                    roughness:
-                        1,
+                roughness:
+                    0.19,
 
-                    flatShading:
-                        true
-                })
+                metalness:
+                    0.34,
+
+                flatShading:
+                    true
+            });
+
+
+        function addCrystal(
+            x,
+            z,
+            size
+        ) {
+
+            const group =
+                new THREE.Group();
+
+
+            for (
+                let i = 0;
+                i < 2;
+                i++
+            ) {
+
+                const crystal =
+                    new THREE.Mesh(
+
+                        new THREE.OctahedronGeometry(
+                            1,
+                            0
+                        ),
+
+                        crystalMaterial
+                    );
+
+
+                crystal.position.set(
+
+                    (i - 0.5) *
+                    0.38,
+
+                    i *
+                    0.13,
+
+                    0
+                );
+
+
+                crystal.scale.set(
+
+                    size *
+                    (
+                        i
+                            ? 0.62
+                            : 0.82
+                    ),
+
+                    size *
+                    (
+                        i
+                            ? 1.45
+                            : 1.7
+                    ),
+
+                    size *
+                    (
+                        i
+                            ? 0.62
+                            : 0.82
+                    )
+                );
+
+
+                crystal.rotation.z =
+                    i *
+                    0.35;
+
+
+                crystal.castShadow =
+                    true;
+
+
+                group.add(
+                    crystal
+                );
+            }
+
+
+            group.position.set(
+                x,
+                0.33,
+                z
             );
 
 
-        valley.rotation.x =
-            -Math.PI / 2;
+            world.add(
+                group
+            );
+        }
 
 
-        valley.position.set(
-            0,
-            0.025,
-            -4.5
+        addCrystal(
+            -6.3,
+            -4.9,
+            0.55
         );
 
 
-        world.add(
-            valley
+        addCrystal(
+            6.3,
+            -4.9,
+            0.58
+        );
+
+
+        addCrystal(
+            -11,
+            -8.5,
+            0.75
+        );
+
+
+        addCrystal(
+            11,
+            -8.5,
+            0.8
         );
 
 
         // =====================================================
-        // ARENA
+        // ARENA PLATFORM
         // =====================================================
 
         const arena =
             new THREE.Mesh(
 
                 new THREE.CylinderGeometry(
-                    5.7,
-                    6.3,
-                    0.38,
-                    56
+                    5.8,
+                    6.45,
+                    0.42,
+                    64
                 ),
 
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x26323a,
+                        0x26333a,
 
                     roughness:
-                        0.5,
+                        0.47,
 
                     metalness:
-                        0.3,
+                        0.31,
 
                     flatShading:
                         true
@@ -1304,7 +1711,7 @@ window.addEventListener(
 
         arena.position.set(
             0,
-            0.15,
+            0.16,
             1.05
         );
 
@@ -1330,19 +1737,19 @@ window.addEventListener(
             new THREE.Mesh(
 
                 new THREE.CylinderGeometry(
-                    5,
-                    5.3,
-                    0.13,
-                    56
+                    5.08,
+                    5.35,
+                    0.14,
+                    64
                 ),
 
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x10202a,
+                        0x10222d,
 
                     roughness:
-                        0.72,
+                        0.69,
 
                     metalness:
                         0.18
@@ -1352,7 +1759,7 @@ window.addEventListener(
 
         arenaInner.position.set(
             0,
-            0.39,
+            0.40,
             1.05
         );
 
@@ -1374,22 +1781,23 @@ window.addEventListener(
             new THREE.MeshBasicMaterial({
 
                 color:
-                    0x35c3ef,
+                    0x34c6ed,
 
                 transparent:
                     true,
 
                 opacity:
-                    0.7
+                    0.68
             });
 
 
-        const arenaRings = [];
+        const arenaRings =
+            [];
 
 
         for (
             let i = 0;
-            i < 2;
+            i < 3;
             i++
         ) {
 
@@ -1397,16 +1805,16 @@ window.addEventListener(
                 new THREE.Mesh(
 
                     new THREE.TorusGeometry(
-                        3.7 +
+                        3.45 +
                         i *
-                        0.72,
+                        0.82,
 
                         i === 0
                             ? 0.05
-                            : 0.028,
+                            : 0.025,
 
                         8,
-                        48
+                        56
                     ),
 
                     ringMaterial
@@ -1419,9 +1827,9 @@ window.addEventListener(
 
             ring.position.set(
                 0,
-                0.43 +
+                0.44 +
                 i *
-                0.015,
+                0.016,
                 1.05
             );
 
@@ -1442,7 +1850,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // CANNON
+        // ROUNDED CANNON
         // =====================================================
 
         const cannon =
@@ -1461,119 +1869,131 @@ window.addEventListener(
         );
 
 
-        const metalDark =
+        const cannonDark =
             new THREE.MeshStandardMaterial({
 
                 color:
                     0x101820,
 
                 roughness:
-                    0.28,
-
-                metalness:
-                    0.86
-            });
-
-
-        const metalBlue =
-            new THREE.MeshStandardMaterial({
-
-                color:
-                    0x0d628f,
-
-                roughness:
                     0.25,
 
                 metalness:
-                    0.6
+                    0.88
             });
 
 
-        const cyanMetal =
+        const cannonBlue =
             new THREE.MeshStandardMaterial({
 
                 color:
-                    0x35a8ce,
-
-                emissive:
-                    0x064252,
-
-                emissiveIntensity:
-                    0.75,
+                    0x087bb2,
 
                 roughness:
-                    0.2,
+                    0.22,
 
                 metalness:
-                    0.48
+                    0.62
             });
 
 
-        // Base.
+        const cannonCyan =
+            new THREE.MeshStandardMaterial({
 
-        const cannonBase =
+                color:
+                    0x39b3d7,
+
+                emissive:
+                    0x064758,
+
+                emissiveIntensity:
+                    0.82,
+
+                roughness:
+                    0.17,
+
+                metalness:
+                    0.46
+            });
+
+
+        // Lower rounded body.
+
+        const roundedBase =
             new THREE.Mesh(
 
-                new THREE.BoxGeometry(
-                    2.55,
-                    0.55,
-                    1.9
+                new THREE.CylinderGeometry(
+                    1.23,
+                    1.32,
+                    0.48,
+                    32
                 ),
 
-                metalDark
+                cannonDark
             );
 
 
-        cannonBase.position.y =
-            0.34;
+        roundedBase.position.y =
+            0.30;
 
 
-        cannonBase.castShadow =
+        roundedBase.scale.z =
+            0.72;
+
+
+        roundedBase.castShadow =
             true;
 
 
         cannon.add(
-            cannonBase
+            roundedBase
         );
 
 
-        // Top.
+        // Rounded blue body.
 
-        const cannonTop =
+        const blueBody =
             new THREE.Mesh(
 
-                new THREE.BoxGeometry(
-                    2.18,
-                    0.15,
-                    2.03
+                new THREE.SphereGeometry(
+                    1,
+                    24,
+                    16
                 ),
 
-                metalBlue
+                cannonBlue
             );
 
 
-        cannonTop.position.y =
-            0.63;
+        blueBody.position.y =
+            0.54;
 
 
-        cannonTop.castShadow =
+        blueBody.scale.set(
+            1.08,
+            0.62,
+            0.82
+        );
+
+
+        blueBody.castShadow =
             true;
 
 
         cannon.add(
-            cannonTop
+            blueBody
         );
 
 
-        // Dome.
+        // Main dome.
 
         const dome =
             new THREE.Mesh(
 
                 new THREE.SphereGeometry(
-                    0.9,
-                    24,
-                    16,
+                    0.88,
+                    28,
+                    18,
                     0,
                     Math.PI * 2,
                     0,
@@ -1583,31 +2003,31 @@ window.addEventListener(
                 new THREE.MeshStandardMaterial({
 
                     color:
-                        0x0d8bc3,
+                        0x0d8fc6,
 
                     emissive:
                         0x06425d,
 
                     emissiveIntensity:
-                        0.65,
+                        0.75,
 
                     transparent:
                         true,
 
                     opacity:
-                        0.94,
+                        0.95,
 
                     roughness:
-                        0.16,
+                        0.14,
 
                     metalness:
-                        0.35
+                        0.34
                 })
             );
 
 
         dome.position.y =
-            0.69;
+            0.78;
 
 
         dome.castShadow =
@@ -1619,19 +2039,19 @@ window.addEventListener(
         );
 
 
-        // Dome ring.
+        // Lower ring.
 
         const domeRing =
             new THREE.Mesh(
 
                 new THREE.TorusGeometry(
-                    0.91,
+                    0.89,
                     0.055,
                     8,
-                    24
+                    32
                 ),
 
-                cyanMetal
+                cannonCyan
             );
 
 
@@ -1640,7 +2060,7 @@ window.addEventListener(
 
 
         domeRing.position.y =
-            0.69;
+            0.76;
 
 
         cannon.add(
@@ -1648,64 +2068,87 @@ window.addEventListener(
         );
 
 
-        // Axle.
+        // Side rounded pods.
 
-        const axle =
-            new THREE.Mesh(
+        for (
+            const z of [
+                -0.60,
+                0.60
+            ]
+        ) {
 
-                new THREE.CylinderGeometry(
-                    0.18,
-                    0.18,
-                    2.45,
-                    16
-                ),
+            const pod =
+                new THREE.Mesh(
 
-                metalDark
+                    new THREE.SphereGeometry(
+                        0.34,
+                        18,
+                        12
+                    ),
+
+                    cannonDark
+                );
+
+
+            pod.position.set(
+                0,
+                0.31,
+                z
             );
 
 
-        axle.rotation.z =
-            Math.PI / 2;
+            pod.scale.set(
+                1.05,
+                0.8,
+                0.8
+            );
 
 
-        axle.position.y =
-            0.29;
+            pod.castShadow =
+                true;
 
 
-        axle.castShadow =
-            true;
-
-
-        cannon.add(
-            axle
-        );
+            cannon.add(
+                pod
+            );
+        }
 
 
         // Wheels.
 
         const wheelGeometry =
             new THREE.CylinderGeometry(
-                0.39,
-                0.39,
+                0.40,
+                0.40,
                 0.22,
-                18
+                20
             );
 
 
-        const wheels = [];
+        const wheelHubGeometry =
+            new THREE.CylinderGeometry(
+                0.13,
+                0.13,
+                0.235,
+                16
+            );
+
+
+        const wheels =
+            [];
 
 
         for (
             const z of [
-                -0.72,
-                0.72
+                -0.75,
+                0.75
             ]
         ) {
 
             const wheel =
                 new THREE.Mesh(
                     wheelGeometry,
-                    metalDark
+                    cannonDark
                 );
 
 
@@ -1715,7 +2158,7 @@ window.addEventListener(
 
             wheel.position.set(
                 0,
-                0.29,
+                0.25,
                 z
             );
 
@@ -1732,17 +2175,42 @@ window.addEventListener(
             wheels.push(
                 wheel
             );
+
+
+            const hub =
+                new THREE.Mesh(
+                    wheelHubGeometry,
+                    cannonCyan
+                );
+
+
+            hub.rotation.z =
+                Math.PI / 2;
+
+
+            hub.position.set(
+                0,
+                0.25,
+                z
+            );
+
+
+            cannon.add(
+                hub
+            );
         }
 
 
-        // Barrel assembly.
+        // =====================================================
+        // BARRELS
+        // =====================================================
 
         const barrelAssembly =
             new THREE.Group();
 
 
         barrelAssembly.position.y =
-            0.75;
+            0.74;
 
 
         cannon.add(
@@ -1752,43 +2220,44 @@ window.addEventListener(
 
         const barrelGeometry =
             new THREE.CylinderGeometry(
-                0.16,
-                0.22,
+                0.15,
+                0.20,
                 1.42,
-                16
+                18
             );
 
 
         const muzzleGeometry =
             new THREE.CylinderGeometry(
                 0.20,
-                0.20,
                 0.22,
-                16
+                0.22,
+                18
             );
 
 
-        const muzzleFlashes = [];
+        const muzzleFlashes =
+            [];
 
 
         for (
             const x of [
-                -0.4,
-                0.4
+                -0.38,
+                0.38
             ]
         ) {
 
             const barrel =
                 new THREE.Mesh(
                     barrelGeometry,
-                    metalDark
+                    cannonDark
                 );
 
 
             barrel.position.set(
                 x,
-                0.85,
-                0.03
+                0.86,
+                0.04
             );
 
 
@@ -1804,14 +2273,14 @@ window.addEventListener(
             const muzzle =
                 new THREE.Mesh(
                     muzzleGeometry,
-                    metalBlue
+                    cannonBlue
                 );
 
 
             muzzle.position.set(
                 x,
-                1.66,
-                0.03
+                1.65,
+                0.04
             );
 
 
@@ -1824,19 +2293,49 @@ window.addEventListener(
             );
 
 
+            const ring =
+                new THREE.Mesh(
+
+                    new THREE.TorusGeometry(
+                        0.21,
+                        0.045,
+                        8,
+                        20
+                    ),
+
+                    cannonCyan
+                );
+
+
+            ring.rotation.x =
+                Math.PI / 2;
+
+
+            ring.position.set(
+                x,
+                1.54,
+                0.04
+            );
+
+
+            barrelAssembly.add(
+                ring
+            );
+
+
             const flash =
                 new THREE.Mesh(
 
                     new THREE.SphereGeometry(
-                        0.34,
-                        10,
-                        8
+                        0.35,
+                        12,
+                        10
                     ),
 
                     new THREE.MeshBasicMaterial({
 
                         color:
-                            0xffefae,
+                            0xffefab,
 
                         transparent:
                             true,
@@ -1852,8 +2351,8 @@ window.addEventListener(
 
             flash.position.set(
                 x,
-                1.83,
-                0.03
+                1.84,
+                0.04
             );
 
 
@@ -1879,20 +2378,21 @@ window.addEventListener(
 
                 new THREE.SphereGeometry(
                     0.14,
-                    12,
-                    12
+                    14,
+                    14
                 ),
 
                 new THREE.MeshBasicMaterial({
+
                     color:
-                        0x9ff4ff
+                        0xa4f5ff
                 })
             );
 
 
         cannonCore.position.set(
             0,
-            0.95,
+            1.0,
             0.73
         );
 
@@ -1902,12 +2402,10 @@ window.addEventListener(
         );
 
 
-        // Cannon light.
-
         const cannonGlow =
             new THREE.PointLight(
-                0x35d7ff,
-                2.5,
+                0x36d8ff,
+                2.6,
                 7,
                 2
             );
@@ -1915,8 +2413,8 @@ window.addEventListener(
 
         cannonGlow.position.set(
             0,
-            1,
-            1.5
+            1.0,
+            1.55
         );
 
 
@@ -1937,7 +2435,6 @@ window.addEventListener(
             introButton:
                 $('intro-btn'),
 
-
             score:
                 $('score-val'),
 
@@ -1953,20 +2450,17 @@ window.addEventListener(
             hpBar:
                 $('hp-bar'),
 
-
             start:
                 $('splash-screen'),
 
             startButton:
                 $('start-btn'),
 
-
             startCoins:
                 $('start-coins'),
 
             best:
                 $('start-best-score'),
-
 
             powerButton:
                 $('buy-power-btn'),
@@ -1977,7 +2471,6 @@ window.addEventListener(
             magnetButton:
                 $('buy-magnet-btn'),
 
-
             powerLevel:
                 $('power-lvl-text'),
 
@@ -1986,7 +2479,6 @@ window.addEventListener(
 
             magnetLevel:
                 $('magnet-lvl-text'),
-
 
             combat:
                 $('combat-ui'),
@@ -1997,7 +2489,6 @@ window.addEventListener(
             combo:
                 $('combo-badge'),
 
-
             pauseButton:
                 $('pause-btn'),
 
@@ -2007,13 +2498,11 @@ window.addEventListener(
             resumeButton:
                 $('resume-btn'),
 
-
             gameOver:
                 $('game-over-screen'),
 
             restartButton:
                 $('restart-btn'),
-
 
             finalScore:
                 $('final-score'),
@@ -2024,14 +2513,13 @@ window.addEventListener(
             finalCoins:
                 $('final-coins'),
 
-
             damageFlash:
                 $('damage-flash')
         };
 
 
         // =====================================================
-        // GAME VARIABLES
+        // GAME DATA
         // =====================================================
 
         let score =
@@ -2042,22 +2530,18 @@ window.addEventListener(
             parseInt(
                 localStorage.getItem(
                     'bb3d_coins'
-                ) ||
-                '0',
+                ) || '0',
                 10
-            ) ||
-            0;
+            ) || 0;
 
 
         let bestScore =
             parseInt(
                 localStorage.getItem(
                     'bb3d_best'
-                ) ||
-                '0',
+                ) || '0',
                 10
-            ) ||
-            0;
+            ) || 0;
 
 
         let level =
@@ -2068,49 +2552,35 @@ window.addEventListener(
             1000;
 
 
-        /*
-         * DEFAULT POWER
-         *
-         * The cannon starts a little stronger
-         * than the original version.
-         */
-
         let powerLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_power'
-                ) ||
-                '1',
+                ) || '1',
                 10
-            ) ||
-            1;
+            ) || 1;
 
 
         let rateLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_rate'
-                ) ||
-                '1',
+                ) || '1',
                 10
-            ) ||
-            1;
+            ) || 1;
 
 
         let magnetLevel =
             parseInt(
                 localStorage.getItem(
                     'bb3d_upg_magnet'
-                ) ||
-                '0',
+                ) || '0',
                 10
-            ) ||
-            0;
+            ) || 0;
 
 
         /*
-         * +1 gives the cannon a small
-         * starting damage increase.
+         * Slightly stronger default cannon.
          */
 
         let firePower =
@@ -2187,11 +2657,16 @@ window.addEventListener(
             null;
 
 
-        const bullets = [];
+        const bullets =
+            [];
 
-        const rocks = [];
 
-        const droppedCoins = [];
+        const rocks =
+            [];
+
+
+        const droppedCoins =
+            [];
 
 
         // =====================================================
@@ -2232,7 +2707,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // UPDATE UI
+        // UI UPDATE
         // =====================================================
 
         function updateUI() {
@@ -2252,9 +2727,7 @@ window.addEventListener(
             ui.hpText.textContent =
                 `${Math.max(
                     0,
-                    Math.ceil(
-                        playerHp
-                    )
+                    Math.ceil(playerHp)
                 )} / 1000`;
 
 
@@ -2665,7 +3138,6 @@ window.addEventListener(
 
         const bulletCoreMaterial =
             new THREE.MeshBasicMaterial({
-
                 color:
                     0xffefa5
             });
@@ -2728,7 +3200,7 @@ window.addEventListener(
             );
 
 
-            // Trail.
+            // Fire trail.
 
             for (
                 let i = 0;
@@ -2743,6 +3215,7 @@ window.addEventListener(
                             0.13 -
                             i *
                             0.025,
+
                             8,
                             8
                         ),
@@ -2768,8 +3241,7 @@ window.addEventListener(
 
                 trail.position.y =
                     -(
-                        i +
-                        1
+                        i + 1
                     ) *
                     0.22;
 
@@ -2829,9 +3301,15 @@ window.addEventListener(
                 i++
             ) {
 
-                bullet.children[i]
-                    .material
-                    .dispose();
+                if (
+                    bullet.children[i]
+                        .material
+                ) {
+
+                    bullet.children[i]
+                        .material
+                        .dispose();
+                }
             }
 
 
@@ -3060,8 +3538,7 @@ window.addEventListener(
             y,
             hpValue,
             size,
-            materialIndex =
-                0
+            materialIndex = 0
         ) {
 
             const rock =
@@ -3088,8 +3565,7 @@ window.addEventListener(
 
             rock.scale.set(
                 size,
-                size *
-                1.12,
+                size * 1.12,
                 size
             );
 
@@ -3116,6 +3592,7 @@ window.addEventListener(
                 new THREE.Sprite(
 
                     new THREE.SpriteMaterial({
+
                         map:
                             getHpTexture(
                                 hpValue
@@ -3146,17 +3623,7 @@ window.addEventListener(
             );
 
 
-            /*
-             * IMPORTANT:
-             *
-             * Gravity is intentionally
-             * slower than before.
-             *
-             * Bounce velocity is restored
-             * every time the rock reaches
-             * the floor, so it keeps bouncing
-             * until destroyed.
-             */
+            // Slower falling + repeating bounce.
 
             rock.userData = {
 
@@ -3355,7 +3822,8 @@ window.addEventListener(
 
         const particlePositions =
             new Float32Array(
-                PARTICLE_COUNT * 3
+                PARTICLE_COUNT *
+                3
             );
 
 
@@ -3398,30 +3866,28 @@ window.addEventListener(
         );
 
 
-        const particleMaterial =
-            new THREE.PointsMaterial({
-
-                color:
-                    0xffcd76,
-
-                size:
-                    0.13,
-
-                transparent:
-                    true,
-
-                opacity:
-                    0.9,
-
-                depthWrite:
-                    false
-            });
-
-
         const particles =
             new THREE.Points(
+
                 particleGeometry,
-                particleMaterial
+
+                new THREE.PointsMaterial({
+
+                    color:
+                        0xffcd76,
+
+                    size:
+                        0.13,
+
+                    transparent:
+                        true,
+
+                    opacity:
+                        0.9,
+
+                    depthWrite:
+                        false
+                })
             );
 
 
@@ -3506,7 +3972,9 @@ window.addEventListener(
 
 
                 particleVX[index] =
-                    Math.cos(angle) *
+                    Math.cos(
+                        angle
+                    ) *
                     speed;
 
 
@@ -3518,7 +3986,9 @@ window.addEventListener(
 
 
                 particleVZ[index] =
-                    Math.sin(angle) *
+                    Math.sin(
+                        angle
+                    ) *
                     speed *
                     0.22;
 
@@ -3751,7 +4221,8 @@ window.addEventListener(
 
                     (
                         0.18 +
-                        progress * 3.2
+                        progress *
+                        3.2
                     ) *
                     shock.userData.scale
                 );
@@ -3840,7 +4311,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // SPAWN WAVE
+        // WAVE SPAWN
         // =====================================================
 
         function spawnWave() {
@@ -3926,7 +4397,8 @@ window.addEventListener(
             // Boss.
 
             if (
-                level % 5 ===
+                level %
+                5 ===
                 0
             ) {
 
@@ -3965,7 +4437,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // START GAME
+        // START
         // =====================================================
 
         function startGame() {
@@ -4060,7 +4532,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // END GAME
+        // GAME OVER
         // =====================================================
 
         function endGame() {
@@ -4446,13 +4918,13 @@ window.addEventListener(
 
             spawnBullet(
                 cannon.position.x -
-                0.4
+                0.38
             );
 
 
             spawnBullet(
                 cannon.position.x +
-                0.4
+                0.38
             );
 
 
@@ -4484,7 +4956,7 @@ window.addEventListener(
                 0.20;
 
 
-            // Stronger camera response.
+            // Stronger feedback.
 
             cameraShake =
                 Math.min(
@@ -4495,7 +4967,7 @@ window.addEventListener(
 
 
             cannonGlow.intensity =
-                4.6;
+                4.7;
 
 
             createBurst(
@@ -4512,7 +4984,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // DAMAGE PLAYER
+        // PLAYER DAMAGE
         // =====================================================
 
         function damagePlayer(
@@ -4573,7 +5045,7 @@ window.addEventListener(
 
 
         // =====================================================
-        // GAME UPDATE
+        // MAIN GAME UPDATE
         // =====================================================
 
         function updateGame(
@@ -4582,7 +5054,7 @@ window.addEventListener(
         ) {
 
             // =================================================
-            // CANNON
+            // CANNON MOVEMENT
             // =================================================
 
             cannon.position.x += (
@@ -4598,6 +5070,10 @@ window.addEventListener(
             );
 
 
+            // =================================================
+            // CANNON ANIMATION
+            // =================================================
+
             recoil =
                 Math.max(
                     0,
@@ -4608,7 +5084,7 @@ window.addEventListener(
 
 
             barrelAssembly.position.y =
-                0.75 -
+                0.74 -
                 recoil;
 
 
@@ -4627,10 +5103,31 @@ window.addEventListener(
 
             domeRing.rotation.z +=
                 dt *
-                0.28;
+                0.25;
 
 
-            // Arena animation.
+            // Small movement of wheels
+            // to make the cannon feel alive.
+
+            if (
+                dragging
+            ) {
+
+                for (
+                    const wheel of
+                    wheels
+                ) {
+
+                    wheel.rotation.x +=
+                        dt *
+                        2.2;
+                }
+            }
+
+
+            // =================================================
+            // ARENA ANIMATION
+            // =================================================
 
             for (
                 let i = 0;
@@ -4639,11 +5136,14 @@ window.addEventListener(
             ) {
 
                 arenaRings[i].rotation.z +=
+
                     dt *
                     (
                         i === 0
-                            ? 0.25
-                            : -0.18
+                            ? 0.22
+                            : i === 1
+                                ? -0.14
+                                : 0.08
                     );
             }
 
@@ -4691,7 +5191,7 @@ window.addEventListener(
 
 
             // =================================================
-            // AUTOMATIC FIRE
+            // AUTO FIRE
             // =================================================
 
             if (
@@ -4800,9 +5300,9 @@ window.addEventListener(
                     );
 
 
-                // =================================================
-                // SLOWER GRAVITY
-                // =================================================
+                // -------------------------------------------------
+                // SLOWER FALL
+                // -------------------------------------------------
 
                 const rockGravity =
                     8.5 +
@@ -4815,8 +5315,6 @@ window.addEventListener(
                     dt;
 
 
-                // Movement.
-
                 rock.position.x +=
                     data.vx *
                     dt;
@@ -4826,8 +5324,6 @@ window.addEventListener(
                     data.vy *
                     dt;
 
-
-                // Rotation.
 
                 rock.rotation.x +=
                     data.rotationX *
@@ -4839,9 +5335,9 @@ window.addEventListener(
                     dt;
 
 
-                // =================================================
-                // REPEATING FLOOR BOUNCE
-                // =================================================
+                // -------------------------------------------------
+                // REPEATED BOUNCE
+                // -------------------------------------------------
 
                 const floorHeight =
                     0.48 +
@@ -4857,15 +5353,6 @@ window.addEventListener(
                         floorHeight;
 
 
-                    /*
-                     * The rock receives a fresh
-                     * upward velocity every time
-                     * it touches the floor.
-                     *
-                     * This means it will continue
-                     * bouncing until it is destroyed.
-                     */
-
                     const bounceStrength =
                         Math.min(
                             5.2,
@@ -4877,6 +5364,7 @@ window.addEventListener(
 
                     data.vy =
                         Math.max(
+
                             bounceStrength,
 
                             Math.abs(
@@ -4890,7 +5378,7 @@ window.addEventListener(
                         0.985;
 
 
-                    // Small dust effect.
+                    // Small dust burst.
 
                     createBurst(
                         rock.position.x,
@@ -4900,9 +5388,9 @@ window.addEventListener(
                 }
 
 
-                // =================================================
+                // -------------------------------------------------
                 // SIDE WALLS
-                // =================================================
+                // -------------------------------------------------
 
                 if (
                     Math.abs(
@@ -4924,7 +5412,7 @@ window.addEventListener(
 
 
                 // =================================================
-                // BULLET COLLISION
+                // BULLET COLLISIONS
                 // =================================================
 
                 for (
@@ -4979,13 +5467,9 @@ window.addEventListener(
                     );
 
 
-                    // Damage.
-
                     data.hp -=
                         firePower;
 
-
-                    // Combo.
 
                     combo =
                         Math.min(
@@ -4999,8 +5483,6 @@ window.addEventListener(
                         1.15;
 
 
-                    // Score.
-
                     score +=
                         firePower *
                         Math.max(
@@ -5008,8 +5490,6 @@ window.addEventListener(
                             combo
                         );
 
-
-                    // Stronger hit feedback.
 
                     cameraShake =
                         Math.min(
@@ -5047,8 +5527,6 @@ window.addEventListener(
                         0
                     ) {
 
-                        // Reward.
-
                         coins +=
                             5 +
                             Math.min(
@@ -5073,7 +5551,6 @@ window.addEventListener(
 
                             const childHp =
                                 Math.max(
-
                                     6,
 
                                     Math.floor(
@@ -5116,16 +5593,14 @@ window.addEventListener(
                         }
 
 
-                        // Coin.
-
                         spawnCoin(
                             rock.position.x,
                             rock.position.y +
-                            0.2
+                            0.20
                         );
 
 
-                        // Explosion.
+                        // Bigger explosion.
 
                         createBurst(
                             rock.position.x,
@@ -5178,12 +5653,6 @@ window.addEventListener(
                     }
                 }
 
-
-                /*
-                 * If this rock was removed from
-                 * the array, do not continue using
-                 * its old data.
-                 */
 
                 if (
                     !rocks[r]
@@ -5435,7 +5904,7 @@ window.addEventListener(
 
 
             // =================================================
-            // PARTICLES
+            // EFFECTS
             // =================================================
 
             updateEffects(
@@ -5499,7 +5968,7 @@ window.addEventListener(
 
 
             // =================================================
-            // CAMERA SHAKE
+            // CAMERA
             // =================================================
 
             cameraShake *=
@@ -5588,7 +6057,7 @@ window.addEventListener(
             // =================================================
 
             sunsetLight.intensity =
-                2.8 +
+                3.0 +
                 Math.sin(
                     elapsed *
                     0.42
@@ -5605,14 +6074,14 @@ window.addEventListener(
                 0.18;
 
 
-            // Gentle grass sway.
+            // Slight world breathing.
 
-            grass.rotation.y =
+            world.position.y =
                 Math.sin(
                     elapsed *
-                    1.6
+                    0.28
                 ) *
-                0.012;
+                0.008;
 
 
             elapsed +=
@@ -5688,7 +6157,6 @@ window.addEventListener(
             ) {
 
                 saveGame();
-
 
                 saveTimer =
                     0;
