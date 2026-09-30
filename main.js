@@ -14,7 +14,7 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.background = new THREE.Color(0xdd8c55);
     scene.fog = new THREE.FogExp2(0xdd8c55, 0.0072);
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
     let screenLimitX = 4.8;
 
@@ -27,8 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 7.8, 15.0);
-        camera.lookAt(0, 2.55, -7.5);
+        camera.position.set(0, 7.45, 14.6);
+        camera.lookAt(0, 2.65, -8.4);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
@@ -126,27 +126,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // חלקיקי אווירה לכל מפה — מעט אובייקטים, הרבה יותר תחושת עולם חי.
     let weatherParticles = null;
 
+    // בשלב הזה המשחק מתמקד במפה אחת בלבד: יער.
+    // שומרים את ההגדרה פשוטה כדי שכל השיפור הגרפי יושקע בעולם אחד.
     const MAPS = {
-        desert: { name: 'DESERT', label: 'מדבר', price: 0 },
-        forest: { name: 'FOREST', label: 'יער', price: 500 },
-        ice: { name: 'ICE', label: 'קרח', price: 1500 },
-        volcano: { name: 'VOLCANO', label: 'הר געש', price: 3000 }
+        forest: { name: 'FOREST', label: 'יער', price: 0 }
     };
 
-    const savedMap = localStorage.getItem('bb3d_map');
-    let selectedMap = MAPS[savedMap] ? savedMap : 'desert';
+    let selectedMap = 'forest';
+    let purchasedMaps = ['forest'];
 
-    let purchasedMaps = ['desert'];
-    try {
-        const savedPurchased = JSON.parse(localStorage.getItem('bb3d_purchased_maps') || '["desert"]');
-        if (Array.isArray(savedPurchased)) {
-            purchasedMaps = Array.from(new Set(['desert', ...savedPurchased])).filter(id => MAPS[id]);
-        }
-    } catch (e) {
-        purchasedMaps = ['desert'];
-    }
-
-    if (!purchasedMaps.includes(selectedMap)) selectedMap = 'desert';
+    // מנקים בחירה ישנה של מפות שהיו בגרסאות קודמות.
+    localStorage.setItem('bb3d_map', 'forest');
+    localStorage.setItem('bb3d_purchased_maps', JSON.stringify(['forest']));
 
     function clearMapGroup() {
         while (mapGroup.children.length) {
@@ -941,105 +932,70 @@ window.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         const bumpCtx = bumpCanvas.getContext('2d');
 
-        let base = '#54772f';
-        let accentA = '#63873a';
-        let accentB = '#46672a';
-
-        if (mapId === 'forest') {
-            base = '#2f5525';
-            accentA = '#416d31';
-            accentB = '#27461f';
-        } else if (mapId === 'ice') {
-            base = '#c2e1e9';
-            accentA = '#d9f1f4';
-            accentB = '#9ec8d4';
-        } else if (mapId === 'volcano') {
-            base = '#35302c';
-            accentA = '#48403a';
-            accentB = '#24211f';
-        }
+        // צבעי דשא בהירים בצדדים — כמו ברפרנס — עם מרקם עדין.
+        const base = '#78964f';
+        const accentA = '#8eaa62';
+        const accentB = '#668645';
 
         ctx.fillStyle = base;
         ctx.fillRect(0, 0, 512, 512);
-        bumpCtx.fillStyle = '#7d7d7d';
+        bumpCtx.fillStyle = '#858585';
         bumpCtx.fillRect(0, 0, 512, 512);
 
-        // שכבות רחבות של גוון במקום כתמים ונקודות.
-        ctx.globalAlpha = 0.16;
-        const bands = 16;
-        for (let i = 0; i < bands; i++) {
-            const y = (i / bands) * 512;
-            const grad = ctx.createLinearGradient(0, y, 512, y + 30);
+        // שכבות רחבות, כדי שהקרקע תיראה טבעית ולא כמו כתמים אקראיים.
+        for (let i = 0; i < 14; i++) {
+            const y = (i / 14) * 512;
+            const grad = ctx.createLinearGradient(0, y, 512, y + 55);
             grad.addColorStop(0, i % 2 === 0 ? accentA : accentB);
             grad.addColorStop(0.5, base);
             grad.addColorStop(1, i % 2 === 0 ? accentB : accentA);
+            ctx.globalAlpha = 0.20;
             ctx.fillStyle = grad;
-            ctx.fillRect(0, y, 512, 38);
+            ctx.fillRect(0, y, 512, 58);
         }
         ctx.globalAlpha = 1;
 
-        // פסים ארוכים ועדינים שמדמים כיוון של דשא/חול/קרח.
-        const strokeCount = mapId === 'ice' ? 95 : 145;
-        for (let i = 0; i < strokeCount; i++) {
-            const y = Math.random() * 512;
+        // להבי דשא/קווים ארוכים ועדינים.
+        for (let i = 0; i < 210; i++) {
             const x = Math.random() * 512;
-            const len = 24 + Math.random() * 90;
-            const alpha = 0.05 + Math.random() * 0.07;
-            ctx.strokeStyle = i % 2 === 0
-                ? `rgba(255,255,255,${alpha})`
-                : `rgba(20,45,18,${alpha})`;
-            ctx.lineWidth = 0.7 + Math.random() * 1.0;
+            const y = Math.random() * 512;
+            const len = 18 + Math.random() * 70;
+            const alpha = 0.035 + Math.random() * 0.055;
+            ctx.strokeStyle = i % 3 === 0
+                ? `rgba(220,238,165,${alpha})`
+                : `rgba(35,68,28,${alpha})`;
+            ctx.lineWidth = 0.6 + Math.random() * 0.8;
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.quadraticCurveTo(
                 x + len * 0.45,
-                y + (Math.random() - 0.5) * 4,
+                y + (Math.random() - 0.5) * 5,
                 x + len,
-                y + (Math.random() - 0.5) * 7
+                y + (Math.random() - 0.5) * 8
             );
             ctx.stroke();
         }
 
-        // bump עדין: פסי עומק ארוכים במקום רעש חד.
+        // bump עדין שמרגיש כמו קרקע ולא כמו רעש.
         for (let i = 0; i < 120; i++) {
-            const y = Math.random() * 512;
             const x = Math.random() * 512;
-            const len = 20 + Math.random() * 80;
-            const shade = 92 + Math.floor(Math.random() * 48);
+            const y = Math.random() * 512;
+            const len = 15 + Math.random() * 60;
+            const shade = 105 + Math.floor(Math.random() * 40);
             bumpCtx.strokeStyle = `rgb(${shade},${shade},${shade})`;
-            bumpCtx.globalAlpha = 0.18 + Math.random() * 0.15;
-            bumpCtx.lineWidth = 1 + Math.random() * 1.5;
+            bumpCtx.globalAlpha = 0.12 + Math.random() * 0.12;
+            bumpCtx.lineWidth = 0.8 + Math.random() * 1.2;
             bumpCtx.beginPath();
             bumpCtx.moveTo(x, y);
             bumpCtx.quadraticCurveTo(
-                x + len * 0.45,
-                y + (Math.random() - 0.5) * 3,
+                x + len * 0.5,
+                y + (Math.random() - 0.5) * 4,
                 x + len,
                 y + (Math.random() - 0.5) * 6
             );
             bumpCtx.stroke();
         }
         bumpCtx.globalAlpha = 1;
-
-        if (mapId === 'desert') {
-            ctx.globalAlpha = 0.13;
-            ctx.strokeStyle = '#d8b37c';
-            ctx.lineWidth = 1.2;
-            for (let i = 0; i < 36; i++) {
-                const x = Math.random() * 512;
-                const y = 180 + Math.random() * 300;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.quadraticCurveTo(
-                    x + 18 + Math.random() * 35,
-                    y - 3 + Math.random() * 6,
-                    x + 44 + Math.random() * 55,
-                    y + Math.random() * 5
-                );
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-        }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
@@ -1054,11 +1010,80 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
         bumpTexture.wrapS = THREE.RepeatWrapping;
         bumpTexture.wrapT = THREE.RepeatWrapping;
-        bumpTexture.repeat.set(5.5, 11.5);
+        bumpTexture.repeat.copy(texture.repeat);
         bumpTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         bumpTexture.minFilter = THREE.LinearMipMapLinearFilter;
         bumpTexture.magFilter = THREE.LinearFilter;
         bumpTexture.needsUpdate = true;
+
+        return { texture, bumpTexture };
+    }
+
+    function createForestPathTexture() {
+        const canvas = document.createElement('canvas');
+        const bumpCanvas = document.createElement('canvas');
+        canvas.width = bumpCanvas.width = 512;
+        canvas.height = bumpCanvas.height = 512;
+
+        const ctx = canvas.getContext('2d');
+        const bumpCtx = bumpCanvas.getContext('2d');
+
+        ctx.fillStyle = '#173d22';
+        ctx.fillRect(0, 0, 512, 512);
+        bumpCtx.fillStyle = '#777777';
+        bumpCtx.fillRect(0, 0, 512, 512);
+
+        for (let i = 0; i < 170; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const len = 20 + Math.random() * 90;
+            const alpha = 0.045 + Math.random() * 0.055;
+            ctx.strokeStyle = i % 2 === 0
+                ? `rgba(49,94,45,${alpha})`
+                : `rgba(8,34,17,${alpha})`;
+            ctx.lineWidth = 0.8 + Math.random() * 1.1;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(
+                x + len * 0.45,
+                y + (Math.random() - 0.5) * 5,
+                x + len,
+                y + (Math.random() - 0.5) * 7
+            );
+            ctx.stroke();
+        }
+
+        for (let i = 0; i < 100; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const len = 18 + Math.random() * 65;
+            const shade = 95 + Math.floor(Math.random() * 35);
+            bumpCtx.strokeStyle = `rgb(${shade},${shade},${shade})`;
+            bumpCtx.globalAlpha = 0.12 + Math.random() * 0.12;
+            bumpCtx.lineWidth = 0.8 + Math.random() * 1.2;
+            bumpCtx.beginPath();
+            bumpCtx.moveTo(x, y);
+            bumpCtx.lineTo(x + len, y + (Math.random() - 0.5) * 5);
+            bumpCtx.stroke();
+        }
+        bumpCtx.globalAlpha = 1;
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(3.5, 8.5);
+        texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        texture.encoding = THREE.sRGBEncoding;
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
+        bumpTexture.wrapS = THREE.RepeatWrapping;
+        bumpTexture.wrapT = THREE.RepeatWrapping;
+        bumpTexture.repeat.copy(texture.repeat);
+        bumpTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        bumpTexture.minFilter = THREE.LinearMipMapLinearFilter;
+        bumpTexture.magFilter = THREE.LinearFilter;
 
         return { texture, bumpTexture };
     }
@@ -1233,77 +1258,154 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function add3DGrass(mapId) {
-        if (mapId !== 'desert' && mapId !== 'forest') return;
+        if (mapId !== 'forest') return;
 
         const grassGroup = new THREE.Group();
         mapGroup.add(grassGroup);
 
-        const count = mapId === 'desert' ? 620 : 700;
-        const bladeGeo = new THREE.ConeGeometry(0.028, 0.22, 4);
-        const bladeMat = new THREE.MeshStandardMaterial({
-            color: mapId === 'desert' ? 0x5f8527 : 0x47752b,
-            roughness: 0.96,
+        const dummy = new THREE.Object3D();
+
+        // צדדי הדשא: להבים בהירים וצפופים יותר, כמו ברפרנס.
+        const sideCount = 1450;
+        const sideGeo = new THREE.ConeGeometry(0.025, 0.28, 4);
+        const sideMat = new THREE.MeshStandardMaterial({
+            color: 0x9ab86a,
+            roughness: 0.98,
             metalness: 0,
             flatShading: true
         });
-
-        const blades = new THREE.InstancedMesh(bladeGeo, bladeMat, count);
-        const dummy = new THREE.Object3D();
+        const sideBlades = new THREE.InstancedMesh(sideGeo, sideMat, sideCount);
         let written = 0;
 
-        while (written < count) {
-            const x = -11.2 + Math.random() * 22.4;
-            const z = -14.0 + Math.random() * 16.0;
+        while (written < sideCount) {
+            const x = -12.2 + Math.random() * 24.4;
+            const z = -48 + Math.random() * 60;
+            const t = THREE.MathUtils.clamp((z + 48) / 60, 0, 1);
+            const pathHalfWidth = 2.55 + t * 3.05;
 
-            if (Math.abs(x) < 2.4 && z > -2.2) continue;
+            if (Math.abs(x) < pathHalfWidth + 0.45) continue;
 
-            const widthScale = 0.75 + Math.random() * 1.15;
-            const heightScale = 0.65 + Math.random() * 1.35;
-
-            dummy.position.set(x, 0.09 * heightScale, z);
-            dummy.rotation.set(
-                (Math.random() - 0.5) * 0.24,
-                Math.random() * Math.PI,
-                (Math.random() - 0.5) * 0.20
+            const scale = 0.55 + Math.random() * 1.25;
+            const h = 0.70 + Math.random() * 1.15;
+            dummy.position.set(
+                x,
+                0.07 + h * 0.06,
+                z
             );
-            dummy.scale.set(widthScale, heightScale, widthScale);
+            dummy.rotation.set(
+                (Math.random() - 0.5) * 0.28,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.22
+            );
+            dummy.scale.set(scale, h, scale);
             dummy.updateMatrix();
-            blades.setMatrixAt(written, dummy.matrix);
-            written++;
+            sideBlades.setMatrixAt(written++, dummy.matrix);
         }
+        sideBlades.instanceMatrix.needsUpdate = true;
+        sideBlades.castShadow = true;
+        sideBlades.receiveShadow = true;
+        grassGroup.add(sideBlades);
 
-        blades.instanceMatrix.needsUpdate = true;
-        blades.castShadow = true;
-        blades.receiveShadow = true;
-        grassGroup.add(blades);
-
-        const edgeCount = 90;
-        const edgeGeo = new THREE.ConeGeometry(0.042, 0.42, 4);
+        // להבים כהים יותר ממש על שפת השביל — יוצרים מעבר טבעי.
+        const edgeCount = 520;
+        const edgeGeo = new THREE.ConeGeometry(0.032, 0.34, 4);
         const edgeMat = new THREE.MeshStandardMaterial({
-            color: mapId === 'desert' ? 0x426a1d : 0x315522,
+            color: 0x52783a,
             roughness: 1,
             flatShading: true
         });
         const edgeBlades = new THREE.InstancedMesh(edgeGeo, edgeMat, edgeCount);
-
         for (let i = 0; i < edgeCount; i++) {
             const side = i % 2 === 0 ? -1 : 1;
-            const x = side * (7.4 + Math.random() * 3.3);
-            const z = -1 + Math.random() * 5.4;
-            const scale = 0.65 + Math.random() * 0.8;
-            dummy.position.set(x, 0.20 * scale, z);
+            const z = -46 + Math.random() * 58;
+            const t = THREE.MathUtils.clamp((z + 46) / 58, 0, 1);
+            const pathHalfWidth = 2.55 + t * 2.95;
+            const x = side * (pathHalfWidth + 0.15 + Math.random() * 0.85);
+            const scale = 0.55 + Math.random() * 1.1;
+            dummy.position.set(x, 0.08, z);
             dummy.rotation.set(
                 (Math.random() - 0.5) * 0.35,
                 Math.random() * Math.PI,
                 (Math.random() - 0.5) * 0.28
             );
-            dummy.scale.set(scale, scale, scale);
+            dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.9), scale);
             dummy.updateMatrix();
             edgeBlades.setMatrixAt(i, dummy.matrix);
         }
         edgeBlades.instanceMatrix.needsUpdate = true;
         edgeBlades.castShadow = true;
         grassGroup.add(edgeBlades);
+
+        // מעט עשב גם בתוך השביל, אבל בכמות נמוכה כדי לשמור על מסלול קריא.
+        const pathCount = 260;
+        const pathGeo = new THREE.ConeGeometry(0.018, 0.17, 4);
+        const pathMat = new THREE.MeshStandardMaterial({
+            color: 0x4f7737,
+            roughness: 1,
+            flatShading: true
+        });
+        const pathBlades = new THREE.InstancedMesh(pathGeo, pathMat, pathCount);
+        for (let i = 0; i < pathCount; i++) {
+            const z = -44 + Math.random() * 52;
+            const t = THREE.MathUtils.clamp((z + 44) / 52, 0, 1);
+            const pathHalfWidth = 2.45 + t * 2.75;
+            const x = (Math.random() - 0.5) * pathHalfWidth * 1.8;
+            const scale = 0.55 + Math.random() * 0.9;
+            dummy.position.set(x, 0.055, z);
+            dummy.rotation.set(0, Math.random() * Math.PI, 0);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            pathBlades.setMatrixAt(i, dummy.matrix);
+        }
+        pathBlades.instanceMatrix.needsUpdate = true;
+        pathBlades.castShadow = true;
+        grassGroup.add(pathBlades);
+    }
+
+    function getForestTerrainHeight(x, z) {
+        const waveA = Math.sin(x * 0.42 + z * 0.18) * 0.105;
+        const waveB = Math.cos(z * 0.55 - x * 0.22) * 0.070;
+        const waveC = Math.sin((x + z) * 0.9) * 0.032;
+        const centerDistance = Math.hypot(x / 5.0, z / 3.8);
+        const centerWeight = THREE.MathUtils.smoothstep(centerDistance, 0.25, 1.0);
+        return (waveA + waveB + waveC) * centerWeight;
+    }
+
+    function createForestPathGeometry() {
+        const segments = 42;
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const z = 12 - t * 64;
+            const width = 5.65 - t * 3.05;
+            const curve = Math.sin(t * Math.PI * 1.15) * 0.22;
+            const leftX = -width + curve;
+            const rightX = width + curve;
+            const leftY = getForestTerrainHeight(leftX, z) + 0.045;
+            const rightY = getForestTerrainHeight(rightX, z) + 0.045;
+
+            positions.push(leftX, leftY, z);
+            positions.push(rightX, rightY, z);
+            uvs.push(0, t * 8.0, 1, t * 8.0);
+        }
+
+        for (let i = 0; i < segments; i++) {
+            const a = i * 2;
+            const b = a + 1;
+            const c = a + 2;
+            const d = a + 3;
+            indices.push(a, c, b, b, c, d);
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+        return geometry;
     }
 
     // ==========================================
@@ -1403,25 +1505,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildMap(mapId) {
+        mapId = 'forest';
         clearMapGroup();
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
         addEnvironmentalDepth(mapId);
 
-        let groundColor = 0x3f6212;
-        let groundRoughness = 0.85;
-        if (mapId === 'forest') groundColor = 0x365314;
-        if (mapId === 'ice') {
-            groundColor = 0xbfe7f5;
-            groundRoughness = 0.55;
-        }
-        if (mapId === 'volcano') {
-            groundColor = 0x292524;
-            groundRoughness = 0.95;
-        }
-
-        const groundTextures = createGroundTexture(mapId);
+        // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
+        const groundColor = 0x78964f;
+        const groundRoughness = 0.92;
+        const groundTextures = createGroundTexture('forest');
 
         // בסיס שקוע שנותן לקרקע עובי בלי להיראות כפלטפורמה.
         const groundBaseMat = new THREE.MeshStandardMaterial({
@@ -1444,7 +1538,7 @@ window.addEventListener('DOMContentLoaded', () => {
             color: groundColor,
             map: groundTextures.texture,
             bumpMap: groundTextures.bumpTexture,
-            bumpScale: mapId === 'ice' ? 0.035 : mapId === 'volcano' ? 0.085 : 0.065,
+            bumpScale: 0.075,
             roughness: groundRoughness,
             metalness: 0.015
         });
@@ -1462,7 +1556,28 @@ window.addEventListener('DOMContentLoaded', () => {
         terrain.rotation.x = -Math.PI / 2;
         terrain.position.y = 0.018;
 
-        addGroundDetail(mapId);
+        // שביל היער הכהה והמתכנס לאופק — האלמנט המרכזי של המפה.
+        const pathTextures = createForestPathTexture();
+        const pathMat = new THREE.MeshStandardMaterial({
+            color: 0x173d22,
+            map: pathTextures.texture,
+            bumpMap: pathTextures.bumpTexture,
+            bumpScale: 0.055,
+            roughness: 0.94,
+            metalness: 0
+        });
+        const forestPath = addMesh(
+            createForestPathGeometry(),
+            pathMat,
+            0,
+            0,
+            0,
+            false,
+            true
+        );
+        forestPath.renderOrder = 1;
+
+        addGroundDetail('forest');
         addForegroundScenery(mapId);
         addPerspectiveDepthDetails(mapId);
         addDeepPerspectiveCorridor(mapId);
@@ -1530,15 +1645,29 @@ window.addEventListener('DOMContentLoaded', () => {
             rootShadow.position.set(0, 0.03, 10.52);
             mapGroup.add(rootShadow);
         } else if (mapId === 'forest') {
-            scene.background.set(0x21452a);
-            scene.fog.color.set(0x21452a);
-            scene.fog.density = 0.014;
-            sunLight.color.set(0xfff7e8);
-            sunLight.intensity = 1.30;
-            [-9, -5, 5, 9].forEach((x, i) => addLowPolyTree(x, -7 - (i % 2) * 2, 1.15 + (i % 3) * 0.15));
-            [-12, 12].forEach(x => addLowPolyTree(x, -15, 1.7));
-            addRockDecoration(-7, -10, 0.9, 0x475569);
-            addRockDecoration(7, -12, 1.0, 0x475569);
+            scene.background.set(0x214f3b);
+            scene.fog.color.set(0x214f3b);
+            scene.fog.density = 0.0135;
+            sunLight.color.set(0xfff6d7);
+            sunLight.intensity = 1.34;
+
+            // עצים קרובים — גדולים וברורים, כמו ברפרנס.
+            [
+                [-9.8, -3.0, 1.15], [-7.8, -7.0, 1.45],
+                [8.8, -4.0, 1.25], [10.0, -8.0, 1.55],
+                [-10.8, -12.5, 1.65], [11.2, -14.0, 1.80]
+            ].forEach(([x, z, scale]) => addLowPolyTree(x, z, scale));
+
+            // שכבת עצים בינונית שממלאת את צידי המסלול.
+            [-11, -8.5, -5.8, 5.8, 8.5, 11].forEach((x, i) => {
+                addLowPolyTree(x, -19 - (i % 2) * 2.2, 1.55 + (i % 3) * 0.18);
+            });
+
+            // סלעים וצמחייה נמוכה נותנים קנה מידה לקרקע.
+            addRockDecoration(-7.0, -9.0, 0.72, 0x56634f);
+            addRockDecoration(7.2, -11.0, 0.82, 0x4d5c48);
+            addRockDecoration(-9.2, -17.0, 0.95, 0x465542);
+            addRockDecoration(9.4, -18.0, 1.05, 0x45533f);
         } else if (mapId === 'ice') {
             scene.background.set(0x79b8d1);
             scene.fog.color.set(0x79b8d1);
@@ -1566,7 +1695,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    buildMap(selectedMap);
+    buildMap('forest');
 
     // ==========================================
     // 4. עיצוב התותח - 3D DETAIL PASS
@@ -2106,6 +2235,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const buyRateBtn = document.getElementById('buy-rate-btn');
     const buyMagnetBtn = document.getElementById('buy-magnet-btn');
     const mapButtons = Array.from(document.querySelectorAll('[data-map-id]'));
+    mapButtons.forEach(btn => {
+        if (btn.dataset.mapId !== 'forest') btn.remove();
+    });
+    const forestMapButtons = Array.from(document.querySelectorAll('[data-map-id="forest"]'));
 
     function updateUI() {
         if (coinsValEl) coinsValEl.innerText = coins;
@@ -2140,7 +2273,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (el) el.innerText = `Lvl ${magnetLvl}`;
         }
 
-        mapButtons.forEach(btn => {
+        forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
             const map = MAPS[mapId];
             if (!map) return;
@@ -2157,7 +2290,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // חנות מפות - הקנייה והשינוי נעשים במסך הפתיחה בלבד.
-    mapButtons.forEach(btn => {
+    forestMapButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const mapId = btn.dataset.mapId;
             const map = MAPS[mapId];
@@ -2174,7 +2307,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             selectedMap = mapId;
             localStorage.setItem('bb3d_map', selectedMap);
-            buildMap(selectedMap);
+            buildMap('forest');
             updateUI();
         });
     });
@@ -2349,10 +2482,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function getRockColor() {
-        if (selectedMap === 'forest') return 0x58656b;
-        if (selectedMap === 'ice') return 0x6f8792;
-        if (selectedMap === 'volcano') return 0x46413e;
-        return 0x756a5e;
+        return 0x58656b;
     }
 
     // צל מגע דינמי לסלעים.
@@ -2764,7 +2894,8 @@ window.addEventListener('DOMContentLoaded', () => {
         hasStartedFirstWave = false;
         cannonRecoil = 0;
         cannonGroup.position.set(0, cannonBaseY, 0);
-        buildMap(selectedMap);
+        selectedMap = 'forest';
+        buildMap('forest');
         updateUI();
 
         startNextWave();
