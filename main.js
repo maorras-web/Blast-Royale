@@ -27,8 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 12, 25);
-        camera.lookAt(0, 5, 0);
+        camera.position.set(0, 10.6, 22.2);
+        camera.lookAt(0, 4.35, -3.8);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
@@ -58,7 +58,7 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 1.03;
     document.body.appendChild(renderer.domElement);
 
     function updateMobileViewportState() {
@@ -731,7 +731,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3C. שכבת פרטי חזית — נותנת תחושת עולם אמיתי
+    // 3C. שכבת פרטי חזית — נותנת תחושת עולם אמיתית
     // ==========================================
     function addForegroundScenery(mapId) {
         const group = new THREE.Group();
@@ -935,97 +935,116 @@ window.addEventListener('DOMContentLoaded', () => {
     function createGroundTexture(mapId) {
         const canvas = document.createElement('canvas');
         const bumpCanvas = document.createElement('canvas');
-        canvas.width = bumpCanvas.width = 256;
-        canvas.height = bumpCanvas.height = 256;
+        canvas.width = bumpCanvas.width = 512;
+        canvas.height = bumpCanvas.height = 512;
 
         const ctx = canvas.getContext('2d');
         const bumpCtx = bumpCanvas.getContext('2d');
 
-        let base = '#54771f';
-        let specks = ['#668b28', '#3f5f18', '#718f31'];
+        let base = '#54772f';
+        let accentA = '#63873a';
+        let accentB = '#46672a';
 
         if (mapId === 'forest') {
-            base = '#304f20';
-            specks = ['#3b6127', '#27431b', '#486d2d'];
+            base = '#2f5525';
+            accentA = '#416d31';
+            accentB = '#27461f';
         } else if (mapId === 'ice') {
-            base = '#b9dce7';
-            specks = ['#d9f2f7', '#8fc5d5', '#a9d4df'];
+            base = '#c2e1e9';
+            accentA = '#d9f1f4';
+            accentB = '#9ec8d4';
         } else if (mapId === 'volcano') {
-            base = '#34302d';
-            specks = ['#4a4541', '#211f1e', '#5a514a'];
+            base = '#35302c';
+            accentA = '#48403a';
+            accentB = '#24211f';
         }
 
         ctx.fillStyle = base;
-        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillRect(0, 0, 512, 512);
+        bumpCtx.fillStyle = '#7d7d7d';
+        bumpCtx.fillRect(0, 0, 512, 512);
 
-        bumpCtx.fillStyle = '#7f7f7f';
-        bumpCtx.fillRect(0, 0, 256, 256);
+        // שכבות רחבות של גוון במקום כתמים ונקודות.
+        ctx.globalAlpha = 0.16;
+        const bands = 16;
+        for (let i = 0; i < bands; i++) {
+            const y = (i / bands) * 512;
+            const grad = ctx.createLinearGradient(0, y, 512, y + 30);
+            grad.addColorStop(0, i % 2 === 0 ? accentA : accentB);
+            grad.addColorStop(0.5, base);
+            grad.addColorStop(1, i % 2 === 0 ? accentB : accentA);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, y, 512, 38);
+        }
+        ctx.globalAlpha = 1;
 
-        // שכבת grain גדולה + קטנה ליצירת חומר פחות שטוח.
-        for (let i = 0; i < 950; i++) {
-            const x = Math.random() * 256;
-            const y = Math.random() * 256;
-            const size = 0.8 + Math.random() * 4.5;
-            const shade = 65 + Math.floor(Math.random() * 80);
-
-            ctx.globalAlpha = 0.06 + Math.random() * 0.15;
-            ctx.fillStyle = specks[i % specks.length];
+        // פסים ארוכים ועדינים שמדמים כיוון של דשא/חול/קרח.
+        const strokeCount = mapId === 'ice' ? 95 : 145;
+        for (let i = 0; i < strokeCount; i++) {
+            const y = Math.random() * 512;
+            const x = Math.random() * 512;
+            const len = 24 + Math.random() * 90;
+            const alpha = 0.05 + Math.random() * 0.07;
+            ctx.strokeStyle = i % 2 === 0
+                ? `rgba(255,255,255,${alpha})`
+                : `rgba(20,45,18,${alpha})`;
+            ctx.lineWidth = 0.7 + Math.random() * 1.0;
             ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-
-            bumpCtx.globalAlpha = 0.10 + Math.random() * 0.24;
-            bumpCtx.fillStyle = `rgb(${shade},${shade},${shade})`;
-            bumpCtx.beginPath();
-            bumpCtx.arc(x, y, size * 0.9, 0, Math.PI * 2);
-            bumpCtx.fill();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(
+                x + len * 0.45,
+                y + (Math.random() - 0.5) * 4,
+                x + len,
+                y + (Math.random() - 0.5) * 7
+            );
+            ctx.stroke();
         }
 
-        ctx.globalAlpha = 1;
+        // bump עדין: פסי עומק ארוכים במקום רעש חד.
+        for (let i = 0; i < 120; i++) {
+            const y = Math.random() * 512;
+            const x = Math.random() * 512;
+            const len = 20 + Math.random() * 80;
+            const shade = 92 + Math.floor(Math.random() * 48);
+            bumpCtx.strokeStyle = `rgb(${shade},${shade},${shade})`;
+            bumpCtx.globalAlpha = 0.18 + Math.random() * 0.15;
+            bumpCtx.lineWidth = 1 + Math.random() * 1.5;
+            bumpCtx.beginPath();
+            bumpCtx.moveTo(x, y);
+            bumpCtx.quadraticCurveTo(
+                x + len * 0.45,
+                y + (Math.random() - 0.5) * 3,
+                x + len,
+                y + (Math.random() - 0.5) * 6
+            );
+            bumpCtx.stroke();
+        }
         bumpCtx.globalAlpha = 1;
 
-        if (mapId === 'desert' || mapId === 'forest') {
-            for (let i = 0; i < 180; i++) {
-                const x = Math.random() * 256;
-                const y = Math.random() * 256;
-                const stroke = mapId === 'forest'
-                    ? 'rgba(125,160,72,0.18)'
-                    : 'rgba(180,205,100,0.14)';
-                ctx.strokeStyle = stroke;
-                ctx.lineWidth = 0.6;
+        if (mapId === 'desert') {
+            ctx.globalAlpha = 0.13;
+            ctx.strokeStyle = '#d8b37c';
+            ctx.lineWidth = 1.2;
+            for (let i = 0; i < 36; i++) {
+                const x = Math.random() * 512;
+                const y = 180 + Math.random() * 300;
                 ctx.beginPath();
                 ctx.moveTo(x, y);
-                ctx.lineTo(x + (Math.random() - 0.5) * 1.8, y - 2 - Math.random() * 5);
+                ctx.quadraticCurveTo(
+                    x + 18 + Math.random() * 35,
+                    y - 3 + Math.random() * 6,
+                    x + 44 + Math.random() * 55,
+                    y + Math.random() * 5
+                );
                 ctx.stroke();
             }
-        } else if (mapId === 'ice') {
-            for (let i = 0; i < 58; i++) {
-                const x = Math.random() * 256;
-                const y = Math.random() * 256;
-                ctx.strokeStyle = 'rgba(72,130,150,0.18)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + (Math.random() - 0.5) * 22, y + Math.random() * 12);
-                ctx.stroke();
-            }
-        } else if (mapId === 'volcano') {
-            for (let i = 0; i < 82; i++) {
-                const x = Math.random() * 256;
-                const y = Math.random() * 256;
-                ctx.strokeStyle = 'rgba(110,80,60,0.22)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + 10 + Math.random() * 22, y + (Math.random() - 0.5) * 8);
-                ctx.stroke();
-            }
+            ctx.globalAlpha = 1;
         }
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(6, 5);
+        texture.repeat.set(5.5, 4.5);
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
@@ -1035,13 +1054,162 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
         bumpTexture.wrapS = THREE.RepeatWrapping;
         bumpTexture.wrapT = THREE.RepeatWrapping;
-        bumpTexture.repeat.set(6, 5);
+        bumpTexture.repeat.set(5.5, 4.5);
         bumpTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         bumpTexture.minFilter = THREE.LinearMipMapLinearFilter;
         bumpTexture.magFilter = THREE.LinearFilter;
         bumpTexture.needsUpdate = true;
 
         return { texture, bumpTexture };
+    }
+
+    function createStoneTexture() {
+        const canvas = document.createElement('canvas');
+        const bumpCanvas = document.createElement('canvas');
+        canvas.width = bumpCanvas.width = 512;
+        canvas.height = bumpCanvas.height = 512;
+
+        const ctx = canvas.getContext('2d');
+        const bumpCtx = bumpCanvas.getContext('2d');
+
+        ctx.fillStyle = '#9c774d';
+        ctx.fillRect(0, 0, 512, 512);
+        bumpCtx.fillStyle = '#828282';
+        bumpCtx.fillRect(0, 0, 512, 512);
+
+        // אבני בנייה רחבות — נותנות לפירמידה חומר, בלי כתמי רעש.
+        const rows = 11;
+        const cols = 8;
+        const tileW = 512 / cols;
+        const tileH = 512 / rows;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const offset = row % 2 === 0 ? 0 : tileW * 0.5;
+                const x = col * tileW - offset;
+                const y = row * tileH;
+                const w = tileW + 2;
+                const h = tileH + 2;
+
+                const value = 120 + ((row * 17 + col * 11) % 34);
+                ctx.fillStyle = `rgb(${value + 20},${value},${value - 24})`;
+                ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+
+                ctx.strokeStyle = 'rgba(53,38,24,0.34)';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+
+                const shade = 105 + ((row + col) % 4) * 15;
+                bumpCtx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                bumpCtx.fillRect(x + 3, y + 3, w - 6, h - 6);
+            }
+        }
+
+        ctx.globalAlpha = 0.35;
+        for (let i = 0; i < 65; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            ctx.strokeStyle = i % 2 ? '#6f5239' : '#c09a6d';
+            ctx.lineWidth = 0.8 + Math.random() * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 5 + Math.random() * 18, y + (Math.random() - 0.5) * 5);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        const map = new THREE.CanvasTexture(canvas);
+        map.wrapS = THREE.RepeatWrapping;
+        map.wrapT = THREE.RepeatWrapping;
+        map.repeat.set(0.95, 1.15);
+        map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        map.encoding = THREE.sRGBEncoding;
+        map.minFilter = THREE.LinearMipMapLinearFilter;
+        map.magFilter = THREE.LinearFilter;
+
+        const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+        bumpMap.wrapS = THREE.RepeatWrapping;
+        bumpMap.wrapT = THREE.RepeatWrapping;
+        bumpMap.repeat.copy(map.repeat);
+        bumpMap.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        bumpMap.minFilter = THREE.LinearMipMapLinearFilter;
+        bumpMap.magFilter = THREE.LinearFilter;
+
+        return { map, bumpMap };
+    }
+
+    function add3DGrass(mapId) {
+        if (mapId !== 'desert' && mapId !== 'forest') return;
+
+        const grassGroup = new THREE.Group();
+        mapGroup.add(grassGroup);
+
+        const count = mapId === 'desert' ? 620 : 700;
+        const bladeGeo = new THREE.ConeGeometry(0.028, 0.22, 4);
+        const bladeMat = new THREE.MeshStandardMaterial({
+            color: mapId === 'desert' ? 0x5f8527 : 0x47752b,
+            roughness: 0.96,
+            metalness: 0,
+            flatShading: true
+        });
+
+        const blades = new THREE.InstancedMesh(bladeGeo, bladeMat, count);
+        const dummy = new THREE.Object3D();
+        let written = 0;
+
+        while (written < count) {
+            const x = -11.2 + Math.random() * 22.4;
+            const z = -14.0 + Math.random() * 16.0;
+
+            if (Math.abs(x) < 2.4 && z > -2.2) continue;
+
+            const widthScale = 0.75 + Math.random() * 1.15;
+            const heightScale = 0.65 + Math.random() * 1.35;
+
+            dummy.position.set(x, 0.09 * heightScale, z);
+            dummy.rotation.set(
+                (Math.random() - 0.5) * 0.24,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.20
+            );
+            dummy.scale.set(widthScale, heightScale, widthScale);
+            dummy.updateMatrix();
+            blades.setMatrixAt(written, dummy.matrix);
+            written++;
+        }
+
+        blades.instanceMatrix.needsUpdate = true;
+        blades.castShadow = true;
+        blades.receiveShadow = true;
+        grassGroup.add(blades);
+
+        const edgeCount = 90;
+        const edgeGeo = new THREE.ConeGeometry(0.042, 0.42, 4);
+        const edgeMat = new THREE.MeshStandardMaterial({
+            color: mapId === 'desert' ? 0x426a1d : 0x315522,
+            roughness: 1,
+            flatShading: true
+        });
+        const edgeBlades = new THREE.InstancedMesh(edgeGeo, edgeMat, edgeCount);
+
+        for (let i = 0; i < edgeCount; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const x = side * (7.4 + Math.random() * 3.3);
+            const z = -1 + Math.random() * 5.4;
+            const scale = 0.65 + Math.random() * 0.8;
+            dummy.position.set(x, 0.20 * scale, z);
+            dummy.rotation.set(
+                (Math.random() - 0.5) * 0.35,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.28
+            );
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            edgeBlades.setMatrixAt(i, dummy.matrix);
+        }
+        edgeBlades.instanceMatrix.needsUpdate = true;
+        edgeBlades.castShadow = true;
+        grassGroup.add(edgeBlades);
     }
 
     function buildMap(mapId) {
@@ -1106,20 +1274,38 @@ window.addEventListener('DOMContentLoaded', () => {
 
         addGroundDetail(mapId);
         addForegroundScenery(mapId);
+        add3DGrass(mapId);
         addWeatherParticles(mapId);
 
         if (mapId === 'desert') {
             scene.background.set(0xdd8c55);
             scene.fog.color.set(0xdd8c55);
             scene.fog.density = 0.012;
+            sunLight.color.set(0xffe7c0);
+            sunLight.intensity = 1.42;
 
-            const pyramidMatA = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.8, flatShading: true });
-            const pyramidMatB = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.82, flatShading: true });
-            const p1 = addMesh(new THREE.ConeGeometry(11, 18, 4), pyramidMatA, -15, 7, -12);
+            const stoneTexture = createStoneTexture();
+            const pyramidMatA = new THREE.MeshStandardMaterial({
+                color: 0xc29764,
+                map: stoneTexture.map,
+                bumpMap: stoneTexture.bumpMap,
+                bumpScale: 0.16,
+                roughness: 0.88,
+                metalness: 0.0
+            });
+            const pyramidMatB = new THREE.MeshStandardMaterial({
+                color: 0xa9784f,
+                map: stoneTexture.map,
+                bumpMap: stoneTexture.bumpMap,
+                bumpScale: 0.19,
+                roughness: 0.92,
+                metalness: 0.0
+            });
+            const p1 = addMesh(new THREE.ConeGeometry(11, 18, 4, 10), pyramidMatA, -15, 7, -12);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(13, 22, 4), pyramidMatA, 15, 9, -14);
+            const p2 = addMesh(new THREE.ConeGeometry(13, 22, 4, 10), pyramidMatA, 15, 9, -14);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(18, 31, 4), pyramidMatB, 0, 15, -24);
+            const p3 = addMesh(new THREE.ConeGeometry(18, 31, 4, 12), pyramidMatB, 0, 15, -24);
             p3.rotation.y = Math.PI / 4;
             addRockDecoration(-6, -5, 1.2, 0x7c4a28);
             addRockDecoration(7, -7, 0.85, 0x8b5a32);
@@ -1127,10 +1313,36 @@ window.addEventListener('DOMContentLoaded', () => {
             addCactus(9.2, -6.5, 0.75);
             addCactus(-10.5, -11.0, 1.1);
             addCactus(11.0, -12.0, 1.0);
+
+            // פס אדמה עמוק בחזית, בהשראת החלק התחתון של תמונת הפתיחה.
+            const soilMat = new THREE.MeshStandardMaterial({
+                color: 0x513522,
+                roughness: 1.0,
+                metalness: 0
+            });
+            const soilBand = addMesh(
+                new THREE.BoxGeometry(40, 0.42, 1.35),
+                soilMat,
+                0,
+                -0.52,
+                11.2,
+                false,
+                true
+            );
+            soilBand.receiveShadow = true;
+
+            const rootShadow = new THREE.Mesh(
+                new THREE.BoxGeometry(40, 0.05, 0.18),
+                new THREE.MeshBasicMaterial({ color: 0x263713, transparent: true, opacity: 0.55 })
+            );
+            rootShadow.position.set(0, 0.03, 10.52);
+            mapGroup.add(rootShadow);
         } else if (mapId === 'forest') {
             scene.background.set(0x21452a);
             scene.fog.color.set(0x21452a);
             scene.fog.density = 0.018;
+            sunLight.color.set(0xfff7e8);
+            sunLight.intensity = 1.30;
             [-9, -5, 5, 9].forEach((x, i) => addLowPolyTree(x, -7 - (i % 2) * 2, 1.15 + (i % 3) * 0.15));
             [-12, 12].forEach(x => addLowPolyTree(x, -15, 1.7));
             addRockDecoration(-7, -10, 0.9, 0x475569);
@@ -1139,6 +1351,8 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.background.set(0x79b8d1);
             scene.fog.color.set(0x79b8d1);
             scene.fog.density = 0.015;
+            sunLight.color.set(0xeaf8ff);
+            sunLight.intensity = 1.24;
             const mountainMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.6, flatShading: true });
             [-15, 15].forEach((x, i) => {
                 const m = addMesh(new THREE.ConeGeometry(7 + i * 2, 13 + i * 4, 5), mountainMat, x, 6.5 + i * 2, -15);
@@ -1149,6 +1363,8 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.background.set(0x241114);
             scene.fog.color.set(0x241114);
             scene.fog.density = 0.02;
+            sunLight.color.set(0xffb098);
+            sunLight.intensity = 1.12;
             const mountainMat = new THREE.MeshStandardMaterial({ color: 0x44403c, roughness: 1, flatShading: true });
             const volcano = addMesh(new THREE.ConeGeometry(11, 19, 7), mountainMat, 0, 7.5, -18);
             volcano.rotation.y = 0.2;
