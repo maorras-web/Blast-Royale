@@ -314,34 +314,21 @@ window.addEventListener('DOMContentLoaded', () => {
             depthWrite: false,
             fog: false
         });
-
         const sky = new THREE.Mesh(
             new THREE.SphereGeometry(180, 24, 14),
             skyMat
         );
-
         sky.position.set(0, 12, 0);
         sky.renderOrder = -100;
-
         mapGroup.add(sky);
-
         return sky;
     }
 
     function addSunGlow(mapId) {
         let color = 0xffe0a8;
-
-        if (mapId === 'forest') {
-            color = 0xd7efc1;
-        }
-
-        if (mapId === 'ice') {
-            color = 0xe5f8ff;
-        }
-
-        if (mapId === 'volcano') {
-            color = 0xff6a3a;
-        }
+        if (mapId === 'forest') color = 0xd7efc1;
+        if (mapId === 'ice') color = 0xe5f8ff;
+        if (mapId === 'volcano') color = 0xff6a3a;
 
         const sun = new THREE.Mesh(
             new THREE.SphereGeometry(2.2, 16, 12),
@@ -353,11 +340,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 fog: false
             })
         );
-
         sun.position.set(-8, 17, -52);
         sun.renderOrder = -50;
         mapGroup.add(sun);
 
+        // טבעת זוהר רחבה סביב השמש — מעט גאומטריה, הרבה עומק.
         const halo = new THREE.Mesh(
             new THREE.SphereGeometry(4.8, 16, 10),
             new THREE.MeshBasicMaterial({
@@ -368,483 +355,131 @@ window.addEventListener('DOMContentLoaded', () => {
                 fog: false
             })
         );
-
         halo.position.copy(sun.position);
-
-        halo.scale.set(
-            1.7,
-            0.85,
-            1
-        );
-
+        halo.scale.set(1.7, 0.85, 1);
         halo.renderOrder = -51;
-
         mapGroup.add(halo);
     }
 
-    function addDistantHill(
-        x,
-        y,
-        z,
-        sx,
-        sy,
-        sz,
-        color,
-        opacity = 1
-    ) {
-
+    function addDistantHill(x, y, z, sx, sy, sz, color, opacity = 1) {
         const mat = new THREE.MeshStandardMaterial({
-
             color,
-
             roughness: 1,
-
             flatShading: true,
-
             transparent: opacity < 1,
-
             opacity,
-
             depthWrite: opacity >= 1
         });
-
         const hill = addMesh(
-
-            new THREE.SphereGeometry(
-                1,
-                10,
-                6
-            ),
-
+            new THREE.SphereGeometry(1, 10, 6),
             mat,
-
             x,
             y,
             z,
-
             false,
             false
         );
-
-        hill.scale.set(
-            sx,
-            sy,
-            sz
-        );
-
+        hill.scale.set(sx, sy, sz);
         return hill;
     }
 
-    function addDistantMountain(
-        x,
-        y,
-        z,
-        radius,
-        height,
-        color,
-        rotation = 0
-    ) {
-
+    function addDistantMountain(x, y, z, radius, height, color, rotation = 0) {
         const mat = new THREE.MeshStandardMaterial({
-
             color,
-
             roughness: 1,
-
             flatShading: true
         });
-
         const mountain = addMesh(
-
-            new THREE.ConeGeometry(
-                radius,
-                height,
-                7
-            ),
-
+            new THREE.ConeGeometry(radius, height, 7),
             mat,
-
             x,
             y,
             z,
-
             false,
             false
         );
-
         mountain.rotation.y = rotation;
-
         return mountain;
     }
 
-    function addBush(
-        x,
-        z,
-        scale = 1,
-        color = 0x356b23
-    ) {
-
+    function addBush(x, z, scale = 1, color = 0x356b23) {
         const mat = new THREE.MeshStandardMaterial({
-
             color,
-
             roughness: 1,
-
             flatShading: true
         });
-
         const bush = addMesh(
-
-            new THREE.DodecahedronGeometry(
-                0.65 * scale,
-                0
-            ),
-
+            new THREE.DodecahedronGeometry(0.65 * scale, 0),
             mat,
-
             x,
             0.48 * scale,
             z,
-
             true,
             true
         );
-
         bush.scale.y = 0.78;
-
         return bush;
     }
 
-    function addDistantForestRow(
-        z,
-        baseScale = 1
-    ) {
-
-        const xs = [
-            -13.5,
-            -10.8,
-            -8.1,
-            -5.4,
-            -2.7,
-            0,
-            2.7,
-            5.4,
-            8.1,
-            10.8,
-            13.5
-        ];
-
+    function addDistantForestRow(z, baseScale = 1) {
+        const xs = [-13.5, -10.8, -8.1, -5.4, -2.7, 0, 2.7, 5.4, 8.1, 10.8, 13.5];
         xs.forEach((x, index) => {
-
-            const scale =
-                baseScale *
-                (
-                    0.78 +
-                    ((index * 17) % 7) * 0.07
-                );
-
-            addLowPolyTree(
-                x,
-                z,
-                scale
-            );
+            const scale = baseScale * (0.78 + ((index * 17) % 7) * 0.07);
+            addLowPolyTree(x, z, scale);
         });
     }
 
     function addEnvironmentalDepth(mapId) {
-
-        // שמיים
         addSkyDome(mapId);
-
-        // שמש והילה
         addSunGlow(mapId);
 
-        // ======================================
-        // DESERT
-        // ======================================
-
         if (mapId === 'desert') {
+            // שלוש שכבות של דיונות/הרים יוצרות מרחק ברור.
+            addDistantHill(-12, 1.0, -10, 9.5, 3.2, 3.4, 0xa86048, 0.95);
+            addDistantHill(12, 1.2, -12, 10.5, 3.7, 3.8, 0x98503e, 0.94);
+            addDistantHill(-2, 2.0, -22, 18, 6.0, 5.0, 0x713b3e, 0.88);
+            addDistantHill(10, 2.4, -32, 20, 7.2, 6.2, 0x59333b, 0.74);
 
-            // שכבת דיונות קרובה
-            addDistantHill(
-                -12,
-                1.0,
-                -10,
-                9.5,
-                3.2,
-                3.4,
-                0xa86048,
-                0.95
-            );
-
-            addDistantHill(
-                12,
-                1.2,
-                -12,
-                10.5,
-                3.7,
-                3.8,
-                0x98503e,
-                0.94
-            );
-
-            // שכבת הרים בינונית
-            addDistantHill(
-                -2,
-                2.0,
-                -22,
-                18,
-                6.0,
-                5.0,
-                0x713b3e,
-                0.88
-            );
-
-            // שכבה רחוקה
-            addDistantHill(
-                10,
-                2.4,
-                -32,
-                20,
-                7.2,
-                6.2,
-                0x59333b,
-                0.74
-            );
-
-            // צמחייה קטנה
-            addBush(
-                -12.0,
-                -8.0,
-                0.8,
-                0x725032
-            );
-
-            addBush(
-                12.0,
-                -9.0,
-                0.7,
-                0x6a472e
-            );
-
-            addBush(
-                -10.5,
-                -12.5,
-                0.62,
-                0x81583c
-            );
-
-            addBush(
-                10.6,
-                -13.0,
-                0.68,
-                0x795035
-            );
-        }
-
-        // ======================================
-        // FOREST
-        // ======================================
-
-        else if (mapId === 'forest') {
-
-            // גבעות רחוקות
-            addDistantHill(
-                -10,
-                1.5,
-                -22,
-                11,
-                5.0,
-                4.0,
-                0x28543a,
-                0.82
-            );
-
-            addDistantHill(
-                10,
-                1.7,
-                -24,
-                12,
-                5.6,
-                4.5,
-                0x244b34,
-                0.80
-            );
-
-            addDistantHill(
-                0,
-                2.0,
-                -36,
-                22,
-                7.5,
-                6.0,
-                0x1d3d2d,
-                0.64
-            );
-
-            // יער רחוק
-            addDistantForestRow(
-                -20,
-                1.25
-            );
-
-            addDistantForestRow(
-                -30,
-                1.75
-            );
-
-            // שיחים קרובים
-            addBush(
-                -11.5,
-                -6.5,
-                1.0,
-                0x2d5d25
-            );
-
-            addBush(
-                11.5,
-                -7.0,
-                1.1,
-                0x2a5722
-            );
-
-            addBush(
-                -9.5,
-                -10.5,
-                0.72,
-                0x376e29
-            );
-
-            addBush(
-                9.5,
-                -11.5,
-                0.82,
-                0x356728
-            );
-        }
-
-        // ======================================
-        // ICE
-        // ======================================
-
-        else if (mapId === 'ice') {
-
-            addDistantMountain(
-                -15,
-                6,
-                -21,
-                7.5,
-                15,
-                0xb8d6e4,
-                0.3
-            );
-
-            addDistantMountain(
-                15,
-                7,
-                -23,
-                9.5,
-                18,
-                0x9fc5d8,
-                -0.15
-            );
-
-            addDistantMountain(
-                -3,
-                9,
-                -34,
-                14,
-                23,
-                0x86b1c7,
-                0.4
-            );
-
-            addDistantHill(
-                0,
-                1.2,
-                -18,
-                20,
-                4.0,
-                4.0,
-                0xb9d7e1,
-                0.72
-            );
-
-            // גבישי קרח
+            // פסי חול קטנים בקצוות הקדמיים.
+            addBush(-12.0, -8.0, 0.8, 0x725032);
+            addBush(12.0, -9.0, 0.7, 0x6a472e);
+            addBush(-10.5, -12.5, 0.62, 0x81583c);
+            addBush(10.6, -13.0, 0.68, 0x795035);
+        } else if (mapId === 'forest') {
+            // יער בשכבות: שורה רחוקה, שורה בינונית, ואז כמה עצים קרובים.
+            addDistantHill(-10, 1.5, -22, 11, 5.0, 4.0, 0x28543a, 0.82);
+            addDistantHill(10, 1.7, -24, 12, 5.6, 4.5, 0x244b34, 0.80);
+            addDistantHill(0, 2.0, -36, 22, 7.5, 6.0, 0x1d3d2d, 0.64);
+            addDistantForestRow(-20, 1.25);
+            addDistantForestRow(-30, 1.75);
+            addBush(-11.5, -6.5, 1.0, 0x2d5d25);
+            addBush(11.5, -7.0, 1.1, 0x2a5722);
+            addBush(-9.5, -10.5, 0.72, 0x376e29);
+            addBush(9.5, -11.5, 0.82, 0x356728);
+        } else if (mapId === 'ice') {
+            addDistantMountain(-15, 6, -21, 7.5, 15, 0xb8d6e4, 0.3);
+            addDistantMountain(15, 7, -23, 9.5, 18, 0x9fc5d8, -0.15);
+            addDistantMountain(-3, 9, -34, 14, 23, 0x86b1c7, 0.4);
+            addDistantHill(0, 1.2, -18, 20, 4.0, 4.0, 0xb9d7e1, 0.72);
             for (let i = 0; i < 7; i++) {
-
-                addCrystal(
-                    -11 + i * 3.4,
-                    -8 - (i % 3) * 1.8,
-                    0.45 + (i % 2) * 0.25
-                );
+                addCrystal(-11 + i * 3.4, -8 - (i % 3) * 1.8, 0.45 + (i % 2) * 0.25);
             }
-        }
+        } else if (mapId === 'volcano') {
+            addDistantMountain(-14, 5.5, -24, 8.0, 15, 0x302528, -0.2);
+            addDistantMountain(14, 5.8, -27, 9.0, 17, 0x2a2225, 0.25);
+            addDistantMountain(1, 8, -40, 15, 25, 0x1d171a, 0.1);
+            addDistantHill(0, 1.1, -14, 20, 3.7, 3.7, 0x3a2b2c, 0.84);
 
-        // ======================================
-        // VOLCANO
-        // ======================================
-
-        else if (mapId === 'volcano') {
-
-            addDistantMountain(
-                -14,
-                5.5,
-                -24,
-                8.0,
-                15,
-                0x302528,
-                -0.2
-            );
-
-            addDistantMountain(
-                14,
-                5.8,
-                -27,
-                9.0,
-                17,
-                0x2a2225,
-                0.25
-            );
-
-            addDistantMountain(
-                1,
-                8,
-                -40,
-                15,
-                25,
-                0x1d171a,
-                0.1
-            );
-
-            addDistantHill(
-                0,
-                1.1,
-                -14,
-                20,
-                3.7,
-                3.7,
-                0x3a2b2c,
-                0.84
-            );
-
-            // נקודות לבה רחוקות
+            // לבה זעירה בנקודות רחוקות כדי לתת תחושת "חי" לסביבה.
             [-10, -3, 6, 12].forEach((x, i) => {
-
-                const lavaMat =
-                    new THREE.MeshBasicMaterial({
-                        color: 0xff7138,
-                        transparent: true,
-                        opacity: 0.7,
-                        depthWrite: false
-                    });
-
+                const lavaMat = new THREE.MeshBasicMaterial({
+                    color: 0xff7138,
+                    transparent: true,
+                    opacity: 0.7,
+                    depthWrite: false
+                });
                 addMesh(
-                    new THREE.SphereGeometry(
-                        0.18 + (i % 2) * 0.08,
-                        8,
-                        6
-                    ),
+                    new THREE.SphereGeometry(0.18 + (i % 2) * 0.08, 8, 6),
                     lavaMat,
                     x,
                     0.22,
@@ -949,20 +584,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const grassGeo = new THREE.BoxGeometry(40, 1, 30);
         let groundColor = 0x3f6212;
         let groundRoughness = 0.85;
-
-        if (mapId === 'forest') {
-            groundColor = 0x365314;
-        }
-
-        if (mapId === 'ice') {
-            groundColor = 0xbfe7f5;
-            groundRoughness = 0.55;
-        }
-
-        if (mapId === 'volcano') {
-            groundColor = 0x292524;
-            groundRoughness = 0.95;
-        }
+        if (mapId === 'forest') groundColor = 0x365314;
+        if (mapId === 'ice') { groundColor = 0xbfe7f5; groundRoughness = 0.55; }
+        if (mapId === 'volcano') { groundColor = 0x292524; groundRoughness = 0.95; }
 
         const groundTexture = createGroundTexture(mapId);
 
@@ -984,69 +608,51 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         if (mapId === 'desert') {
-
             scene.background.set(0xdd8c55);
             scene.fog.color.set(0xdd8c55);
             scene.fog.density = 0.012;
 
-            const pyramidMatA =
-                new THREE.MeshStandardMaterial({
-                    color: 0x9a3412,
-                    roughness: 0.8,
-                    flatShading: true
-                });
+            const pyramidMatA = new THREE.MeshStandardMaterial({
+                color: 0x9a3412,
+                roughness: 0.8,
+                flatShading: true
+            });
 
-            const pyramidMatB =
-                new THREE.MeshStandardMaterial({
-                    color: 0x7c2d12,
-                    roughness: 0.82,
-                    flatShading: true
-                });
+            const pyramidMatB = new THREE.MeshStandardMaterial({
+                color: 0x7c2d12,
+                roughness: 0.82,
+                flatShading: true
+            });
 
-            const p1 =
-                addMesh(
-                    new THREE.ConeGeometry(
-                        11,
-                        18,
-                        4
-                    ),
-                    pyramidMatA,
-                    -15,
-                    7,
-                    -12
-                );
+            const p1 = addMesh(
+                new THREE.ConeGeometry(11, 18, 4),
+                pyramidMatA,
+                -15,
+                7,
+                -12
+            );
 
             p1.rotation.y =
                 Math.PI / 4;
 
-            const p2 =
-                addMesh(
-                    new THREE.ConeGeometry(
-                        13,
-                        22,
-                        4
-                    ),
-                    pyramidMatA,
-                    15,
-                    9,
-                    -14
-                );
+            const p2 = addMesh(
+                new THREE.ConeGeometry(13, 22, 4),
+                pyramidMatA,
+                15,
+                9,
+                -14
+            );
 
             p2.rotation.y =
                 Math.PI / 4;
 
-            const p3 =
-                addMesh(
-                    new THREE.ConeGeometry(
-                        18,
-                        31,
-                        4
-                    ),
-                    pyramidMatB,
-                    0,
-                    15,
-                    -24
-                );
+            const p3 = addMesh(
+                new THREE.ConeGeometry(18, 31, 4),
+                pyramidMatB,
+                0,
+                15,
+                -24
+            );
 
             p3.rotation.y =
                 Math.PI / 4;
@@ -1155,7 +761,8 @@ window.addEventListener('DOMContentLoaded', () => {
                         -15
                     );
 
-                m.rotation.y = 0.35;
+                m.rotation.y =
+                    0.35;
             });
 
             for (let i = 0; i < 8; i++) {
@@ -1193,7 +800,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     -18
                 );
 
-            volcano.rotation.y = 0.2;
+            volcano.rotation.y =
+                0.2;
 
             const lavaMat =
                 new THREE.MeshBasicMaterial({
@@ -1220,7 +828,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     addLavaRock(
                         x,
                         -7 - (i % 2) * 3,
-                        0.9 + (i % 2) * 0.25
+                        0.9 +
+                            (i % 2) *
+                            0.25
                     )
             );
         }
@@ -1229,176 +839,623 @@ window.addEventListener('DOMContentLoaded', () => {
     buildMap(selectedMap);
 
     // ==========================================
-    // 4. עיצוב התותח - גרסה משופצת
+    // 4. עיצוב התותח - 3D DETAIL PASS
     // ==========================================
     const cannonGroup = new THREE.Group();
     const CANNON_SCALE = 1.14;
 
-    const baseGeo =
-        new THREE.BoxGeometry(
-            2.25,
-            0.58,
-            1.7
+    // גוף תלת-ממדי עם קצוות מעוגלים.
+    function createRoundedBoxGeometry(
+        width,
+        height,
+        depth,
+        radius,
+        bevelSize = 0.08,
+        bevelSegments = 2
+    ) {
+        const shape = new THREE.Shape();
+
+        const x =
+            -width / 2;
+
+        const y =
+            -height / 2;
+
+        const w =
+            width;
+
+        const h =
+            height;
+
+        const r =
+            Math.min(
+                radius,
+                width / 2,
+                height / 2
+            );
+
+        shape.moveTo(
+            x + r,
+            y
         );
 
-    const baseMat =
+        shape.lineTo(
+            x + w - r,
+            y
+        );
+
+        shape.quadraticCurveTo(
+            x + w,
+            y,
+            x + w,
+            y + r
+        );
+
+        shape.lineTo(
+            x + w,
+            y + h - r
+        );
+
+        shape.quadraticCurveTo(
+            x + w,
+            y + h,
+            x + w - r,
+            y + h
+        );
+
+        shape.lineTo(
+            x + r,
+            y + h
+        );
+
+        shape.quadraticCurveTo(
+            x,
+            y + h,
+            x,
+            y + h - r
+        );
+
+        shape.lineTo(
+            x,
+            y + r
+        );
+
+        shape.quadraticCurveTo(
+            x,
+            y,
+            x + r,
+            y
+        );
+
+        const geometry =
+            new THREE.ExtrudeGeometry(
+                shape,
+                {
+                    depth,
+                    bevelEnabled:
+                        true,
+                    bevelSegments,
+                    steps:
+                        1,
+                    bevelSize,
+                    bevelThickness:
+                        bevelSize
+                }
+            );
+
+        geometry.center();
+        geometry.computeVertexNormals();
+
+        return geometry;
+    }
+
+    function addCannonPart(
+        geometry,
+        material,
+        position,
+        cast = true,
+        receive = true
+    ) {
+        const mesh =
+            new THREE.Mesh(
+                geometry,
+                material
+            );
+
+        mesh.position.copy(
+            position
+        );
+
+        mesh.castShadow =
+            cast;
+
+        mesh.receiveShadow =
+            receive;
+
+        cannonGroup.add(
+            mesh
+        );
+
+        return mesh;
+    }
+
+    // חומרים שונים כדי שהמתכת, הגומי והצבע לא ייראו כמו חומר אחד.
+    const darkMetalMat =
         new THREE.MeshStandardMaterial({
-            color: 0x25313b,
-            roughness: 0.30,
-            metalness: 0.58
+            color: 0x18232d,
+            roughness: 0.26,
+            metalness: 0.72
         });
 
-    const base =
-        new THREE.Mesh(
-            baseGeo,
-            baseMat
+    const bodyMetalMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x2d3e49,
+            roughness: 0.34,
+            metalness: 0.66
+        });
+
+    const edgeMetalMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x526572,
+            roughness: 0.24,
+            metalness: 0.82
+        });
+
+    const rubberMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x101417,
+            roughness: 0.96,
+            metalness: 0.01
+        });
+
+    const hubMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x778994,
+            roughness: 0.28,
+            metalness: 0.78
+        });
+
+    const boltMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x9aa7ae,
+            roughness: 0.22,
+            metalness: 0.88
+        });
+
+    // גוף ראשי מעוגל.
+    addCannonPart(
+        createRoundedBoxGeometry(
+            2.25,
+            0.64,
+            1.72,
+            0.22,
+            0.10,
+            3
+        ),
+        bodyMetalMat,
+        new THREE.Vector3(
+            0,
+            0.34,
+            0
+        )
+    );
+
+    // מסגרת תחתונה שנותנת משקל ותחושת שלדה.
+    addCannonPart(
+        createRoundedBoxGeometry(
+            1.86,
+            0.24,
+            1.44,
+            0.09,
+            0.05,
+            2
+        ),
+        darkMetalMat,
+        new THREE.Vector3(
+            0,
+            0.04,
+            0
+        )
+    );
+
+    // לוחות צד משוריינים וברגים.
+    [-1, 1].forEach(side => {
+
+        addCannonPart(
+            createRoundedBoxGeometry(
+                0.16,
+                0.52,
+                1.35,
+                0.06,
+                0.03,
+                2
+            ),
+            edgeMetalMat,
+            new THREE.Vector3(
+                side * 1.06,
+                0.43,
+                0
+            )
         );
 
-    base.position.y = 0.3;
-    base.castShadow = true;
-    base.receiveShadow = true;
+        [-0.43, 0.43].forEach(z => {
 
-    cannonGroup.add(base);
+            const bolt =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        0.075,
+                        10,
+                        8
+                    ),
+                    boltMat
+                );
 
-    // מסגרת קדמית שמרככת את הצורה הקופסתית
-    const frontRing =
+            bolt.position.set(
+                side * 1.155,
+                0.51,
+                z
+            );
+
+            bolt.castShadow =
+                true;
+
+            cannonGroup.add(
+                bolt
+            );
+        });
+    });
+
+    // טבעת מסתובבת לבסיס הצריח.
+    const turretRing =
         new THREE.Mesh(
-            new THREE.CylinderGeometry(
-                0.78,
-                0.78,
-                0.22,
+            new THREE.TorusGeometry(
+                0.82,
+                0.10,
+                8,
                 24
             ),
+            edgeMetalMat
+        );
+
+    turretRing.rotation.x =
+        Math.PI / 2;
+
+    turretRing.position.set(
+        0,
+        0.72,
+        0
+    );
+
+    turretRing.castShadow =
+        true;
+
+    cannonGroup.add(
+        turretRing
+    );
+
+    // גוף צריח חצי-כיפתי.
+    const dome =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                0.90,
+                24,
+                16,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI / 2
+            ),
             new THREE.MeshStandardMaterial({
-                color: 0x0f172a,
-                roughness: 0.35,
-                metalness: 0.45
+                color: 0x0d7fb8,
+                roughness: 0.15,
+                metalness: 0.34
             })
         );
 
-    frontRing.rotation.x =
-        Math.PI / 2;
+    dome.position.y =
+        0.60;
 
-    frontRing.position.set(
-        0,
-        0.63,
-        -0.18
-    );
+    dome.castShadow =
+        true;
 
-    frontRing.castShadow = true;
-
-    cannonGroup.add(
-        frontRing
-    );
-
-    const domeGeo =
-        new THREE.SphereGeometry(
-            0.9,
-            24,
-            16,
-            0,
-            Math.PI * 2,
-            0,
-            Math.PI / 2
-        );
-
-    const domeMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x0b7db8,
-            roughness: 0.16,
-            metalness: 0.28,
-            transparent: true,
-            opacity: 0.95
-        });
-
-    const dome =
-        new THREE.Mesh(
-            domeGeo,
-            domeMat
-        );
-
-    dome.position.y = 0.57;
-    dome.castShadow = true;
+    dome.receiveShadow =
+        true;
 
     cannonGroup.add(
         dome
     );
 
-    // גלגלים: אין סיבוב 360° בזמן תנועה. הם רק משנים זווית היגוי.
-    const wheelGeo =
-        new THREE.CylinderGeometry(
-            0.39,
-            0.39,
-            0.24,
-            16
+    // לוח קדמי כהה לצריח.
+    const frontPlate =
+        new THREE.Mesh(
+            createRoundedBoxGeometry(
+                1.62,
+                0.48,
+                0.16,
+                0.12,
+                0.04,
+                2
+            ),
+            darkMetalMat
         );
 
-    const wheelMat =
+    frontPlate.position.set(
+        0,
+        0.70,
+        0.70
+    );
+
+    frontPlate.castShadow =
+        true;
+
+    cannonGroup.add(
+        frontPlate
+    );
+
+    // תושבת ומכלול הקנים נפרדים כדי שנוכל לתת רתיעה מכנית אמיתית.
+    const barrelAssembly =
+        new THREE.Group();
+
+    barrelAssembly.position.set(
+        0,
+        0.82,
+        0.05
+    );
+
+    cannonGroup.add(
+        barrelAssembly
+    );
+
+    const barrelBase =
+        new THREE.Mesh(
+            createRoundedBoxGeometry(
+                1.34,
+                0.28,
+                0.82,
+                0.10,
+                0.045,
+                2
+            ),
+            darkMetalMat
+        );
+
+    barrelBase.position.set(
+        0,
+        0.08,
+        0.02
+    );
+
+    barrelBase.castShadow =
+        true;
+
+    barrelAssembly.add(
+        barrelBase
+    );
+
+    const barrelMat =
         new THREE.MeshStandardMaterial({
-            color: 0x111827,
-            roughness: 0.90,
-            metalness: 0.02
+            color: 0x3d4e5a,
+            metalness: 0.82,
+            roughness: 0.22
         });
 
-    const cannonWheels = [];
+    const muzzleMat =
+        new THREE.MeshStandardMaterial({
+            color: 0x11191f,
+            metalness: 0.68,
+            roughness: 0.25
+        });
 
-    const wheelPositions = [
-        [-1.12, 0.2, 0.68],
-        [ 1.12, 0.2, 0.68],
-        [-1.12, 0.2, -0.68],
-        [ 1.12, 0.2, -0.68]
-    ];
-
-    wheelPositions.forEach((pos, index) => {
-
-        const wheel =
-            new THREE.Mesh(
-                wheelGeo,
-                wheelMat
-            );
-
-        wheel.rotation.z =
-            Math.PI / 2;
-
-        wheel.position.set(...pos);
-
-        wheel.castShadow = true;
-
-        // חזית התותח (z חיובי) יכולה להציג היגוי; האחוריים נשארים קבועים.
-        wheel.userData.steerable =
-            pos[2] > 0;
-
-        wheel.userData.side =
-            pos[0] < 0 ? -1 : 1;
-
-        wheel.userData.baseRotationY =
-            0;
-
-        cannonGroup.add(
-            wheel
+    const barrelGeo =
+        new THREE.CylinderGeometry(
+            0.13,
+            0.15,
+            0.98,
+            18
         );
 
-        cannonWheels.push(
-            wheel
+    const muzzleGeo =
+        new THREE.CylinderGeometry(
+            0.17,
+            0.15,
+            0.12,
+            18,
+            1,
+            false
+        );
+
+    const muzzleBoreGeo =
+        new THREE.CylinderGeometry(
+            0.095,
+            0.095,
+            0.125,
+            16,
+            1,
+            true
+        );
+
+    [-0.37, 0.37].forEach(x => {
+
+        const barrel =
+            new THREE.Mesh(
+                barrelGeo,
+                barrelMat
+            );
+
+        barrel.position.set(
+            x,
+            0.61,
+            0
+        );
+
+        barrel.castShadow =
+            true;
+
+        barrelAssembly.add(
+            barrel
+        );
+
+        const ring =
+            new THREE.Mesh(
+                new THREE.TorusGeometry(
+                    0.145,
+                    0.028,
+                    6,
+                    16
+                ),
+                edgeMetalMat
+            );
+
+        ring.rotation.x =
+            Math.PI / 2;
+
+        ring.position.set(
+            x,
+            0.56,
+            0
+        );
+
+        ring.castShadow =
+            true;
+
+        barrelAssembly.add(
+            ring
+        );
+
+        const muzzle =
+            new THREE.Mesh(
+                muzzleGeo,
+                muzzleMat
+            );
+
+        muzzle.position.set(
+            x,
+            1.12,
+            0
+        );
+
+        muzzle.castShadow =
+            true;
+
+        barrelAssembly.add(
+            muzzle
+        );
+
+        const bore =
+            new THREE.Mesh(
+                muzzleBoreGeo,
+                new THREE.MeshBasicMaterial({
+                    color: 0x020507
+                })
+            );
+
+        bore.position.set(
+            x,
+            1.125,
+            0
+        );
+
+        barrelAssembly.add(
+            bore
         );
     });
 
-    cannonWheels.forEach(
-        wheel => {
+    // גלגלים - הקדמיים משנים זווית היגוי בלבד, האחוריים נשארים ישרים.
+    const wheelGeo =
+        new THREE.CylinderGeometry(
+            0.40,
+            0.40,
+            0.25,
+            18
+        );
 
+    const cannonWheels =
+        [];
+
+    const wheelPositions = [
+        [-1.12, 0.22, 0.68],
+        [1.12, 0.22, 0.68],
+        [-1.12, 0.22, -0.68],
+        [1.12, 0.22, -0.68]
+    ];
+
+    wheelPositions.forEach(
+        pos => {
+
+            const wheel =
+                new THREE.Mesh(
+                    wheelGeo,
+                    rubberMat
+                );
+
+            wheel.rotation.z =
+                Math.PI / 2;
+
+            wheel.position.set(
+                ...pos
+            );
+
+            wheel.castShadow =
+                true;
+
+            wheel.receiveShadow =
+                true;
+
+            wheel.userData.steerable =
+                pos[2] > 0;
+
+            wheel.userData.side =
+                pos[0] < 0
+                    ? -1
+                    : 1;
+
+            wheel.userData.baseRotationY =
+                0;
+
+            cannonGroup.add(
+                wheel
+            );
+
+            cannonWheels.push(
+                wheel
+            );
+
+            // דופן גלגל מתכתית.
+            const tireSide =
+                new THREE.Mesh(
+                    new THREE.TorusGeometry(
+                        0.29,
+                        0.055,
+                        8,
+                        18
+                    ),
+                    darkMetalMat
+                );
+
+            tireSide.rotation.y =
+                Math.PI / 2;
+
+            tireSide.position.copy(
+                wheel.position
+            );
+
+            tireSide.castShadow =
+                true;
+
+            cannonGroup.add(
+                tireSide
+            );
+
+            // טבור מתכתי.
             const hub =
                 new THREE.Mesh(
                     new THREE.CylinderGeometry(
-                        0.13,
-                        0.13,
-                        0.26,
-                        12
+                        0.14,
+                        0.14,
+                        0.27,
+                        14
                     ),
-                    new THREE.MeshStandardMaterial({
-                        color: 0x64748b,
-                        roughness: 0.34,
-                        metalness: 0.72
-                    })
+                    hubMat
                 );
 
             hub.rotation.z =
@@ -1408,59 +1465,81 @@ window.addEventListener('DOMContentLoaded', () => {
                 wheel.position
             );
 
-            hub.castShadow = true;
+            hub.castShadow =
+                true;
 
             cannonGroup.add(
                 hub
             );
+
+            // חמישה ברגים סביב הטבור.
+            for (let i = 0; i < 5; i++) {
+
+                const angle =
+                    (i / 5) *
+                    Math.PI *
+                    2;
+
+                const bolt =
+                    new THREE.Mesh(
+                        new THREE.SphereGeometry(
+                            0.035,
+                            7,
+                            6
+                        ),
+                        boltMat
+                    );
+
+                bolt.position.set(
+                    wheel.position.x,
+                    wheel.position.y +
+                        Math.cos(angle) *
+                        0.10,
+                    wheel.position.z +
+                        Math.sin(angle) *
+                        0.10
+                );
+
+                bolt.castShadow =
+                    true;
+
+                cannonGroup.add(
+                    bolt
+                );
+            }
         }
     );
 
-    const barrelGeo =
-        new THREE.CylinderGeometry(
-            0.13,
-            0.13,
-            0.95,
-            16
-        );
+    // זרועות מתלים שמחברות את הגלגלים לשלדה.
+    wheelPositions.forEach(
+        pos => {
 
-    const barrelMat =
-        new THREE.MeshStandardMaterial({
-            color: 0x334155,
-            metalness: 0.72,
-            roughness: 0.28
-        });
+            const bracket =
+                new THREE.Mesh(
+                    createRoundedBoxGeometry(
+                        0.16,
+                        0.52,
+                        0.22,
+                        0.05,
+                        0.025,
+                        2
+                    ),
+                    darkMetalMat
+                );
 
-    const leftBarrel =
-        new THREE.Mesh(
-            barrelGeo,
-            barrelMat
-        );
+            bracket.position.set(
+                pos[0] * 0.94,
+                0.36,
+                pos[2]
+            );
 
-    leftBarrel.position.set(
-        -0.38,
-        1.02,
-        0
-    );
+            bracket.castShadow =
+                true;
 
-    const rightBarrel =
-        new THREE.Mesh(
-            barrelGeo,
-            barrelMat
-        );
-
-    rightBarrel.position.set(
-        0.38,
-        1.02,
-        0
-    );
-
-    leftBarrel.castShadow = true;
-    rightBarrel.castShadow = true;
-
-    cannonGroup.add(
-        leftBarrel,
-        rightBarrel
+            cannonGroup.add(
+                bracket
+            );
+        }
     );
 
     cannonGroup.scale.setScalar(
@@ -1475,13 +1554,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const cannonShadow =
         new THREE.Mesh(
             new THREE.CircleGeometry(
-                1.35,
-                28
+                1.45,
+                32
             ),
             new THREE.MeshBasicMaterial({
                 color: 0x1f2937,
                 transparent: true,
-                opacity: 0.20,
+                opacity: 0.22,
                 depthWrite: false
             })
         );
@@ -1493,8 +1572,8 @@ window.addEventListener('DOMContentLoaded', () => {
         0.015;
 
     cannonShadow.scale.set(
-        1.15,
-        0.72,
+        1.18,
+        0.76,
         1
     );
 
@@ -1505,13 +1584,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const cannonShadowSoft =
         new THREE.Mesh(
             new THREE.CircleGeometry(
-                0.9,
-                24
+                1.0,
+                26
             ),
             new THREE.MeshBasicMaterial({
                 color: 0x0f172a,
                 transparent: true,
-                opacity: 0.09,
+                opacity: 0.10,
                 depthWrite: false
             })
         );
@@ -1523,8 +1602,8 @@ window.addEventListener('DOMContentLoaded', () => {
         0.018;
 
     cannonShadowSoft.scale.set(
-        1.05,
-        0.55,
+        1.10,
+        0.58,
         1
     );
 
@@ -1535,11 +1614,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 5. משתני משחק
     // ==========================================
-    let isGameStarted = false;
-    let isPaused = false;
-    let isGameOver = false;
+    let isGameStarted =
+        false;
 
-    let score = 0;
+    let isPaused =
+        false;
+
+    let isGameOver =
+        false;
+
+    let score =
+        0;
 
     let coins =
         parseInt(
@@ -1555,10 +1640,14 @@ window.addEventListener('DOMContentLoaded', () => {
             )
         ) || 0;
 
-    let level = 1;
+    let level =
+        1;
 
-    let playerHp = 1000;
-    let maxHp = 1000;
+    let playerHp =
+        1000;
+
+    let maxHp =
+        1000;
 
     let firePowerLvl =
         parseInt(
@@ -1589,18 +1678,29 @@ window.addEventListener('DOMContentLoaded', () => {
         (fireRateLvl - 1) *
         0.25;
 
-    let bullets = [];
-    let rocks = [];
-    let droppedCoins = [];
+    let bullets =
+        [];
 
-    let lastShotTime = 0;
-    let targetX = 0;
+    let rocks =
+        [];
 
-    let cannonRecoil = 0;
+    let droppedCoins =
+        [];
 
-    const cannonBaseY = 0;
+    let lastShotTime =
+        0;
 
-    const effects = [];
+    let targetX =
+        0;
+
+    let cannonRecoil =
+        0;
+
+    const cannonBaseY =
+        0;
+
+    const effects =
+        [];
 
     const tempVec3 =
         new THREE.Vector3();
@@ -1713,7 +1813,8 @@ window.addEventListener('DOMContentLoaded', () => {
             fireRateLvl * 60;
 
         const magnetCost =
-            (magnetLvl + 1) * 100;
+            (magnetLvl + 1) *
+            100;
 
         if (buyPowerBtn) {
 
@@ -1721,7 +1822,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 `${powerCost} C`;
 
             buyPowerBtn.disabled =
-                coins < powerCost;
+                coins <
+                powerCost;
 
             const el =
                 document.getElementById(
@@ -1739,7 +1841,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 `${rateCost} C`;
 
             buyRateBtn.disabled =
-                coins < rateCost;
+                coins <
+                rateCost;
 
             const el =
                 document.getElementById(
@@ -1757,7 +1860,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 `${magnetCost} C`;
 
             buyMagnetBtn.disabled =
-                coins < magnetCost;
+                coins <
+                magnetCost;
 
             const el =
                 document.getElementById(
@@ -1769,73 +1873,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     `Lvl ${magnetLvl}`;
         }
 
-        mapButtons.forEach(btn => {
-
-            const mapId =
-                btn.dataset.mapId;
-
-            const map =
-                MAPS[mapId];
-
-            if (!map)
-                return;
-
-            const owned =
-                purchasedMaps.includes(
-                    mapId
-                );
-
-            const selected =
-                selectedMap === mapId;
-
-            const action =
-                btn.querySelector(
-                    '.map-action'
-                );
-
-            const state =
-                btn.querySelector(
-                    '.map-state'
-                );
-
-            if (action)
-                action.innerText =
-                    selected
-                        ? 'נבחרה'
-                        : owned
-                            ? 'בחר'
-                            : `${map.price} C`;
-
-            if (state)
-                state.innerText =
-                    selected
-                        ? 'ACTIVE'
-                        : owned
-                            ? 'OWNED'
-                            : 'LOCKED';
-
-            btn.classList.toggle(
-                'selected',
-                selected
-            );
-
-            btn.classList.toggle(
-                'owned',
-                owned
-            );
-
-            btn.disabled =
-                !owned &&
-                coins < map.price;
-        });
-    }
-
-    // חנות מפות - הקנייה והשינוי נעשים במסך הפתיחה בלבד.
-    mapButtons.forEach(btn => {
-
-        btn.addEventListener(
-            'click',
-            () => {
+        mapButtons.forEach(
+            btn => {
 
                 const mapId =
                     btn.dataset.mapId;
@@ -1851,50 +1890,121 @@ window.addEventListener('DOMContentLoaded', () => {
                         mapId
                     );
 
-                if (!owned) {
-
-                    if (
-                        coins <
-                        map.price
-                    )
-                        return;
-
-                    coins -=
-                        map.price;
-
-                    purchasedMaps.push(
-                        mapId
-                    );
-
-                    localStorage.setItem(
-                        'bb3d_coins',
-                        coins
-                    );
-
-                    localStorage.setItem(
-                        'bb3d_purchased_maps',
-                        JSON.stringify(
-                            purchasedMaps
-                        )
-                    );
-                }
-
-                selectedMap =
+                const selected =
+                    selectedMap ===
                     mapId;
 
-                localStorage.setItem(
-                    'bb3d_map',
-                    selectedMap
+                const action =
+                    btn.querySelector(
+                        '.map-action'
+                    );
+
+                const state =
+                    btn.querySelector(
+                        '.map-state'
+                    );
+
+                if (action)
+                    action.innerText =
+                        selected
+                            ? 'נבחרה'
+                            : owned
+                                ? 'בחר'
+                                : `${map.price} C`;
+
+                if (state)
+                    state.innerText =
+                        selected
+                            ? 'ACTIVE'
+                            : owned
+                                ? 'OWNED'
+                                : 'LOCKED';
+
+                btn.classList.toggle(
+                    'selected',
+                    selected
                 );
 
-                buildMap(
-                    selectedMap
+                btn.classList.toggle(
+                    'owned',
+                    owned
                 );
 
-                updateUI();
+                btn.disabled =
+                    !owned &&
+                    coins <
+                    map.price;
             }
         );
-    });
+    }
+
+    // חנות מפות - הקנייה והשינוי נעשים במסך הפתיחה בלבד.
+    mapButtons.forEach(
+        btn => {
+
+            btn.addEventListener(
+                'click',
+                () => {
+
+                    const mapId =
+                        btn.dataset.mapId;
+
+                    const map =
+                        MAPS[mapId];
+
+                    if (!map)
+                        return;
+
+                    const owned =
+                        purchasedMaps.includes(
+                            mapId
+                        );
+
+                    if (!owned) {
+
+                        if (
+                            coins <
+                            map.price
+                        )
+                            return;
+
+                        coins -=
+                            map.price;
+
+                        purchasedMaps.push(
+                            mapId
+                        );
+
+                        localStorage.setItem(
+                            'bb3d_coins',
+                            coins
+                        );
+
+                        localStorage.setItem(
+                            'bb3d_purchased_maps',
+                            JSON.stringify(
+                                purchasedMaps
+                            )
+                        );
+                    }
+
+                    selectedMap =
+                        mapId;
+
+                    localStorage.setItem(
+                        'bb3d_map',
+                        selectedMap
+                    );
+
+                    buildMap(
+                        selectedMap
+                    );
+
+                    updateUI();
+                }
+            );
+        }
+    );
 
     // חיבור כפתורי השדרוגים במסך הפתיחה
     if (buyPowerBtn) {
@@ -1904,10 +2014,12 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
 
                 const cost =
-                    firePowerLvl * 50;
+                    firePowerLvl *
+                    50;
 
                 if (
-                    coins >= cost
+                    coins >=
+                    cost
                 ) {
 
                     coins -=
@@ -1941,10 +2053,12 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
 
                 const cost =
-                    fireRateLvl * 60;
+                    fireRateLvl *
+                    60;
 
                 if (
-                    coins >= cost
+                    coins >=
+                    cost
                 ) {
 
                     coins -=
@@ -1984,7 +2098,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     100;
 
                 if (
-                    coins >= cost
+                    coins >=
+                    cost
                 ) {
 
                     coins -=
@@ -2013,7 +2128,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 7. סאונד
     // ==========================================
-    let audioCtx = null;
+    let audioCtx =
+        null;
 
     function getAudioCtx() {
 
@@ -2053,10 +2169,18 @@ window.addEventListener('DOMContentLoaded', () => {
         const gain =
             ctx.createGain();
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+        osc.connect(
+            gain
+        );
 
-        if (type === 'shoot') {
+        gain.connect(
+            ctx.destination
+        );
+
+        if (
+            type ===
+            'shoot'
+        ) {
 
             osc.frequency.setValueAtTime(
                 320,
@@ -2079,11 +2203,15 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
             osc.start();
+
             osc.stop(
                 ctx.currentTime + 0.07
             );
 
-        } else if (type === 'hit') {
+        } else if (
+            type ===
+            'hit'
+        ) {
 
             osc.type =
                 'triangle';
@@ -2114,7 +2242,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.currentTime + 0.06
             );
 
-        } else if (type === 'coin') {
+        } else if (
+            type ===
+            'coin'
+        ) {
 
             osc.frequency.setValueAtTime(
                 850,
@@ -2229,7 +2360,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const position =
             geo.attributes.position;
 
-        const colors = [];
+        const colors =
+            [];
 
         for (
             let i = 0;
@@ -2248,19 +2380,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const factorX =
                 0.82 +
-                Math.random() * 0.32;
+                Math.random() *
+                0.32;
 
             const factorY =
                 0.72 +
-                Math.random() * 0.34;
+                Math.random() *
+                0.34;
 
             const factorZ =
                 0.84 +
-                Math.random() * 0.30;
+                Math.random() *
+                0.30;
 
             const jitter =
                 0.93 +
-                Math.random() * 0.14;
+                Math.random() *
+                0.14;
 
             position.setXYZ(
                 i,
@@ -2295,11 +2431,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 ),
                 Math.min(
                     1,
-                    shade * 0.94
+                    shade *
+                    0.94
                 ),
                 Math.min(
                     1,
-                    shade * 0.88
+                    shade *
+                    0.88
                 )
             );
         }
@@ -2356,19 +2494,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const mat =
             new THREE.MeshStandardMaterial({
-
                 color:
                     getRockColor(),
-
                 vertexColors:
                     true,
-
                 roughness:
                     0.92,
-
                 metalness:
                     0.0,
-
                 flatShading:
                     false
             });
@@ -2405,8 +2538,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 'canvas'
             );
 
-        canvas.width = 128;
-        canvas.height = 128;
+        canvas.width =
+            128;
+
+        canvas.height =
+            128;
 
         const ctx =
             canvas.getContext(
@@ -2452,10 +2588,8 @@ window.addEventListener('DOMContentLoaded', () => {
             new THREE.SpriteMaterial({
                 map:
                     texture,
-
                 transparent:
                     true,
-
                 depthTest:
                     true
             });
@@ -2488,7 +2622,8 @@ window.addEventListener('DOMContentLoaded', () => {
             size,
 
             vx:
-                launchVx !== null
+                launchVx !==
+                null
                     ? launchVx
                     : (
                         Math.random() -
@@ -2497,7 +2632,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     0.055,
 
             vy:
-                launchVy !== null
+                launchVy !==
+                null
                     ? launchVy
                     : 0,
 
@@ -2572,16 +2708,12 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         flash.userData = {
-
             type:
                 'flash',
-
             life:
                 5,
-
             maxLife:
                 5,
-
             startScale:
                 1
         };
@@ -2599,7 +2731,8 @@ window.addEventListener('DOMContentLoaded', () => {
         x,
         y,
         z,
-        color = 0xfde68a
+        color =
+            0xfde68a
     ) {
 
         const count =
@@ -2615,8 +2748,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 new THREE.Mesh(
                     new THREE.TetrahedronGeometry(
                         0.08 +
-                        Math.random() *
-                        0.06,
+                            Math.random() *
+                            0.06,
                         0
                     ),
                     new THREE.MeshBasicMaterial({
@@ -2652,34 +2785,28 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
             particle.userData = {
-
                 type:
                     'particle',
-
                 life:
                     14 +
                     Math.random() *
                     7,
-
                 vx:
                     (
                         Math.random() -
                         0.5
                     ) *
                     0.16,
-
                 vy:
                     0.04 +
                     Math.random() *
                     0.12,
-
                 vz:
                     (
                         Math.random() -
                         0.5
                     ) *
                     0.08,
-
                 spin:
                     (
                         Math.random() -
@@ -2717,8 +2844,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 new THREE.Mesh(
                     new THREE.SphereGeometry(
                         0.10 +
-                        Math.random() *
-                        0.08,
+                            Math.random() *
+                            0.08,
                         7,
                         7
                     ),
@@ -2754,7 +2881,6 @@ window.addEventListener('DOMContentLoaded', () => {
             );
 
             dust.userData = {
-
                 type:
                     'dust',
 
@@ -2797,7 +2923,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         for (
             let i =
-                effects.length - 1;
+                effects.length -
+                1;
             i >= 0;
             i--
         ) {
@@ -3167,21 +3294,37 @@ window.addEventListener('DOMContentLoaded', () => {
     // במקום לקשור את התותח ישירות למיקום האצבע על המסך,
     // אנחנו משתמשים בתנועה יחסית: מזיזים את האצבע ->
     // התותח זז באותו כיוון, אבל במהירות נשלטת.
-    let isDragging = false;
-    let dragPointerId = null;
-    let dragStartX = 0;
-    let dragStartTargetX = 0;
-    let lastPointerX = 0;
+    let isDragging =
+        false;
 
-    const TOUCH_DEADZONE = 2.5;
-    const TOUCH_SENSITIVITY = 0.016;
-    const DESKTOP_SENSITIVITY = 0.020;
+    let dragPointerId =
+        null;
+
+    let dragStartX =
+        0;
+
+    let dragStartTargetX =
+        0;
+
+    let lastPointerX =
+        0;
+
+    const TOUCH_DEADZONE =
+        2.5;
+
+    const TOUCH_SENSITIVITY =
+        0.016;
+
+    const DESKTOP_SENSITIVITY =
+        0.020;
 
     function getPointerSensitivity() {
 
         return window.innerWidth <=
             768
+
             ? TOUCH_SENSITIVITY
+
             : DESKTOP_SENSITIVITY;
     }
 
@@ -3253,11 +3396,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 targetX;
 
             try {
-
                 controlSurface.setPointerCapture(
                     e.pointerId
                 );
-
             } catch (_) {}
 
             e.preventDefault();
@@ -3497,6 +3638,17 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonRecoil *=
             0.78;
 
+        // רתיעה מכנית של מכלול הקנים - בנוסף לתנועת הגוף.
+        barrelAssembly.position.z +=
+            (
+                (
+                    -cannonRecoil *
+                    0.65
+                ) -
+                barrelAssembly.position.z
+            ) *
+            0.35;
+
         cannonGroup.position.y +=
             (
                 (
@@ -3526,8 +3678,7 @@ window.addEventListener('DOMContentLoaded', () => {
             wheel => {
 
                 const targetSteer =
-                    wheel.userData
-                        .steerable
+                    wheel.userData.steerable
                         ? steerAngle
                         : 0;
 
@@ -3765,7 +3916,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         r.position
                     ) <
                     data.size *
-                        0.88
+                    0.88
                 ) {
 
                     scene.remove(
