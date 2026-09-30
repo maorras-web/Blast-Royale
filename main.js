@@ -933,9 +933,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpCtx = bumpCanvas.getContext('2d');
 
         // צבעי דשא בהירים בצדדים — כמו ברפרנס — עם מרקם עדין.
-        const base = '#78964f';
-        const accentA = '#8eaa62';
-        const accentB = '#668645';
+        const base = '#6f9148';
+        const accentA = '#7fa456';
+        const accentB = '#5e803f';
 
         ctx.fillStyle = base;
         ctx.fillRect(0, 0, 512, 512);
@@ -962,8 +962,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const len = 18 + Math.random() * 70;
             const alpha = 0.035 + Math.random() * 0.055;
             ctx.strokeStyle = i % 3 === 0
-                ? `rgba(220,238,165,${alpha})`
-                : `rgba(35,68,28,${alpha})`;
+                ? `rgba(190,220,135,${alpha})`
+                : `rgba(30,62,25,${alpha})`;
             ctx.lineWidth = 0.6 + Math.random() * 0.8;
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -1028,7 +1028,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         const bumpCtx = bumpCanvas.getContext('2d');
 
-        ctx.fillStyle = '#173d22';
+        ctx.fillStyle = '#12371d';
         ctx.fillRect(0, 0, 512, 512);
         bumpCtx.fillStyle = '#777777';
         bumpCtx.fillRect(0, 0, 512, 512);
@@ -1039,8 +1039,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const len = 20 + Math.random() * 90;
             const alpha = 0.045 + Math.random() * 0.055;
             ctx.strokeStyle = i % 2 === 0
-                ? `rgba(49,94,45,${alpha})`
-                : `rgba(8,34,17,${alpha})`;
+                ? `rgba(42,82,38,${alpha})`
+                : `rgba(6,28,14,${alpha})`;
             ctx.lineWidth = 0.8 + Math.random() * 1.1;
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -1295,7 +1295,7 @@ window.addEventListener('DOMContentLoaded', () => {
         crossGeo.computeVertexNormals();
 
         const sideMat = new THREE.MeshStandardMaterial({
-            color: 0xa4c879,
+            color: 0x729f4b,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1303,7 +1303,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const lightSideMat = new THREE.MeshStandardMaterial({
-            color: 0xb4d987,
+            color: 0x86b458,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1311,7 +1311,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const edgeMat = new THREE.MeshStandardMaterial({
-            color: 0x628c43,
+            color: 0x547f39,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1319,7 +1319,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const darkMat = new THREE.MeshStandardMaterial({
-            color: 0x416d35,
+            color: 0x345b2c,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1331,7 +1331,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // שכבה צפופה של דשא בהיר בצידי המסלול.
         // יותר צפופה בתחתית המסך ופחות צפופה רחוק באופק,
         // כדי לחזק את הפרספקטיבה של תמונת הרפרנס.
-        const sideCount = 2600;
+        const sideCount = 1850;
         const sideBlades = new THREE.InstancedMesh(
             crossGeo,
             sideMat,
@@ -1375,7 +1375,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // שכבה נוספת של להבים בהירים יותר ממש בקצה המסלול.
         // היא יוצרת מעבר טבעי בין השביל הכהה לדשא הבהיר.
-        const edgeCount = 1050;
+        const edgeCount = 680;
         const edgeBlades = new THREE.InstancedMesh(
             bladeGeo,
             lightSideMat,
@@ -1448,7 +1448,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // קבוצות קטנות של דשא גבוה יותר בקדמת המסך.
         // הן נותנות תחושת קנה מידה בלי להציף את כל המפה.
-        const foregroundCount = 320;
+        const foregroundCount = 180;
         const foregroundBlades = new THREE.InstancedMesh(
             crossGeo,
             edgeMat,
@@ -1472,10 +1472,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 Math.random() * Math.PI,
                 (Math.random() - 0.5) * 0.24
             );
-            const scale = 0.8 + Math.random() * 1.45;
+            const scale = 0.68 + Math.random() * 1.05;
             dummy.scale.set(
                 scale,
-                0.85 + Math.random() * 1.2,
+                0.70 + Math.random() * 0.85,
                 scale
             );
             dummy.updateMatrix();
@@ -1484,6 +1484,52 @@ window.addEventListener('DOMContentLoaded', () => {
 
         foregroundBlades.instanceMatrix.needsUpdate = true;
         grassGroup.add(foregroundBlades);
+
+        // שכבה חדשה של עשבונים קטנים ועדינים: פחות בולטים מהשכבות הקדמיות,
+        // אבל מוסיפים פרטים טבעיים בלי להחזיר את המראה הלבן והעמוס.
+        const smallCount = 520;
+        const smallGrassMat = new THREE.MeshStandardMaterial({
+            color: 0x4f8139,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+        const smallBlades = new THREE.InstancedMesh(
+            bladeGeo,
+            smallGrassMat,
+            smallCount
+        );
+
+        for (let i = 0; i < smallCount; i++) {
+            const side = Math.random() < 0.5 ? -1 : 1;
+            const z = -45 + Math.random() * 54;
+            const t = THREE.MathUtils.clamp((z + 45) / 54, 0, 1);
+            const pathHalfWidth = 2.40 + t * 3.0;
+            const x = side * (pathHalfWidth + 0.35 + Math.random() * 5.2);
+
+            dummy.position.set(
+                x,
+                0.045 + Math.random() * 0.02,
+                z
+            );
+            dummy.rotation.set(
+                0,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.2
+            );
+            const scale = 0.42 + Math.random() * 0.55;
+            dummy.scale.set(
+                scale,
+                0.42 + Math.random() * 0.55,
+                scale
+            );
+            dummy.updateMatrix();
+            smallBlades.setMatrixAt(i, dummy.matrix);
+        }
+
+        smallBlades.instanceMatrix.needsUpdate = true;
+        grassGroup.add(smallBlades);
 
         bladeGeo.computeBoundingSphere();
         crossGeo.computeBoundingSphere();
@@ -1640,7 +1686,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addEnvironmentalDepth(mapId);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
-        const groundColor = 0x78964f;
+        const groundColor = 0x6f9148;
         const groundRoughness = 0.92;
         const groundTextures = createGroundTexture('forest');
 
@@ -1686,7 +1732,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // שביל היער הכהה והמתכנס לאופק — האלמנט המרכזי של המפה.
         const pathTextures = createForestPathTexture();
         const pathMat = new THREE.MeshStandardMaterial({
-            color: 0x173d22,
+            color: 0x12371d,
             map: pathTextures.texture,
             bumpMap: pathTextures.bumpTexture,
             bumpScale: 0.055,
