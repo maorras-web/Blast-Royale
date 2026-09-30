@@ -12,9 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // סביבה צבעונית רכה ושקיעה פסטלית
     scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.FogExp2(0xdd8c55, 0.012);
+    scene.fog = new THREE.FogExp2(0xdd8c55, 0.0095);
 
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
     
     let screenLimitX = 4.8;
 
@@ -27,8 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 10.6, 22.2);
-        camera.lookAt(0, 4.35, -3.8);
+        camera.position.set(0, 8.8, 18.5);
+        camera.lookAt(0, 3.25, -5.5);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
@@ -617,7 +617,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // 3B. נפח קרקע + פרטי 3D קטנים
     // ==========================================
     function createTerrainGeometry(mapId) {
-        const geometry = new THREE.PlaneGeometry(40, 30, 32, 24);
+        const geometry = new THREE.PlaneGeometry(40, 70, 32, 48);
         const position = geometry.attributes.position;
 
         for (let i = 0; i < position.count; i++) {
@@ -1044,7 +1044,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(5.5, 4.5);
+        texture.repeat.set(5.5, 8.5);
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
@@ -1054,7 +1054,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
         bumpTexture.wrapS = THREE.RepeatWrapping;
         bumpTexture.wrapT = THREE.RepeatWrapping;
-        bumpTexture.repeat.set(5.5, 4.5);
+        bumpTexture.repeat.set(5.5, 8.5);
         bumpTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         bumpTexture.minFilter = THREE.LinearMipMapLinearFilter;
         bumpTexture.magFilter = THREE.LinearFilter;
@@ -1136,6 +1136,99 @@ window.addEventListener('DOMContentLoaded', () => {
         bumpMap.magFilter = THREE.LinearFilter;
 
         return { map, bumpMap };
+    }
+
+    // ==========================================
+    // 3D DEPTH CUES
+    // ==========================================
+    // אובייקטים בגדלים שונים לאורך ציר Z יוצרים
+    // נקודות ייחוס ברורות למרחק ומחזקים את תחושת התלת-ממד.
+    function addPerspectiveDepthDetails(mapId) {
+        const group = new THREE.Group();
+        mapGroup.add(group);
+
+        let colors;
+
+        if (mapId === 'forest') {
+            colors = [0x294b2a, 0x355d31, 0x203f28];
+        } else if (mapId === 'ice') {
+            colors = [0x8bbdce, 0xaed8e2, 0x6f9faf];
+        } else if (mapId === 'volcano') {
+            colors = [0x25201f, 0x38302e, 0x1c1818];
+        } else {
+            colors = [0x76502f, 0x8b6038, 0x624326];
+        }
+
+        const depthLayers = [
+            { z: -3.5, scale: 0.55 },
+            { z: -9.0, scale: 0.78 },
+            { z: -17.0, scale: 1.05 },
+            { z: -28.0, scale: 1.35 },
+            { z: -40.0, scale: 1.70 }
+        ];
+
+        depthLayers.forEach((layer, layerIndex) => {
+            [-1, 1].forEach(side => {
+                const scale = layer.scale * (0.88 + Math.random() * 0.22);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: colors[layerIndex % colors.length],
+                    roughness: 0.94,
+                    metalness: mapId === 'ice' ? 0.04 : 0,
+                    flatShading: true
+                });
+
+                const marker = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.72 * scale, 0),
+                    mat
+                );
+
+                marker.position.set(
+                    side * (7.0 + scale * 0.65),
+                    0.42 * scale,
+                    layer.z
+                );
+
+                marker.scale.y = 0.72 + Math.random() * 0.45;
+                marker.rotation.set(
+                    Math.random() * 0.45,
+                    Math.random() * Math.PI,
+                    Math.random() * 0.35
+                );
+
+                marker.castShadow = true;
+                marker.receiveShadow = true;
+                group.add(marker);
+
+                // סימן גובה קטן מאחוריו נותן עוד רמז לפרספקטיבה.
+                if (layerIndex >= 2) {
+                    const postMat = new THREE.MeshStandardMaterial({
+                        color: colors[(layerIndex + 1) % colors.length],
+                        roughness: 0.9,
+                        flatShading: true
+                    });
+
+                    const post = new THREE.Mesh(
+                        new THREE.CylinderGeometry(
+                            0.10 * scale,
+                            0.16 * scale,
+                            1.15 * scale,
+                            6
+                        ),
+                        postMat
+                    );
+
+                    post.position.set(
+                        side * (8.1 + scale * 0.4),
+                        0.58 * scale,
+                        layer.z - 0.45
+                    );
+
+                    post.castShadow = true;
+                    post.receiveShadow = true;
+                    group.add(post);
+                }
+            });
+        });
     }
 
     function add3DGrass(mapId) {
@@ -1241,7 +1334,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         addMesh(
-            new THREE.BoxGeometry(40, 0.55, 30),
+            new THREE.BoxGeometry(40, 0.55, 70),
             groundBaseMat,
             0,
             -0.31,
@@ -1274,13 +1367,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         addGroundDetail(mapId);
         addForegroundScenery(mapId);
+        addPerspectiveDepthDetails(mapId);
         add3DGrass(mapId);
         addWeatherParticles(mapId);
 
         if (mapId === 'desert') {
             scene.background.set(0xdd8c55);
             scene.fog.color.set(0xdd8c55);
-            scene.fog.density = 0.012;
+            scene.fog.density = 0.0095;
             sunLight.color.set(0xffe7c0);
             sunLight.intensity = 1.42;
 
@@ -1340,7 +1434,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if (mapId === 'forest') {
             scene.background.set(0x21452a);
             scene.fog.color.set(0x21452a);
-            scene.fog.density = 0.018;
+            scene.fog.density = 0.014;
             sunLight.color.set(0xfff7e8);
             sunLight.intensity = 1.30;
             [-9, -5, 5, 9].forEach((x, i) => addLowPolyTree(x, -7 - (i % 2) * 2, 1.15 + (i % 3) * 0.15));
@@ -1350,7 +1444,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if (mapId === 'ice') {
             scene.background.set(0x79b8d1);
             scene.fog.color.set(0x79b8d1);
-            scene.fog.density = 0.015;
+            scene.fog.density = 0.012;
             sunLight.color.set(0xeaf8ff);
             sunLight.intensity = 1.24;
             const mountainMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.6, flatShading: true });
@@ -1362,7 +1456,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if (mapId === 'volcano') {
             scene.background.set(0x241114);
             scene.fog.color.set(0x241114);
-            scene.fog.density = 0.02;
+            scene.fog.density = 0.0155;
             sunLight.color.set(0xffb098);
             sunLight.intensity = 1.12;
             const mountainMat = new THREE.MeshStandardMaterial({ color: 0x44403c, roughness: 1, flatShading: true });
@@ -2813,10 +2907,21 @@ window.addEventListener('DOMContentLoaded', () => {
         updateEffects();
         startNextWave();
 
-        // תנועת מצלמה כמעט בלתי מורגשת שמוסיפה עומק וחיים בלי להפריע למשחקיות.
-        const cameraTargetX = cannonGroup.position.x * 0.055;
-        camera.position.x += (cameraTargetX - camera.position.x) * 0.018;
-        camera.lookAt(camera.position.x * 0.12, 5, 0);
+        // מצלמת 3D דינמית: מעקב עדין אחרי התותח + תנועה קלה
+        // בציר Y/Z כדי שהמרחק של הסביבה יורגש יותר.
+        const cameraTargetX = cannonGroup.position.x * 0.16;
+        const cameraTargetY = 8.8 + Math.abs(cannonGroup.position.x) * 0.035;
+        const cameraTargetZ = 18.5 + Math.abs(cannonGroup.position.x) * 0.045;
+
+        camera.position.x += (cameraTargetX - camera.position.x) * 0.045;
+        camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
+        camera.position.z += (cameraTargetZ - camera.position.z) * 0.035;
+
+        const lookX = cannonGroup.position.x * 0.08;
+        const lookY = 3.25 + cannonRecoil * 0.15;
+        const lookZ = -5.5;
+
+        camera.lookAt(lookX, lookY, lookZ);
 
         renderer.render(scene, camera);
     }
