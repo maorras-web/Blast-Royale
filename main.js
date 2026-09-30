@@ -11,19 +11,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const scene = new THREE.Scene();
     
     // סביבה צבעונית רכה ושקיעה פסטלית
-    scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.Fog(0xdd8c55, 20, 90);
+    scene.background = new THREE.Color(0x5a4a50);
+    scene.fog = new THREE.Fog(0xd09a6d, 25, 92);
     // צבע דשא אחיד אחד לכל המשחק — שנה כאן כדי לשנות את כל הדשא.
     // שימו לב: בגרסת Three.js הזו צבעי חומר נכנסים לחישוב התאורה כמו שהם (בלי המרת gamma),
     // ולכן הערך נראה כהה מאוד בקוד, אבל על המסך הוא יוצא ירוק עשיר (~ #68a037).
     // אם הדשא נראה חיוור או שרוף — להחשיך את הערך; אם כהה מדי — להבהיר אותו.
-    const GRASS_GREEN = 0x112e07;
+    const GRASS_GREEN = 0x1d3b10;
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
-    const FOG_COLOR = 0xd9a36e;
-    const FOG_NEAR = 20;
-    const FOG_FAR = 108;
+    const FOG_COLOR = 0xc9956b;
+    const FOG_NEAR = 24;
+    const FOG_FAR = 92;
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -38,8 +38,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 7.45, 14.6);
-        camera.lookAt(0, 2.65, -8.4);
+        camera.position.set(0, 7.15, 14.9);
+        camera.lookAt(0, 2.50, -8.8);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
@@ -69,8 +69,23 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 0.88;
     document.body.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 1B. שכבת Color Grade קולנועית — ויזואלית בלבד
+    // ==========================================
+    const cinematicGrade = document.createElement('div');
+    cinematicGrade.setAttribute('aria-hidden', 'true');
+    Object.assign(cinematicGrade.style, {
+        position: 'fixed',
+        inset: '0',
+        pointerEvents: 'none',
+        zIndex: '5',
+        background: 'radial-gradient(ellipse at 50% 42%, rgba(255,196,112,0.02) 0%, rgba(112,54,37,0.06) 58%, rgba(18,15,24,0.30) 100%), linear-gradient(to bottom, rgba(40,34,55,0.08), rgba(255,168,88,0.03) 58%, rgba(35,24,16,0.10))',
+        mixBlendMode: 'multiply'
+    });
+    document.body.appendChild(cinematicGrade);
 
     function updateMobileViewportState() {
         const desktopBlocker = document.getElementById('desktop-blocker');
@@ -100,11 +115,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. תאורה מתקדמת ל-Low Poly
     // ==========================================
-    const hemiLight = new THREE.HemisphereLight(0xffe8c7, 0x243517, 0.44);
+    const hemiLight = new THREE.HemisphereLight(0xffe7c2, 0x172612, 0.34);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffd79b, 1.72);
-    sunLight.position.set(-13, 20, 12);
+    const sunLight = new THREE.DirectionalLight(0xffbd78, 2.05);
+    sunLight.position.set(-10, 20, 14);
     sunLight.castShadow = true;
     // טלפונים חזקים מקבלים מפת צללים חדה פי 2 (2048), שאר הטלפונים נשארים על 1024.
     const isStrongPhone = (navigator.hardwareConcurrency || 4) >= 6 && (navigator.deviceMemory || 4) >= 4;
@@ -119,15 +134,15 @@ window.addEventListener('DOMContentLoaded', () => {
     sunLight.shadow.camera.bottom = -12;
     sunLight.shadow.bias = -0.00035;
     sunLight.shadow.normalBias = 0.018;
-    sunLight.shadow.radius = 2.5;
+    sunLight.shadow.radius = 1.6;
     scene.add(sunLight);
 
-    const fillLight = new THREE.DirectionalLight(0xa8c8e8, 0.13);
+    const fillLight = new THREE.DirectionalLight(0x8fb9d8, 0.10);
     fillLight.position.set(-12, 10, 18);
     scene.add(fillLight);
 
     // אור קדמי עדין שמחזיר פרטים מהאזורים הכהים.
-    const frontLight = new THREE.DirectionalLight(0xffe2b7, 0.20);
+    const frontLight = new THREE.DirectionalLight(0xffd19a, 0.10);
     frontLight.position.set(0, 8, 20);
     scene.add(frontLight);
 
@@ -199,7 +214,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function addLavaRock(x, z, scale = 1) {
-        const darkMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.95, flatShading: true });
+        const darkMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.88, flatShading: true });
         addMesh(new THREE.DodecahedronGeometry(0.75 * scale, 0), darkMat, x, 0.55 * scale, z);
     }
 
@@ -261,10 +276,10 @@ window.addEventListener('DOMContentLoaded', () => {
         let glow = 'rgba(255, 236, 184, 0.48)';
 
         if (mapId === 'desert') {
-            top = '#4b4650';
-            middle = '#b96f4e';
-            horizon = '#f6c477';
-            glow = 'rgba(255, 201, 103, 0.72)';
+            top = '#25283d';
+            middle = '#8a5360';
+            horizon = '#f1a35f';
+            glow = 'rgba(255, 194, 104, 0.78)';
         } else if (mapId === 'forest') {
             top = '#193b46';
             middle = '#39766c';
@@ -298,20 +313,30 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(0, 280, 512, 232);
 
         // שכבה עדינה של עננות/ערפל גרפי.
-        const cloudRGB = mapId === 'desert' ? '70,58,62' : '255,255,255';
-        ctx.globalAlpha = mapId === 'desert' ? 0.32 : 0.08;
-        for (let i = 0; i < 22; i++) {
+        const cloudRGB = mapId === 'desert' ? '42,39,48' : '255,255,255';
+        ctx.globalAlpha = mapId === 'desert' ? 0.34 : 0.08;
+        for (let i = 0; i < 16; i++) {
             const x = Math.random() * 512;
-            const y = 170 + Math.random() * 220;
-            const rx = 45 + Math.random() * 85;
-            const ry = 10 + Math.random() * 20;
+            const y = 105 + Math.random() * 190;
+            const rx = 55 + Math.random() * 120;
+            const ry = 14 + Math.random() * 28;
             const cloud = ctx.createRadialGradient(x, y, 0, x, y, rx);
-            cloud.addColorStop(0, `rgba(${cloudRGB},0.7)`);
+            cloud.addColorStop(0, `rgba(${cloudRGB},0.72)`);
+            cloud.addColorStop(0.55, `rgba(${cloudRGB},0.28)`);
             cloud.addColorStop(1, `rgba(${cloudRGB},0)`);
             ctx.fillStyle = cloud;
             ctx.beginPath();
             ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
             ctx.fill();
+        }
+        // שכבת ענני-אופק חמה ורכה, בהשראת תמונת הפתיחה.
+        if (mapId === 'desert') {
+            const warmCloud = ctx.createLinearGradient(0, 315, 0, 440);
+            warmCloud.addColorStop(0, 'rgba(255,196,112,0)');
+            warmCloud.addColorStop(0.5, 'rgba(255,174,91,0.20)');
+            warmCloud.addColorStop(1, 'rgba(255,232,185,0)');
+            ctx.fillStyle = warmCloud;
+            ctx.fillRect(0, 300, 512, 150);
         }
         ctx.globalAlpha = 1;
 
@@ -341,32 +366,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function addSunGlow(mapId) {
-        let color = 0xffc96b;
+        let color = 0xffe0a8;
         if (mapId === 'forest') color = 0xd7efc1;
         if (mapId === 'ice') color = 0xe5f8ff;
         if (mapId === 'volcano') color = 0xff6a3a;
 
         const sun = new THREE.Mesh(
-            new THREE.SphereGeometry(2.65, 18, 14),
+            new THREE.SphereGeometry(2.8, 20, 14),
             new THREE.MeshBasicMaterial({
                 color,
                 transparent: true,
-                opacity: 0.72,
+                opacity: 0.58,
                 depthWrite: false,
                 fog: false
             })
         );
-        sun.position.set(-8.5, 15.5, -52);
+        sun.position.set(-10, 16.5, -52);
         sun.renderOrder = -50;
         mapGroup.add(sun);
 
         // טבעת זוהר רחבה סביב השמש — מעט גאומטריה, הרבה עומק.
         const halo = new THREE.Mesh(
-            new THREE.SphereGeometry(5.8, 18, 12),
+            new THREE.SphereGeometry(4.8, 16, 10),
             new THREE.MeshBasicMaterial({
                 color,
                 transparent: true,
-                opacity: 0.13,
+                opacity: 0.10,
                 depthWrite: false,
                 fog: false
             })
@@ -450,6 +475,19 @@ window.addEventListener('DOMContentLoaded', () => {
         addSunGlow(mapId);
 
         if (mapId === 'desert') {
+            // שכבת אובך חמה באופק — מחברת את הפירמידות לשמיים.
+            const hazeMat = new THREE.MeshBasicMaterial({
+                color: 0xffc27a,
+                transparent: true,
+                opacity: 0.075,
+                depthWrite: false,
+                fog: false
+            });
+            const haze = new THREE.Mesh(new THREE.PlaneGeometry(34, 8), hazeMat);
+            haze.position.set(0, 5.0, -35);
+            haze.renderOrder = -10;
+            mapGroup.add(haze);
+
             // שלוש שכבות של דיונות/הרים יוצרות מרחק ברור.
             // שיחים ירוקים בקצוות הקדמיים, באותו ירוק אחיד של הדשא.
             addBush(-12.0, -8.0, 0.8, GRASS_GREEN);
@@ -906,8 +944,8 @@ window.addEventListener('DOMContentLoaded', () => {
         let rimColor = 0xc6edff;
 
         if (mapId === 'desert') {
-            keyColor = 0xffc77a;
-            rimColor = 0xb8d6ff;
+            keyColor = 0xffb45f;
+            rimColor = 0x7cc5ff;
         } else if (mapId === 'forest') {
             keyColor = 0x8be28b;
             rimColor = 0x9ed6ff;
@@ -919,11 +957,11 @@ window.addEventListener('DOMContentLoaded', () => {
             rimColor = 0x6db5ff;
         }
 
-        const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : 0.22, 6.5, 2);
+        const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : (mapId === 'desert' ? 0.32 : 0.22), 6.5, 2);
         key.position.set(0, 2.7, 2.2);
         cannonGroup.add(key);
 
-        const rim = new THREE.PointLight(rimColor, 0.34, 7, 2);
+        const rim = new THREE.PointLight(rimColor, mapId === 'desert' ? 0.42 : 0.34, 7, 2);
         rim.position.set(0, 2.0, -2.4);
         cannonGroup.add(rim);
 
@@ -943,9 +981,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpCtx = bumpCanvas.getContext('2d');
 
         // צבעי דשא בהירים בצדדים — כמו ברפרנס — עם מרקם עדין.
-        const base = '#6f9148';
-        const accentA = '#7fa456';
-        const accentB = '#5e803f';
+        const base = '#47652b';
+        const accentA = '#5c7d36';
+        const accentB = '#304d20';
 
         ctx.fillStyle = base;
         ctx.fillRect(0, 0, 512, 512);
@@ -1699,7 +1737,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     new THREE.BoxGeometry(width, height, 4.5),
                     new THREE.MeshStandardMaterial({
                         color: mapId === 'desert' ? GRASS_GREEN : palette[(i + sideIndex) % palette.length],
-                        roughness: 0.96,
+                        roughness: 0.91,
                         metalness: mapId === 'ice' ? 0.03 : 0,
                         flatShading: true
                     })
@@ -1795,14 +1833,10 @@ window.addEventListener('DOMContentLoaded', () => {
             true
         );
 
-        const groundTexSet = createGroundTexture(theme);
         const terrainMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            map: groundTexSet.texture,
-            bumpMap: groundTexSet.bumpTexture,
-            bumpScale: 0.075,
+            color: groundColor,
             roughness: groundRoughness,
-            metalness: 0.01
+            metalness: 0.015
         });
 
         const terrain = addMesh(
@@ -1819,13 +1853,9 @@ window.addEventListener('DOMContentLoaded', () => {
         terrain.position.y = 0.018;
 
         // שביל היער הכהה והמתכנס לאופק — האלמנט המרכזי של המפה.
-        const pathTexSet = createForestPathTexture();
         const pathMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            map: pathTexSet.texture,
-            bumpMap: pathTexSet.bumpTexture,
-            bumpScale: 0.055,
-            roughness: 0.94,
+            color: GRASS_GREEN,
+            roughness: 0.92,
             metalness: 0
         });
         const forestPath = addMesh(
@@ -1852,56 +1882,59 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.fog.color.set(FOG_COLOR);
             scene.fog.near = FOG_NEAR;
             scene.fog.far = FOG_FAR;
-            sunLight.color.set(0xffc77f);
-            sunLight.intensity = 1.78;
-            sunLight.position.set(-14, 20, 10);
-            hemiLight.color.set(0xffe7c5);
-            hemiLight.groundColor.set(0x2f3c1d);
-            hemiLight.intensity = 0.42;
-            fillLight.intensity = 0.11;
-            frontLight.intensity = 0.22;
+            sunLight.color.set(0xffe6c0);
+            sunLight.intensity = 1.35;
+            hemiLight.color.set(0xfff0d8);
+            hemiLight.intensity = 0.50;
 
-            // פירמידות כהות ומחוספסות שממסגרות את המסלול כמו בתמונת הפתיחה.
-            // המיקומים נשארים מחוץ לאזור המשחק, לכן הלוגיקה וההתנגשויות אינן משתנות.
+            // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
+            // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
             const rockTexture = createRockTexture();
             const pyramidMatA = new THREE.MeshStandardMaterial({
-                color: 0x8b715b,
+                color: 0x725d4d,
                 map: rockTexture.map,
                 bumpMap: rockTexture.bumpMap,
-                bumpScale: 0.46,
-                roughness: 0.92,
+                bumpScale: 0.48,
+                roughness: 0.95,
                 metalness: 0.0
             });
             const pyramidMatB = new THREE.MeshStandardMaterial({
-                color: 0x6f6259,
+                color: 0x59483d,
                 map: rockTexture.map,
                 bumpMap: rockTexture.bumpMap,
                 bumpScale: 0.52,
                 roughness: 0.96,
                 metalness: 0.0
             });
-            const pyramidMatWarm = new THREE.MeshStandardMaterial({
-                color: 0xa47b54,
-                map: rockTexture.map,
-                bumpMap: rockTexture.bumpMap,
-                bumpScale: 0.40,
-                roughness: 0.90,
-                metalness: 0.0
-            });
-
-            const p1 = addMesh(new THREE.ConeGeometry(8.8, 13.2, 4, 10), pyramidMatWarm, -11.8, 6.6, -27);
+            // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
+            // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
+            const p1 = addMesh(new THREE.ConeGeometry(8.8, 13.2, 4, 12), pyramidMatA, -11.8, 6.6, -29);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(10.2, 15.0, 4, 10), pyramidMatB, 12.8, 7.5, -31);
+            const p2 = addMesh(new THREE.ConeGeometry(9.2, 13.8, 4, 12), pyramidMatA, 12.2, 6.9, -32);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(7.2, 10.6, 4, 9), pyramidMatA, 0.4, 5.3, -43);
+            const p3 = addMesh(new THREE.ConeGeometry(13.5, 14.2, 4, 14), pyramidMatB, 0, 7.1, -47);
             p3.rotation.y = Math.PI / 4;
-            const p4 = addMesh(new THREE.ConeGeometry(5.6, 8.2, 4, 8), pyramidMatB, -7.2, 4.1, -40);
-            p4.rotation.y = Math.PI / 4;
-            const p5 = addMesh(new THREE.ConeGeometry(5.0, 7.5, 4, 8), pyramidMatA, 7.8, 3.75, -45);
-            p5.rotation.y = Math.PI / 4;
 
-            addRockDecoration(-6, -5, 1.2, 0x665448);
-            addRockDecoration(7, -7, 0.85, 0x746156);
+            // פסי אור דקים בקצוות — נותנים לפירמידות מראה קולנועי בלי לשנות collision.
+            [p1, p2, p3].forEach((p, i) => {
+                const edgeMat = new THREE.MeshBasicMaterial({
+                    color: 0xffc36b,
+                    transparent: true,
+                    opacity: i === 2 ? 0.045 : 0.065,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                });
+                const edge = new THREE.Mesh(
+                    new THREE.ConeGeometry(p.geometry.parameters.radius * 0.995, p.geometry.parameters.height * 1.002, 4, 1, true),
+                    edgeMat
+                );
+                edge.position.copy(p.position);
+                edge.rotation.y = p.rotation.y;
+                edge.renderOrder = 2;
+                mapGroup.add(edge);
+            });
+            addRockDecoration(-6, -5, 1.2, 0x6b5d52);
+            addRockDecoration(7, -7, 0.85, 0x7d6d60);
 
             // פס אדמה עמוק בחזית, בהשראת החלק התחתון של תמונת הפתיחה.
             const soilMat = new THREE.MeshStandardMaterial({
@@ -2036,11 +2069,11 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     const bodyMetalMat = new THREE.MeshPhysicalMaterial({
-        color: 0x263944,
-        roughness: 0.20,
-        metalness: 0.66,
-        clearcoat: 0.52,
-        clearcoatRoughness: 0.10
+        color: 0x2d3e49,
+        roughness: 0.27,
+        metalness: 0.72,
+        clearcoat: 0.22,
+        clearcoatRoughness: 0.18
     });
 
     const edgeMetalMat = new THREE.MeshPhysicalMaterial({
@@ -2166,11 +2199,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const dome = new THREE.Mesh(
         new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshPhysicalMaterial({
-            color: 0x168dc4,
-            roughness: 0.07,
-            metalness: 0.18,
-            clearcoat: 0.88,
-            clearcoatRoughness: 0.06
+            color: 0x0d7fb8,
+            roughness: 0.12,
+            metalness: 0.38,
+            clearcoat: 0.50,
+            clearcoatRoughness: 0.12
         })
     );
     dome.position.y = 0.60;
@@ -2405,7 +2438,7 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup
     );
 
-    addCannonLighting('desert');
+    addCannonLighting(selectedMap);
 
     // צל רך מתחת לתותח - חלק מהדשא, לא פלטפורמה.
     const cannonShadow = new THREE.Mesh(
@@ -2445,7 +2478,7 @@ window.addEventListener('DOMContentLoaded', () => {
         new THREE.MeshBasicMaterial({
             color: 0x0f172a,
             transparent: true,
-            opacity: 0.13,
+            opacity: 0.10,
             depthWrite: false
         })
     );
@@ -2690,31 +2723,31 @@ window.addEventListener('DOMContentLoaded', () => {
         const bullet = new THREE.Group();
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.17, 14, 14),
-            new THREE.MeshBasicMaterial({ color: 0xffffd8 })
+            new THREE.SphereGeometry(0.13, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xfff2b0 })
         );
 
         const shell = new THREE.Mesh(
-            new THREE.SphereGeometry(0.27, 14, 14),
+            new THREE.SphereGeometry(0.20, 12, 12),
             new THREE.MeshBasicMaterial({
-                color: 0xffb51f,
+                color: 0xffc928,
                 transparent: true,
-                opacity: 0.36,
+                opacity: 0.20,
                 depthWrite: false
             })
         );
 
         const trail = new THREE.Mesh(
-            new THREE.SphereGeometry(0.11, 10, 10),
+            new THREE.SphereGeometry(0.075, 10, 10),
             new THREE.MeshBasicMaterial({
-                color: 0xff8a18,
+                color: 0xff9f1c,
                 transparent: true,
-                opacity: 0.52,
+                opacity: 0.32,
                 depthWrite: false
             })
         );
-        trail.scale.set(0.66, 4.8, 0.66);
-        trail.position.y = -0.30;
+        trail.scale.set(0.52, 2.8, 0.52);
+        trail.position.y = -0.19;
 
         bullet.add(core, shell, trail);
         bullet.position.set(x, y, z);
@@ -2765,7 +2798,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function getRockColor() {
-        return 0x5e554f;
+        return 0x3f4545;
     }
 
     // צל מגע דינמי לסלעים.
@@ -2860,15 +2893,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function spawnMuzzleFlash(x, y, z) {
         const flash = new THREE.Mesh(
-            new THREE.SphereGeometry(0.28, 10, 10),
+            new THREE.SphereGeometry(0.24, 8, 8),
             new THREE.MeshBasicMaterial({
-                color: 0xffd66b,
+                color: 0xfff1a8,
                 transparent: true,
                 opacity: 0.95
             })
         );
         flash.position.set(x, y, z);
-        flash.scale.set(0.86, 2.15, 0.86);
+        flash.scale.set(0.75, 1.8, 0.75);
         flash.userData = {
             type: 'flash',
             life: 5,
@@ -2880,7 +2913,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function spawnImpactBurst(x, y, z, color = 0xfde68a) {
-        const count = 8;
+        const count = 6;
         for (let i = 0; i < count; i++) {
             const particle = new THREE.Mesh(
                 new THREE.TetrahedronGeometry(0.08 + Math.random() * 0.06, 0),
@@ -3022,22 +3055,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function spawnCoin(x, y) {
-        const geo = new THREE.CylinderGeometry(0.30, 0.30, 0.095, 28, 1, false);
-        const mat = new THREE.MeshPhysicalMaterial({
-            color: 0xffbd24,
-            metalness: 0.92,
-            roughness: 0.14,
-            clearcoat: 0.72,
-            clearcoatRoughness: 0.08,
-            emissive: 0x4a2100,
-            emissiveIntensity: 0.16
-        });
+        const geo = new THREE.CylinderGeometry(0.28, 0.28, 0.08, 14);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xd99a18, metalness: 0.92, roughness: 0.18, emissive: 0x3a2100, emissiveIntensity: 0.12 });
         const coin = new THREE.Mesh(geo, mat);
         coin.rotation.x = Math.PI / 2;
         coin.position.set(x, y, 0);
         coin.castShadow = true;
-        coin.receiveShadow = true;
-        coin.userData = { vy: -0.04, phase: Math.random() * Math.PI * 2 };
+        coin.userData = { vy: -0.04 };
         scene.add(coin);
         droppedCoins.push(coin);
     }
@@ -3227,8 +3251,6 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         const moveDelta = targetX - cannonGroup.position.x;
         const steerAngle = THREE.MathUtils.clamp(moveDelta * -0.26, -0.18, 0.18);
-        const bodyLean = THREE.MathUtils.clamp(moveDelta * -0.018, -0.035, 0.035);
-        cannonGroup.rotation.z += (bodyLean - cannonGroup.rotation.z) * 0.12;
 
         cannonWheels.forEach(wheel => {
             const targetSteer = wheel.userData.steerable ? steerAngle : 0;
@@ -3259,10 +3281,6 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.y += 0.42;
-            if (b.userData && b.userData.core) {
-                const pulse = 1 + Math.sin(time * 0.018 + i) * 0.08;
-                b.userData.core.scale.setScalar(pulse);
-            }
 
             if (b.position.y > 18) {
                 scene.remove(b);
@@ -3415,11 +3433,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.position.y += c.userData.vy;
             }
 
-            c.rotation.z += 0.045;
-            c.rotation.y += 0.055;
-            c.rotation.x = Math.PI / 2 + Math.sin(time * 0.004 + (c.userData.phase || 0)) * 0.18;
-            const coinPulse = 1 + Math.sin(time * 0.006 + (c.userData.phase || 0)) * 0.035;
-            c.scale.setScalar(coinPulse);
+            c.rotation.z += 0.05;
 
             if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.55) < 1.0) {
                 coins += 5;
@@ -3441,16 +3455,16 @@ window.addEventListener('DOMContentLoaded', () => {
         // מצלמת 3D דינמית: מעקב עדין אחרי התותח + תנועה קלה
         // בציר Y/Z כדי שהמרחק של הסביבה יורגש יותר.
         const cameraTargetX = cannonGroup.position.x * 0.16;
-        const cameraTargetY = 7.8 + Math.abs(cannonGroup.position.x) * 0.035;
-        const cameraTargetZ = 15.0 + Math.abs(cannonGroup.position.x) * 0.045;
+        const cameraTargetY = 7.5 + Math.abs(cannonGroup.position.x) * 0.035;
+        const cameraTargetZ = 15.3 + Math.abs(cannonGroup.position.x) * 0.045;
 
         camera.position.x += (cameraTargetX - camera.position.x) * 0.045;
         camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
         camera.position.z += (cameraTargetZ - camera.position.z) * 0.035;
 
         const lookX = cannonGroup.position.x * 0.08;
-        const lookY = 2.55 + cannonRecoil * 0.15;
-        const lookZ = -7.5;
+        const lookY = 2.45 + cannonRecoil * 0.15;
+        const lookZ = -8.1;
 
         camera.lookAt(lookX, lookY, lookZ);
 
