@@ -12,9 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // סביבה צבעונית רכה ושקיעה פסטלית
     scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.FogExp2(0xdd8c55, 0.0095);
+    scene.fog = new THREE.FogExp2(0xdd8c55, 0.0072);
 
-    const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     
     let screenLimitX = 4.8;
 
@@ -27,8 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 8.8, 18.5);
-        camera.lookAt(0, 3.25, -5.5);
+        camera.position.set(0, 7.8, 15.0);
+        camera.lookAt(0, 2.55, -7.5);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
@@ -617,16 +617,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // 3B. נפח קרקע + פרטי 3D קטנים
     // ==========================================
     function createTerrainGeometry(mapId) {
-        const geometry = new THREE.PlaneGeometry(40, 70, 32, 48);
+        const geometry = new THREE.PlaneGeometry(40, 90, 32, 60);
         const position = geometry.attributes.position;
 
         for (let i = 0; i < position.count; i++) {
             const x = position.getX(i);
             const z = position.getY(i);
 
-            const waveA = Math.sin(x * 0.42 + z * 0.18) * 0.052;
-            const waveB = Math.cos(z * 0.55 - x * 0.22) * 0.036;
-            const waveC = Math.sin((x + z) * 0.9) * 0.018;
+            const waveA = Math.sin(x * 0.42 + z * 0.18) * 0.105;
+            const waveB = Math.cos(z * 0.55 - x * 0.22) * 0.070;
+            const waveC = Math.sin((x + z) * 0.9) * 0.032;
 
             let height = waveA + waveB + waveC;
 
@@ -1044,7 +1044,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(5.5, 8.5);
+        texture.repeat.set(5.5, 11.5);
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
@@ -1054,7 +1054,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
         bumpTexture.wrapS = THREE.RepeatWrapping;
         bumpTexture.wrapT = THREE.RepeatWrapping;
-        bumpTexture.repeat.set(5.5, 8.5);
+        bumpTexture.repeat.set(5.5, 11.5);
         bumpTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         bumpTexture.minFilter = THREE.LinearMipMapLinearFilter;
         bumpTexture.magFilter = THREE.LinearFilter;
@@ -1160,11 +1160,12 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         const depthLayers = [
-            { z: -3.5, scale: 0.55 },
-            { z: -9.0, scale: 0.78 },
-            { z: -17.0, scale: 1.05 },
-            { z: -28.0, scale: 1.35 },
-            { z: -40.0, scale: 1.70 }
+            { z: -2.5, scale: 0.42 },
+            { z: -7.0, scale: 0.60 },
+            { z: -13.0, scale: 0.82 },
+            { z: -21.0, scale: 1.08 },
+            { z: -32.0, scale: 1.38 },
+            { z: -45.0, scale: 1.72 }
         ];
 
         depthLayers.forEach((layer, layerIndex) => {
@@ -1305,6 +1306,102 @@ window.addEventListener('DOMContentLoaded', () => {
         grassGroup.add(edgeBlades);
     }
 
+    // ==========================================
+    // 3D WORLD CORRIDOR — שכבות עומק אמיתיות
+    // ==========================================
+    function addDeepPerspectiveCorridor(mapId) {
+        const group = new THREE.Group();
+        mapGroup.add(group);
+
+        const palettes = {
+            desert: [0x76502f, 0x8a6039, 0x5f4229],
+            forest: [0x2b542e, 0x3b6938, 0x234526],
+            ice: [0x86b7c8, 0xa6cfdb, 0x6d9cac],
+            volcano: [0x292322, 0x3a302e, 0x211b1b]
+        };
+        const palette = palettes[mapId] || palettes.forest;
+
+        // שולי מסלול מדורגים יוצרים קווי עומק רציפים.
+        for (let sideIndex = 0; sideIndex < 2; sideIndex++) {
+            const side = sideIndex === 0 ? -1 : 1;
+
+            for (let i = 0; i < 12; i++) {
+                const z = 2.0 - i * 4.25;
+                const depth = Math.max(0, -z);
+                const x = side * (6.0 + depth * 0.035);
+                const width = 2.2 + depth * 0.018;
+                const height = 0.28 + depth * 0.006;
+
+                const shoulder = new THREE.Mesh(
+                    new THREE.BoxGeometry(width, height, 4.5),
+                    new THREE.MeshStandardMaterial({
+                        color: palette[(i + sideIndex) % palette.length],
+                        roughness: 0.96,
+                        metalness: mapId === 'ice' ? 0.03 : 0,
+                        flatShading: true
+                    })
+                );
+
+                shoulder.position.set(side * (6.0 + depth * 0.035), -0.03 + height * 0.45, z);
+                shoulder.rotation.y = side * (0.035 + i * 0.002);
+                shoulder.receiveShadow = true;
+                shoulder.castShadow = i < 5;
+                group.add(shoulder);
+            }
+        }
+
+        // אבני מסגרת בגדלים שונים לאורך הציר.
+        const markerDistances = [-3, -8, -15, -24, -35, -48];
+        markerDistances.forEach((z, index) => {
+            const depth = Math.abs(z);
+            const scale = Math.max(0.22, 0.82 - depth * 0.0105);
+
+            [-1, 1].forEach(side => {
+                const marker = new THREE.Mesh(
+                    new THREE.IcosahedronGeometry(scale, 1),
+                    new THREE.MeshStandardMaterial({
+                        color: palette[(index + 1) % palette.length],
+                        roughness: 0.90,
+                        flatShading: true
+                    })
+                );
+
+                marker.position.set(side * (7.1 + depth * 0.025), scale * 0.45, z);
+                marker.scale.y = 0.65 + index * 0.025;
+                marker.rotation.set(0.12 * index, index * 0.65, side * 0.08);
+                marker.castShadow = true;
+                marker.receiveShadow = true;
+                group.add(marker);
+            });
+        });
+
+        // צלליות רחוקות יוצרות שכבה נוספת של עומק.
+        const farGroup = new THREE.Group();
+        group.add(farGroup);
+
+        for (let i = 0; i < 18; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const z = -18 - Math.random() * 34;
+            const x = side * (8.0 + Math.random() * 5.0);
+            const h = 0.6 + Math.random() * 1.7;
+            const w = 0.45 + Math.random() * 0.75;
+
+            const silhouette = new THREE.Mesh(
+                new THREE.ConeGeometry(w, h, 5),
+                new THREE.MeshStandardMaterial({
+                    color: palette[i % palette.length],
+                    roughness: 1,
+                    flatShading: true
+                })
+            );
+
+            silhouette.position.set(x, h * 0.5, z);
+            silhouette.rotation.y = Math.random() * Math.PI;
+            silhouette.receiveShadow = true;
+            farGroup.add(silhouette);
+        }
+    }
+
     function buildMap(mapId) {
         clearMapGroup();
 
@@ -1334,7 +1431,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         addMesh(
-            new THREE.BoxGeometry(40, 0.55, 70),
+            new THREE.BoxGeometry(40, 0.55, 90),
             groundBaseMat,
             0,
             -0.31,
@@ -1368,6 +1465,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addGroundDetail(mapId);
         addForegroundScenery(mapId);
         addPerspectiveDepthDetails(mapId);
+        addDeepPerspectiveCorridor(mapId);
         add3DGrass(mapId);
         addWeatherParticles(mapId);
 
@@ -2910,16 +3008,16 @@ window.addEventListener('DOMContentLoaded', () => {
         // מצלמת 3D דינמית: מעקב עדין אחרי התותח + תנועה קלה
         // בציר Y/Z כדי שהמרחק של הסביבה יורגש יותר.
         const cameraTargetX = cannonGroup.position.x * 0.16;
-        const cameraTargetY = 8.8 + Math.abs(cannonGroup.position.x) * 0.035;
-        const cameraTargetZ = 18.5 + Math.abs(cannonGroup.position.x) * 0.045;
+        const cameraTargetY = 7.8 + Math.abs(cannonGroup.position.x) * 0.035;
+        const cameraTargetZ = 15.0 + Math.abs(cannonGroup.position.x) * 0.045;
 
         camera.position.x += (cameraTargetX - camera.position.x) * 0.045;
         camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
         camera.position.z += (cameraTargetZ - camera.position.z) * 0.035;
 
         const lookX = cannonGroup.position.x * 0.08;
-        const lookY = 3.25 + cannonRecoil * 0.15;
-        const lookZ = -5.5;
+        const lookY = 2.55 + cannonRecoil * 0.15;
+        const lookZ = -7.5;
 
         camera.lookAt(lookX, lookY, lookZ);
 
