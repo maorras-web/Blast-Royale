@@ -6,11 +6,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. הגדרת סצנה וגרפיקה נקייה
+    // 1. הגדרת סצנה וגרפיקה
     // ==========================================
     const scene = new THREE.Scene();
-    
-    // סביבה צבעונית רכה ושקיעה פסטלית
+
     scene.background = new THREE.Color(0xdd8c55);
     scene.fog = new THREE.FogExp2(0xdd8c55, 0.012);
 
@@ -20,7 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
         0.1,
         1000
     );
-    
+
     let screenLimitX = 7.5;
 
     function updateCameraForDevice() {
@@ -29,7 +28,7 @@ window.addEventListener('DOMContentLoaded', () => {
             window.innerHeight;
 
         camera.aspect = aspect;
-        
+
         if (aspect < 1) {
             // מובייל - קומפוזיציה אנכית
             camera.position.set(
@@ -47,7 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
             screenLimitX = 4.8;
 
         } else {
-            // דפדפן שולחני - קרוב יותר כדי לשמור על תחושת מובייל
+            // מחשב - עדיין שומר על קומפוזיציה קרובה יותר
             camera.position.set(
                 0,
                 9.5,
@@ -69,6 +68,18 @@ window.addEventListener('DOMContentLoaded', () => {
             window.innerWidth,
             window.innerHeight
         );
+
+        renderer.setPixelRatio(
+            window.innerWidth <= 768
+                ? Math.min(
+                    window.devicePixelRatio || 1,
+                    1.5
+                )
+                : Math.min(
+                    window.devicePixelRatio || 1,
+                    2
+                )
+        );
     }
 
     const renderer =
@@ -83,10 +94,15 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
     renderer.setPixelRatio(
-        Math.min(
-            window.devicePixelRatio,
-            2
-        )
+        window.innerWidth <= 768
+            ? Math.min(
+                window.devicePixelRatio || 1,
+                1.5
+            )
+            : Math.min(
+                window.devicePixelRatio || 1,
+                2
+            )
     );
 
     renderer.shadowMap.enabled = true;
@@ -94,10 +110,14 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer.shadowMap.type =
         THREE.PCFSoftShadowMap;
 
+    renderer.outputEncoding =
+        THREE.sRGBEncoding;
+
     renderer.toneMapping =
         THREE.ACESFilmicToneMapping;
 
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure =
+        1.05;
 
     document.body.appendChild(
         renderer.domElement
@@ -106,13 +126,14 @@ window.addEventListener('DOMContentLoaded', () => {
     updateCameraForDevice();
 
     // ==========================================
-    // 2. תאורה מתקדמת ל-Low Poly
+    // 2. תאורה מתקדמת
     // ==========================================
+
     const hemiLight =
         new THREE.HemisphereLight(
-            0xffedd5,
-            0x7c2d12,
-            0.75
+            0xfff4dc,
+            0x35521f,
+            0.50
         );
 
     scene.add(
@@ -121,14 +142,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const sunLight =
         new THREE.DirectionalLight(
-            0xfff7ed,
-            1.3
+            0xfff7e8,
+            1.55
         );
 
     sunLight.position.set(
-        12,
-        22,
-        16
+        11,
+        24,
+        13
     );
 
     sunLight.castShadow =
@@ -144,18 +165,47 @@ window.addEventListener('DOMContentLoaded', () => {
         0.5;
 
     sunLight.shadow.camera.far =
-        50;
+        60;
+
+    sunLight.shadow.camera.left =
+        -22;
+
+    sunLight.shadow.camera.right =
+        22;
+
+    sunLight.shadow.camera.top =
+        26;
+
+    sunLight.shadow.camera.bottom =
+        -12;
 
     sunLight.shadow.bias =
-        -0.0005;
+        -0.00035;
 
     scene.add(
         sunLight
     );
 
+    const fillLight =
+        new THREE.DirectionalLight(
+            0xb8d8ff,
+            0.18
+        );
+
+    fillLight.position.set(
+        -12,
+        10,
+        18
+    );
+
+    scene.add(
+        fillLight
+    );
+
     // ==========================================
     // 3. מערכת מפות
     // ==========================================
+
     const mapGroup =
         new THREE.Group();
 
@@ -204,6 +254,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
 
     try {
+
         const savedPurchased =
             JSON.parse(
                 localStorage.getItem(
@@ -217,6 +268,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 savedPurchased
             )
         ) {
+
             purchasedMaps =
                 Array.from(
                     new Set([
@@ -224,11 +276,13 @@ window.addEventListener('DOMContentLoaded', () => {
                         ...savedPurchased
                     ])
                 ).filter(
-                    id => MAPS[id]
+                    id =>
+                        MAPS[id]
                 );
         }
 
     } catch (e) {
+
         purchasedMaps = [
             'desert'
         ];
@@ -239,6 +293,7 @@ window.addEventListener('DOMContentLoaded', () => {
             selectedMap
         )
     ) {
+
         selectedMap =
             'desert';
     }
@@ -258,12 +313,26 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (
                         child.geometry
                     ) {
+
                         child.geometry.dispose();
                     }
 
                     if (
                         child.material
                     ) {
+
+                        const disposeMaterial =
+                            material => {
+
+                                if (
+                                    material.map
+                                ) {
+
+                                    material.map.dispose();
+                                }
+
+                                material.dispose();
+                            };
 
                         if (
                             Array.isArray(
@@ -272,13 +341,14 @@ window.addEventListener('DOMContentLoaded', () => {
                         ) {
 
                             child.material.forEach(
-                                material =>
-                                    material.dispose()
+                                disposeMaterial
                             );
 
                         } else {
 
-                            child.material.dispose();
+                            disposeMaterial(
+                                child.material
+                            );
                         }
                     }
                 }
@@ -511,7 +581,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     7
                 ),
                 cactusMat,
-                x + 0.24 * scale,
+                x +
+                0.24 * scale,
                 0.75 * scale,
                 z,
                 true,
@@ -528,13 +599,336 @@ window.addEventListener('DOMContentLoaded', () => {
                 6
             ),
             cactusMat,
-            x + 0.51 * scale,
+            x +
+            0.51 * scale,
             0.97 * scale,
             z,
             true,
             true
         );
     }
+
+    // ==========================================
+    // טקסטורת קרקע פרוצדורלית
+    // ==========================================
+
+    function createGroundTexture(
+        mapId
+    ) {
+
+        const canvas =
+            document.createElement(
+                'canvas'
+            );
+
+        canvas.width =
+            256;
+
+        canvas.height =
+            256;
+
+        const ctx =
+            canvas.getContext(
+                '2d'
+            );
+
+        let base =
+            '#54771f';
+
+        let specks = [
+            '#668b28',
+            '#3f5f18',
+            '#718f31'
+        ];
+
+        if (
+            mapId ===
+            'forest'
+        ) {
+
+            base =
+                '#304f20';
+
+            specks = [
+                '#3b6127',
+                '#27431b',
+                '#486d2d'
+            ];
+
+        } else if (
+            mapId ===
+            'ice'
+        ) {
+
+            base =
+                '#b9dce7';
+
+            specks = [
+                '#d9f2f7',
+                '#8fc5d5',
+                '#a9d4df'
+            ];
+
+        } else if (
+            mapId ===
+            'volcano'
+        ) {
+
+            base =
+                '#34302d';
+
+            specks = [
+                '#4a4541',
+                '#211f1e',
+                '#5a514a'
+            ];
+        }
+
+        ctx.fillStyle =
+            base;
+
+        ctx.fillRect(
+            0,
+            0,
+            256,
+            256
+        );
+
+        // נקודות קטנות שמוסיפות מרקם
+        for (
+            let i = 0;
+            i < 900;
+            i++
+        ) {
+
+            const x =
+                Math.random() *
+                256;
+
+            const y =
+                Math.random() *
+                256;
+
+            const size =
+                1 +
+                Math.random() *
+                4;
+
+            ctx.globalAlpha =
+                0.08 +
+                Math.random() *
+                0.18;
+
+            ctx.fillStyle =
+                specks[
+                    i %
+                    specks.length
+                ];
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                size,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
+
+        ctx.globalAlpha =
+            1;
+
+        // קווי עשב במדבר / יער
+        if (
+            mapId === 'desert' ||
+            mapId === 'forest'
+        ) {
+
+            for (
+                let i = 0;
+                i < 140;
+                i++
+            ) {
+
+                const x =
+                    Math.random() *
+                    256;
+
+                const y =
+                    Math.random() *
+                    256;
+
+                ctx.strokeStyle =
+                    mapId === 'forest'
+                        ? 'rgba(125,160,72,0.18)'
+                        : 'rgba(180,205,100,0.14)';
+
+                ctx.lineWidth =
+                    0.6;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    x,
+                    y
+                );
+
+                ctx.lineTo(
+                    x +
+                    (
+                        Math.random() -
+                        0.5
+                    ) *
+                    1.8,
+
+                    y -
+                    2 -
+                    Math.random() *
+                    5
+                );
+
+                ctx.stroke();
+            }
+
+        } else if (
+            mapId ===
+            'ice'
+        ) {
+
+            // סדקים עדינים בקרח
+            for (
+                let i = 0;
+                i < 55;
+                i++
+            ) {
+
+                const x =
+                    Math.random() *
+                    256;
+
+                const y =
+                    Math.random() *
+                    256;
+
+                ctx.strokeStyle =
+                    'rgba(72,130,150,0.18)';
+
+                ctx.lineWidth =
+                    1;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    x,
+                    y
+                );
+
+                ctx.lineTo(
+                    x +
+                    (
+                        Math.random() -
+                        0.5
+                    ) *
+                    22,
+
+                    y +
+                    Math.random() *
+                    12
+                );
+
+                ctx.stroke();
+            }
+
+        } else if (
+            mapId ===
+            'volcano'
+        ) {
+
+            // סדקים באדמה
+            for (
+                let i = 0;
+                i < 70;
+                i++
+            ) {
+
+                const x =
+                    Math.random() *
+                    256;
+
+                const y =
+                    Math.random() *
+                    256;
+
+                ctx.strokeStyle =
+                    'rgba(110,80,60,0.22)';
+
+                ctx.lineWidth =
+                    1;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    x,
+                    y
+                );
+
+                ctx.lineTo(
+                    x +
+                    10 +
+                    Math.random() *
+                    22,
+
+                    y +
+                    (
+                        Math.random() -
+                        0.5
+                    ) *
+                    8
+                );
+
+                ctx.stroke();
+            }
+        }
+
+        const texture =
+            new THREE.CanvasTexture(
+                canvas
+            );
+
+        texture.wrapS =
+            THREE.RepeatWrapping;
+
+        texture.wrapT =
+            THREE.RepeatWrapping;
+
+        texture.repeat.set(
+            6,
+            5
+        );
+
+        texture.anisotropy =
+            Math.min(
+                4,
+                renderer
+                    .capabilities
+                    .getMaxAnisotropy()
+            );
+
+        texture.encoding =
+            THREE.sRGBEncoding;
+
+        texture.needsUpdate =
+            true;
+
+        return texture;
+    }
+
+    // ==========================================
+    // בניית המפה
+    // ==========================================
 
     function buildMap(
         mapId
@@ -559,14 +953,17 @@ window.addEventListener('DOMContentLoaded', () => {
             mapId ===
             'forest'
         ) {
+
             groundColor =
                 0x365314;
+
         }
 
         if (
             mapId ===
             'ice'
         ) {
+
             groundColor =
                 0xbfe7f5;
 
@@ -578,6 +975,7 @@ window.addEventListener('DOMContentLoaded', () => {
             mapId ===
             'volcano'
         ) {
+
             groundColor =
                 0x292524;
 
@@ -585,11 +983,17 @@ window.addEventListener('DOMContentLoaded', () => {
                 0.95;
         }
 
+        const groundTexture =
+            createGroundTexture(
+                mapId
+            );
+
         const grassMat =
             new THREE.MeshStandardMaterial({
                 color: groundColor,
+                map: groundTexture,
                 roughness: groundRoughness,
-                metalness: 0.03
+                metalness: 0.015
             });
 
         addMesh(
@@ -605,6 +1009,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // DESERT
         // ======================================
+
         if (
             mapId ===
             'desert'
@@ -721,6 +1126,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 1.0
             );
 
+        // ======================================
+        // FOREST
+        // ======================================
+
         } else if (
             mapId ===
             'forest'
@@ -751,6 +1160,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             i % 2
                         ) *
                         2,
+
                         1.15 +
                         (
                             i % 3
@@ -784,6 +1194,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 1.0,
                 0x475569
             );
+
+        // ======================================
+        // ICE
+        // ======================================
 
         } else if (
             mapId ===
@@ -819,14 +1233,19 @@ window.addEventListener('DOMContentLoaded', () => {
                             new THREE.ConeGeometry(
                                 7 +
                                 i * 2,
+
                                 13 +
                                 i * 4,
+
                                 5
                             ),
                             mountainMat,
+
                             x,
+
                             6.5 +
                             i * 2,
+
                             -15
                         );
 
@@ -857,6 +1276,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     0.8
                 );
             }
+
+        // ======================================
+        // VOLCANO
+        // ======================================
 
         } else if (
             mapId ===
@@ -931,6 +1354,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             i % 2
                         ) *
                         3,
+
                         0.9 +
                         (
                             i % 2
@@ -946,8 +1370,9 @@ window.addEventListener('DOMContentLoaded', () => {
     );
 
     // ==========================================
-    // 4. עיצוב התותח - גרסה משופצת
+    // 4. תותח משופר
     // ==========================================
+
     const cannonGroup =
         new THREE.Group();
 
@@ -963,9 +1388,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const baseMat =
         new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            roughness: 0.38,
-            metalness: 0.35
+            color: 0x25313b,
+            roughness: 0.30,
+            metalness: 0.58
         });
 
     const base =
@@ -987,7 +1412,7 @@ window.addEventListener('DOMContentLoaded', () => {
         base
     );
 
-    // מסגרת קדמית שמרככת את הצורה הקופסתית
+    // מסגרת קדמית
     const frontRing =
         new THREE.Mesh(
             new THREE.CylinderGeometry(
@@ -996,6 +1421,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 0.22,
                 24
             ),
+
             new THREE.MeshStandardMaterial({
                 color: 0x0f172a,
                 roughness: 0.35,
@@ -1019,6 +1445,7 @@ window.addEventListener('DOMContentLoaded', () => {
         frontRing
     );
 
+    // כיפת התותח
     const domeGeo =
         new THREE.SphereGeometry(
             0.9,
@@ -1032,11 +1459,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const domeMat =
         new THREE.MeshStandardMaterial({
-            color: 0x0284c7,
-            roughness: 0.2,
-            metalness: 0.1,
+            color: 0x0b7db8,
+            roughness: 0.16,
+            metalness: 0.28,
             transparent: true,
-            opacity: 0.92
+            opacity: 0.95
         });
 
     const dome =
@@ -1055,9 +1482,10 @@ window.addEventListener('DOMContentLoaded', () => {
         dome
     );
 
-    // גלגלים:
-    // אין סיבוב 360° בזמן תנועה.
-    // הם רק משנים זווית היגוי.
+    // ==========================================
+    // גלגלים
+    // ==========================================
+
     const wheelGeo =
         new THREE.CylinderGeometry(
             0.39,
@@ -1068,9 +1496,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const wheelMat =
         new THREE.MeshStandardMaterial({
-            color: 0x0f172a,
-            roughness: 0.72,
-            metalness: 0.05
+            color: 0x111827,
+            roughness: 0.90,
+            metalness: 0.02
         });
 
     const cannonWheels = [];
@@ -1083,7 +1511,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
 
     wheelPositions.forEach(
-        (pos, index) => {
+        pos => {
 
             const wheel =
                 new THREE.Mesh(
@@ -1091,6 +1519,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     wheelMat
                 );
 
+            // מצב גלגל בסיסי
             wheel.rotation.z =
                 Math.PI / 2;
 
@@ -1101,8 +1530,7 @@ window.addEventListener('DOMContentLoaded', () => {
             wheel.castShadow =
                 true;
 
-            // חזית התותח יכולה להציג היגוי;
-            // האחוריים נשארים קבועים.
+            // רק הגלגלים הקדמיים מנווטים
             wheel.userData.steerable =
                 pos[2] > 0;
 
@@ -1124,6 +1552,43 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     );
 
+    // נאבות לגלגלים
+    cannonWheels.forEach(
+        wheel => {
+
+            const hub =
+                new THREE.Mesh(
+                    new THREE.CylinderGeometry(
+                        0.13,
+                        0.13,
+                        0.26,
+                        12
+                    ),
+
+                    new THREE.MeshStandardMaterial({
+                        color: 0x64748b,
+                        roughness: 0.34,
+                        metalness: 0.72
+                    })
+                );
+
+            hub.rotation.z =
+                Math.PI / 2;
+
+            hub.position.copy(
+                wheel.position
+            );
+
+            hub.castShadow =
+                true;
+
+            cannonGroup.add(
+                hub
+            );
+        }
+    );
+
+    // קנים
     const barrelGeo =
         new THREE.CylinderGeometry(
             0.13,
@@ -1182,18 +1647,21 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup
     );
 
-    // צל רך מתחת לתותח.
-    // חלק מהדשא ולא פלטפורמה.
+    // ==========================================
+    // צל מתחת לתותח
+    // ==========================================
+
     const cannonShadow =
         new THREE.Mesh(
             new THREE.CircleGeometry(
                 1.35,
                 28
             ),
+
             new THREE.MeshBasicMaterial({
                 color: 0x1f2937,
                 transparent: true,
-                opacity: 0.16,
+                opacity: 0.20,
                 depthWrite: false
             })
         );
@@ -1214,9 +1682,41 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonShadow
     );
 
+    const cannonShadowSoft =
+        new THREE.Mesh(
+            new THREE.CircleGeometry(
+                0.9,
+                24
+            ),
+
+            new THREE.MeshBasicMaterial({
+                color: 0x0f172a,
+                transparent: true,
+                opacity: 0.09,
+                depthWrite: false
+            })
+        );
+
+    cannonShadowSoft.rotation.x =
+        -Math.PI / 2;
+
+    cannonShadowSoft.position.y =
+        0.018;
+
+    cannonShadowSoft.scale.set(
+        1.05,
+        0.55,
+        1
+    );
+
+    scene.add(
+        cannonShadowSoft
+    );
+
     // ==========================================
     // 5. משתני משחק
     // ==========================================
+
     let isGameStarted =
         false;
 
@@ -1303,8 +1803,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const effects = [];
 
     // ==========================================
-    // 6. אלמנטים של UI
+    // 6. UI
     // ==========================================
+
     const coinsValEl =
         document.getElementById(
             'coins-val'
@@ -1419,6 +1920,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 `LEVEL ${level}`;
         }
 
+        // מחירי שדרוגים
         const powerCost =
             firePowerLvl *
             50;
@@ -1494,6 +1996,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // UI מפות
         mapButtons.forEach(
             btn => {
 
@@ -1503,7 +2006,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 const map =
                     MAPS[mapId];
 
-                if (!map) return;
+                if (!map) {
+                    return;
+                }
 
                 const owned =
                     purchasedMaps.includes(
@@ -1525,6 +2030,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     );
 
                 if (action) {
+
                     action.innerText =
                         selected
                             ? 'נבחרה'
@@ -1534,6 +2040,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (state) {
+
                     state.innerText =
                         selected
                             ? 'ACTIVE'
@@ -1563,6 +2070,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 7. חנות מפות
     // ==========================================
+
     mapButtons.forEach(
         btn => {
 
@@ -1576,13 +2084,16 @@ window.addEventListener('DOMContentLoaded', () => {
                     const map =
                         MAPS[mapId];
 
-                    if (!map) return;
+                    if (!map) {
+                        return;
+                    }
 
                     const owned =
                         purchasedMaps.includes(
                             mapId
                         );
 
+                    // קנייה
                     if (!owned) {
 
                         if (
@@ -1612,6 +2123,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         );
                     }
 
+                    // בחירה
                     selectedMap =
                         mapId;
 
@@ -1633,6 +2145,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 8. שדרוגים
     // ==========================================
+
     if (buyPowerBtn) {
 
         buyPowerBtn.addEventListener(
@@ -1760,6 +2273,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 9. סאונד
     // ==========================================
+
     let audioCtx =
         null;
 
@@ -1797,6 +2311,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.state ===
             'suspended'
         ) {
+
             ctx.resume();
         }
 
@@ -1922,8 +2437,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 10. יצירת כדורים
+    // 10. כדורים
     // ==========================================
+
     function spawnBullet(
         x,
         y,
@@ -1940,6 +2456,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     10,
                     10
                 ),
+
                 new THREE.MeshBasicMaterial({
                     color: 0xfff59d
                 })
@@ -1952,6 +2469,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     8,
                     8
                 ),
+
                 new THREE.MeshBasicMaterial({
                     color: 0xfacc15,
                     transparent: true,
@@ -1993,18 +2511,24 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // ==========================================
+    // סלע Low-Poly ריאליסטי יותר
+    // ==========================================
+
     function createIrregularRockGeometry(
         size
     ) {
 
         const geo =
-            new THREE.DodecahedronGeometry(
+            new THREE.IcosahedronGeometry(
                 size,
-                0
+                1
             );
 
         const position =
             geo.attributes.position;
+
+        const colors = [];
 
         for (
             let i = 0;
@@ -2024,25 +2548,79 @@ window.addEventListener('DOMContentLoaded', () => {
             const factorX =
                 0.82 +
                 Math.random() *
-                0.30;
+                0.32;
 
             const factorY =
-                0.78 +
+                0.72 +
                 Math.random() *
-                0.36;
+                0.34;
 
             const factorZ =
                 0.84 +
                 Math.random() *
-                0.28;
+                0.30;
+
+            const jitter =
+                0.93 +
+                Math.random() *
+                0.14;
 
             position.setXYZ(
                 i,
-                ox * factorX,
-                oy * factorY,
-                oz * factorZ
+
+                ox *
+                factorX *
+                jitter,
+
+                oy *
+                factorY,
+
+                oz *
+                factorZ *
+                jitter
+            );
+
+            const shade =
+                0.72 +
+                (
+                    position.getY(i) /
+                    Math.max(
+                        size,
+                        0.001
+                    ) +
+                    1
+                ) *
+                0.11 +
+                Math.random() *
+                0.08;
+
+            colors.push(
+                Math.min(
+                    1,
+                    shade
+                ),
+
+                Math.min(
+                    1,
+                    shade *
+                    0.94
+                ),
+
+                Math.min(
+                    1,
+                    shade *
+                    0.88
+                )
             );
         }
+
+        geo.setAttribute(
+            'color',
+            new THREE.Float32BufferAttribute(
+                colors,
+                3
+            )
+        );
 
         geo.computeVertexNormals();
 
@@ -2055,6 +2633,7 @@ window.addEventListener('DOMContentLoaded', () => {
             selectedMap ===
             'forest'
         ) {
+
             return 0x58656b;
         }
 
@@ -2062,6 +2641,7 @@ window.addEventListener('DOMContentLoaded', () => {
             selectedMap ===
             'ice'
         ) {
+
             return 0x6f8792;
         }
 
@@ -2069,6 +2649,7 @@ window.addEventListener('DOMContentLoaded', () => {
             selectedMap ===
             'volcano'
         ) {
+
             return 0x46413e;
         }
 
@@ -2092,9 +2673,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const mat =
             new THREE.MeshStandardMaterial({
                 color: getRockColor(),
-                roughness: 0.82,
-                metalness: 0.02,
-                flatShading: true
+                vertexColors: true,
+                roughness: 0.92,
+                metalness: 0.0,
+                flatShading: false
             });
 
         const rock =
@@ -2125,6 +2707,10 @@ window.addEventListener('DOMContentLoaded', () => {
             Math.random() *
             0.6
         );
+
+        // ======================================
+        // מספר HP
+        // ======================================
 
         const canvas =
             document.createElement(
@@ -2229,21 +2815,21 @@ window.addEventListener('DOMContentLoaded', () => {
                     Math.random() -
                     0.5
                 ) *
-                0.045,
+                0.032,
 
             rotY:
                 (
                     Math.random() -
                     0.5
                 ) *
-                0.055,
+                0.038,
 
             rotZ:
                 (
                     Math.random() -
                     0.5
                 ) *
-                0.04,
+                0.028,
 
             ctx,
 
@@ -2262,6 +2848,10 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // ==========================================
+    // הבזק ירייה
+    // ==========================================
+
     function spawnMuzzleFlash(
         x,
         y,
@@ -2275,6 +2865,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     8,
                     8
                 ),
+
                 new THREE.MeshBasicMaterial({
                     color: 0xfff1a8,
                     transparent: true,
@@ -2310,6 +2901,10 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // ==========================================
+    // ניצוצות פגיעה
+    // ==========================================
+
     function spawnImpactBurst(
         x,
         y,
@@ -2332,8 +2927,10 @@ window.addEventListener('DOMContentLoaded', () => {
                         0.08 +
                         Math.random() *
                         0.06,
+
                         0
                     ),
+
                     new THREE.MeshBasicMaterial({
                         color,
                         transparent: true,
@@ -2411,6 +3008,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ==========================================
+    // אבק
+    // ==========================================
+
     function spawnDustBurst(
         x,
         y,
@@ -2432,9 +3033,11 @@ window.addEventListener('DOMContentLoaded', () => {
                         0.10 +
                         Math.random() *
                         0.08,
+
                         7,
                         7
                     ),
+
                     new THREE.MeshBasicMaterial({
                         color: 0xd6b58a,
                         transparent: true,
@@ -2452,6 +3055,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 Math.max(
                     0.3,
+
                     y -
                     0.2 +
                     Math.random() *
@@ -2506,6 +3110,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ==========================================
+    // עדכון אפקטים
+    // ==========================================
+
     function updateEffects() {
 
         for (
@@ -2553,6 +3161,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 fx.material.opacity =
                     Math.max(
                         0,
+
                         data.life /
                         data.maxLife
                     );
@@ -2586,6 +3195,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 fx.material.opacity =
                     Math.max(
                         0,
+
                         data.life /
                         24
                     );
@@ -2613,12 +3223,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (
                     fx.geometry
                 ) {
+
                     fx.geometry.dispose();
                 }
 
                 if (
                     fx.material
                 ) {
+
                     fx.material.dispose();
                 }
 
@@ -2629,8 +3241,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // הגנה על מובייל:
-        // לא יותר מדי אפקטים בבת אחת.
+        // הגנה למובייל
         if (
             effects.length >
             32
@@ -2656,17 +3267,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (
                     fx.geometry
                 ) {
+
                     fx.geometry.dispose();
                 }
 
                 if (
                     fx.material
                 ) {
+
                     fx.material.dispose();
                 }
             }
         }
     }
+
+    // ==========================================
+    // עדכון HP של סלע
+    // ==========================================
 
     function updateRockLabel(
         rock
@@ -2694,6 +3311,12 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textBaseline =
             'middle';
 
+        ctx.shadowColor =
+            'rgba(0,0,0,0.4)';
+
+        ctx.shadowBlur =
+            5;
+
         ctx.fillText(
             rock.userData.hp,
             64,
@@ -2701,8 +3324,13 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         rock.userData.texture
-            .needsUpdate = true;
+            .needsUpdate =
+            true;
     }
+
+    // ==========================================
+    // הסרת סלע
+    // ==========================================
 
     function removeRock(
         rock,
@@ -2730,18 +3358,21 @@ window.addEventListener('DOMContentLoaded', () => {
         if (
             rock.userData.texture
         ) {
+
             rock.userData.texture.dispose();
         }
 
         if (
             rock.geometry
         ) {
+
             rock.geometry.dispose();
         }
 
         if (
             rock.material
         ) {
+
             rock.material.dispose();
         }
 
@@ -2754,6 +3385,10 @@ window.addEventListener('DOMContentLoaded', () => {
             1
         );
     }
+
+    // ==========================================
+    // מטבע
+    // ==========================================
 
     function spawnCoin(
         x,
@@ -2807,8 +3442,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 11. גלים / LEVEL
+    // 11. גלים / Levels
     // ==========================================
+
     let hasStartedFirstWave =
         false;
 
@@ -2818,9 +3454,12 @@ window.addEventListener('DOMContentLoaded', () => {
             rocks.length === 0
         ) {
 
+            // רק אחרי הגל הראשון
+            // עולים LEVEL
             if (
                 hasStartedFirstWave
             ) {
+
                 level++;
             }
 
@@ -2831,7 +3470,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 Math.min(
                     2 +
                     Math.floor(
-                        level / 2
+                        level /
+                        2
                     ),
                     5
                 );
@@ -2885,12 +3525,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 12. שליטה וגרירה - מותאמת במיוחד למובייל
+    // 12. שליטה במובייל
     // ==========================================
-    // במקום לקשור את התותח ישירות למיקום האצבע על המסך,
-    // אנחנו משתמשים בתנועה יחסית:
-    // מזיזים את האצבע -> התותח זז באותו כיוון,
-    // אבל במהירות נשלטת.
 
     let isDragging =
         false;
@@ -2932,9 +3568,12 @@ window.addEventListener('DOMContentLoaded', () => {
             dragStartX;
 
         if (
-            Math.abs(deltaX) <
+            Math.abs(
+                deltaX
+            ) <
             TOUCH_DEADZONE
         ) {
+
             return;
         }
 
@@ -2946,6 +3585,7 @@ window.addEventListener('DOMContentLoaded', () => {
         targetX =
             Math.max(
                 -screenLimitX,
+
                 Math.min(
                     screenLimitX,
                     nextTarget
@@ -2958,21 +3598,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
     controlSurface.addEventListener(
         'pointerdown',
-        (e) => {
+        e => {
 
             if (
                 !isGameStarted ||
                 isPaused ||
                 isGameOver
             ) {
+
                 return;
             }
 
-            // רק מצביע אחד שולט בתותח.
             if (
                 dragPointerId !==
                 null
             ) {
+
                 return;
             }
 
@@ -3010,13 +3651,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     controlSurface.addEventListener(
         'pointermove',
-        (e) => {
+        e => {
 
             if (
                 !isDragging ||
                 e.pointerId !==
                 dragPointerId
             ) {
+
                 return;
             }
 
@@ -3024,8 +3666,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 e.clientX -
                 lastPointerX;
 
-            // מונע קפיצה במקרה
-            // של pointermove גדול.
+            // הגנה מקפיצות
             if (
                 Math.abs(
                     movementSinceLastFrame
@@ -3053,6 +3694,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 e.clientX;
 
             e.preventDefault();
+
         },
         {
             passive:
@@ -3067,9 +3709,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if (
             dragPointerId !==
             null &&
+
             e.pointerId !==
             dragPointerId
         ) {
+
             return;
         }
 
@@ -3118,7 +3762,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     controlSurface.addEventListener(
         'contextmenu',
-        (e) => {
+        e => {
+
             e.preventDefault();
         }
     );
@@ -3126,11 +3771,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 13. התחלת משחק
     // ==========================================
+
     function startGame() {
 
         if (
             isGameStarted
         ) {
+
             return;
         }
 
@@ -3192,6 +3839,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 14. לולאת המשחק
     // ==========================================
+
     function animate(
         time
     ) {
@@ -3215,8 +3863,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // ======================================
-        // תנועת התותח + רתיעה קטנה בירי
+        // תנועת התותח
         // ======================================
+
         cannonGroup.position.x +=
             (
                 targetX -
@@ -3230,6 +3879,17 @@ window.addEventListener('DOMContentLoaded', () => {
                 cannonShadow.position.x
             ) *
             0.3;
+
+        cannonShadowSoft.position.x +=
+            (
+                cannonGroup.position.x -
+                cannonShadowSoft.position.x
+            ) *
+            0.32;
+
+        // ======================================
+        // רתיעה
+        // ======================================
 
         cannonRecoil *=
             0.78;
@@ -3245,8 +3905,12 @@ window.addEventListener('DOMContentLoaded', () => {
             0.35;
 
         // ======================================
-        // היגוי גלגלים - ימינה / שמאלה בלבד
+        // היגוי גלגלים
+        //
+        // רק קדמיים פונים ימינה/שמאלה.
+        // אין סיבוב 360 מעלות.
         // ======================================
+
         const moveDelta =
             targetX -
             cannonGroup.position.x;
@@ -3255,6 +3919,7 @@ window.addEventListener('DOMContentLoaded', () => {
             THREE.MathUtils.clamp(
                 moveDelta *
                 -0.26,
+
                 -0.18,
                 0.18
             );
@@ -3263,7 +3928,8 @@ window.addEventListener('DOMContentLoaded', () => {
             wheel => {
 
                 const targetSteer =
-                    wheel.userData.steerable
+                    wheel.userData
+                        .steerable
                         ? steerAngle
                         : 0;
 
@@ -3279,6 +3945,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // ירי
         // ======================================
+
         if (
             time -
             lastShotTime >
@@ -3328,6 +3995,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 0
             );
 
+            // רתיעה
             cannonRecoil =
                 0.14;
 
@@ -3342,6 +4010,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // כדורים
         // ======================================
+
         for (
             let i =
                 bullets.length - 1;
@@ -3370,12 +4039,14 @@ window.addEventListener('DOMContentLoaded', () => {
                         if (
                             child.geometry
                         ) {
+
                             child.geometry.dispose();
                         }
 
                         if (
                             child.material
                         ) {
+
                             child.material.dispose();
                         }
                     }
@@ -3391,6 +4062,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // סלעים
         // ======================================
+
         for (
             let rIdx =
                 rocks.length - 1;
@@ -3408,19 +4080,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 data.hitCooldown >
                 0
             ) {
+
                 data.hitCooldown -=
                     1;
             }
 
+            // כבידה
             data.vy -=
                 0.0025;
 
+            // תנועה
             r.position.x +=
                 data.vx;
 
             r.position.y +=
                 data.vy;
 
+            // סיבוב טבעי ואיטי של הסלע
             r.rotation.x +=
                 data.rotX;
 
@@ -3431,8 +4107,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 data.rotZ;
 
             // ==================================
-            // קפיצות מהקרקע
+            // קפיצה מהרצפה
             // ==================================
+
             if (
                 r.position.y -
                 data.size <
@@ -3461,6 +4138,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 data.vx *=
                     0.985;
 
+                // אבק בפגיעה
                 spawnDustBurst(
                     r.position.x,
                     0.25,
@@ -3469,8 +4147,9 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // ==================================
-            // גבולות X
+            // גבולות
             // ==================================
+
             if (
                 Math.abs(
                     r.position.x
@@ -3489,8 +4168,9 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // ==================================
-            // פגיעה של כדור בסלע
+            // כדור פוגע בסלע
             // ==================================
+
             for (
                 let bIdx =
                     bullets.length - 1;
@@ -3519,12 +4199,14 @@ window.addEventListener('DOMContentLoaded', () => {
                             if (
                                 child.geometry
                             ) {
+
                                 child.geometry.dispose();
                             }
 
                             if (
                                 child.material
                             ) {
+
                                 child.material.dispose();
                             }
                         }
@@ -3551,11 +4233,16 @@ window.addEventListener('DOMContentLoaded', () => {
                         'hit'
                     );
 
+                    // ==================================
+                    // הסלע הושמד
+                    // ==================================
+
                     if (
                         data.hp <=
                         0
                     ) {
 
+                        // מטבע
                         if (
                             Math.random() >
                             0.3
@@ -3566,6 +4253,10 @@ window.addEventListener('DOMContentLoaded', () => {
                                 r.position.y
                             );
                         }
+
+                        // =================================
+                        // פיצול לסלעים קטנים
+                        // =================================
 
                         if (
                             data.size >
@@ -3584,13 +4275,18 @@ window.addEventListener('DOMContentLoaded', () => {
                             spawnRock(
                                 r.position.x -
                                 0.35,
+
                                 r.position.y,
+
                                 childHp,
+
                                 data.size *
                                 0.7,
+
                                 -0.05 -
                                 Math.random() *
                                 0.03,
+
                                 0.05 +
                                 Math.random() *
                                 0.08
@@ -3599,13 +4295,18 @@ window.addEventListener('DOMContentLoaded', () => {
                             spawnRock(
                                 r.position.x +
                                 0.35,
+
                                 r.position.y,
+
                                 childHp,
+
                                 data.size *
                                 0.7,
+
                                 0.05 +
                                 Math.random() *
                                 0.03,
+
                                 0.05 +
                                 Math.random() *
                                 0.08
@@ -3633,15 +4334,18 @@ window.addEventListener('DOMContentLoaded', () => {
             if (
                 !rocks[rIdx]
             ) {
+
                 continue;
             }
 
             // ==================================
-            // פגיעה בתותח
+            // סלע פוגע בתותח
             // ==================================
+
             if (
                 data.hitCooldown <=
                 0 &&
+
                 Math.hypot(
                     r.position.x -
                     cannonGroup.position.x,
@@ -3669,6 +4373,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 );
 
                 updateUI();
+
+                // ==================================
+                // Game Over
+                // ==================================
 
                 if (
                     playerHp <=
@@ -3709,6 +4417,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ==========================================
         // מטבעות
         // ==========================================
+
         for (
             let cIdx =
                 droppedCoins.length - 1;
@@ -3719,6 +4428,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const c =
                 droppedCoins[cIdx];
 
+            // מגנט
             if (
                 magnetLvl >
                 0
@@ -3769,9 +4479,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     c.userData.vy;
             }
 
+            // סיבוב מטבע
             c.rotation.z +=
                 0.05;
 
+            // איסוף
             if (
                 Math.hypot(
                     c.position.x -
@@ -3797,12 +4509,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (
                     c.geometry
                 ) {
+
                     c.geometry.dispose();
                 }
 
                 if (
                     c.material
                 ) {
+
                     c.material.dispose();
                 }
 
@@ -3826,10 +4540,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // אפקטים
         updateEffects();
 
-        // ה-Level עולה כאן בלבד.
-        // המפה לא משתנה עם ה-Level.
+        // ==========================================
+        // גל הבא
+        //
+        // LEVEL משתנה.
+        // MAP לא משתנה.
+        // ==========================================
+
         startNextWave();
 
         renderer.render(
@@ -3838,10 +4558,18 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // ==========================================
+    // Resize
+    // ==========================================
+
     window.addEventListener(
         'resize',
         updateCameraForDevice
     );
+
+    // ==========================================
+    // הפעלת המשחק
+    // ==========================================
 
     animate(0);
 });
