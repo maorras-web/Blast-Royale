@@ -16,11 +16,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // צבע דשא אחיד אחד לכל המשחק — שנה כאן כדי לשנות את כל הדשא
     const GRASS_GREEN = 0x5a8f3a;
 
-    // ערפל אווירי: הצבע קרוב לצבע האופק של השמיים, כך שהמרחק "נבלע" בשמיים.
+    // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
-    const FOG_COLOR = 0x5a9580;
+    const FOG_COLOR = 0xdca063;
     const FOG_NEAR = 18;
-    const FOG_FAR = 70;
+    const FOG_FAR = 90;
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -258,10 +258,10 @@ window.addEventListener('DOMContentLoaded', () => {
         let glow = 'rgba(255, 236, 184, 0.48)';
 
         if (mapId === 'desert') {
-            top = '#5d4960';
-            middle = '#cf7f6f';
-            horizon = '#f3c28c';
-            glow = 'rgba(255, 226, 163, 0.58)';
+            top = '#4a4658';
+            middle = '#dca063';
+            horizon = '#ffd58a';
+            glow = 'rgba(255, 214, 140, 0.62)';
         } else if (mapId === 'forest') {
             top = '#193b46';
             middle = '#39766c';
@@ -295,15 +295,16 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(0, 280, 512, 232);
 
         // שכבה עדינה של עננות/ערפל גרפי.
-        ctx.globalAlpha = 0.08;
+        const cloudRGB = mapId === 'desert' ? '70,58,62' : '255,255,255';
+        ctx.globalAlpha = mapId === 'desert' ? 0.24 : 0.08;
         for (let i = 0; i < 22; i++) {
             const x = Math.random() * 512;
             const y = 170 + Math.random() * 220;
             const rx = 45 + Math.random() * 85;
             const ry = 10 + Math.random() * 20;
             const cloud = ctx.createRadialGradient(x, y, 0, x, y, rx);
-            cloud.addColorStop(0, 'rgba(255,255,255,0.7)');
-            cloud.addColorStop(1, 'rgba(255,255,255,0)');
+            cloud.addColorStop(0, `rgba(${cloudRGB},0.7)`);
+            cloud.addColorStop(1, `rgba(${cloudRGB},0)`);
             ctx.fillStyle = cloud;
             ctx.beginPath();
             ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
@@ -447,16 +448,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (mapId === 'desert') {
             // שלוש שכבות של דיונות/הרים יוצרות מרחק ברור.
-            addDistantHill(-12, 1.0, -10, 9.5, 3.2, 3.4, 0xa86048, 0.95);
-            addDistantHill(12, 1.2, -12, 10.5, 3.7, 3.8, 0x98503e, 0.94);
-            addDistantHill(-2, 2.0, -22, 18, 6.0, 5.0, 0x713b3e, 0.88);
-            addDistantHill(10, 2.4, -32, 20, 7.2, 6.2, 0x59333b, 0.74);
+            addDistantHill(-12, 1.0, -10, 9.5, 3.2, 3.4, 0x8a6d4e, 0.95);
+            addDistantHill(12, 1.2, -12, 10.5, 3.7, 3.8, 0x7a5f47, 0.94);
+            addDistantHill(-2, 2.0, -22, 18, 6.0, 5.0, 0x66503f, 0.88);
+            addDistantHill(10, 2.4, -32, 20, 7.2, 6.2, 0x55443a, 0.74);
 
-            // פסי חול קטנים בקצוות הקדמיים.
-            addBush(-12.0, -8.0, 0.8, 0x725032);
-            addBush(12.0, -9.0, 0.7, 0x6a472e);
-            addBush(-10.5, -12.5, 0.62, 0x81583c);
-            addBush(10.6, -13.0, 0.68, 0x795035);
+            // שיחים ירוקים בקצוות הקדמיים, באותו ירוק אחיד של הדשא.
+            addBush(-12.0, -8.0, 0.8, GRASS_GREEN);
+            addBush(12.0, -9.0, 0.7, GRASS_GREEN);
+            addBush(-10.5, -12.5, 0.62, GRASS_GREEN);
+            addBush(10.6, -13.0, 0.68, GRASS_GREEN);
         } else if (mapId === 'forest') {
             // יער בשכבות: שורה רחוקה, שורה בינונית, ואז כמה עצים קרובים.
             addDistantHill(-10, 1.5, -22, 11, 5.0, 4.0, 0x28543a, 0.82);
@@ -746,7 +747,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // רכסי קרקע נמוכים בצדדים — לא פלטפורמה, אלא שולי שטח טבעיים.
         const ridgeMat = new THREE.MeshStandardMaterial({
-            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : isForest ? GRASS_GREEN : 0x76532f,
+            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : (isForest || isDesert) ? GRASS_GREEN : 0x76532f,
             roughness: 0.98,
             metalness: 0.0,
             flatShading: true
@@ -772,7 +773,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 ? [0x282322, 0x3a3330, 0x1f1b1a]
                 : isForest
                     ? [0x3c522f, 0x51683f, 0x2c4024]
-                    : [0x735333, 0x8a6843, 0x654728];
+                    : [0x6b5d52, 0x7d6d60, 0x594d45];
 
         for (let i = 0; i < 20; i++) {
             const side = i % 2 === 0 ? -1 : 1;
@@ -804,7 +805,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const dune = new THREE.Mesh(
                     new THREE.SphereGeometry(1, 14, 8),
                     new THREE.MeshStandardMaterial({
-                        color: [0x9a6b3f, 0x7d5533, 0xb07b49][i % 3],
+                        color: GRASS_GREEN,
                         roughness: 1,
                         flatShading: true
                     })
@@ -1099,6 +1100,84 @@ window.addEventListener('DOMContentLoaded', () => {
         return { texture, bumpTexture };
     }
 
+    // מרקם סלע מחוספס ואפור־חום לפירמידות (כמו בתמונת הפתיח).
+    function createRockTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        const bumpCanvas = document.createElement('canvas');
+        canvas.width = canvas.height = bumpCanvas.width = bumpCanvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const bumpCtx = bumpCanvas.getContext('2d');
+
+        ctx.fillStyle = '#7a6d62';
+        ctx.fillRect(0, 0, size, size);
+        bumpCtx.fillStyle = '#808080';
+        bumpCtx.fillRect(0, 0, size, size);
+
+        const poly = (c, x, y, r, n, fill) => {
+            c.beginPath();
+            for (let k = 0; k < n; k++) {
+                const a = (k / n) * Math.PI * 2 + Math.random() * 0.6;
+                const rr = r * (0.65 + Math.random() * 0.5);
+                const px = x + Math.cos(a) * rr;
+                const py = y + Math.sin(a) * rr;
+                if (k === 0) c.moveTo(px, py); else c.lineTo(px, py);
+            }
+            c.closePath();
+            c.fillStyle = fill;
+            c.fill();
+        };
+
+        // פלחי סלע לא סדירים בגוונים קרובים.
+        for (let i = 0; i < 260; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            const r = 14 + Math.random() * 46;
+            const n = 5 + Math.floor(Math.random() * 3);
+            const shade = 92 + Math.floor(Math.random() * 56);
+            const tint = Math.floor(Math.random() * 14);
+            poly(ctx, x, y, r, n, `rgba(${shade + tint},${shade},${shade - 10},0.55)`);
+            const bump = 90 + Math.floor(Math.random() * 80);
+            poly(bumpCtx, x, y, r, n, `rgba(${bump},${bump},${bump},0.5)`);
+        }
+
+        // סדקים כהים.
+        for (let i = 0; i < 90; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            const len = 20 + Math.random() * 60;
+            const ang = Math.random() * Math.PI * 2;
+            ctx.strokeStyle = 'rgba(30,24,22,0.28)';
+            ctx.lineWidth = 1 + Math.random() * 1.6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+            ctx.stroke();
+            bumpCtx.strokeStyle = 'rgba(40,40,40,0.5)';
+            bumpCtx.lineWidth = 1.5;
+            bumpCtx.beginPath();
+            bumpCtx.moveTo(x, y);
+            bumpCtx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+            bumpCtx.stroke();
+        }
+
+        const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        const map = new THREE.CanvasTexture(canvas);
+        map.wrapS = map.wrapT = THREE.RepeatWrapping;
+        map.repeat.set(2.5, 2.5);
+        map.anisotropy = aniso;
+        map.encoding = THREE.sRGBEncoding;
+        map.needsUpdate = true;
+
+        const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+        bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+        bumpMap.repeat.copy(map.repeat);
+        bumpMap.anisotropy = aniso;
+        bumpMap.needsUpdate = true;
+
+        return { map, bumpMap };
+    }
+
     function createStoneTexture() {
         const canvas = document.createElement('canvas');
         const bumpCanvas = document.createElement('canvas');
@@ -1192,7 +1271,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if (mapId === 'volcano') {
             colors = [0x25201f, 0x38302e, 0x1c1818];
         } else {
-            colors = [0x76502f, 0x8b6038, 0x624326];
+            colors = [0x6b5d52, 0x7d6d60, 0x594d45];
         }
 
         const depthLayers = [
@@ -1600,7 +1679,7 @@ window.addEventListener('DOMContentLoaded', () => {
         mapGroup.add(group);
 
         const palettes = {
-            desert: [0x76502f, 0x8a6039, 0x5f4229],
+            desert: [0x6b5d52, 0x7d6d60, 0x594d45],
             forest: [0x2b542e, 0x3b6938, 0x234526],
             ice: [0x86b7c8, 0xa6cfdb, 0x6d9cac],
             volcano: [0x292322, 0x3a302e, 0x211b1b]
@@ -1621,7 +1700,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const shoulder = new THREE.Mesh(
                     new THREE.BoxGeometry(width, height, 4.5),
                     new THREE.MeshStandardMaterial({
-                        color: palette[(i + sideIndex) % palette.length],
+                        color: mapId === 'desert' ? GRASS_GREEN : palette[(i + sideIndex) % palette.length],
                         roughness: 0.96,
                         metalness: mapId === 'ice' ? 0.03 : 0,
                         flatShading: true
@@ -1689,12 +1768,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildMap(mapId) {
-        mapId = 'forest';
+        mapId = 'forest';   // ה-id נשאר 'forest' כדי לא לשבור את ה-UI והשמירה
+        const theme = 'desert'; // העיצוב בפועל: פירמידות בשקיעה זהובה על דשא ירוק
         clearMapGroup();
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
-        addEnvironmentalDepth(mapId);
+        addEnvironmentalDepth(theme);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
         const groundColor = GRASS_GREEN;
@@ -1737,13 +1817,9 @@ window.addEventListener('DOMContentLoaded', () => {
         terrain.position.y = 0.018;
 
         // שביל היער הכהה והמתכנס לאופק — האלמנט המרכזי של המפה.
-        const pathTextures = createForestPathTexture();
         const pathMat = new THREE.MeshStandardMaterial({
-            color: 0x12371d,
-            map: pathTextures.texture,
-            bumpMap: pathTextures.bumpTexture,
-            bumpScale: 0.055,
-            roughness: 0.94,
+            color: GRASS_GREEN,
+            roughness: 0.92,
             metalness: 0
         });
         const forestPath = addMesh(
@@ -1757,49 +1833,51 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         forestPath.renderOrder = 1;
 
-        addGroundDetail('forest');
-        addForegroundScenery(mapId);
-        addPerspectiveDepthDetails(mapId);
-        addDeepPerspectiveCorridor(mapId);
+        addGroundDetail(theme);
+        addForegroundScenery(theme);
+        addPerspectiveDepthDetails(theme);
+        addDeepPerspectiveCorridor(theme);
         add3DGrass(mapId);
-        addWeatherParticles(mapId);
+        addWeatherParticles(theme);
 
-        if (mapId === 'desert') {
-            scene.background.set(0xdd8c55);
-            scene.fog.color.set(0xdd8c55);
-            scene.fog.density = 0.0095;
-            sunLight.color.set(0xffe7c0);
-            sunLight.intensity = 1.42;
+        if (theme === 'desert') {
+            // שקיעה זהובה: רקע, ערפל ותאורה חמים.
+            scene.background.set(FOG_COLOR);
+            scene.fog.color.set(FOG_COLOR);
+            scene.fog.near = FOG_NEAR;
+            scene.fog.far = FOG_FAR;
+            sunLight.color.set(0xffd9a0);
+            sunLight.intensity = 1.55;
+            hemiLight.color.set(0xffd6a0);
+            hemiLight.intensity = 0.55;
 
-            const stoneTexture = createStoneTexture();
+            // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
+            // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
+            const rockTexture = createRockTexture();
             const pyramidMatA = new THREE.MeshStandardMaterial({
-                color: 0xc29764,
-                map: stoneTexture.map,
-                bumpMap: stoneTexture.bumpMap,
-                bumpScale: 0.16,
-                roughness: 0.88,
+                color: 0xb5a494,
+                map: rockTexture.map,
+                bumpMap: rockTexture.bumpMap,
+                bumpScale: 0.32,
+                roughness: 0.95,
                 metalness: 0.0
             });
             const pyramidMatB = new THREE.MeshStandardMaterial({
-                color: 0xa9784f,
-                map: stoneTexture.map,
-                bumpMap: stoneTexture.bumpMap,
-                bumpScale: 0.19,
-                roughness: 0.92,
+                color: 0x9a8a7c,
+                map: rockTexture.map,
+                bumpMap: rockTexture.bumpMap,
+                bumpScale: 0.36,
+                roughness: 0.96,
                 metalness: 0.0
             });
-            const p1 = addMesh(new THREE.ConeGeometry(11, 18, 4, 10), pyramidMatA, -15, 7, -12);
+            const p1 = addMesh(new THREE.ConeGeometry(8, 16, 4, 8), pyramidMatA, -10.5, 8, -21);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(13, 22, 4, 10), pyramidMatA, 15, 9, -14);
+            const p2 = addMesh(new THREE.ConeGeometry(9, 19, 4, 8), pyramidMatA, 11, 9.5, -24);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(18, 31, 4, 12), pyramidMatB, 0, 15, -24);
+            const p3 = addMesh(new THREE.ConeGeometry(20, 34, 4, 10), pyramidMatB, 0, 17, -34);
             p3.rotation.y = Math.PI / 4;
-            addRockDecoration(-6, -5, 1.2, 0x7c4a28);
-            addRockDecoration(7, -7, 0.85, 0x8b5a32);
-            addCactus(-9.0, -5.0, 0.9);
-            addCactus(9.2, -6.5, 0.75);
-            addCactus(-10.5, -11.0, 1.1);
-            addCactus(11.0, -12.0, 1.0);
+            addRockDecoration(-6, -5, 1.2, 0x6b5d52);
+            addRockDecoration(7, -7, 0.85, 0x7d6d60);
 
             // פס אדמה עמוק בחזית, בהשראת החלק התחתון של תמונת הפתיחה.
             const soilMat = new THREE.MeshStandardMaterial({
@@ -1824,7 +1902,7 @@ window.addEventListener('DOMContentLoaded', () => {
             );
             rootShadow.position.set(0, 0.03, 10.52);
             mapGroup.add(rootShadow);
-        } else if (mapId === 'forest') {
+        } else if (theme === 'forest') {
             scene.background.set(FOG_COLOR);
             scene.fog.color.set(FOG_COLOR);
             scene.fog.near = FOG_NEAR;
