@@ -12,7 +12,15 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // סביבה צבעונית רכה ושקיעה פסטלית
     scene.background = new THREE.Color(0xdd8c55);
-    scene.fog = new THREE.FogExp2(0xdd8c55, 0.0072);
+    scene.fog = new THREE.Fog(0xdd8c55, 20, 90);
+    // צבע דשא אחיד אחד לכל המשחק — שנה כאן כדי לשנות את כל הדשא
+    const GRASS_GREEN = 0x5a8f3a;
+
+    // ערפל אווירי: הצבע קרוב לצבע האופק של השמיים, כך שהמרחק "נבלע" בשמיים.
+    // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
+    const FOG_COLOR = 0x5a9580;
+    const FOG_NEAR = 18;
+    const FOG_FAR = 70;
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -95,8 +103,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const sunLight = new THREE.DirectionalLight(0xfff7e8, 1.55);
     sunLight.position.set(11, 24, 13);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    // טלפונים חזקים מקבלים מפת צללים חדה פי 2 (2048), שאר הטלפונים נשארים על 1024.
+    const isStrongPhone = (navigator.hardwareConcurrency || 4) >= 6 && (navigator.deviceMemory || 4) >= 4;
+    const SHADOW_MAP_SIZE = isStrongPhone ? 2048 : 1024;
+    sunLight.shadow.mapSize.width = SHADOW_MAP_SIZE;
+    sunLight.shadow.mapSize.height = SHADOW_MAP_SIZE;
     sunLight.shadow.camera.near = 0.5;
     sunLight.shadow.camera.far = 60;
     sunLight.shadow.camera.left = -22;
@@ -698,7 +709,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const scale = 0.45 + Math.random() * 0.45;
 
                 const grassMat = new THREE.MeshStandardMaterial({
-                    color: isForest ? 0x47712d : 0x70872e,
+                    color: GRASS_GREEN,
                     roughness: 1,
                     flatShading: true
                 });
@@ -735,7 +746,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // רכסי קרקע נמוכים בצדדים — לא פלטפורמה, אלא שולי שטח טבעיים.
         const ridgeMat = new THREE.MeshStandardMaterial({
-            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : isForest ? 0x27471d : 0x76532f,
+            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : isForest ? GRASS_GREEN : 0x76532f,
             roughness: 0.98,
             metalness: 0.0,
             flatShading: true
@@ -1295,7 +1306,7 @@ window.addEventListener('DOMContentLoaded', () => {
         crossGeo.computeVertexNormals();
 
         const sideMat = new THREE.MeshStandardMaterial({
-            color: 0x729f4b,
+            color: GRASS_GREEN,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1303,7 +1314,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const lightSideMat = new THREE.MeshStandardMaterial({
-            color: 0x86b458,
+            color: GRASS_GREEN,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1311,7 +1322,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const edgeMat = new THREE.MeshStandardMaterial({
-            color: 0x547f39,
+            color: GRASS_GREEN,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1319,7 +1330,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         const darkMat = new THREE.MeshStandardMaterial({
-            color: 0x345b2c,
+            color: GRASS_GREEN,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1489,7 +1500,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // אבל מוסיפים פרטים טבעיים בלי להחזיר את המראה הלבן והעמוס.
         const smallCount = 520;
         const smallGrassMat = new THREE.MeshStandardMaterial({
-            color: 0x4f8139,
+            color: GRASS_GREEN,
             roughness: 1,
             metalness: 0,
             flatShading: true,
@@ -1686,9 +1697,8 @@ window.addEventListener('DOMContentLoaded', () => {
         addEnvironmentalDepth(mapId);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
-        const groundColor = 0x6f9148;
+        const groundColor = GRASS_GREEN;
         const groundRoughness = 0.92;
-        const groundTextures = createGroundTexture('forest');
 
         // בסיס שקוע שנותן לקרקע עובי בלי להיראות כפלטפורמה.
         const groundBaseMat = new THREE.MeshStandardMaterial({
@@ -1709,9 +1719,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const terrainMat = new THREE.MeshStandardMaterial({
             color: groundColor,
-            map: groundTextures.texture,
-            bumpMap: groundTextures.bumpTexture,
-            bumpScale: 0.075,
             roughness: groundRoughness,
             metalness: 0.015
         });
@@ -1818,9 +1825,10 @@ window.addEventListener('DOMContentLoaded', () => {
             rootShadow.position.set(0, 0.03, 10.52);
             mapGroup.add(rootShadow);
         } else if (mapId === 'forest') {
-            scene.background.set(0x214f3b);
-            scene.fog.color.set(0x214f3b);
-            scene.fog.density = 0.0135;
+            scene.background.set(FOG_COLOR);
+            scene.fog.color.set(FOG_COLOR);
+            scene.fog.near = FOG_NEAR;
+            scene.fog.far = FOG_FAR;
             sunLight.color.set(0xfff6d7);
             sunLight.intensity = 1.34;
 
