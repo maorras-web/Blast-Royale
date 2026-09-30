@@ -1263,103 +1263,230 @@ window.addEventListener('DOMContentLoaded', () => {
         const grassGroup = new THREE.Group();
         mapGroup.add(grassGroup);
 
+        // להבי דשא משולשים במקום חרוטים: הם נראים טבעיים יותר,
+        // ומכיוון שהם Instanced הם עדיין זולים יחסית לביצועים.
+        const bladeGeo = new THREE.BufferGeometry();
+        const bladeWidth = 0.055;
+        const bladeHeight = 0.82;
+        const vertices = new Float32Array([
+            0, 0, 0,
+            -bladeWidth, bladeHeight * 0.72, 0,
+            0, bladeHeight, 0,
+            bladeWidth, bladeHeight * 0.72, 0
+        ]);
+        const indices = [0, 1, 2, 0, 2, 3];
+        bladeGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        bladeGeo.setIndex(indices);
+        bladeGeo.computeVertexNormals();
+
+        const crossGeo = new THREE.BufferGeometry();
+        const crossVertices = new Float32Array([
+            -bladeWidth, 0, 0,
+             0, bladeHeight, 0,
+             bladeWidth, 0, 0,
+
+             0, 0, -bladeWidth,
+             0, bladeHeight, 0,
+             0, 0, bladeWidth
+        ]);
+        const crossIndices = [0, 1, 2, 3, 4, 5];
+        crossGeo.setAttribute('position', new THREE.BufferAttribute(crossVertices, 3));
+        crossGeo.setIndex(crossIndices);
+        crossGeo.computeVertexNormals();
+
+        const sideMat = new THREE.MeshStandardMaterial({
+            color: 0xa4c879,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
+        const lightSideMat = new THREE.MeshStandardMaterial({
+            color: 0xb4d987,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
+        const edgeMat = new THREE.MeshStandardMaterial({
+            color: 0x628c43,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
+        const darkMat = new THREE.MeshStandardMaterial({
+            color: 0x416d35,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
         const dummy = new THREE.Object3D();
 
-        // צדדי הדשא: להבים בהירים וצפופים יותר, כמו ברפרנס.
-        const sideCount = 1450;
-        const sideGeo = new THREE.ConeGeometry(0.025, 0.28, 4);
-        const sideMat = new THREE.MeshStandardMaterial({
-            color: 0x9ab86a,
-            roughness: 0.98,
-            metalness: 0,
-            flatShading: true
-        });
-        const sideBlades = new THREE.InstancedMesh(sideGeo, sideMat, sideCount);
-        let written = 0;
+        // שכבה צפופה של דשא בהיר בצידי המסלול.
+        // יותר צפופה בתחתית המסך ופחות צפופה רחוק באופק,
+        // כדי לחזק את הפרספקטיבה של תמונת הרפרנס.
+        const sideCount = 2600;
+        const sideBlades = new THREE.InstancedMesh(
+            crossGeo,
+            sideMat,
+            sideCount
+        );
 
-        while (written < sideCount) {
-            const x = -12.2 + Math.random() * 24.4;
+        for (let i = 0; i < sideCount; i++) {
             const z = -48 + Math.random() * 60;
             const t = THREE.MathUtils.clamp((z + 48) / 60, 0, 1);
-            const pathHalfWidth = 2.55 + t * 3.05;
+            const pathHalfWidth = 2.35 + t * 3.25;
+            const side = Math.random() < 0.5 ? -1 : 1;
 
-            if (Math.abs(x) < pathHalfWidth + 0.45) continue;
+            const edgeDistance = 0.55 + Math.random() * 5.7;
+            const x = side * (pathHalfWidth + edgeDistance);
 
-            const scale = 0.55 + Math.random() * 1.25;
-            const h = 0.70 + Math.random() * 1.15;
+            const scale = 0.62 + Math.random() * 1.05;
+            const heightScale = 0.65 + Math.random() * 0.9;
+
             dummy.position.set(
                 x,
-                0.07 + h * 0.06,
+                0.045 + Math.random() * 0.035,
                 z
             );
             dummy.rotation.set(
-                (Math.random() - 0.5) * 0.28,
+                (Math.random() - 0.5) * 0.18,
                 Math.random() * Math.PI,
-                (Math.random() - 0.5) * 0.22
+                (Math.random() - 0.5) * 0.18
             );
-            dummy.scale.set(scale, h, scale);
+            dummy.scale.set(
+                scale,
+                heightScale,
+                scale
+            );
             dummy.updateMatrix();
-            sideBlades.setMatrixAt(written++, dummy.matrix);
+            sideBlades.setMatrixAt(i, dummy.matrix);
         }
+
         sideBlades.instanceMatrix.needsUpdate = true;
-        sideBlades.castShadow = true;
-        sideBlades.receiveShadow = true;
+        sideBlades.frustumCulled = true;
         grassGroup.add(sideBlades);
 
-        // להבים כהים יותר ממש על שפת השביל — יוצרים מעבר טבעי.
-        const edgeCount = 520;
-        const edgeGeo = new THREE.ConeGeometry(0.032, 0.34, 4);
-        const edgeMat = new THREE.MeshStandardMaterial({
-            color: 0x52783a,
-            roughness: 1,
-            flatShading: true
-        });
-        const edgeBlades = new THREE.InstancedMesh(edgeGeo, edgeMat, edgeCount);
+        // שכבה נוספת של להבים בהירים יותר ממש בקצה המסלול.
+        // היא יוצרת מעבר טבעי בין השביל הכהה לדשא הבהיר.
+        const edgeCount = 1050;
+        const edgeBlades = new THREE.InstancedMesh(
+            bladeGeo,
+            lightSideMat,
+            edgeCount
+        );
+
         for (let i = 0; i < edgeCount; i++) {
             const side = i % 2 === 0 ? -1 : 1;
-            const z = -46 + Math.random() * 58;
-            const t = THREE.MathUtils.clamp((z + 46) / 58, 0, 1);
-            const pathHalfWidth = 2.55 + t * 2.95;
-            const x = side * (pathHalfWidth + 0.15 + Math.random() * 0.85);
-            const scale = 0.55 + Math.random() * 1.1;
-            dummy.position.set(x, 0.08, z);
-            dummy.rotation.set(
-                (Math.random() - 0.5) * 0.35,
-                Math.random() * Math.PI,
-                (Math.random() - 0.5) * 0.28
+            const z = -47 + Math.random() * 59;
+            const t = THREE.MathUtils.clamp((z + 47) / 59, 0, 1);
+            const pathHalfWidth = 2.42 + t * 3.05;
+            const x = side * (
+                pathHalfWidth +
+                0.08 +
+                Math.random() * 0.9
             );
-            dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.9), scale);
+
+            const scale = 0.65 + Math.random() * 1.15;
+            dummy.position.set(x, 0.06, z);
+            dummy.rotation.set(
+                0,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.32
+            );
+            dummy.scale.set(
+                scale,
+                0.72 + Math.random() * 1.0,
+                scale
+            );
             dummy.updateMatrix();
             edgeBlades.setMatrixAt(i, dummy.matrix);
         }
+
         edgeBlades.instanceMatrix.needsUpdate = true;
-        edgeBlades.castShadow = true;
         grassGroup.add(edgeBlades);
 
-        // מעט עשב גם בתוך השביל, אבל בכמות נמוכה כדי לשמור על מסלול קריא.
-        const pathCount = 260;
-        const pathGeo = new THREE.ConeGeometry(0.018, 0.17, 4);
-        const pathMat = new THREE.MeshStandardMaterial({
-            color: 0x4f7737,
-            roughness: 1,
-            flatShading: true
-        });
-        const pathBlades = new THREE.InstancedMesh(pathGeo, pathMat, pathCount);
+        // עשב כהה יותר על השביל עצמו, בכמות נמוכה.
+        // הוא מונע מהשביל להיראות כמו טקסטורה שטוחה לחלוטין.
+        const pathCount = 430;
+        const pathBlades = new THREE.InstancedMesh(
+            bladeGeo,
+            darkMat,
+            pathCount
+        );
+
         for (let i = 0; i < pathCount; i++) {
-            const z = -44 + Math.random() * 52;
-            const t = THREE.MathUtils.clamp((z + 44) / 52, 0, 1);
-            const pathHalfWidth = 2.45 + t * 2.75;
-            const x = (Math.random() - 0.5) * pathHalfWidth * 1.8;
-            const scale = 0.55 + Math.random() * 0.9;
-            dummy.position.set(x, 0.055, z);
-            dummy.rotation.set(0, Math.random() * Math.PI, 0);
-            dummy.scale.set(scale, scale, scale);
+            const z = -45 + Math.random() * 55;
+            const t = THREE.MathUtils.clamp((z + 45) / 55, 0, 1);
+            const pathHalfWidth = 2.35 + t * 2.85;
+            const x = (Math.random() - 0.5) * pathHalfWidth * 1.7;
+
+            dummy.position.set(x, 0.052, z);
+            dummy.rotation.set(
+                0,
+                Math.random() * Math.PI,
+                0
+            );
+            const scale = 0.35 + Math.random() * 0.7;
+            dummy.scale.set(
+                scale,
+                0.45 + Math.random() * 0.65,
+                scale
+            );
             dummy.updateMatrix();
             pathBlades.setMatrixAt(i, dummy.matrix);
         }
+
         pathBlades.instanceMatrix.needsUpdate = true;
-        pathBlades.castShadow = true;
         grassGroup.add(pathBlades);
+
+        // קבוצות קטנות של דשא גבוה יותר בקדמת המסך.
+        // הן נותנות תחושת קנה מידה בלי להציף את כל המפה.
+        const foregroundCount = 320;
+        const foregroundBlades = new THREE.InstancedMesh(
+            crossGeo,
+            edgeMat,
+            foregroundCount
+        );
+
+        for (let i = 0; i < foregroundCount; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const z = -2 + Math.random() * 13;
+            const t = THREE.MathUtils.clamp((z + 2) / 13, 0, 1);
+            const pathHalfWidth = 2.55 + t * 3.0;
+            const x = side * (
+                pathHalfWidth +
+                0.5 +
+                Math.random() * 4.2
+            );
+
+            dummy.position.set(x, 0.055, z);
+            dummy.rotation.set(
+                (Math.random() - 0.5) * 0.24,
+                Math.random() * Math.PI,
+                (Math.random() - 0.5) * 0.24
+            );
+            const scale = 0.8 + Math.random() * 1.45;
+            dummy.scale.set(
+                scale,
+                0.85 + Math.random() * 1.2,
+                scale
+            );
+            dummy.updateMatrix();
+            foregroundBlades.setMatrixAt(i, dummy.matrix);
+        }
+
+        foregroundBlades.instanceMatrix.needsUpdate = true;
+        grassGroup.add(foregroundBlades);
+
+        bladeGeo.computeBoundingSphere();
+        crossGeo.computeBoundingSphere();
     }
 
     function getForestTerrainHeight(x, z) {
