@@ -617,16 +617,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // 3B. נפח קרקע + פרטי 3D קטנים
     // ==========================================
     function createTerrainGeometry(mapId) {
-        const geometry = new THREE.PlaneGeometry(40, 30, 24, 18);
+        const geometry = new THREE.PlaneGeometry(40, 30, 32, 24);
         const position = geometry.attributes.position;
 
         for (let i = 0; i < position.count; i++) {
             const x = position.getX(i);
             const z = position.getY(i);
 
-            const waveA = Math.sin(x * 0.42 + z * 0.18) * 0.028;
-            const waveB = Math.cos(z * 0.55 - x * 0.22) * 0.022;
-            const waveC = Math.sin((x + z) * 0.9) * 0.012;
+            const waveA = Math.sin(x * 0.42 + z * 0.18) * 0.052;
+            const waveB = Math.cos(z * 0.55 - x * 0.22) * 0.036;
+            const waveC = Math.sin((x + z) * 0.9) * 0.018;
 
             let height = waveA + waveB + waveC;
 
@@ -728,6 +728,208 @@ window.addEventListener('DOMContentLoaded', () => {
                 detailGroup.add(blade);
             }
         }
+    }
+
+    // ==========================================
+    // 3C. שכבת פרטי חזית — נותנת תחושת עולם אמיתי
+    // ==========================================
+    function addForegroundScenery(mapId) {
+        const group = new THREE.Group();
+        mapGroup.add(group);
+
+        const isDesert = mapId === 'desert';
+        const isForest = mapId === 'forest';
+        const isIce = mapId === 'ice';
+        const isVolcano = mapId === 'volcano';
+
+        // רכסי קרקע נמוכים בצדדים — לא פלטפורמה, אלא שולי שטח טבעיים.
+        const ridgeMat = new THREE.MeshStandardMaterial({
+            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : isForest ? 0x27471d : 0x76532f,
+            roughness: 0.98,
+            metalness: 0.0,
+            flatShading: true
+        });
+
+        [-1, 1].forEach(side => {
+            const ridge = new THREE.Mesh(
+                new THREE.SphereGeometry(1, 12, 7),
+                ridgeMat
+            );
+            ridge.scale.set(6.8, 0.34, 10.5);
+            ridge.position.set(side * 9.4, 0.13, -8.7);
+            ridge.rotation.z = side * 0.025;
+            ridge.castShadow = true;
+            ridge.receiveShadow = true;
+            group.add(ridge);
+        });
+
+        // אבנים שטוחות בפרונט, מפוזרות רק מחוץ למסלול התותח.
+        const stonePalette = isIce
+            ? [0x9ec8d5, 0x7faebb, 0xc8e7ee]
+            : isVolcano
+                ? [0x282322, 0x3a3330, 0x1f1b1a]
+                : isForest
+                    ? [0x3c522f, 0x51683f, 0x2c4024]
+                    : [0x735333, 0x8a6843, 0x654728];
+
+        for (let i = 0; i < 20; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const stoneSize = 0.16 + Math.random() * 0.26;
+            const stone = new THREE.Mesh(
+                new THREE.IcosahedronGeometry(stoneSize, 1),
+                new THREE.MeshStandardMaterial({
+                    color: stonePalette[i % stonePalette.length],
+                    roughness: 0.90,
+                    metalness: 0.02,
+                    flatShading: true
+                })
+            );
+            stone.position.set(
+                side * (5.9 + Math.random() * 4.8),
+                0.16 + stoneSize * 0.5,
+                -0.8 - Math.random() * 8.5
+            );
+            stone.scale.y = 0.55 + Math.random() * 0.35;
+            stone.rotation.set(Math.random() * 0.9, Math.random() * 1.8, Math.random() * 0.7);
+            stone.castShadow = true;
+            stone.receiveShadow = true;
+            group.add(stone);
+        }
+
+        if (isDesert) {
+            // אדוות חול בולטות יותר במרחק קצר.
+            for (let i = 0; i < 7; i++) {
+                const dune = new THREE.Mesh(
+                    new THREE.SphereGeometry(1, 14, 8),
+                    new THREE.MeshStandardMaterial({
+                        color: [0x9a6b3f, 0x7d5533, 0xb07b49][i % 3],
+                        roughness: 1,
+                        flatShading: true
+                    })
+                );
+                dune.scale.set(1.8 + Math.random() * 1.4, 0.16 + Math.random() * 0.12, 0.85 + Math.random() * 0.6);
+                dune.position.set((i % 2 === 0 ? -1 : 1) * (7.2 + Math.random() * 5.0), 0.12, -3.0 - i * 1.5);
+                dune.rotation.y = Math.random() * Math.PI;
+                dune.receiveShadow = true;
+                group.add(dune);
+            }
+        }
+
+        if (isForest) {
+            // צמחייה נמוכה עם גבעולים ועלים נפרדים — הרבה יותר נפח מעצים לבדם.
+            const leafMat = new THREE.MeshStandardMaterial({
+                color: 0x4d7e2f,
+                roughness: 0.97,
+                flatShading: true
+            });
+            const stemMat = new THREE.MeshStandardMaterial({
+                color: 0x5b432c,
+                roughness: 1,
+                flatShading: true
+            });
+
+            for (let i = 0; i < 14; i++) {
+                const side = i % 2 === 0 ? -1 : 1;
+                const x = side * (6.5 + Math.random() * 4.8);
+                const z = -2.0 - Math.random() * 9.0;
+                const s = 0.55 + Math.random() * 0.55;
+
+                const stem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.035 * s, 0.05 * s, 0.45 * s, 6),
+                    stemMat
+                );
+                stem.position.set(x, 0.22 * s, z);
+                stem.castShadow = true;
+                group.add(stem);
+
+                const leaves = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.20 * s, 0.55 * s, 5),
+                    leafMat
+                );
+                leaves.position.set(x, 0.49 * s, z);
+                leaves.rotation.y = Math.random() * Math.PI;
+                leaves.castShadow = true;
+                group.add(leaves);
+            }
+        }
+
+        if (isIce) {
+            // שברי קרח זוויתיים שממשיכים את הקרקע לתוך העומק.
+            const iceMat = new THREE.MeshPhysicalMaterial({
+                color: 0xbfe7f2,
+                roughness: 0.18,
+                metalness: 0.04,
+                clearcoat: 0.75,
+                clearcoatRoughness: 0.12,
+                flatShading: true
+            });
+
+            for (let i = 0; i < 9; i++) {
+                const shard = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.22, 0.42, 0.9 + Math.random() * 0.8, 5),
+                    iceMat
+                );
+                const side = i % 2 === 0 ? -1 : 1;
+                shard.position.set(side * (6.4 + Math.random() * 4.8), 0.38, -3.0 - Math.random() * 10);
+                shard.rotation.set(Math.random() * 0.35, Math.random() * 1.5, (Math.random() - 0.5) * 0.22);
+                shard.castShadow = true;
+                shard.receiveShadow = true;
+                group.add(shard);
+            }
+        }
+
+        if (isVolcano) {
+            // סלעים שחורים וחריצי לבה קטנים כדי להגדיל את עומק המפה.
+            const lavaMat = new THREE.MeshBasicMaterial({
+                color: 0xff6b35,
+                transparent: true,
+                opacity: 0.82,
+                depthWrite: false
+            });
+
+            for (let i = 0; i < 7; i++) {
+                const crack = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.06 + Math.random() * 0.08, 0.025, 0.65 + Math.random() * 0.65),
+                    lavaMat
+                );
+                const side = i % 2 === 0 ? -1 : 1;
+                crack.position.set(side * (6.0 + Math.random() * 5.0), 0.028, -2.0 - Math.random() * 10.0);
+                crack.rotation.y = (Math.random() - 0.5) * 0.9;
+                group.add(crack);
+            }
+        }
+    }
+
+    function addCannonLighting(mapId) {
+        let keyColor = 0x5dd7ff;
+        let rimColor = 0xc6edff;
+
+        if (mapId === 'desert') {
+            keyColor = 0xffc77a;
+            rimColor = 0xb8d6ff;
+        } else if (mapId === 'forest') {
+            keyColor = 0x8be28b;
+            rimColor = 0x9ed6ff;
+        } else if (mapId === 'ice') {
+            keyColor = 0xbcefff;
+            rimColor = 0xe7fbff;
+        } else if (mapId === 'volcano') {
+            keyColor = 0xff7042;
+            rimColor = 0x6db5ff;
+        }
+
+        const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : 0.22, 6.5, 2);
+        key.position.set(0, 2.7, 2.2);
+        cannonGroup.add(key);
+
+        const rim = new THREE.PointLight(rimColor, 0.34, 7, 2);
+        rim.position.set(0, 2.0, -2.4);
+        cannonGroup.add(rim);
+
+        // תאורת צד חלשה שמדגישה את הקימורים בזמן תנועה.
+        const side = new THREE.PointLight(0xffffff, 0.12, 5, 2);
+        side.position.set(3.2, 1.15, 0.4);
+        cannonGroup.add(side);
     }
 
     function createGroundTexture(mapId) {
@@ -903,6 +1105,7 @@ window.addEventListener('DOMContentLoaded', () => {
         terrain.position.y = 0.018;
 
         addGroundDetail(mapId);
+        addForegroundScenery(mapId);
         addWeatherParticles(mapId);
 
         if (mapId === 'desert') {
@@ -1155,6 +1358,33 @@ window.addEventListener('DOMContentLoaded', () => {
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
+    // צוואר צריח קטן שנותן מעבר פיזי בין הגוף לכיפה.
+    const turretCollar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.67, 0.74, 0.20, 20),
+        darkMetalMat
+    );
+    turretCollar.position.y = 0.67;
+    turretCollar.castShadow = true;
+    turretCollar.receiveShadow = true;
+    cannonGroup.add(turretCollar);
+
+    const rearHousing = new THREE.Mesh(
+        createRoundedBoxGeometry(0.94, 0.32, 0.34, 0.10, 0.035, 2),
+        darkMetalMat
+    );
+    rearHousing.position.set(0, 0.84, -0.63);
+    rearHousing.castShadow = true;
+    cannonGroup.add(rearHousing);
+
+    // לוחית צבע קטנה שנותנת נקודת חומר שונה על הגוף.
+    const accentPlate = new THREE.Mesh(
+        createRoundedBoxGeometry(0.54, 0.12, 0.48, 0.045, 0.02, 2),
+        edgeMetalMat
+    );
+    accentPlate.position.set(0, 0.73, -0.40);
+    accentPlate.castShadow = true;
+    cannonGroup.add(accentPlate);
+
     // לוח קדמי כהה לצריח.
     const frontPlate = new THREE.Mesh(
         createRoundedBoxGeometry(1.62, 0.48, 0.16, 0.12, 0.04, 2),
@@ -1354,6 +1584,8 @@ window.addEventListener('DOMContentLoaded', () => {
     scene.add(
         cannonGroup
     );
+
+    addCannonLighting(selectedMap);
 
     // צל רך מתחת לתותח - חלק מהדשא, לא פלטפורמה.
     const cannonShadow = new THREE.Mesh(
@@ -1634,22 +1866,33 @@ window.addEventListener('DOMContentLoaded', () => {
         const bullet = new THREE.Group();
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.19, 10, 10),
-            new THREE.MeshBasicMaterial({ color: 0xfff59d })
+            new THREE.SphereGeometry(0.16, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffffd8 })
+        );
+
+        const shell = new THREE.Mesh(
+            new THREE.SphereGeometry(0.23, 12, 12),
+            new THREE.MeshBasicMaterial({
+                color: 0xffc928,
+                transparent: true,
+                opacity: 0.28,
+                depthWrite: false
+            })
         );
 
         const trail = new THREE.Mesh(
-            new THREE.SphereGeometry(0.10, 8, 8),
+            new THREE.SphereGeometry(0.10, 10, 10),
             new THREE.MeshBasicMaterial({
-                color: 0xfacc15,
+                color: 0xff9f1c,
                 transparent: true,
-                opacity: 0.55
+                opacity: 0.42,
+                depthWrite: false
             })
         );
-        trail.scale.set(0.75, 2.8, 0.75);
-        trail.position.y = -0.2;
+        trail.scale.set(0.62, 3.8, 0.62);
+        trail.position.y = -0.25;
 
-        bullet.add(core, trail);
+        bullet.add(core, shell, trail);
         bullet.position.set(x, y, z);
         bullet.userData = { core, trail };
         scene.add(bullet);
@@ -2353,6 +2596,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
         updateEffects();
         startNextWave();
+
+        // תנועת מצלמה כמעט בלתי מורגשת שמוסיפה עומק וחיים בלי להפריע למשחקיות.
+        const cameraTargetX = cannonGroup.position.x * 0.055;
+        camera.position.x += (cameraTargetX - camera.position.x) * 0.018;
+        camera.lookAt(camera.position.x * 0.12, 5, 0);
+
         renderer.render(scene, camera);
     }
 
