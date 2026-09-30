@@ -2,7 +2,10 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1e1b18">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Cannon Blast 3D</title>
     <link rel="icon" href="data:,">
     
@@ -17,6 +20,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+
+    <!-- שכבת הגבלה: המשחק מיועד לטלפונים בלבד ובמצב אנכי -->
+    <div id="desktop-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">📱</div>
+            <h2>Mobile Only</h2>
+            <p>המשחק מיועד לטלפונים במסך אנכי.</p>
+            <small>פתח את המשחק בטלפון כדי לשחק.</small>
+        </div>
+    </div>
+
+    <div id="landscape-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">↕️</div>
+            <h2>סובב את הטלפון</h2>
+            <p>העבר את הטלפון למצב אנכי כדי לשחק.</p>
+        </div>
+    </div>
 
     <!-- UI עליון בזמן משחק -->
     <div id="ui-container">

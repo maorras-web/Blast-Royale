@@ -267,10 +267,11 @@ canvas {
     grid-template-rows: auto auto;
     column-gap: 8px;
     align-items: center;
-    transition: transform 0.12s ease,
-                border-color 0.2s ease,
-                opacity 0.2s ease,
-                background 0.2s ease;
+    transition:
+        transform 0.12s ease,
+        border-color 0.2s ease,
+        opacity 0.2s ease,
+        background 0.2s ease;
 }
 
 .map-card:not(:disabled):active {
@@ -358,5 +359,171 @@ canvas {
     .map-card {
         min-height: 66px;
         padding: 8px;
+    }
+}
+
+/* ==========================================
+   MOBILE ONLY - PORTRAIT
+   ========================================== */
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: #1e1b18;
+    touch-action: none;
+}
+
+body {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+}
+
+canvas {
+    width: 100vw !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    position: fixed !important;
+    inset: 0 !important;
+    touch-action: none !important;
+}
+
+#ui-container {
+    top: max(10px, env(safe-area-inset-top));
+    width: min(94vw, 500px);
+    max-width: 500px;
+}
+
+.ui-card {
+    min-width: 0;
+    padding: 6px 8px;
+}
+
+.ui-title {
+    font-size: clamp(8px, 2.2vw, 10px);
+}
+
+.ui-value {
+    font-size: clamp(14px, 4.2vw, 17px);
+}
+
+.modal-overlay {
+    padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+}
+
+.modal-card {
+    width: min(94vw, 390px);
+    max-width: 390px;
+    max-height: 88dvh;
+    max-height: 88svh;
+    padding: 20px 16px;
+}
+
+.btn-primary {
+    min-height: 52px;
+}
+
+.btn-upg {
+    min-height: 42px;
+}
+
+.map-card {
+    min-height: 76px;
+}
+
+.device-blocker {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #11100f;
+    color: #fff;
+    text-align: center;
+}
+
+.device-blocker-card {
+    width: min(88vw, 340px);
+    padding: 26px 20px;
+    border-radius: 24px;
+    background: rgba(35, 31, 27, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+.device-blocker-icon {
+    font-size: 46px;
+    margin-bottom: 10px;
+}
+
+.device-blocker h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 900;
+}
+
+.device-blocker p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #e5e7eb;
+    margin: 0 0 8px;
+}
+
+.device-blocker small {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+@media (min-width: 769px) {
+    #desktop-blocker {
+        display: flex;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    #landscape-blocker {
+        display: flex;
+    }
+
+    #ui-container,
+    #splash-screen {
+        visibility: hidden;
+    }
+}
+
+@media (max-width: 360px) {
+    #ui-container {
+        gap: 4px;
+    }
+
+    .ui-card {
+        padding: 5px 6px;
+        border-radius: 12px;
+    }
+
+    .modal-card {
+        width: 96vw;
+        padding: 18px 13px;
+    }
+
+    .game-title {
+        font-size: 25px;
+    }
+
+    .upgrade-item {
+        padding: 9px 10px;
     }
 }
