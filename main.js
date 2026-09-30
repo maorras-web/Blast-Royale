@@ -13,14 +13,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // סביבה צבעונית רכה ושקיעה פסטלית
     scene.background = new THREE.Color(0xdd8c55);
     scene.fog = new THREE.Fog(0xdd8c55, 20, 90);
-    // צבע דשא אחיד אחד לכל המשחק — שנה כאן כדי לשנות את כל הדשא
-    const GRASS_GREEN = 0x5a8f3a;
+    // צבע דשא אחיד אחד לכל המשחק — שנה כאן כדי לשנות את כל הדשא.
+    // שימו לב: בגרסת Three.js הזו צבעי חומר נכנסים לחישוב התאורה כמו שהם (בלי המרת gamma),
+    // ולכן הערך נראה כהה מאוד בקוד, אבל על המסך הוא יוצא ירוק עשיר (~ #68a037).
+    // אם הדשא נראה חיוור או שרוף — להחשיך את הערך; אם כהה מדי — להבהיר אותו.
+    const GRASS_GREEN = 0x112e07;
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
-    const FOG_COLOR = 0xdca063;
+    const FOG_COLOR = 0xddba81;
     const FOG_NEAR = 18;
-    const FOG_FAR = 90;
+    const FOG_FAR = 100;
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -448,11 +451,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (mapId === 'desert') {
             // שלוש שכבות של דיונות/הרים יוצרות מרחק ברור.
-            addDistantHill(-12, 1.0, -10, 9.5, 3.2, 3.4, 0x8a6d4e, 0.95);
-            addDistantHill(12, 1.2, -12, 10.5, 3.7, 3.8, 0x7a5f47, 0.94);
-            addDistantHill(-2, 2.0, -22, 18, 6.0, 5.0, 0x66503f, 0.88);
-            addDistantHill(10, 2.4, -32, 20, 7.2, 6.2, 0x55443a, 0.74);
-
             // שיחים ירוקים בקצוות הקדמיים, באותו ירוק אחיד של הדשא.
             addBush(-12.0, -8.0, 0.8, GRASS_GREEN);
             addBush(12.0, -9.0, 0.7, GRASS_GREEN);
@@ -1846,10 +1844,10 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.fog.color.set(FOG_COLOR);
             scene.fog.near = FOG_NEAR;
             scene.fog.far = FOG_FAR;
-            sunLight.color.set(0xffd9a0);
-            sunLight.intensity = 1.55;
-            hemiLight.color.set(0xffd6a0);
-            hemiLight.intensity = 0.55;
+            sunLight.color.set(0xffe6c0);
+            sunLight.intensity = 1.35;
+            hemiLight.color.set(0xfff0d8);
+            hemiLight.intensity = 0.50;
 
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
@@ -1870,11 +1868,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 roughness: 0.96,
                 metalness: 0.0
             });
-            const p1 = addMesh(new THREE.ConeGeometry(8, 16, 4, 8), pyramidMatA, -10.5, 8, -21);
+            // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
+            // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
+            const p1 = addMesh(new THREE.ConeGeometry(8.5, 12.5, 4, 8), pyramidMatA, -12, 6.25, -30);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(9, 19, 4, 8), pyramidMatA, 11, 9.5, -24);
+            const p2 = addMesh(new THREE.ConeGeometry(9, 13, 4, 8), pyramidMatA, 12.5, 6.5, -34);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(20, 34, 4, 10), pyramidMatB, 0, 17, -34);
+            const p3 = addMesh(new THREE.ConeGeometry(13, 13.5, 4, 10), pyramidMatB, 0, 6.75, -50);
             p3.rotation.y = Math.PI / 4;
             addRockDecoration(-6, -5, 1.2, 0x6b5d52);
             addRockDecoration(7, -7, 0.85, 0x7d6d60);
