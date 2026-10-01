@@ -2358,52 +2358,35 @@ window.addEventListener('DOMContentLoaded', () => {
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
-    // מעטפות צד שחורות שסוגרות את שני הרווחים הבעייתיים ליד הכיפה.
-    // זהו שינוי ויזואלי בלבד: אין שינוי במיקום התותח, בגלגלים, בפיזיקה או בירי.
-    const sideShellMat = new THREE.MeshPhysicalMaterial({
-        color: 0x111518,
-        roughness: 0.30,
-        metalness: 0.10,
-        clearcoat: 0.82,
-        clearcoatRoughness: 0.16
+    // מעטפת פלסטיק שחורה חלקית סביב הכיפה — רק באזור הקדמי/הצדדי.
+    // היא יושבת מעט מחוץ לכיפה כדי למנוע z-fighting, בלי לשנות את הגובה
+    // או את הפיזיקה של התותח.
+    const domeShellMat = new THREE.MeshPhysicalMaterial({
+        color: 0x101417,
+        roughness: 0.32,
+        metalness: 0.08,
+        clearcoat: 0.72,
+        clearcoatRoughness: 0.20
     });
 
-    // "לחיי" מעטפת משני הצדדים: הן עולות מהשלדה ומקיפות חלקית את
-    // הצד התחתון של הכיפה, כך שהפתחים שסומנו באדום לא נשארים חשופים.
-    [-1, 1].forEach(side => {
-        const cheek = new THREE.Mesh(
-            createRoundedBoxGeometry(0.34, 0.30, 0.78, 0.11, 0.045, 3),
-            sideShellMat
-        );
-        cheek.position.set(side * 0.61, 0.69, 0.18);
-        cheek.rotation.z = side * -0.16;
-        cheek.rotation.y = side * 0.10;
-        cheek.castShadow = true;
-        cheek.receiveShadow = true;
-        cannonGroup.add(cheek);
-
-        // קשת עליונה קטנה שממשיכה את הקימור של הכיפה השחורה.
-        const shoulder = new THREE.Mesh(
-            new THREE.TorusGeometry(0.58, 0.105, 8, 20, Math.PI * 0.48),
-            sideShellMat
-        );
-        shoulder.position.set(side * 0.42, 0.70, 0.18);
-        shoulder.rotation.x = Math.PI / 2;
-        shoulder.rotation.z = side > 0 ? -0.18 : Math.PI + 0.18;
-        shoulder.castShadow = true;
-        shoulder.receiveShadow = true;
-        cannonGroup.add(shoulder);
-    });
-
-    // פס חיבור אחורי עדין שמאחד את שתי מעטפות הצד עם בסיס הכיפה.
-    const shellBridge = new THREE.Mesh(
-        createRoundedBoxGeometry(0.92, 0.16, 0.20, 0.07, 0.025, 2),
-        sideShellMat
+    const domeShell = new THREE.Mesh(
+        new THREE.SphereGeometry(0.925, 28, 14, 0, Math.PI, 0.22, 0.62),
+        domeShellMat
     );
-    shellBridge.position.set(0, 0.78, -0.36);
-    shellBridge.castShadow = true;
-    shellBridge.receiveShadow = true;
-    cannonGroup.add(shellBridge);
+    domeShell.position.y = 0.60;
+    domeShell.castShadow = true;
+    domeShell.receiveShadow = true;
+    cannonGroup.add(domeShell);
+
+    // פס קצה דק שמגדיר את קו המפגש של המעטפת עם הכיפה הכחולה.
+    const domeShellEdge = new THREE.Mesh(
+        new THREE.TorusGeometry(0.74, 0.028, 7, 28, Math.PI),
+        darkMetalMat
+    );
+    domeShellEdge.position.set(0, 0.60, 0.02);
+    domeShellEdge.rotation.y = Math.PI / 2;
+    domeShellEdge.castShadow = true;
+    cannonGroup.add(domeShellEdge);
 
     // צוואר צריח קטן שנותן מעבר פיזי בין הגוף לכיפה.
     const turretCollar = new THREE.Mesh(
