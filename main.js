@@ -2358,10 +2358,20 @@ window.addEventListener('DOMContentLoaded', () => {
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
-    // צוואר צריח קטן שנותן מעבר פיזי בין הגוף לכיפה.
+    // צוואר צריח קטן — כחול כדי שלא יופיע חלק שחור על/מתחת לכיפה הכחולה.
+    // שינוי ויזואלי בלבד: לא נוגעים במיקום, בגלגלים, במתלים או בפיזיקה.
+    const turretCollarMat = new THREE.MeshPhysicalMaterial({
+        color: 0x1f7fc4,
+        emissive: 0x06304f,
+        roughness: 0.30,
+        metalness: 0.18,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.14
+    });
+
     const turretCollar = new THREE.Mesh(
         new THREE.CylinderGeometry(0.67, 0.74, 0.20, 20),
-        darkMetalMat
+        turretCollarMat
     );
     turretCollar.position.y = 0.67;
     turretCollar.castShadow = true;
