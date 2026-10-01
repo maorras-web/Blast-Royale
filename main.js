@@ -2458,10 +2458,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.48, 0.53, 0.72],
-        [ 1.48, 0.53, 0.72],
-        [-1.48, 0.53, -0.72],
-        [ 1.48, 0.53, -0.72]
+        [-1.34, 0.49, 0.72],
+        [ 1.34, 0.49, 0.72],
+        [-1.34, 0.49, -0.72],
+        [ 1.34, 0.49, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2474,18 +2474,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const rimCapGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.24, 12);
 
     wheelPositions.forEach(pos => {
-        // wheelOuter = היגוי.
-        // wheel = הציר שמסתובב. ההפרדה הזו מאפשרת גם היגוי וגם סיבוב אמיתי של הגלגל.
+        // wheelOuter = היגוי בלבד.
+        // wheel = סיבוב הגלגל בלבד.
+        // הגלגל עצמו מיושר כך שצירו הוא X; לכן הסיבוב מתבצע סביב X בלבד.
         const wheelOuter = new THREE.Group();
         wheelOuter.position.set(pos[0], pos[1], pos[2]);
 
         const wheel = new THREE.Group();
-        // אחרי הסיבוב הזה ציר Z המקומי של wheel מיושר עם ציר הגלגל בעולם.
-        wheel.rotation.y = Math.PI / 2;
         wheelOuter.add(wheel);
 
         const tire = new THREE.Mesh(tireGeo, offroadTireMat);
-        tire.rotation.y = Math.PI / 2;
+        // TorusGeometry כבר מיושר סביב ציר Y, ולכן מסובבים את הגאומטריה
+        // 90° כדי שציר הגלגל יהיה X.
+        tire.rotation.z = Math.PI / 2;
         tire.castShadow = true;
         tire.receiveShadow = true;
         wheel.add(tire);
@@ -2503,13 +2504,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // חישוק מתכתי אפור.
         const rim = new THREE.Mesh(rimDiscGeo, hubMat);
+        // CylinderGeometry צירו Y -> הופך לציר X.
         rim.rotation.z = Math.PI / 2;
         rim.castShadow = true;
         wheel.add(rim);
 
         [-1, 1].forEach(side => {
             const ring = new THREE.Mesh(rimRingGeo, darkMetalMat);
-            ring.rotation.y = Math.PI / 2;
+            ring.rotation.z = Math.PI / 2;
             ring.position.x = side * 0.105;
             wheel.add(ring);
 
@@ -3342,7 +3344,7 @@ window.addEventListener('DOMContentLoaded', () => {
         level = 1;
         hasStartedFirstWave = false;
         cannonRecoil = 0;
-        cannonGroup.position.set(0, cannonBaseY, 0);
+        cannonGroup.position.set(0, cannonBaseY + 0.10, 0);
         selectedMap = 'forest';
         buildMap('forest');
         updateUI();
@@ -3377,7 +3379,9 @@ window.addEventListener('DOMContentLoaded', () => {
         barrelAssembly.position.z +=
             ((-cannonRecoil * 0.65) - barrelAssembly.position.z) * 0.35;
 
-        cannonGroup.position.y += ((cannonBaseY + 0.10 + cannonRecoil) - cannonGroup.position.y) * 0.35;
+        // הגבהה קלה וקבועה כדי שהגוף לא יישב על הגלגלים.
+        const cannonRideHeight = 0.10;
+        cannonGroup.position.y += ((cannonBaseY + cannonRideHeight + cannonRecoil) - cannonGroup.position.y) * 0.35;
 
         // ======================================
         // היגוי גלגלים - ימינה / שמאלה בלבד
@@ -3391,7 +3395,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const currentCannonX = cannonGroup.position.x;
         const previousCannonX = cannonGroup.userData.previousWheelX ?? currentCannonX;
         const wheelTravel = currentCannonX - previousCannonX;
-        const wheelRadius = 0.47 * CANNON_SCALE;
+        const wheelRadius = 0.465 * CANNON_SCALE;
         const spinAmount = wheelRadius > 0.001
             ? (wheelTravel / wheelRadius)
             : 0;
@@ -3401,7 +3405,8 @@ window.addEventListener('DOMContentLoaded', () => {
             wheelOuter.rotation.y += (targetSteer - wheelOuter.rotation.y) * 0.18;
 
             if (wheelOuter.userData.spinGroup && Math.abs(spinAmount) > 0.000001) {
-                wheelOuter.userData.spinGroup.rotation.z -= spinAmount;
+                // סיבוב פיזי סביב ציר הגלגל בלבד.
+                wheelOuter.userData.spinGroup.rotation.x -= spinAmount;
             }
         });
 
