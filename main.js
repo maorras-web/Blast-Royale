@@ -2451,55 +2451,32 @@ window.addEventListener('DOMContentLoaded', () => {
     turretRing.castShadow = true;
     cannonGroup.add(turretRing);
 
-    // כיפת צריח שחורה מבריקה עם כדור תכלת בולט מקדימה (כמו ברפרנס).
-    const domeBlackMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0b0d10,
-        roughness: 0.18,
-        metalness: 0.35,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.06
-    });
-
+    // גוף צריח חצי-כיפתי.
     const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(0.90, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2),
-        domeBlackMat
+        new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshPhysicalMaterial({
+            color: 0x1f7fc4,
+            emissive: 0x06304f,
+            roughness: 0.28,
+            metalness: 0.2,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.12
+        })
     );
     dome.position.y = 0.60;
     dome.castShadow = true;
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
-    // כדור תכלת בחזית הכיפה - חלקו התחתון מוסתר מאחורי הלוח הכסוף.
-    const domeOrb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.42, 28, 20),
-        new THREE.MeshPhysicalMaterial({
-            color: 0x6ec6ee,
-            emissive: 0x1d5f80,
-            emissiveIntensity: 0.55,
-            roughness: 0.22,
-            metalness: 0.05,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.08
-        })
-    );
-    domeOrb.position.set(0, 0.98, 0.45);
-    domeOrb.castShadow = true;
-    cannonGroup.add(domeOrb);
-
-    // צוואר צריח שחור, תואם לכיפה.
+    // צוואר צריח קטן — כחול כדי שלא יופיע חלק שחור על/מתחת לכיפה הכחולה.
+    // שינוי ויזואלי בלבד: לא נוגעים במיקום, בגלגלים, במתלים או בפיזיקה.
     const turretCollarMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0b0d10,
-        roughness: 0.22,
-        metalness: 0.35,
-        clearcoat: 0.9,
-        clearcoatRoughness: 0.1
-    });
-
-    // לוח קדמי כסוף (כמו ברפרנס).
-    const silverPlateMat = new THREE.MeshStandardMaterial({
-        color: 0xb4bcc2,
-        roughness: 0.25,
-        metalness: 0.92
+        color: 0x1f7fc4,
+        emissive: 0x06304f,
+        roughness: 0.30,
+        metalness: 0.18,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.14
     });
 
     const turretCollar = new THREE.Mesh(
@@ -2529,10 +2506,11 @@ window.addEventListener('DOMContentLoaded', () => {
     cannonGroup.add(accentPlate);
 
     // לוח קדמי כהה לצריח.
-    // לוח קדמי כסוף שמכסה את החלק התחתון של הכדור התכלת.
+    // לוח הצריח הקדמי נשאר בגיאומטריה המקורית, אבל כחול כדי שלא יכסה
+    // את הכיפה הכחולה בכתם שחור. שינוי חומר בלבד — ללא שינוי במיקום/פיזיקה.
     const frontPlate = new THREE.Mesh(
         createRoundedBoxGeometry(1.62, 0.48, 0.16, 0.12, 0.04, 2),
-        silverPlateMat
+        turretCollarMat
     );
     frontPlate.position.set(0, 0.70, 0.70);
     frontPlate.castShadow = true;
