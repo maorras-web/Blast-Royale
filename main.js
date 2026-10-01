@@ -2472,8 +2472,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const rimCapGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.24, 12);
 
     wheelPositions.forEach(pos => {
+        // wheelOuter מקבל את תנועת ההיגוי; wheel הפנימי מסובב את הגלגל כך שפניו פונות למצלמה (כמו בתמונת הפתיח).
+        const wheelOuter = new THREE.Group();
+        wheelOuter.position.set(pos[0], pos[1] + 0.05, pos[2]);
         const wheel = new THREE.Group();
-        wheel.position.set(pos[0], pos[1] + 0.05, pos[2]);
+        wheel.rotation.y = Math.PI / 2;
+        wheelOuter.add(wheel);
 
         const tire = new THREE.Mesh(tireGeo, offroadTireMat);
         tire.rotation.y = Math.PI / 2;
@@ -2517,12 +2521,12 @@ window.addEventListener('DOMContentLoaded', () => {
             wheel.add(cap);
         });
 
-        wheel.userData.steerable = pos[2] > 0;
-        wheel.userData.side = pos[0] < 0 ? -1 : 1;
-        wheel.userData.baseRotationY = 0;
+        wheelOuter.userData.steerable = pos[2] > 0;
+        wheelOuter.userData.side = pos[0] < 0 ? -1 : 1;
+        wheelOuter.userData.baseRotationY = 0;
 
-        cannonGroup.add(wheel);
-        cannonWheels.push(wheel);
+        cannonGroup.add(wheelOuter);
+        cannonWheels.push(wheelOuter);
     });
 
     // זרועות מתלים שמחברות את הגלגלים לשלדה.
