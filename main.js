@@ -2358,55 +2358,52 @@ window.addEventListener('DOMContentLoaded', () => {
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
-    // =========================================================
-    // מעטפת פלסטיק שחורה חלקית סביב הכיפה — לא חלק מהקנים.
-    // היא עוטפת רק את החלק הקדמי/האמצעי של הכיפה ויושבת
-    // מעט מעל המשטח הכחול, כך שהכיפה נשארת גלויה.
-    // =========================================================
-    const domeShellMat = new THREE.MeshPhysicalMaterial({
-        color: 0x10161a,
+    // מעטפות צד שחורות שסוגרות את שני הרווחים הבעייתיים ליד הכיפה.
+    // זהו שינוי ויזואלי בלבד: אין שינוי במיקום התותח, בגלגלים, בפיזיקה או בירי.
+    const sideShellMat = new THREE.MeshPhysicalMaterial({
+        color: 0x111518,
         roughness: 0.30,
-        metalness: 0.16,
-        clearcoat: 0.72,
+        metalness: 0.10,
+        clearcoat: 0.82,
         clearcoatRoughness: 0.16
     });
 
-    const domeShell = new THREE.Mesh(
-        new THREE.SphereGeometry(
-            0.925,
-            32,
-            18,
-            Math.PI * 0.22,     // מתחיל מעט לפני המרכז הקדמי
-            Math.PI * 0.56,     // עוטף חלקית בלבד סביב הכיפה
-            Math.PI * 0.27,     // מתחיל באמצע הכיפה
-            Math.PI * 0.42      // משאיר את הקודקוד והבסיס חשופים
-        ),
-        domeShellMat
-    );
+    // "לחיי" מעטפת משני הצדדים: הן עולות מהשלדה ומקיפות חלקית את
+    // הצד התחתון של הכיפה, כך שהפתחים שסומנו באדום לא נשארים חשופים.
+    [-1, 1].forEach(side => {
+        const cheek = new THREE.Mesh(
+            createRoundedBoxGeometry(0.34, 0.30, 0.78, 0.11, 0.045, 3),
+            sideShellMat
+        );
+        cheek.position.set(side * 0.61, 0.69, 0.18);
+        cheek.rotation.z = side * -0.16;
+        cheek.rotation.y = side * 0.10;
+        cheek.castShadow = true;
+        cheek.receiveShadow = true;
+        cannonGroup.add(cheek);
 
-    domeShell.scale.set(1.015, 0.72, 0.96);
-    domeShell.position.set(0, 0.605, 0.012);
-    domeShell.castShadow = true;
-    domeShell.receiveShadow = true;
-    cannonGroup.add(domeShell);
-
-    // פס קצה דק שמסיים את מעטפת הפלסטיק בצורה נקייה.
-    const domeShellEdgeMat = new THREE.MeshStandardMaterial({
-        color: 0x20282c,
-        roughness: 0.38,
-        metalness: 0.32
+        // קשת עליונה קטנה שממשיכה את הקימור של הכיפה השחורה.
+        const shoulder = new THREE.Mesh(
+            new THREE.TorusGeometry(0.58, 0.105, 8, 20, Math.PI * 0.48),
+            sideShellMat
+        );
+        shoulder.position.set(side * 0.42, 0.70, 0.18);
+        shoulder.rotation.x = Math.PI / 2;
+        shoulder.rotation.z = side > 0 ? -0.18 : Math.PI + 0.18;
+        shoulder.castShadow = true;
+        shoulder.receiveShadow = true;
+        cannonGroup.add(shoulder);
     });
 
-    const domeShellEdge = new THREE.Mesh(
-        new THREE.TorusGeometry(0.67, 0.026, 8, 28, Math.PI * 0.56),
-        domeShellEdgeMat
+    // פס חיבור אחורי עדין שמאחד את שתי מעטפות הצד עם בסיס הכיפה.
+    const shellBridge = new THREE.Mesh(
+        createRoundedBoxGeometry(0.92, 0.16, 0.20, 0.07, 0.025, 2),
+        sideShellMat
     );
-    domeShellEdge.rotation.x = Math.PI / 2;
-    domeShellEdge.rotation.z = -Math.PI * 0.28;
-    domeShellEdge.position.set(0, 0.70, 0.045);
-    domeShellEdge.scale.set(1.08, 0.78, 1);
-    domeShellEdge.castShadow = true;
-    cannonGroup.add(domeShellEdge);
+    shellBridge.position.set(0, 0.78, -0.36);
+    shellBridge.castShadow = true;
+    shellBridge.receiveShadow = true;
+    cannonGroup.add(shellBridge);
 
     // צוואר צריח קטן שנותן מעבר פיזי בין הגוף לכיפה.
     const turretCollar = new THREE.Mesh(
@@ -2444,118 +2441,62 @@ window.addEventListener('DOMContentLoaded', () => {
     frontPlate.castShadow = true;
     cannonGroup.add(frontPlate);
 
-    // תושבת ומכלול הקנים — נשארים קומפקטיים ומשולבים בגוף.
-    // המעטפת השחורה של הכיפה נמצאת בנפרד מעל הדום, ואינה קנה.
+    // תושבת ומכלול הקנים נפרדים כדי שנוכל לתת רתיעה מכנית אמיתית.
     const barrelAssembly = new THREE.Group();
-    barrelAssembly.position.set(0, 0.76, 0.05);
+    barrelAssembly.position.set(0, 0.82, 0.05);
     cannonGroup.add(barrelAssembly);
 
-    const cannonTopMat = new THREE.MeshPhysicalMaterial({
-        color: 0x9aa9ae,
-        roughness: 0.24,
-        metalness: 0.72,
-        clearcoat: 0.55,
-        clearcoatRoughness: 0.14
-    });
-
-    const cannonTopDarkMat = new THREE.MeshStandardMaterial({
-        color: 0x263239,
-        roughness: 0.34,
-        metalness: 0.72
-    });
-
-    const cannonTopAccentMat = new THREE.MeshStandardMaterial({
-        color: 0x4f9fb2,
-        emissive: 0x0b2830,
-        emissiveIntensity: 0.18,
-        roughness: 0.28,
-        metalness: 0.62
-    });
-
-    // כיפת חיבור מרכזית שמטמיעה את הקנים בתוך הגוף.
-    const topHousing = new THREE.Mesh(
-        new THREE.SphereGeometry(
-            0.72,
-            24,
-            16,
-            0,
-            Math.PI * 2,
-            0,
-            Math.PI / 2
-        ),
-        cannonTopMat
+    const barrelBase = new THREE.Mesh(
+        createRoundedBoxGeometry(1.34, 0.28, 0.82, 0.10, 0.045, 2),
+        darkMetalMat
     );
-    topHousing.scale.set(1.28, 0.62, 0.92);
-    topHousing.position.set(0, 0.10, 0.02);
-    topHousing.castShadow = true;
-    topHousing.receiveShadow = true;
-    barrelAssembly.add(topHousing);
+    barrelBase.position.set(0, 0.08, 0.02);
+    barrelBase.castShadow = true;
+    barrelAssembly.add(barrelBase);
 
-    // מסגרת קדמית מעוגלת שמחברת ויזואלית בין שני פתחי הירי.
-    const topBridge = new THREE.Mesh(
-        createRoundedBoxGeometry(1.12, 0.22, 0.54, 0.10, 0.045, 3),
-        cannonTopDarkMat
-    );
-    topBridge.position.set(0, 0.31, 0.03);
-    topBridge.castShadow = true;
-    barrelAssembly.add(topBridge);
+    const barrelMat = new THREE.MeshStandardMaterial({
+        color: 0x3d4e5a,
+        metalness: 0.82,
+        roughness: 0.22
+    });
 
-    // שני בתי קנה קצרים ומעוגלים — אינם נראים כמו צינורות שחורים שיוצאים החוצה.
-    [-0.35, 0.35].forEach(x => {
-        const barrelPod = new THREE.Mesh(
-            new THREE.SphereGeometry(0.27, 18, 12),
-            cannonTopMat
+    const muzzleMat = new THREE.MeshStandardMaterial({
+        color: 0x11191f,
+        metalness: 0.68,
+        roughness: 0.25
+    });
+
+    const barrelGeo = new THREE.CylinderGeometry(0.13, 0.15, 0.98, 18);
+    const muzzleGeo = new THREE.CylinderGeometry(0.17, 0.15, 0.12, 18, 1, false);
+    const muzzleBoreGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.125, 16, 1, true);
+
+    [-0.37, 0.37].forEach(x => {
+        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+        barrel.position.set(x, 0.61, 0);
+        barrel.castShadow = true;
+        barrelAssembly.add(barrel);
+
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.145, 0.028, 6, 16),
+            edgeMetalMat
         );
-        barrelPod.scale.set(0.82, 1.08, 0.88);
-        barrelPod.position.set(x, 0.38, 0.03);
-        barrelPod.castShadow = true;
-        barrelPod.receiveShadow = true;
-        barrelAssembly.add(barrelPod);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.set(x, 0.56, 0);
+        ring.castShadow = true;
+        barrelAssembly.add(ring);
 
-        // צוואר קצר בצבע הגוף.
-        const shortNeck = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.105, 0.14, 0.20, 16),
-            cannonTopAccentMat
-        );
-        shortNeck.position.set(x, 0.57, 0.03);
-        shortNeck.castShadow = true;
-        barrelAssembly.add(shortNeck);
-
-        // פתח קטן ושקוע. הוא כהה אך נשאר בתוך המסגרת ולא בולט החוצה.
-        const muzzleRing = new THREE.Mesh(
-            new THREE.TorusGeometry(0.105, 0.028, 8, 18),
-            cannonTopMat
-        );
-        muzzleRing.position.set(x, 0.665, 0.03);
-        muzzleRing.castShadow = true;
-        barrelAssembly.add(muzzleRing);
+        const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
+        muzzle.position.set(x, 1.12, 0);
+        muzzle.castShadow = true;
+        barrelAssembly.add(muzzle);
 
         const bore = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.073, 0.073, 0.018, 16),
-            cannonTopDarkMat
+            muzzleBoreGeo,
+            new THREE.MeshBasicMaterial({ color: 0x020507 })
         );
-        bore.position.set(x, 0.676, 0.03);
+        bore.position.set(x, 1.125, 0);
         barrelAssembly.add(bore);
-
-        // טבעת צבעונית עדינה סביב בסיס הקנה.
-        const collar = new THREE.Mesh(
-            new THREE.TorusGeometry(0.15, 0.018, 7, 18),
-            cannonTopAccentMat
-        );
-        collar.rotation.x = Math.PI / 2;
-        collar.position.set(x, 0.49, 0.03);
-        collar.castShadow = true;
-        barrelAssembly.add(collar);
     });
-
-    // לוח אחורי קטן שנותן לראש התותח צורה של יחידה אחת ולא "שני צינורות".
-    const rearTopPlate = new THREE.Mesh(
-        createRoundedBoxGeometry(1.18, 0.18, 0.38, 0.08, 0.035, 3),
-        cannonTopDarkMat
-    );
-    rearTopPlate.position.set(0, 0.22, -0.30);
-    rearTopPlate.castShadow = true;
-    barrelAssembly.add(rearTopPlate);
 
     // גלגלים - הקדמיים משנים זווית היגוי בלבד, האחוריים נשארים ישרים.
     const wheelGeo = new THREE.CylinderGeometry(0.40, 0.40, 0.25, 18);
@@ -2564,10 +2505,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.58, 0.04, 0.72],
-        [ 1.58, 0.04, 0.72],
-        [-1.58, 0.04, -0.72],
-        [ 1.58, 0.04, -0.72]
+        [-1.34, 0.49, 0.72],
+        [ 1.34, 0.49, 0.72],
+        [-1.34, 0.49, -0.72],
+        [ 1.34, 0.49, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2638,160 +2579,21 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonWheels.push(wheelOuter);
     });
 
-    // =========================================================
-    // מתלים בסגנון הרפרנס — Air Spring + Double Wishbone
-    // =========================================================
-    // המראה מכוון לתמונה ששלחת: כרית אוויר שחורה ועבה קרוב לגוף,
-    // שתי זרועות מתכת ארוכות שיורדות החוצה אל נאבת הגלגל, ומפרקים
-    // בולטים. זווית הגלגלים עצמה לא משתנה.
-    const suspensionRubberMat = new THREE.MeshStandardMaterial({
-        color: 0x17191b,
-        roughness: 0.88,
-        metalness: 0.03
-    });
-
-    const suspensionMetalMat = new THREE.MeshPhysicalMaterial({
-        color: 0xa7adb0,
-        roughness: 0.20,
-        metalness: 0.92,
-        clearcoat: 0.28,
-        clearcoatRoughness: 0.16
-    });
-
-    const suspensionDarkMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x394146,
-        roughness: 0.28,
-        metalness: 0.84
-    });
-
-    function addSuspensionCylinderBetween(a, b, radius, material, segments = 12) {
-        const start = a.clone();
-        const end = b.clone();
-        const direction = new THREE.Vector3().subVectors(end, start);
-        const length = direction.length();
-        const mesh = new THREE.Mesh(
-            new THREE.CylinderGeometry(radius, radius, length, segments),
-            material
-        );
-        mesh.position.copy(start).add(end).multiplyScalar(0.5);
-        mesh.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 1, 0),
-            direction.normalize()
-        );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        cannonGroup.add(mesh);
-        return mesh;
-    }
-
-    function addSuspensionJoint(position, radius = 0.09) {
-        const joint = new THREE.Mesh(
-            new THREE.SphereGeometry(radius, 14, 10),
-            suspensionDarkMetalMat
-        );
-        joint.position.copy(position);
-        joint.castShadow = true;
-        joint.receiveShadow = true;
-        cannonGroup.add(joint);
-        return joint;
-    }
-
-    function addReferenceAirSpring(side, z) {
-        const hub = new THREE.Vector3(side * 1.58, 0.04, z);
-
-        // כרית האוויר ממוקמת קרוב לדופן הגוף ומעל מרכז הגלגל,
-        // בדיוק כמו בתמונת ההמחשה.
-        const bagX = side * 1.15;
-        const bagY = 0.63;
-        const airSpring = new THREE.Group();
-        airSpring.position.set(bagX, bagY, z);
-        cannonGroup.add(airSpring);
-
-        // ליבת גומי עבה.
-        const core = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.21, 0.23, 0.52, 18),
-            suspensionRubberMat
-        );
-        core.castShadow = true;
-        core.receiveShadow = true;
-        airSpring.add(core);
-
-        // קפלי גומי אופקיים שנותנים מראה של כרית/בולם אוויר אמיתי.
-        [-0.18, -0.09, 0, 0.09, 0.18].forEach((y, i) => {
-            const fold = new THREE.Mesh(
-                new THREE.TorusGeometry(0.225 - Math.abs(i - 2) * 0.008, 0.028, 8, 22),
-                suspensionRubberMat
-            );
-            fold.rotation.x = Math.PI / 2;
-            fold.position.y = y;
-            fold.castShadow = true;
-            airSpring.add(fold);
-        });
-
-        // כיפות מתכת עליונה ותחתונה.
-        [-1, 1].forEach(sign => {
-            const cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.17, 0.17, 0.055, 16),
-                suspensionMetalMat
-            );
-            cap.position.y = sign * 0.285;
-            cap.castShadow = true;
-            airSpring.add(cap);
-        });
-
-        // חיבור קצר מהגוף לראש כרית האוויר.
-        addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 1.02, 1.02, z),
-            new THREE.Vector3(bagX, 0.90, z),
-            0.055,
-            suspensionMetalMat
+    // זרועות מתלים שמחברות את הגלגלים לשלדה.
+    wheelPositions.forEach(pos => {
+        const bracket = new THREE.Mesh(
+            createRoundedBoxGeometry(0.16, 0.52, 0.22, 0.05, 0.025, 2),
+            darkMetalMat
         );
 
-        // זרועות wishbone תחתונות ארוכות — האלמנט הבולט ברפרנס.
-        const innerLowerA = new THREE.Vector3(side * 0.72, 0.45, z - 0.16);
-        const innerLowerB = new THREE.Vector3(side * 0.72, 0.45, z + 0.16);
-        const outerLowerA = new THREE.Vector3(side * 1.48, 0.08, z - 0.11);
-        const outerLowerB = new THREE.Vector3(side * 1.48, 0.08, z + 0.11);
-
-        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.055, suspensionMetalMat);
-        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.055, suspensionMetalMat);
-
-        // זרועות עליונות קצרות יותר ליצירת מבנה משולש אמיתי.
-        const innerUpperA = new THREE.Vector3(side * 0.96, 0.78, z - 0.13);
-        const innerUpperB = new THREE.Vector3(side * 0.96, 0.78, z + 0.13);
-        const outerUpperA = new THREE.Vector3(side * 1.46, 0.28, z - 0.09);
-        const outerUpperB = new THREE.Vector3(side * 1.46, 0.28, z + 0.09);
-
-        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.043, suspensionDarkMetalMat);
-        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.043, suspensionDarkMetalMat);
-
-        // מוט בולם אלכסוני בין הכרית לאזור הנאבה.
-        addSuspensionCylinderBetween(
-            new THREE.Vector3(bagX, 0.82, z),
-            new THREE.Vector3(side * 1.48, 0.16, z),
-            0.038,
-            suspensionMetalMat
+        bracket.position.set(
+            pos[0] * 0.82,
+            0.40,
+            pos[2]
         );
 
-        // מפרקים בולטים באזור הנאבה ובנקודות החיבור הפנימיות.
-        addSuspensionJoint(new THREE.Vector3(side * 1.48, 0.08, z), 0.095);
-        addSuspensionJoint(new THREE.Vector3(side * 1.46, 0.28, z), 0.080);
-        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.070);
-
-        // נאבה קטנה שמחברת ויזואלית את הזרועות לגלגל בלי לשנות את זוויתו.
-        const hubMount = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.12, 0.20, 14),
-            suspensionDarkMetalMat
-        );
-        hubMount.rotation.x = Math.PI / 2;
-        hubMount.position.copy(hub);
-        hubMount.castShadow = true;
-        cannonGroup.add(hubMount);
-    }
-
-    // ארבע יחידות מתלה — אחת לכל גלגל.
-    [-1, 1].forEach(side => {
-        [0.72, -0.72].forEach(z => addReferenceAirSpring(side, z));
+        bracket.castShadow = true;
+        cannonGroup.add(bracket);
     });
 
     cannonGroup.scale.setScalar(
@@ -2893,7 +2695,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let targetX = 0;
 
     let cannonRecoil = 0;
-    const cannonBaseY = 0.45;
+    const cannonBaseY = 0;
     cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
@@ -3644,7 +3446,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ירי
         // ======================================
         if (time - lastShotTime > 1000 / (fireRate * 4)) {
-            const bulletY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
+            const bulletY = cannonGroup.position.y + 1.5 * CANNON_SCALE;
             const leftX = cannonGroup.position.x - 0.35 * CANNON_SCALE;
             const rightX = cannonGroup.position.x + 0.35 * CANNON_SCALE;
 
