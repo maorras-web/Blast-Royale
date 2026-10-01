@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // שימו לב: בגרסת Three.js הזו צבעי חומר נכנסים לחישוב התאורה כמו שהם (בלי המרת gamma),
     // ולכן הערך נראה כהה מאוד בקוד, אבל על המסך הוא יוצא ירוק עשיר (~ #68a037).
     // אם הדשא נראה חיוור או שרוף — להחשיך את הערך; אם כהה מדי — להבהיר אותו.
-    const GRASS_GREEN = 0x1d3b10;
+    const GRASS_GREEN = 0x13410d;
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
@@ -115,10 +115,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. תאורה מתקדמת ל-Low Poly
     // ==========================================
-    const hemiLight = new THREE.HemisphereLight(0xffe7c2, 0x172612, 0.34);
+    const hemiLight = new THREE.HemisphereLight(0xffe7c2, 0x172612, 0.38);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffbd78, 2.05);
+    const sunLight = new THREE.DirectionalLight(0xffbd78, 1.75);
     sunLight.position.set(-10, 20, 14);
     sunLight.castShadow = true;
     // טלפונים חזקים מקבלים מפת צללים חדה פי 2 (2048), שאר הטלפונים נשארים על 1024.
@@ -137,8 +137,9 @@ window.addEventListener('DOMContentLoaded', () => {
     sunLight.shadow.radius = 1.6;
     scene.add(sunLight);
 
-    const fillLight = new THREE.DirectionalLight(0x8fb9d8, 0.10);
-    fillLight.position.set(-12, 10, 18);
+    // אור משלים קריר־סגלגל מימין: הצד המוצל נהיה קריר והמואר חם — ניגוד צבע של שקיעה.
+    const fillLight = new THREE.DirectionalLight(0x7f8fd0, 0.22);
+    fillLight.position.set(12, 8, 16);
     scene.add(fillLight);
 
     // אור קדמי עדין שמחזיר פרטים מהאזורים הכהים.
@@ -214,7 +215,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function addLavaRock(x, z, scale = 1) {
-        const darkMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.88, flatShading: true });
+        const darkMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.95, flatShading: true });
         addMesh(new THREE.DodecahedronGeometry(0.75 * scale, 0), darkMat, x, 0.55 * scale, z);
     }
 
@@ -365,6 +366,144 @@ window.addEventListener('DOMContentLoaded', () => {
         return sky;
     }
 
+    // ==========================================
+    // שמיים דרמטיים (backdrop): לוח ענק מאחורי הפירמידות עם גרדיאנט שקיעה, עננים כהים,
+    // זוהר שמש וקרני אור. הוא מצויר ברזולוציה מלאה בדיוק על הטווח שהמצלמה רואה
+    // (כיפת השמיים הרגילה מותחת רק ~40 פיקסלים על כל המסך, ולכן יצאה מטושטשת ושטוחה),
+    // ובלי tone mapping, כדי שהצבעים יגיעו למסך כמו שהם מוגדרים כאן.
+    // ==========================================
+    function createSunsetBackdropTexture() {
+        const W = 1024;
+        const H = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // המרה מזווית מעל האופק (מעלות) לשורת פיקסל בקנבס.
+        // הלוח במרחק 165 מהמצלמה, גובה המצלמה ~7.5, והלוח מכסה y מ-94 (למעלה) עד -34 (למטה).
+        const DIST = 165;
+        const pyAt = deg => (94 - (7.5 + DIST * Math.tan(deg * Math.PI / 180))) * 4;
+
+        // מחולל מספרים אקראי קבוע, כדי שהשמיים ייראו אותו דבר בכל טעינה.
+        let seed = 20260930;
+        const rnd = () => {
+            seed = (seed + 0x6D2B79F5) | 0;
+            let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+
+        // 1) גרדיאנט אנכי: סגול עמוק למעלה, ורוד־אדום, כתום, וזהב בקו האופק.
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        const stops = [
+            [28, '#1c1830'], [17, '#3e2748'], [12, '#7d3558'], [8.5, '#c9494f'],
+            [6, '#ee7f38'], [3, '#ffa845'], [0, '#ffd486'], [-6, '#f4b66b'], [-12, '#c98a52']
+        ];
+        stops.forEach(([deg, color]) => {
+            sky.addColorStop(Math.min(1, Math.max(0, pyAt(deg) / H)), color);
+        });
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2) זוהר השמש: מאחורי קצה הפירמידה המרכזית.
+        const sunX = W / 2;
+        const sunY = pyAt(7.6);
+        ctx.globalCompositeOperation = 'lighter';
+        const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 210);
+        glow.addColorStop(0, 'rgba(255,236,170,0.95)');
+        glow.addColorStop(0.10, 'rgba(255,205,120,0.70)');
+        glow.addColorStop(0.35, 'rgba(255,140,60,0.28)');
+        glow.addColorStop(1, 'rgba(255,100,50,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+
+        // 3) קרני אור (god rays) שיוצאות מהשמש.
+        for (let i = 0; i < 16; i++) {
+            const angle = (-Math.PI / 2) + (rnd() - 0.5) * 2.5;
+            const spread = 0.02 + rnd() * 0.05;
+            const len = 330 + rnd() * 120;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(sunX, sunY);
+            ctx.lineTo(sunX + Math.cos(angle - spread) * len, sunY + Math.sin(angle - spread) * len);
+            ctx.lineTo(sunX + Math.cos(angle + spread) * len, sunY + Math.sin(angle + spread) * len);
+            ctx.closePath();
+            ctx.clip();
+            const ray = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, len);
+            ray.addColorStop(0, `rgba(255,222,150,${0.10 + rnd() * 0.10})`);
+            ray.addColorStop(1, 'rgba(255,200,120,0)');
+            ctx.fillStyle = ray;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 4) עננים כהים וארוכים עם קצה תחתון זהוב. הקצוות רכים (גרדיאנט), בלי קווי מתאר חדים.
+        // העננים הנמוכים (קרובים לשמש) דלילים יותר, כדי שהזוהר יישאר גלוי מעל הפירמידות.
+        const softBlob = (cx, cy, rx, ry, rgb, alpha) => {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(1, ry / rx);
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+            g.addColorStop(0, `rgba(${rgb},${alpha})`);
+            g.addColorStop(0.55, `rgba(${rgb},${alpha * 0.7})`);
+            g.addColorStop(1, `rgba(${rgb},0)`);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, rx, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const bands = [
+            { deg: 16.0, tint: '52,30,62',  a: 0.60, n: 6 },
+            { deg: 14.0, tint: '64,32,64',  a: 0.60, n: 6 },
+            { deg: 12.2, tint: '82,36,62',  a: 0.55, n: 5 },
+            { deg: 10.6, tint: '104,42,58', a: 0.48, n: 4 },
+            { deg: 9.2,  tint: '126,50,52', a: 0.40, n: 2 }
+        ];
+        bands.forEach(({ deg, tint, a, n }) => {
+            const baseY = pyAt(deg);
+            for (let c = 0; c < n; c++) {
+                const cx = 220 + rnd() * 580;
+                const cy = baseY + (rnd() - 0.5) * 10;
+                const rx = 70 + rnd() * 140;
+                const ry = 7 + rnd() * 11;
+                for (let k = 0; k < 3; k++) {
+                    const ox = (rnd() - 0.5) * rx * 0.8;
+                    const oy = (rnd() - 0.5) * ry * 0.6;
+                    const erx = rx * (0.55 + rnd() * 0.4);
+                    const ery = ry * (0.8 + rnd() * 0.5);
+                    softBlob(cx + ox, cy + oy + ery * 0.7, erx, ery * 1.1, '255,170,80', 0.42);  // קצה זהוב מתחת
+                    softBlob(cx + ox, cy + oy, erx, ery, tint, a);                                 // גוף כהה
+                }
+            }
+        });
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.encoding = THREE.sRGBEncoding;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = false;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    function addSkyBackdrop() {
+        const mat = new THREE.MeshBasicMaterial({
+            map: createSunsetBackdropTexture(),
+            depthWrite: false,
+            fog: false,
+            toneMapped: false
+        });
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(256, 128), mat);
+        plane.position.set(0, 30, -150);
+        plane.renderOrder = -90;
+        mapGroup.add(plane);
+        return plane;
+    }
+
     function addSunGlow(mapId) {
         let color = 0xffe0a8;
         if (mapId === 'forest') color = 0xd7efc1;
@@ -372,16 +511,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (mapId === 'volcano') color = 0xff6a3a;
 
         const sun = new THREE.Mesh(
-            new THREE.SphereGeometry(2.8, 20, 14),
+            new THREE.SphereGeometry(2.2, 16, 12),
             new THREE.MeshBasicMaterial({
                 color,
                 transparent: true,
-                opacity: 0.58,
+                opacity: 0.72,
                 depthWrite: false,
                 fog: false
             })
         );
-        sun.position.set(-10, 16.5, -52);
+        sun.position.set(-8, 17, -52);
         sun.renderOrder = -50;
         mapGroup.add(sun);
 
@@ -472,7 +611,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addEnvironmentalDepth(mapId) {
         addSkyDome(mapId);
-        addSunGlow(mapId);
+        if (mapId === 'desert') {
+            addSkyBackdrop();   // שמיים דרמטיים + שמש מאחורי הפירמידה (במקום כדור השמש הלבן)
+        } else {
+            addSunGlow(mapId);
+        }
 
         if (mapId === 'desert') {
             // שכבת אובך חמה באופק — מחברת את הפירמידות לשמיים.
@@ -944,8 +1087,8 @@ window.addEventListener('DOMContentLoaded', () => {
         let rimColor = 0xc6edff;
 
         if (mapId === 'desert') {
-            keyColor = 0xffb45f;
-            rimColor = 0x7cc5ff;
+            keyColor = 0xffc77a;
+            rimColor = 0xb8d6ff;
         } else if (mapId === 'forest') {
             keyColor = 0x8be28b;
             rimColor = 0x9ed6ff;
@@ -957,11 +1100,11 @@ window.addEventListener('DOMContentLoaded', () => {
             rimColor = 0x6db5ff;
         }
 
-        const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : (mapId === 'desert' ? 0.32 : 0.22), 6.5, 2);
+        const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : 0.22, 6.5, 2);
         key.position.set(0, 2.7, 2.2);
         cannonGroup.add(key);
 
-        const rim = new THREE.PointLight(rimColor, mapId === 'desert' ? 0.42 : 0.34, 7, 2);
+        const rim = new THREE.PointLight(rimColor, 0.34, 7, 2);
         rim.position.set(0, 2.0, -2.4);
         cannonGroup.add(rim);
 
@@ -981,9 +1124,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const bumpCtx = bumpCanvas.getContext('2d');
 
         // צבעי דשא בהירים בצדדים — כמו ברפרנס — עם מרקם עדין.
-        const base = '#47652b';
-        const accentA = '#5c7d36';
-        const accentB = '#304d20';
+        const base = '#6f9148';
+        const accentA = '#7fa456';
+        const accentB = '#5e803f';
 
         ctx.fillStyle = base;
         ctx.fillRect(0, 0, 512, 512);
@@ -1737,7 +1880,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     new THREE.BoxGeometry(width, height, 4.5),
                     new THREE.MeshStandardMaterial({
                         color: mapId === 'desert' ? GRASS_GREEN : palette[(i + sideIndex) % palette.length],
-                        roughness: 0.91,
+                        roughness: 0.96,
                         metalness: mapId === 'ice' ? 0.03 : 0,
                         flatShading: true
                     })
@@ -1882,10 +2025,6 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.fog.color.set(FOG_COLOR);
             scene.fog.near = FOG_NEAR;
             scene.fog.far = FOG_FAR;
-            sunLight.color.set(0xffe6c0);
-            sunLight.intensity = 1.35;
-            hemiLight.color.set(0xfff0d8);
-            hemiLight.intensity = 0.50;
 
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
@@ -2723,31 +2862,31 @@ window.addEventListener('DOMContentLoaded', () => {
         const bullet = new THREE.Group();
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.13, 12, 12),
-            new THREE.MeshBasicMaterial({ color: 0xfff2b0 })
+            new THREE.SphereGeometry(0.16, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffffd8 })
         );
 
         const shell = new THREE.Mesh(
-            new THREE.SphereGeometry(0.20, 12, 12),
+            new THREE.SphereGeometry(0.23, 12, 12),
             new THREE.MeshBasicMaterial({
                 color: 0xffc928,
                 transparent: true,
-                opacity: 0.20,
+                opacity: 0.28,
                 depthWrite: false
             })
         );
 
         const trail = new THREE.Mesh(
-            new THREE.SphereGeometry(0.075, 10, 10),
+            new THREE.SphereGeometry(0.10, 10, 10),
             new THREE.MeshBasicMaterial({
                 color: 0xff9f1c,
                 transparent: true,
-                opacity: 0.32,
+                opacity: 0.42,
                 depthWrite: false
             })
         );
-        trail.scale.set(0.52, 2.8, 0.52);
-        trail.position.y = -0.19;
+        trail.scale.set(0.62, 3.8, 0.62);
+        trail.position.y = -0.25;
 
         bullet.add(core, shell, trail);
         bullet.position.set(x, y, z);
@@ -3056,7 +3195,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function spawnCoin(x, y) {
         const geo = new THREE.CylinderGeometry(0.28, 0.28, 0.08, 14);
-        const mat = new THREE.MeshStandardMaterial({ color: 0xd99a18, metalness: 0.92, roughness: 0.18, emissive: 0x3a2100, emissiveIntensity: 0.12 });
+        const mat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 });
         const coin = new THREE.Mesh(geo, mat);
         coin.rotation.x = Math.PI / 2;
         coin.position.set(x, y, 0);
