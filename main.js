@@ -2458,10 +2458,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.72, 0.29, 0.72],
-        [ 1.72, 0.29, 0.72],
-        [-1.72, 0.29, -0.72],
-        [ 1.72, 0.29, -0.72]
+        [-1.58, 0.04, 0.72],
+        [ 1.58, 0.04, 0.72],
+        [-1.58, 0.04, -0.72],
+        [ 1.58, 0.04, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2535,8 +2535,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // =========================================================
     // מתלי אוויר בסגנון Moon Buggy — עבים, עגולים ומכניים
     // =========================================================
-    // הגוף מורם יחסית לצירי הגלגלים. הגלגלים עצמם נשארים באותה
-    // זווית/אוריינטציה ובאותו מנגנון גלגול בדיוק כמו קודם.
+    // גוף התותח מורם משמעותית מעל הגלגלים. הגלגלים יושבים נמוך בצדדים,
+    // מתחת לקו התחתון של הגוף, בעוד מנגנון הסיבוב והאוריינטציה שלהם נשמרים.
     const suspensionAirMat = new THREE.MeshPhysicalMaterial({
         color: 0xd7dce0,
         roughness: 0.30,
@@ -2600,12 +2600,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addMoonBuggyAirBag(side, z) {
         // גוף התותח גבוה יותר; המתלה ממלא את החלל עד לנאבת הגלגל.
-        const upperY = 0.62;
-        const lowerY = 0.34;
-        const xBody = side * 1.13;
-        const xWheel = side * 1.57;
-        const xBag = side * 1.37;
-        const bagY = 0.52;
+        const upperY = 0.68;
+        const lowerY = 0.10;
+        const xBody = side * 1.10;
+        const xWheel = side * 1.52;
+        const xBag = side * 1.31;
+        const bagY = 0.39;
 
         // תושבת עליונה בגוף.
         const upperMount = new THREE.Mesh(
@@ -2683,8 +2683,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // זרוע נוספת באלכסון ליצירת הגאומטריה הכפולה של הבאגי.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 1.19, 0.39, z),
-            new THREE.Vector3(side * 1.59, 0.28, z),
+            new THREE.Vector3(side * 1.17, 0.22, z),
+            new THREE.Vector3(side * 1.54, 0.06, z),
             0.042,
             suspensionDarkMetalMat,
             9
@@ -2692,19 +2692,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // מוט מבריק קטן ליד כרית האוויר.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 1.49, 0.33, z),
-            new THREE.Vector3(side * 1.32, 0.70, z),
+            new THREE.Vector3(side * 1.47, 0.12, z),
+            new THREE.Vector3(side * 1.30, 0.73, z),
             0.030,
             suspensionMetalMat,
             8
         );
 
         // מפרקי כדור בולטים.
-        addSuspensionJoint(new THREE.Vector3(side * 1.19, 0.39, z), 0.075);
-        addSuspensionJoint(new THREE.Vector3(side * 1.59, 0.28, z), 0.082);
+        addSuspensionJoint(new THREE.Vector3(side * 1.17, 0.22, z), 0.075);
+        addSuspensionJoint(new THREE.Vector3(side * 1.54, 0.06, z), 0.082);
     }
 
     // ארבע יחידות — שתיים בכל צד, קדמית ואחורית.
+    // המתלים עוברים מתחת לגוף ומחברים אותו ישירות לאזורי הנאבות.
     [-1, 1].forEach(side => {
         [0.72, -0.72].forEach(z => {
             addMoonBuggyAirBag(side, z);
@@ -2827,7 +2828,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let targetX = 0;
 
     let cannonRecoil = 0;
-    const cannonBaseY = 0.20;
+    const cannonBaseY = 0.45;
     cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
