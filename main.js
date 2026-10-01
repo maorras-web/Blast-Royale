@@ -2474,19 +2474,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const rimCapGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.24, 12);
 
     wheelPositions.forEach(pos => {
-        // wheelOuter = היגוי בלבד.
-        // wheel = סיבוב הגלגל בלבד.
-        // הגלגל עצמו מיושר כך שצירו הוא X; לכן הסיבוב מתבצע סביב X בלבד.
+        // wheelOuter = היגוי.
+        // wheel = הציר שמסתובב. ההפרדה הזו מאפשרת גם היגוי וגם סיבוב אמיתי של הגלגל.
         const wheelOuter = new THREE.Group();
         wheelOuter.position.set(pos[0], pos[1], pos[2]);
 
         const wheel = new THREE.Group();
+        // הגלגלים כאן נוסעים ימינה/שמאלה, לכן ציר הגלגל הוא Z.
+        // כך סיבוב סביב Z הוא גלגול אמיתי קדימה/אחורה ולא סיבוב הצידה.
         wheelOuter.add(wheel);
 
         const tire = new THREE.Mesh(tireGeo, offroadTireMat);
-        // TorusGeometry כבר מיושר סביב ציר Y, ולכן מסובבים את הגאומטריה
-        // 90° כדי שציר הגלגל יהיה X.
-        tire.rotation.z = Math.PI / 2;
         tire.castShadow = true;
         tire.receiveShadow = true;
         wheel.add(tire);
@@ -2496,40 +2494,37 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < knobCount; i++) {
             const ang = (i / knobCount) * Math.PI * 2;
             const knob = new THREE.Mesh(knobGeo, offroadTireMat);
-            knob.position.set(0, Math.cos(ang) * 0.47, Math.sin(ang) * 0.47);
-            knob.rotation.x = -ang;
+            knob.position.set(Math.cos(ang) * 0.47, Math.sin(ang) * 0.47, 0);
+            knob.rotation.z = -ang;
             knob.castShadow = true;
             wheel.add(knob);
         }
 
         // חישוק מתכתי אפור.
         const rim = new THREE.Mesh(rimDiscGeo, hubMat);
-        // CylinderGeometry צירו Y -> הופך לציר X.
-        rim.rotation.z = Math.PI / 2;
+        rim.rotation.x = Math.PI / 2;
         rim.castShadow = true;
         wheel.add(rim);
 
         [-1, 1].forEach(side => {
             const ring = new THREE.Mesh(rimRingGeo, darkMetalMat);
-            ring.rotation.z = Math.PI / 2;
-            ring.position.x = side * 0.105;
+            ring.position.z = side * 0.105;
             wheel.add(ring);
 
             for (let i = 0; i < 5; i++) {
                 const spoke = new THREE.Mesh(spokeGeo, darkMetalMat);
-                spoke.position.x = side * 0.108;
-                spoke.rotation.x = (i / 5) * Math.PI;
+                spoke.position.z = side * 0.108;
+                spoke.rotation.z = (i / 5) * Math.PI;
                 wheel.add(spoke);
             }
 
             const cap = new THREE.Mesh(rimCapGeo, boltMat);
-            cap.rotation.z = Math.PI / 2;
+            cap.rotation.x = Math.PI / 2;
             wheel.add(cap);
         });
 
-        wheelOuter.userData.steerable = pos[2] > 0;
-        wheelOuter.userData.side = pos[0] < 0 ? -1 : 1;
-        wheelOuter.userData.baseRotationY = 0;
+        // אין היגוי מלאכותי: התותח נע ימינה/שמאלה, ולכן כל ארבעת הגלגלים
+        // מתגלגלים יחד סביב ציר Z. זה מונע סיבוב עקום בזמן שינוי כיוון.
         wheelOuter.userData.spinGroup = wheel;
         wheelOuter.userData.lastX = wheelOuter.position.x;
 
@@ -3344,7 +3339,7 @@ window.addEventListener('DOMContentLoaded', () => {
         level = 1;
         hasStartedFirstWave = false;
         cannonRecoil = 0;
-        cannonGroup.position.set(0, cannonBaseY + 0.10, 0);
+        cannonGroup.position.set(0, cannonBaseY, 0);
         selectedMap = 'forest';
         buildMap('forest');
         updateUI();
@@ -3379,34 +3374,22 @@ window.addEventListener('DOMContentLoaded', () => {
         barrelAssembly.position.z +=
             ((-cannonRecoil * 0.65) - barrelAssembly.position.z) * 0.35;
 
-        // הגבהה קלה וקבועה כדי שהגוף לא יישב על הגלגלים.
-        const cannonRideHeight = 0.10;
-        cannonGroup.position.y += ((cannonBaseY + cannonRideHeight + cannonRecoil) - cannonGroup.position.y) * 0.35;
+        cannonGroup.position.y += ((cannonBaseY + cannonRecoil) - cannonGroup.position.y) * 0.35;
 
         // ======================================
-        // היגוי גלגלים - ימינה / שמאלה בלבד
+        // גלגול הגלגלים - תנועה אופקית אמיתית
         // ======================================
-        const moveDelta = targetX - cannonGroup.position.x;
-        const steerAngle = THREE.MathUtils.clamp(moveDelta * -0.26, -0.18, 0.18);
-
-        // היגוי + סיבוב גלגלים:
-        // ההיגוי נעשה על wheelOuter, והסיבוב הפיזי על spinGroup בלבד.
-        // כך הגלגל לא "ננעל" בזווית ולא נשאר סטטי בזמן נסיעה.
+        // התותח נע על ציר X, ולכן הגלגלים צריכים להסתובב סביב ציר Z.
+        // אין כאן היגוי נוסף: כל הגלגלים נשארים ישרים ומתגלגלים באותה מהירות.
         const currentCannonX = cannonGroup.position.x;
         const previousCannonX = cannonGroup.userData.previousWheelX ?? currentCannonX;
         const wheelTravel = currentCannonX - previousCannonX;
-        const wheelRadius = 0.465 * CANNON_SCALE;
-        const spinAmount = wheelRadius > 0.001
-            ? (wheelTravel / wheelRadius)
-            : 0;
+        const wheelRadius = 0.47 * CANNON_SCALE;
+        const spinAmount = wheelRadius > 0.001 ? wheelTravel / wheelRadius : 0;
 
         cannonWheels.forEach(wheelOuter => {
-            const targetSteer = wheelOuter.userData.steerable ? steerAngle : 0;
-            wheelOuter.rotation.y += (targetSteer - wheelOuter.rotation.y) * 0.18;
-
             if (wheelOuter.userData.spinGroup && Math.abs(spinAmount) > 0.000001) {
-                // סיבוב פיזי סביב ציר הגלגל בלבד.
-                wheelOuter.userData.spinGroup.rotation.x -= spinAmount;
+                wheelOuter.userData.spinGroup.rotation.z -= spinAmount;
             }
         });
 
