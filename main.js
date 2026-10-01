@@ -1860,6 +1860,115 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 3D WORLD CORRIDOR — שכבות עומק אמיתיות
     // ==========================================
+    // מעבר עומק נוסף למפת המדבר: תותח → עשב קדמי → אמצע המפה → פירמידות → שמיים.
+    // שכבה ויזואלית בלבד — אינה נוגעת בפיזיקה, במסלול או בתותח.
+    function addDesertDepthTransition(mapId) {
+        if (mapId !== 'desert') return;
+
+        const group = new THREE.Group();
+        mapGroup.add(group);
+
+        // צבעים מעט כהים יותר ככל שמתרחקים, כדי ליצור הפרדה בין שכבות העומק.
+        const foregroundMat = new THREE.MeshStandardMaterial({
+            color: 0x4f7f2d,
+            roughness: 0.98,
+            flatShading: true
+        });
+        const midMat = new THREE.MeshStandardMaterial({
+            color: 0x5b8535,
+            roughness: 1.0,
+            flatShading: true
+        });
+        const farMat = new THREE.MeshStandardMaterial({
+            color: 0x71804a,
+            roughness: 1.0,
+            flatShading: true
+        });
+
+        // 1) קדמת המסך — קבוצות עשב נמוכות בצדדים, בלי להיכנס למסלול.
+        for (let i = 0; i < 24; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const x = side * (5.3 + Math.random() * 4.1);
+            const z = -2.5 - Math.random() * 6.5;
+            const h = 0.28 + Math.random() * 0.48;
+            const w = 0.055 + Math.random() * 0.035;
+
+            const tuft = new THREE.Mesh(
+                new THREE.ConeGeometry(w, h, 5),
+                foregroundMat
+            );
+            tuft.position.set(x, h * 0.5, z);
+            tuft.rotation.z = (Math.random() - 0.5) * 0.35;
+            tuft.rotation.y = Math.random() * Math.PI;
+            tuft.castShadow = true;
+            group.add(tuft);
+        }
+
+        // 2) אמצע המפה — גושים נמוכים שממלאים את המעבר ולא נראים כמו קיר.
+        for (let i = 0; i < 16; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const depth = Math.random();
+            const x = side * (6.4 + depth * 3.8);
+            const z = -9.0 - depth * 11.0;
+            const s = 0.42 + Math.random() * 0.55;
+
+            const mound = new THREE.Mesh(
+                new THREE.SphereGeometry(1, 9, 6),
+                midMat
+            );
+            mound.scale.set(0.75 * s, 0.22 * s, 1.0 * s);
+            mound.position.set(x, 0.16 * s, z);
+            mound.rotation.y = Math.random() * Math.PI;
+            mound.receiveShadow = true;
+            group.add(mound);
+
+            // כמה עשבים מעל הגושים כדי לחבר בין הקרקע לאופק.
+            if (i % 2 === 0) {
+                const grass = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.06 * s, 0.55 * s, 5),
+                    midMat
+                );
+                grass.position.set(x + (Math.random() - 0.5) * 0.35, 0.48 * s, z);
+                grass.rotation.z = (Math.random() - 0.5) * 0.25;
+                grass.castShadow = true;
+                group.add(grass);
+            }
+        }
+
+        // 3) שכבת מרחק — צלליות נמוכות שמייצרות מעבר רך אל הפירמידות.
+        for (let i = 0; i < 10; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const z = -20.0 - Math.random() * 8.0;
+            const x = side * (8.5 + Math.random() * 4.5);
+            const w = 0.9 + Math.random() * 1.0;
+            const h = 0.65 + Math.random() * 0.75;
+
+            const silhouette = new THREE.Mesh(
+                new THREE.ConeGeometry(w, h, 6),
+                farMat
+            );
+            silhouette.position.set(x, h * 0.5, z);
+            silhouette.scale.z = 0.7;
+            silhouette.rotation.y = Math.random() * Math.PI;
+            silhouette.receiveShadow = true;
+            group.add(silhouette);
+        }
+
+        // שכבת אובך עדינה בגובה נמוך שמחברת את אמצע המפה לבסיס הפירמידות.
+        const transitionHazeMat = new THREE.MeshBasicMaterial({
+            color: 0xffc982,
+            transparent: true,
+            opacity: 0.055,
+            depthWrite: false,
+            fog: false
+        });
+        const transitionHaze = new THREE.PlaneGeometry(27, 3.2);
+        const haze = new THREE.Mesh(transitionHaze, transitionHazeMat);
+        haze.position.set(0, 1.55, -24.5);
+        haze.renderOrder = -5;
+        group.add(haze);
+    }
+
     function addDeepPerspectiveCorridor(mapId) {
         const group = new THREE.Group();
         mapGroup.add(group);
@@ -2023,6 +2132,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addForegroundScenery(theme);
         addPerspectiveDepthDetails(theme);
         addDeepPerspectiveCorridor(theme);
+        addDesertDepthTransition(theme);
         add3DGrass(mapId);
         addWeatherParticles(theme);
 
