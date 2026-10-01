@@ -2458,10 +2458,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.72, 0.49, 0.72],
-        [ 1.72, 0.49, 0.72],
-        [-1.72, 0.49, -0.72],
-        [ 1.72, 0.49, -0.72]
+        [-1.72, 0.29, 0.72],
+        [ 1.72, 0.29, 0.72],
+        [-1.72, 0.29, -0.72],
+        [ 1.72, 0.29, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2533,31 +2533,38 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================
-    // מתלי אוויר צדדיים — מרווח אמיתי בין הגוף לגלגלים
+    // מתלי אוויר בסגנון Moon Buggy — עבים, עגולים ומכניים
     // =========================================================
-    // הגלגלים הוזזו החוצה כדי להשאיר "חלון" מכני ברור.
-    // בכל צד יש שני מתלי אוויר: קדמי ואחורי.
-    const suspensionAirMat = new THREE.MeshStandardMaterial({
-        color: 0x11171b,
-        roughness: 0.72,
-        metalness: 0.18
+    // הגוף מורם יחסית לצירי הגלגלים. הגלגלים עצמם נשארים באותה
+    // זווית/אוריינטציה ובאותו מנגנון גלגול בדיוק כמו קודם.
+    const suspensionAirMat = new THREE.MeshPhysicalMaterial({
+        color: 0xd7dce0,
+        roughness: 0.30,
+        metalness: 0.10,
+        clearcoat: 0.72,
+        clearcoatRoughness: 0.18
     });
 
-    const suspensionMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x8797a0,
-        roughness: 0.24,
-        metalness: 0.86
+    const suspensionRubberMat = new THREE.MeshStandardMaterial({
+        color: 0x15181b,
+        roughness: 0.86,
+        metalness: 0.05
     });
 
-    const suspensionAccentMat = new THREE.MeshStandardMaterial({
-        color: 0x35a9c9,
-        emissive: 0x083d4d,
-        emissiveIntensity: 0.32,
-        roughness: 0.34,
-        metalness: 0.38
+    const suspensionMetalMat = new THREE.MeshPhysicalMaterial({
+        color: 0x6f7d85,
+        roughness: 0.22,
+        metalness: 0.88,
+        clearcoat: 0.20
     });
 
-    function addCylinderBetweenPoints(a, b, radius, material, segments = 10) {
+    const suspensionDarkMetalMat = new THREE.MeshStandardMaterial({
+        color: 0x202a30,
+        roughness: 0.30,
+        metalness: 0.82
+    });
+
+    function addSuspensionCylinderBetween(a, b, radius, material, segments = 10) {
         const start = new THREE.Vector3(a.x, a.y, a.z);
         const end = new THREE.Vector3(b.x, b.y, b.z);
         const direction = new THREE.Vector3().subVectors(end, start);
@@ -2579,108 +2586,141 @@ window.addEventListener('DOMContentLoaded', () => {
         return mesh;
     }
 
-    function addAirSuspension(side, z) {
-        // נקודת החיבור העליונה יושבת בתוך שפת השלדה.
-        const upper = new THREE.Vector3(
-            side * 1.20,
-            0.49,
-            z
+    function addSuspensionJoint(position, radius = 0.10) {
+        const joint = new THREE.Mesh(
+            new THREE.SphereGeometry(radius, 14, 10),
+            suspensionDarkMetalMat
         );
+        joint.position.copy(position);
+        joint.castShadow = true;
+        joint.receiveShadow = true;
+        cannonGroup.add(joint);
+        return joint;
+    }
 
-        // נקודת החיבור התחתונה יושבת ליד מרכז הגלגל.
-        const lower = new THREE.Vector3(
-            side * 1.60,
-            0.49,
-            z
-        );
+    function addMoonBuggyAirBag(side, z) {
+        // גוף התותח גבוה יותר; המתלה ממלא את החלל עד לנאבת הגלגל.
+        const upperY = 0.62;
+        const lowerY = 0.34;
+        const xBody = side * 1.13;
+        const xWheel = side * 1.57;
+        const xBag = side * 1.37;
+        const bagY = 0.52;
 
-        // תושבות קצרות שמדגישות שהמתלה באמת מחובר לגוף ולגלגל.
+        // תושבת עליונה בגוף.
         const upperMount = new THREE.Mesh(
-            createRoundedBoxGeometry(0.20, 0.18, 0.30, 0.055, 0.025, 2),
+            createRoundedBoxGeometry(0.22, 0.16, 0.34, 0.055, 0.025, 2),
             suspensionMetalMat
         );
-        upperMount.position.copy(upper);
+        upperMount.position.set(xBody, upperY, z);
         upperMount.castShadow = true;
         cannonGroup.add(upperMount);
 
+        // תושבת תחתונה באזור ציר הגלגל.
         const lowerMount = new THREE.Mesh(
-            createRoundedBoxGeometry(0.20, 0.18, 0.30, 0.055, 0.025, 2),
+            createRoundedBoxGeometry(0.20, 0.15, 0.30, 0.05, 0.022, 2),
             suspensionMetalMat
         );
-        lowerMount.position.copy(lower);
+        lowerMount.position.set(xWheel, lowerY, z);
         lowerMount.castShadow = true;
         cannonGroup.add(lowerMount);
 
-        // זרוע אלכסונית שמחברת את נקודת השלדה למרכז הגלגל.
-        addCylinderBetweenPoints(
-            new THREE.Vector3(side * 1.23, 0.49, z),
-            new THREE.Vector3(side * 1.58, 0.49, z),
+        // כרית האוויר — גוף תפוח ורציף, לא רק טבעות דקות.
+        const airBag = new THREE.Group();
+        airBag.position.set(xBag, bagY, z);
+        airBag.scale.set(0.82, 1.0, 0.70);
+        cannonGroup.add(airBag);
+
+        const bagCore = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 18, 14),
+            suspensionAirMat
+        );
+        bagCore.scale.set(0.92, 1.10, 0.82);
+        bagCore.castShadow = true;
+        bagCore.receiveShadow = true;
+        airBag.add(bagCore);
+
+        // שלוש חגורות גומי סביב הכרית, בסגנון בלואוז של מתלה אוויר.
+        [-0.105, 0, 0.105].forEach(y => {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.20, 0.028, 8, 20),
+                suspensionRubberMat
+            );
+            ring.position.y = y;
+            ring.scale.z = 0.78;
+            ring.castShadow = true;
+            airBag.add(ring);
+        });
+
+        // מכסה מתכת עליון ותחתון של כרית האוויר.
+        [-1, 1].forEach(sign => {
+            const cap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.14, 0.14, 0.055, 14),
+                suspensionMetalMat
+            );
+            cap.position.y = sign * 0.255;
+            cap.castShadow = true;
+            airBag.add(cap);
+        });
+
+        // זרוע עליונה: גוף -> כרית.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(xBody, upperY, z),
+            new THREE.Vector3(xBag - side * 0.08, bagY + 0.16, z),
             0.055,
             suspensionMetalMat,
             10
         );
 
-        // "כרית אוויר" שחורה — כמה טבעות רחבות נותנות מראה של air bag אמיתי.
-        const airBag = new THREE.Group();
-        airBag.position.set(side * 1.415, 0.49, z);
-        airBag.rotation.z = side > 0 ? -0.05 : 0.05;
-        cannonGroup.add(airBag);
-
-        const bellowsRadii = [0.115, 0.135, 0.145, 0.135, 0.115];
-        bellowsRadii.forEach((radius, index) => {
-            const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(
-                    radius,
-                    0.032,
-                    7,
-                    16
-                ),
-                suspensionAirMat
-            );
-
-            ring.position.y = (index - 2) * 0.075;
-            ring.scale.z = 0.82;
-            ring.castShadow = true;
-            airBag.add(ring);
-        });
-
-        // ציר כרום פנימי שמחבר בין שתי קצות הכרית.
-        const piston = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.052, 0.052, 0.42, 10),
-            suspensionAccentMat
+        // זרוע תחתונה: כרית -> נאבת הגלגל.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(xBag + side * 0.08, bagY - 0.16, z),
+            new THREE.Vector3(xWheel, lowerY, z),
+            0.058,
+            suspensionMetalMat,
+            10
         );
-        piston.castShadow = true;
-        airBag.add(piston);
 
-        // כובעי חיבור עליונים ותחתונים.
-        [-1, 1].forEach(sign => {
-            const cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.105, 0.105, 0.055, 12),
-                suspensionMetalMat
-            );
-            cap.position.y = sign * 0.225;
-            cap.castShadow = true;
-            airBag.add(cap);
-        });
+        // זרוע נוספת באלכסון ליצירת הגאומטריה הכפולה של הבאגי.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(side * 1.19, 0.39, z),
+            new THREE.Vector3(side * 1.59, 0.28, z),
+            0.042,
+            suspensionDarkMetalMat,
+            9
+        );
+
+        // מוט מבריק קטן ליד כרית האוויר.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(side * 1.49, 0.33, z),
+            new THREE.Vector3(side * 1.32, 0.70, z),
+            0.030,
+            suspensionMetalMat,
+            8
+        );
+
+        // מפרקי כדור בולטים.
+        addSuspensionJoint(new THREE.Vector3(side * 1.19, 0.39, z), 0.075);
+        addSuspensionJoint(new THREE.Vector3(side * 1.59, 0.28, z), 0.082);
     }
 
-    // מתלה בכל פינה: שניים בכל צד, בדיוק בתוך המרווח שנוצר.
+    // ארבע יחידות — שתיים בכל צד, קדמית ואחורית.
     [-1, 1].forEach(side => {
         [0.72, -0.72].forEach(z => {
-            addAirSuspension(side, z);
+            addMoonBuggyAirBag(side, z);
         });
     });
 
-    // זרועות חיבור קטנות מאחורי הגלגלים, כדי שהמבנה ייראה מכני גם מהצד.
+    // חיבורי שלדה קצרים — נשארים מאחורי המתלים ולא משנים את זווית הגלגל.
     wheelPositions.forEach(pos => {
         const bracket = new THREE.Mesh(
-            createRoundedBoxGeometry(0.13, 0.42, 0.18, 0.045, 0.022, 2),
+            createRoundedBoxGeometry(0.13, 0.36, 0.18, 0.045, 0.022, 2),
             darkMetalMat
         );
 
         bracket.position.set(
-            pos[0] * 0.90,
-            0.42,
+            pos[0] * 0.69,
+            0.48,
             pos[2]
         );
 
@@ -2787,7 +2827,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let targetX = 0;
 
     let cannonRecoil = 0;
-    const cannonBaseY = 0;
+    const cannonBaseY = 0.20;
     cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
