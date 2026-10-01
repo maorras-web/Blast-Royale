@@ -2358,36 +2358,6 @@ window.addEventListener('DOMContentLoaded', () => {
     dome.receiveShadow = true;
     cannonGroup.add(dome);
 
-    // מעטפת פלסטיק שחורה חלקית סביב הכיפה — רק באזור הקדמי/הצדדי.
-    // היא יושבת מעט מחוץ לכיפה כדי למנוע z-fighting, בלי לשנות את הגובה
-    // או את הפיזיקה של התותח.
-    const domeShellMat = new THREE.MeshPhysicalMaterial({
-        color: 0x101417,
-        roughness: 0.32,
-        metalness: 0.08,
-        clearcoat: 0.72,
-        clearcoatRoughness: 0.20
-    });
-
-    const domeShell = new THREE.Mesh(
-        new THREE.SphereGeometry(0.925, 28, 14, 0, Math.PI, 0.22, 0.62),
-        domeShellMat
-    );
-    domeShell.position.y = 0.60;
-    domeShell.castShadow = true;
-    domeShell.receiveShadow = true;
-    cannonGroup.add(domeShell);
-
-    // פס קצה דק שמגדיר את קו המפגש של המעטפת עם הכיפה הכחולה.
-    const domeShellEdge = new THREE.Mesh(
-        new THREE.TorusGeometry(0.74, 0.028, 7, 28, Math.PI),
-        darkMetalMat
-    );
-    domeShellEdge.position.set(0, 0.60, 0.02);
-    domeShellEdge.rotation.y = Math.PI / 2;
-    domeShellEdge.castShadow = true;
-    cannonGroup.add(domeShellEdge);
-
     // צוואר צריח קטן שנותן מעבר פיזי בין הגוף לכיפה.
     const turretCollar = new THREE.Mesh(
         new THREE.CylinderGeometry(0.67, 0.74, 0.20, 20),
@@ -2481,6 +2451,17 @@ window.addEventListener('DOMContentLoaded', () => {
         barrelAssembly.add(bore);
     });
 
+    // =========================================================
+    // הגבהת גוף התותח ביחס לגלגלים
+    // =========================================================
+    // כל חלקי גוף התותח שנבנו עד לנקודה הזו מורמים, בעוד הגלגלים
+    // והמתלים שנוצרים בהמשך נשארים נמוכים. כך מתקבל מבנה כמו ברפרנס:
+    // גוף גבוה, מתלים גלויים מתחתיו וגלגלים בצדדים.
+    const CANNON_BODY_LIFT = 0.72;
+    cannonGroup.children.forEach(child => {
+        child.position.y += CANNON_BODY_LIFT;
+    });
+
     // גלגלים - הקדמיים משנים זווית היגוי בלבד, האחוריים נשארים ישרים.
     const wheelGeo = new THREE.CylinderGeometry(0.40, 0.40, 0.25, 18);
     const cannonWheels = [];
@@ -2488,10 +2469,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.34, 0.49, 0.72],
-        [ 1.34, 0.49, 0.72],
-        [-1.34, 0.49, -0.72],
-        [ 1.34, 0.49, -0.72]
+        [-1.58, 0.04, 0.72],
+        [ 1.58, 0.04, 0.72],
+        [-1.58, 0.04, -0.72],
+        [ 1.58, 0.04, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2562,21 +2543,160 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonWheels.push(wheelOuter);
     });
 
-    // זרועות מתלים שמחברות את הגלגלים לשלדה.
-    wheelPositions.forEach(pos => {
-        const bracket = new THREE.Mesh(
-            createRoundedBoxGeometry(0.16, 0.52, 0.22, 0.05, 0.025, 2),
-            darkMetalMat
+    // =========================================================
+    // מתלים בסגנון הרפרנס — Air Spring + Double Wishbone
+    // =========================================================
+    // המראה מכוון לתמונה ששלחת: כרית אוויר שחורה ועבה קרוב לגוף,
+    // שתי זרועות מתכת ארוכות שיורדות החוצה אל נאבת הגלגל, ומפרקים
+    // בולטים. זווית הגלגלים עצמה לא משתנה.
+    const suspensionRubberMat = new THREE.MeshStandardMaterial({
+        color: 0x17191b,
+        roughness: 0.88,
+        metalness: 0.03
+    });
+
+    const suspensionMetalMat = new THREE.MeshPhysicalMaterial({
+        color: 0xa7adb0,
+        roughness: 0.20,
+        metalness: 0.92,
+        clearcoat: 0.28,
+        clearcoatRoughness: 0.16
+    });
+
+    const suspensionDarkMetalMat = new THREE.MeshStandardMaterial({
+        color: 0x394146,
+        roughness: 0.28,
+        metalness: 0.84
+    });
+
+    function addSuspensionCylinderBetween(a, b, radius, material, segments = 12) {
+        const start = a.clone();
+        const end = b.clone();
+        const direction = new THREE.Vector3().subVectors(end, start);
+        const length = direction.length();
+        const mesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius, length, segments),
+            material
+        );
+        mesh.position.copy(start).add(end).multiplyScalar(0.5);
+        mesh.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            direction.normalize()
+        );
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        cannonGroup.add(mesh);
+        return mesh;
+    }
+
+    function addSuspensionJoint(position, radius = 0.09) {
+        const joint = new THREE.Mesh(
+            new THREE.SphereGeometry(radius, 14, 10),
+            suspensionDarkMetalMat
+        );
+        joint.position.copy(position);
+        joint.castShadow = true;
+        joint.receiveShadow = true;
+        cannonGroup.add(joint);
+        return joint;
+    }
+
+    function addReferenceAirSpring(side, z) {
+        const hub = new THREE.Vector3(side * 1.58, 0.04, z);
+
+        // כרית האוויר ממוקמת קרוב לדופן הגוף ומעל מרכז הגלגל,
+        // בדיוק כמו בתמונת ההמחשה.
+        const bagX = side * 1.15;
+        const bagY = 0.63;
+        const airSpring = new THREE.Group();
+        airSpring.position.set(bagX, bagY, z);
+        cannonGroup.add(airSpring);
+
+        // ליבת גומי עבה.
+        const core = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.21, 0.23, 0.52, 18),
+            suspensionRubberMat
+        );
+        core.castShadow = true;
+        core.receiveShadow = true;
+        airSpring.add(core);
+
+        // קפלי גומי אופקיים שנותנים מראה של כרית/בולם אוויר אמיתי.
+        [-0.18, -0.09, 0, 0.09, 0.18].forEach((y, i) => {
+            const fold = new THREE.Mesh(
+                new THREE.TorusGeometry(0.225 - Math.abs(i - 2) * 0.008, 0.028, 8, 22),
+                suspensionRubberMat
+            );
+            fold.rotation.x = Math.PI / 2;
+            fold.position.y = y;
+            fold.castShadow = true;
+            airSpring.add(fold);
+        });
+
+        // כיפות מתכת עליונה ותחתונה.
+        [-1, 1].forEach(sign => {
+            const cap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.17, 0.17, 0.055, 16),
+                suspensionMetalMat
+            );
+            cap.position.y = sign * 0.285;
+            cap.castShadow = true;
+            airSpring.add(cap);
+        });
+
+        // חיבור קצר מהגוף לראש כרית האוויר.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(side * 1.02, 1.02, z),
+            new THREE.Vector3(bagX, 0.90, z),
+            0.055,
+            suspensionMetalMat
         );
 
-        bracket.position.set(
-            pos[0] * 0.82,
-            0.40,
-            pos[2]
+        // זרועות wishbone תחתונות ארוכות — האלמנט הבולט ברפרנס.
+        const innerLowerA = new THREE.Vector3(side * 0.72, 0.45, z - 0.16);
+        const innerLowerB = new THREE.Vector3(side * 0.72, 0.45, z + 0.16);
+        const outerLowerA = new THREE.Vector3(side * 1.48, 0.08, z - 0.11);
+        const outerLowerB = new THREE.Vector3(side * 1.48, 0.08, z + 0.11);
+
+        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.055, suspensionMetalMat);
+        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.055, suspensionMetalMat);
+
+        // זרועות עליונות קצרות יותר ליצירת מבנה משולש אמיתי.
+        const innerUpperA = new THREE.Vector3(side * 0.96, 0.78, z - 0.13);
+        const innerUpperB = new THREE.Vector3(side * 0.96, 0.78, z + 0.13);
+        const outerUpperA = new THREE.Vector3(side * 1.46, 0.28, z - 0.09);
+        const outerUpperB = new THREE.Vector3(side * 1.46, 0.28, z + 0.09);
+
+        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.043, suspensionDarkMetalMat);
+        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.043, suspensionDarkMetalMat);
+
+        // מוט בולם אלכסוני בין הכרית לאזור הנאבה.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(bagX, 0.82, z),
+            new THREE.Vector3(side * 1.48, 0.16, z),
+            0.038,
+            suspensionMetalMat
         );
 
-        bracket.castShadow = true;
-        cannonGroup.add(bracket);
+        // מפרקים בולטים באזור הנאבה ובנקודות החיבור הפנימיות.
+        addSuspensionJoint(new THREE.Vector3(side * 1.48, 0.08, z), 0.095);
+        addSuspensionJoint(new THREE.Vector3(side * 1.46, 0.28, z), 0.080);
+        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.070);
+
+        // נאבה קטנה שמחברת ויזואלית את הזרועות לגלגל בלי לשנות את זוויתו.
+        const hubMount = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 0.20, 14),
+            suspensionDarkMetalMat
+        );
+        hubMount.rotation.x = Math.PI / 2;
+        hubMount.position.copy(hub);
+        hubMount.castShadow = true;
+        cannonGroup.add(hubMount);
+    }
+
+    // ארבע יחידות מתלה — אחת לכל גלגל.
+    [-1, 1].forEach(side => {
+        [0.72, -0.72].forEach(z => addReferenceAirSpring(side, z));
     });
 
     cannonGroup.scale.setScalar(
@@ -2678,7 +2798,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let targetX = 0;
 
     let cannonRecoil = 0;
-    const cannonBaseY = 0;
+    const cannonBaseY = 0.45;
     cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
@@ -3429,7 +3549,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // ירי
         // ======================================
         if (time - lastShotTime > 1000 / (fireRate * 4)) {
-            const bulletY = cannonGroup.position.y + 1.5 * CANNON_SCALE;
+            const bulletY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
             const leftX = cannonGroup.position.x - 0.35 * CANNON_SCALE;
             const rightX = cannonGroup.position.x + 0.35 * CANNON_SCALE;
 
