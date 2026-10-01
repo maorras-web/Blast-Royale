@@ -2345,9 +2345,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const dome = new THREE.Mesh(
         new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshPhysicalMaterial({
-            color: 0x6fa8c8,
-            roughness: 0.05,
-            metalness: 0.65,
+            color: 0x6fc0ea,
+            emissive: 0x0b2f44,
+            roughness: 0.06,
+            metalness: 0.15,
             clearcoat: 1.0,
             clearcoatRoughness: 0.12
         })
@@ -2870,24 +2871,24 @@ window.addEventListener('DOMContentLoaded', () => {
         const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.19, 12, 12),
-            new THREE.MeshBasicMaterial({ color: 0xfff1a0 })
+            new THREE.SphereGeometry(0.15, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffd24a })
         );
         const shell = new THREE.Mesh(
-            new THREE.SphereGeometry(0.34, 12, 12),
-            new THREE.MeshBasicMaterial({ color: 0xffb81c, opacity: 0.55, ...glow })
+            new THREE.SphereGeometry(0.24, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xff9a1a, opacity: 0.35, ...glow })
         );
         const halo = new THREE.Mesh(
-            new THREE.SphereGeometry(0.55, 10, 10),
-            new THREE.MeshBasicMaterial({ color: 0xff8a1c, opacity: 0.18, ...glow })
+            new THREE.SphereGeometry(0.36, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xff6a10, opacity: 0.07, ...glow })
         );
         // זנב להבה: חרוט מחודד שיורד מהכדור.
         const trail = new THREE.Mesh(
-            new THREE.ConeGeometry(0.2, 1.5, 10, 1, true),
-            new THREE.MeshBasicMaterial({ color: 0xff7a14, opacity: 0.5, side: THREE.DoubleSide, ...glow })
+            new THREE.ConeGeometry(0.11, 0.75, 8, 1, true),
+            new THREE.MeshBasicMaterial({ color: 0xff6a10, opacity: 0.32, side: THREE.DoubleSide, transparent: true, depthWrite: false })
         );
         trail.rotation.x = Math.PI;
-        trail.position.y = -0.85;
+        trail.position.y = -0.45;
 
         bullet.add(core, shell, halo, trail);
         bullet.position.set(x, y, z);
