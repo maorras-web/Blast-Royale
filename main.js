@@ -115,7 +115,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 2. תאורה מתקדמת ל-Low Poly
     // ==========================================
-    const hemiLight = new THREE.HemisphereLight(0xffe7c2, 0x172612, 0.38);
+    const hemiLight = new THREE.HemisphereLight(0xffd9a0, 0x172612, 0.30);
     scene.add(hemiLight);
 
     const sunLight = new THREE.DirectionalLight(0xffbd78, 1.75);
@@ -146,6 +146,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const frontLight = new THREE.DirectionalLight(0xffd19a, 0.10);
     frontLight.position.set(0, 8, 20);
     scene.add(frontLight);
+
+    // אור קצה זהוב מאחור-שמאל: מדגיש את קצוות הפירמידות כמו בתמונת היעד.
+    const rimLight = new THREE.DirectionalLight(0xffb04a, 1.15);
+    rimLight.position.set(-16, 7, -34);
+    scene.add(rimLight);
 
     // ==========================================
     // 3. מערכת מפות
@@ -397,8 +402,8 @@ window.addEventListener('DOMContentLoaded', () => {
         // 1) גרדיאנט אנכי: סגול עמוק למעלה, ורוד־אדום, כתום, וזהב בקו האופק.
         const sky = ctx.createLinearGradient(0, 0, 0, H);
         const stops = [
-            [28, '#1c1830'], [17, '#3e2748'], [12, '#7d3558'], [8.5, '#c9494f'],
-            [6, '#ee7f38'], [3, '#ffa845'], [0, '#ffd486'], [-6, '#f4b66b'], [-12, '#c98a52']
+            [30, '#3b3739'], [20, '#5a4a47'], [14, '#8a6046'], [10, '#c98a45'],
+            [6.5, '#efae4c'], [3, '#ffc968'], [0, '#ffe3a3'], [-6, '#f4c27a'], [-12, '#b98a58']
         ];
         stops.forEach(([deg, color]) => {
             sky.addColorStop(Math.min(1, Math.max(0, pyAt(deg) / H)), color);
@@ -419,7 +424,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(0, 0, W, H);
 
         // 3) קרני אור (god rays) שיוצאות מהשמש.
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 22; i++) {
             const angle = (-Math.PI / 2) + (rnd() - 0.5) * 2.5;
             const spread = 0.02 + rnd() * 0.05;
             const len = 330 + rnd() * 120;
@@ -431,7 +436,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.closePath();
             ctx.clip();
             const ray = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, len);
-            ray.addColorStop(0, `rgba(255,222,150,${0.10 + rnd() * 0.10})`);
+            ray.addColorStop(0, `rgba(255,222,150,${0.14 + rnd() * 0.12})`);
             ray.addColorStop(1, 'rgba(255,200,120,0)');
             ctx.fillStyle = ray;
             ctx.fillRect(0, 0, W, H);
@@ -457,11 +462,13 @@ window.addEventListener('DOMContentLoaded', () => {
         };
 
         const bands = [
-            { deg: 16.0, tint: '52,30,62',  a: 0.60, n: 6 },
-            { deg: 14.0, tint: '64,32,64',  a: 0.60, n: 6 },
-            { deg: 12.2, tint: '82,36,62',  a: 0.55, n: 5 },
-            { deg: 10.6, tint: '104,42,58', a: 0.48, n: 4 },
-            { deg: 9.2,  tint: '126,50,52', a: 0.40, n: 2 }
+            { deg: 26.0, tint: '58,52,54', a: 0.80, n: 9 },
+            { deg: 22.0, tint: '64,54,54', a: 0.80, n: 9 },
+            { deg: 18.5, tint: '74,58,54', a: 0.75, n: 8 },
+            { deg: 15.5, tint: '88,64,54', a: 0.70, n: 7 },
+            { deg: 13.0, tint: '104,70,52', a: 0.62, n: 6 },
+            { deg: 11.0, tint: '124,78,50', a: 0.52, n: 4 },
+            { deg: 9.4,  tint: '140,88,48', a: 0.38, n: 2 }
         ];
         bands.forEach(({ deg, tint, a, n }) => {
             const baseY = pyAt(deg);
@@ -2030,28 +2037,28 @@ window.addEventListener('DOMContentLoaded', () => {
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
             const rockTexture = createRockTexture();
             const pyramidMatA = new THREE.MeshStandardMaterial({
-                color: 0x725d4d,
+                color: 0x4f4034,
                 map: rockTexture.map,
                 bumpMap: rockTexture.bumpMap,
-                bumpScale: 0.48,
+                bumpScale: 0.9,
                 roughness: 0.95,
                 metalness: 0.0
             });
             const pyramidMatB = new THREE.MeshStandardMaterial({
-                color: 0x59483d,
+                color: 0x382d25,
                 map: rockTexture.map,
                 bumpMap: rockTexture.bumpMap,
-                bumpScale: 0.52,
+                bumpScale: 0.9,
                 roughness: 0.96,
                 metalness: 0.0
             });
             // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
             // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
-            const p1 = addMesh(new THREE.ConeGeometry(8.8, 13.2, 4, 12), pyramidMatA, -11.8, 6.6, -29);
+            const p1 = addMesh(new THREE.ConeGeometry(7.4, 17.5, 4, 12), pyramidMatA, -11.6, 8.75, -29);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(9.2, 13.8, 4, 12), pyramidMatA, 12.2, 6.9, -32);
+            const p2 = addMesh(new THREE.ConeGeometry(7.8, 18.5, 4, 12), pyramidMatA, 12.0, 9.25, -32);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(13.5, 14.2, 4, 14), pyramidMatB, 0, 7.1, -47);
+            const p3 = addMesh(new THREE.ConeGeometry(10.5, 15.5, 4, 14), pyramidMatB, 0, 7.75, -47);
             p3.rotation.y = Math.PI / 4;
 
             // פסי אור דקים בקצוות — נותנים לפירמידות מראה קולנועי בלי לשנות collision.
@@ -2059,7 +2066,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const edgeMat = new THREE.MeshBasicMaterial({
                     color: 0xffc36b,
                     transparent: true,
-                    opacity: i === 2 ? 0.045 : 0.065,
+                    opacity: i === 2 ? 0.07 : 0.12,
                     depthWrite: false,
                     blending: THREE.AdditiveBlending
                 });
@@ -2338,10 +2345,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const dome = new THREE.Mesh(
         new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshPhysicalMaterial({
-            color: 0x0d7fb8,
-            roughness: 0.12,
-            metalness: 0.38,
-            clearcoat: 0.50,
+            color: 0x6fa8c8,
+            roughness: 0.05,
+            metalness: 0.65,
+            clearcoat: 1.0,
             clearcoatRoughness: 0.12
         })
     );
@@ -2860,35 +2867,29 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function spawnBullet(x, y, z) {
         const bullet = new THREE.Group();
+        const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
 
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.16, 12, 12),
-            new THREE.MeshBasicMaterial({ color: 0xffffd8 })
+            new THREE.SphereGeometry(0.19, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xfff1a0 })
         );
-
         const shell = new THREE.Mesh(
-            new THREE.SphereGeometry(0.23, 12, 12),
-            new THREE.MeshBasicMaterial({
-                color: 0xffc928,
-                transparent: true,
-                opacity: 0.28,
-                depthWrite: false
-            })
+            new THREE.SphereGeometry(0.34, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffb81c, opacity: 0.55, ...glow })
         );
-
+        const halo = new THREE.Mesh(
+            new THREE.SphereGeometry(0.55, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xff8a1c, opacity: 0.18, ...glow })
+        );
+        // זנב להבה: חרוט מחודד שיורד מהכדור.
         const trail = new THREE.Mesh(
-            new THREE.SphereGeometry(0.10, 10, 10),
-            new THREE.MeshBasicMaterial({
-                color: 0xff9f1c,
-                transparent: true,
-                opacity: 0.42,
-                depthWrite: false
-            })
+            new THREE.ConeGeometry(0.2, 1.5, 10, 1, true),
+            new THREE.MeshBasicMaterial({ color: 0xff7a14, opacity: 0.5, side: THREE.DoubleSide, ...glow })
         );
-        trail.scale.set(0.62, 3.8, 0.62);
-        trail.position.y = -0.25;
+        trail.rotation.x = Math.PI;
+        trail.position.y = -0.85;
 
-        bullet.add(core, shell, trail);
+        bullet.add(core, shell, halo, trail);
         bullet.position.set(x, y, z);
         bullet.userData = { core, trail };
         scene.add(bullet);
@@ -3193,14 +3194,30 @@ window.addEventListener('DOMContentLoaded', () => {
         rocks.splice(index, 1);
     }
 
+    let coinTexture = null;
+    function getCoinTexture() {
+        if (coinTexture) return coinTexture;
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const g = c.getContext('2d');
+        const grad = g.createRadialGradient(46, 42, 6, 64, 64, 62);
+        grad.addColorStop(0, '#ffe98a'); grad.addColorStop(0.6, '#f2b92a'); grad.addColorStop(1, '#a8680c');
+        g.fillStyle = grad; g.beginPath(); g.arc(64, 64, 60, 0, Math.PI * 2); g.fill();
+        g.lineWidth = 5; g.strokeStyle = '#8a5408'; g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.stroke();
+        g.lineWidth = 3; g.strokeStyle = 'rgba(255,240,170,0.8)'; g.beginPath(); g.arc(64, 64, 57, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = '#9a5f0a'; g.font = '900 78px Rubik, Arial, sans-serif';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('$', 64, 70);
+        coinTexture = new THREE.CanvasTexture(c);
+        coinTexture.encoding = THREE.sRGBEncoding;
+        return coinTexture;
+    }
+
     function spawnCoin(x, y) {
-        const geo = new THREE.CylinderGeometry(0.28, 0.28, 0.08, 14);
-        const mat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 });
-        const coin = new THREE.Mesh(geo, mat);
-        coin.rotation.x = Math.PI / 2;
+        const coin = new THREE.Sprite(new THREE.SpriteMaterial({ map: getCoinTexture(), fog: false }));
+        coin.scale.set(0.95, 0.95, 1);
         coin.position.set(x, y, 0);
-        coin.castShadow = true;
-        coin.userData = { vy: -0.04 };
+        coin.userData = { vy: -0.04, spin: Math.random() * 6 };
         scene.add(coin);
         droppedCoins.push(coin);
     }
@@ -3572,7 +3589,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.position.y += c.userData.vy;
             }
 
-            c.rotation.z += 0.05;
+            c.userData.spin += 0.07;
+            c.scale.x = 0.95 * (0.25 + 0.75 * Math.abs(Math.cos(c.userData.spin)));
 
             if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.55) < 1.0) {
                 coins += 5;
