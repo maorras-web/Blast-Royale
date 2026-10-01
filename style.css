@@ -528,6 +528,7 @@ canvas {
     }
 }
 
+
 /* ==========================================
    מסך פתיחה בסגנון תמונת היעד (Ball Blast)
    ========================================== */
@@ -539,7 +540,21 @@ canvas {
 }
 #splash-screen .game-title { display: none; }
 #splash-screen .modal-card {
-    max-height: 56svh;
+    max-height: 62svh;
+    overflow-y: auto;
     background: rgba(30, 22, 14, 0.82);
     border-color: rgba(250, 204, 21, 0.35);
+    padding-bottom: 0;
+}
+/* מאפשר גלילה אנכית בתוך הכרטיס (ב-* יש touch-action: none) */
+#splash-screen .modal-card,
+#splash-screen .modal-card * {
+    touch-action: pan-y;
+}
+/* כפתור ההתחלה תמיד גלוי בתחתית הכרטיס */
+#splash-screen #start-btn {
+    position: sticky;
+    bottom: 0;
+    margin: 8px 0 14px;
+    z-index: 2;
 }
