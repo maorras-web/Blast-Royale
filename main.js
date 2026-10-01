@@ -2455,11 +2455,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const wheelGeo = new THREE.CylinderGeometry(0.40, 0.40, 0.25, 18);
     const cannonWheels = [];
 
+    // גלגלים ממוקמים מחוץ לשלדה, עם מרווח ברור כדי שלא ייבלעו בתוך גוף התותח.
+    // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
-        [-1.12, 0.22, 0.68],
-        [ 1.12, 0.22, 0.68],
-        [-1.12, 0.22, -0.68],
-        [ 1.12, 0.22, -0.68]
+        [-1.34, 0.49, 0.72],
+        [ 1.34, 0.49, 0.72],
+        [-1.34, 0.49, -0.72],
+        [ 1.34, 0.49, -0.72]
     ];
 
     // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
@@ -2472,10 +2474,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const rimCapGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.24, 12);
 
     wheelPositions.forEach(pos => {
-        // wheelOuter מקבל את תנועת ההיגוי; wheel הפנימי מסובב את הגלגל כך שפניו פונות למצלמה (כמו בתמונת הפתיח).
+        // wheelOuter = היגוי.
+        // wheel = הציר שמסתובב. ההפרדה הזו מאפשרת גם היגוי וגם סיבוב אמיתי של הגלגל.
         const wheelOuter = new THREE.Group();
-        wheelOuter.position.set(pos[0], pos[1] + 0.05, pos[2]);
+        wheelOuter.position.set(pos[0], pos[1], pos[2]);
+
         const wheel = new THREE.Group();
+        // אחרי הסיבוב הזה ציר Z המקומי של wheel מיושר עם ציר הגלגל בעולם.
         wheel.rotation.y = Math.PI / 2;
         wheelOuter.add(wheel);
 
@@ -2517,13 +2522,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const cap = new THREE.Mesh(rimCapGeo, boltMat);
             cap.rotation.z = Math.PI / 2;
-            cap.position.x = side * 0.0;
             wheel.add(cap);
         });
 
         wheelOuter.userData.steerable = pos[2] > 0;
         wheelOuter.userData.side = pos[0] < 0 ? -1 : 1;
         wheelOuter.userData.baseRotationY = 0;
+        wheelOuter.userData.spinGroup = wheel;
+        wheelOuter.userData.lastX = wheelOuter.position.x;
 
         cannonGroup.add(wheelOuter);
         cannonWheels.push(wheelOuter);
@@ -2537,8 +2543,8 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         bracket.position.set(
-            pos[0] * 0.94,
-            0.36,
+            pos[0] * 0.82,
+            0.40,
             pos[2]
         );
 
@@ -2646,6 +2652,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let cannonRecoil = 0;
     const cannonBaseY = 0;
+    cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
 
@@ -3378,10 +3385,27 @@ window.addEventListener('DOMContentLoaded', () => {
         const moveDelta = targetX - cannonGroup.position.x;
         const steerAngle = THREE.MathUtils.clamp(moveDelta * -0.26, -0.18, 0.18);
 
-        cannonWheels.forEach(wheel => {
-            const targetSteer = wheel.userData.steerable ? steerAngle : 0;
-            wheel.rotation.y += (targetSteer - wheel.rotation.y) * 0.18;
+        // היגוי + סיבוב גלגלים:
+        // ההיגוי נעשה על wheelOuter, והסיבוב הפיזי על spinGroup בלבד.
+        // כך הגלגל לא "ננעל" בזווית ולא נשאר סטטי בזמן נסיעה.
+        const currentCannonX = cannonGroup.position.x;
+        const previousCannonX = cannonGroup.userData.previousWheelX ?? currentCannonX;
+        const wheelTravel = currentCannonX - previousCannonX;
+        const wheelRadius = 0.47 * CANNON_SCALE;
+        const spinAmount = wheelRadius > 0.001
+            ? (wheelTravel / wheelRadius)
+            : 0;
+
+        cannonWheels.forEach(wheelOuter => {
+            const targetSteer = wheelOuter.userData.steerable ? steerAngle : 0;
+            wheelOuter.rotation.y += (targetSteer - wheelOuter.rotation.y) * 0.18;
+
+            if (wheelOuter.userData.spinGroup && Math.abs(spinAmount) > 0.000001) {
+                wheelOuter.userData.spinGroup.rotation.z -= spinAmount;
+            }
         });
+
+        cannonGroup.userData.previousWheelX = currentCannonX;
 
         // ======================================
         // ירי
