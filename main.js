@@ -2345,10 +2345,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const dome = new THREE.Mesh(
         new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshPhysicalMaterial({
-            color: 0x6fc0ea,
-            emissive: 0x0b2f44,
-            roughness: 0.06,
-            metalness: 0.15,
+            color: 0x1f7fc4,
+            emissive: 0x06304f,
+            roughness: 0.28,
+            metalness: 0.2,
             clearcoat: 1.0,
             clearcoatRoughness: 0.12
         })
@@ -2462,102 +2462,67 @@ window.addEventListener('DOMContentLoaded', () => {
         [ 1.12, 0.22, -0.68]
     ];
 
+    // צמיג שטח שחור עבה עם שיני אחיזה וחישוק מתכתי עם חישורים (כמו בתמונת הפתיחה).
+    const offroadTireMat = new THREE.MeshStandardMaterial({ color: 0x171413, roughness: 0.95, metalness: 0.0 });
+    const tireGeo = new THREE.TorusGeometry(0.30, 0.165, 12, 22);
+    const knobGeo = new THREE.BoxGeometry(0.30, 0.10, 0.12);
+    const rimDiscGeo = new THREE.CylinderGeometry(0.235, 0.235, 0.20, 20);
+    const rimRingGeo = new THREE.TorusGeometry(0.225, 0.028, 8, 20);
+    const spokeGeo = new THREE.BoxGeometry(0.04, 0.035, 0.40);
+    const rimCapGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.24, 12);
+
     wheelPositions.forEach(pos => {
-        const wheel = new THREE.Mesh(
-            wheelGeo,
-            rubberMat
-        );
+        const wheel = new THREE.Group();
+        wheel.position.set(pos[0], pos[1] + 0.05, pos[2]);
 
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(...pos);
-        wheel.castShadow = true;
-        wheel.receiveShadow = true;
+        const tire = new THREE.Mesh(tireGeo, offroadTireMat);
+        tire.rotation.y = Math.PI / 2;
+        tire.castShadow = true;
+        tire.receiveShadow = true;
+        wheel.add(tire);
 
-        wheel.userData.steerable =
-            pos[2] > 0;
+        // שיני אחיזה סביב הצמיג.
+        const knobCount = 14;
+        for (let i = 0; i < knobCount; i++) {
+            const ang = (i / knobCount) * Math.PI * 2;
+            const knob = new THREE.Mesh(knobGeo, offroadTireMat);
+            knob.position.set(0, Math.cos(ang) * 0.47, Math.sin(ang) * 0.47);
+            knob.rotation.x = -ang;
+            knob.castShadow = true;
+            wheel.add(knob);
+        }
 
-        wheel.userData.side =
-            pos[0] < 0 ? -1 : 1;
+        // חישוק מתכתי אפור.
+        const rim = new THREE.Mesh(rimDiscGeo, hubMat);
+        rim.rotation.z = Math.PI / 2;
+        rim.castShadow = true;
+        wheel.add(rim);
 
+        [-1, 1].forEach(side => {
+            const ring = new THREE.Mesh(rimRingGeo, darkMetalMat);
+            ring.rotation.y = Math.PI / 2;
+            ring.position.x = side * 0.105;
+            wheel.add(ring);
+
+            for (let i = 0; i < 5; i++) {
+                const spoke = new THREE.Mesh(spokeGeo, darkMetalMat);
+                spoke.position.x = side * 0.108;
+                spoke.rotation.x = (i / 5) * Math.PI;
+                wheel.add(spoke);
+            }
+
+            const cap = new THREE.Mesh(rimCapGeo, boltMat);
+            cap.rotation.z = Math.PI / 2;
+            cap.position.x = side * 0.0;
+            wheel.add(cap);
+        });
+
+        wheel.userData.steerable = pos[2] > 0;
+        wheel.userData.side = pos[0] < 0 ? -1 : 1;
         wheel.userData.baseRotationY = 0;
 
         cannonGroup.add(wheel);
         cannonWheels.push(wheel);
-
-        // דופן גלגל מתכתית.
-        const tireSide = new THREE.Mesh(
-            new THREE.TorusGeometry(
-                0.29,
-                0.055,
-                8,
-                18
-            ),
-            darkMetalMat
-        );
-
-        tireSide.rotation.y =
-            Math.PI / 2;
-
-        tireSide.position.copy(
-            wheel.position
-        );
-
-        tireSide.castShadow = true;
-        cannonGroup.add(tireSide);
-
-        // טבור מתכתי.
-        const hub = new THREE.Mesh(
-            new THREE.CylinderGeometry(
-                0.14,
-                0.14,
-                0.27,
-                14
-            ),
-            hubMat
-        );
-
-        hub.rotation.z =
-            Math.PI / 2;
-
-        hub.position.copy(
-            wheel.position
-        );
-
-        hub.castShadow = true;
-        cannonGroup.add(hub);
-
-        const hubCap = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.075, 0.075, 0.29, 12),
-            darkMetalMat
-        );
-        hubCap.rotation.z = Math.PI / 2;
-        hubCap.position.copy(wheel.position);
-        hubCap.castShadow = true;
-        cannonGroup.add(hubCap);
-
-        // חמישה ברגים סביב הטבור.
-        for (let i = 0; i < 5; i++) {
-            const angle =
-                (i / 5) * Math.PI * 2;
-
-            const bolt = new THREE.Mesh(
-                new THREE.SphereGeometry(
-                    0.035,
-                    7,
-                    6
-                ),
-                boltMat
-            );
-
-            bolt.position.set(
-                wheel.position.x,
-                wheel.position.y + Math.cos(angle) * 0.10,
-                wheel.position.z + Math.sin(angle) * 0.10
-            );
-
-            bolt.castShadow = true;
-            cannonGroup.add(bolt);
-        }
     });
 
     // זרועות מתלים שמחברות את הגלגלים לשלדה.
