@@ -2396,9 +2396,11 @@ window.addEventListener('DOMContentLoaded', () => {
     cannonGroup.add(accentPlate);
 
     // לוח קדמי כהה לצריח.
+    // לוח הצריח הקדמי נשאר בגיאומטריה המקורית, אבל כחול כדי שלא יכסה
+    // את הכיפה הכחולה בכתם שחור. שינוי חומר בלבד — ללא שינוי במיקום/פיזיקה.
     const frontPlate = new THREE.Mesh(
         createRoundedBoxGeometry(1.62, 0.48, 0.16, 0.12, 0.04, 2),
-        darkMetalMat
+        turretCollarMat
     );
     frontPlate.position.set(0, 0.70, 0.70);
     frontPlate.castShadow = true;
