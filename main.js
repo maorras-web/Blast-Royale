@@ -2480,12 +2480,11 @@ window.addEventListener('DOMContentLoaded', () => {
         wheelOuter.position.set(pos[0], pos[1], pos[2]);
 
         const wheel = new THREE.Group();
-        // אחרי הסיבוב הזה ציר Z המקומי של wheel מיושר עם ציר הגלגל בעולם.
-        wheel.rotation.y = Math.PI / 2;
+        // הגלגלים כאן נוסעים ימינה/שמאלה, לכן ציר הגלגל הוא Z.
+        // כך סיבוב סביב Z הוא גלגול אמיתי קדימה/אחורה ולא סיבוב הצידה.
         wheelOuter.add(wheel);
 
         const tire = new THREE.Mesh(tireGeo, offroadTireMat);
-        tire.rotation.y = Math.PI / 2;
         tire.castShadow = true;
         tire.receiveShadow = true;
         wheel.add(tire);
@@ -2495,39 +2494,37 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < knobCount; i++) {
             const ang = (i / knobCount) * Math.PI * 2;
             const knob = new THREE.Mesh(knobGeo, offroadTireMat);
-            knob.position.set(0, Math.cos(ang) * 0.47, Math.sin(ang) * 0.47);
-            knob.rotation.x = -ang;
+            knob.position.set(Math.cos(ang) * 0.47, Math.sin(ang) * 0.47, 0);
+            knob.rotation.z = -ang;
             knob.castShadow = true;
             wheel.add(knob);
         }
 
         // חישוק מתכתי אפור.
         const rim = new THREE.Mesh(rimDiscGeo, hubMat);
-        rim.rotation.z = Math.PI / 2;
+        rim.rotation.x = Math.PI / 2;
         rim.castShadow = true;
         wheel.add(rim);
 
         [-1, 1].forEach(side => {
             const ring = new THREE.Mesh(rimRingGeo, darkMetalMat);
-            ring.rotation.y = Math.PI / 2;
-            ring.position.x = side * 0.105;
+            ring.position.z = side * 0.105;
             wheel.add(ring);
 
             for (let i = 0; i < 5; i++) {
                 const spoke = new THREE.Mesh(spokeGeo, darkMetalMat);
-                spoke.position.x = side * 0.108;
-                spoke.rotation.x = (i / 5) * Math.PI;
+                spoke.position.z = side * 0.108;
+                spoke.rotation.z = (i / 5) * Math.PI;
                 wheel.add(spoke);
             }
 
             const cap = new THREE.Mesh(rimCapGeo, boltMat);
-            cap.rotation.z = Math.PI / 2;
+            cap.rotation.x = Math.PI / 2;
             wheel.add(cap);
         });
 
-        wheelOuter.userData.steerable = pos[2] > 0;
-        wheelOuter.userData.side = pos[0] < 0 ? -1 : 1;
-        wheelOuter.userData.baseRotationY = 0;
+        // אין היגוי מלאכותי: התותח נע ימינה/שמאלה, ולכן כל ארבעת הגלגלים
+        // מתגלגלים יחד סביב ציר Z. זה מונע סיבוב עקום בזמן שינוי כיוון.
         wheelOuter.userData.spinGroup = wheel;
         wheelOuter.userData.lastX = wheelOuter.position.x;
 
@@ -3380,26 +3377,17 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.position.y += ((cannonBaseY + cannonRecoil) - cannonGroup.position.y) * 0.35;
 
         // ======================================
-        // היגוי גלגלים - ימינה / שמאלה בלבד
+        // גלגול הגלגלים - תנועה אופקית אמיתית
         // ======================================
-        const moveDelta = targetX - cannonGroup.position.x;
-        const steerAngle = THREE.MathUtils.clamp(moveDelta * -0.26, -0.18, 0.18);
-
-        // היגוי + סיבוב גלגלים:
-        // ההיגוי נעשה על wheelOuter, והסיבוב הפיזי על spinGroup בלבד.
-        // כך הגלגל לא "ננעל" בזווית ולא נשאר סטטי בזמן נסיעה.
+        // התותח נע על ציר X, ולכן הגלגלים צריכים להסתובב סביב ציר Z.
+        // אין כאן היגוי נוסף: כל הגלגלים נשארים ישרים ומתגלגלים באותה מהירות.
         const currentCannonX = cannonGroup.position.x;
         const previousCannonX = cannonGroup.userData.previousWheelX ?? currentCannonX;
         const wheelTravel = currentCannonX - previousCannonX;
         const wheelRadius = 0.47 * CANNON_SCALE;
-        const spinAmount = wheelRadius > 0.001
-            ? (wheelTravel / wheelRadius)
-            : 0;
+        const spinAmount = wheelRadius > 0.001 ? wheelTravel / wheelRadius : 0;
 
         cannonWheels.forEach(wheelOuter => {
-            const targetSteer = wheelOuter.userData.steerable ? steerAngle : 0;
-            wheelOuter.rotation.y += (targetSteer - wheelOuter.rotation.y) * 0.18;
-
             if (wheelOuter.userData.spinGroup && Math.abs(spinAmount) > 0.000001) {
                 wheelOuter.userData.spinGroup.rotation.z -= spinAmount;
             }
