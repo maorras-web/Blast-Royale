@@ -2442,7 +2442,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const suspensionLinks = [];   // זרועות ובולמים: { mesh, a, b, aSprung, bSprung, len0 }
     const suspensionBags = [];    // כריות אוויר: { group, restTop, bottomY, h }
     const suspensionJoints = [];  // מפרקים שנעים עם הגוף: { mesh, rest }
-    const BAG_H = 0.70;
+    const BAG_H = 0.54;
 
     const _susPivot = new THREE.Vector3(0, BODY_PIVOT_Y, 0);
     const _susA = new THREE.Vector3();
@@ -2521,7 +2521,7 @@ window.addEventListener('DOMContentLoaded', () => {
             L.mesh.scale.y = len / L.len0;
         }
 
-        // כריות אוויר: התחתית קבועה, הראש עוקב אחרי הגוף. מתכווצת = מעט רחבה יותר.
+        // כריות אוויר: התחתית קבועה והראש עוקב אחרי הגוף. המיקום נשמר מתחת לשלדה כדי למנוע חדירה לגוף ולצמיג.
         for (let i = 0; i < suspensionBags.length; i++) {
             const B = suspensionBags[i];
             susPoint(B.restTop, true, _susA);
@@ -2893,8 +2893,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // כרית האוויר יושבת ממש בין הגוף לגלגל, כמו ברפרנס.
         // היא בנויה כמפוח רציף + קפלים עבים, כדי שהצורה תישאר ברורה גם מרחוק.
-        const bagX = side * 0.80;
-        const bagY = 0.82;
+        const bagX = side * 0.82;
+        const bagY = 0.48;
         const airSpring = new THREE.Group();
         airSpring.position.set(bagX, bagY, z);
         cannonGroup.add(airSpring);
@@ -2950,10 +2950,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // מכסי מתכת בולטים למעלה ולמטה.
         [-1, 1].forEach(sign => {
             const cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.255, 0.255, 0.075, 18),
+                new THREE.CylinderGeometry(0.245, 0.245, 0.065, 18),
                 suspensionMetalMat
             );
-            cap.position.y = sign * 0.365;
+            cap.position.y = sign * 0.272;
             cap.castShadow = true;
             cap.receiveShadow = true;
             airSpring.add(cap);
@@ -2961,8 +2961,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // חיבור עליון עבה לגוף.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 0.98, 1.16, z),
-            new THREE.Vector3(bagX, 1.10, z),
+            new THREE.Vector3(side * 0.92, 0.82, z),
+            new THREE.Vector3(bagX, 0.76, z),
             0.078,
             suspensionMetalMat,
             14,
@@ -2986,8 +2986,8 @@ window.addEventListener('DOMContentLoaded', () => {
         addSuspensionCylinderBetween(lowerB, lowerOuterB, 0.108, suspensionMetalMat, 16, true, false);
 
         // זרוע עליונה: יוצרת את ה-A-arm האופייני לתמונה.
-        const upperA = new THREE.Vector3(side * 0.88, 0.72, z - 0.18);
-        const upperB = new THREE.Vector3(side * 0.88, 0.72, z + 0.18);
+        const upperA = new THREE.Vector3(side * 0.84, 0.80, z - 0.18);
+        const upperB = new THREE.Vector3(side * 0.84, 0.80, z + 0.18);
         const upperOuterA = new THREE.Vector3(outerX, WHEEL_Y + 0.28, z - 0.105);
         const upperOuterB = new THREE.Vector3(outerX, WHEEL_Y + 0.28, z + 0.105);
 
@@ -2996,7 +2996,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // בולם כהה, עבה, צמוד לכרית - נותן עומק מכני.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(bagX, 0.98, z),
+            new THREE.Vector3(bagX, 0.70, z),
             new THREE.Vector3(outerX, WHEEL_Y + 0.15, z),
             0.070,
             suspensionDarkMetalMat,
@@ -3009,7 +3009,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addSuspensionJoint(new THREE.Vector3(outerX, WHEEL_Y + 0.01, z), 0.125);
         addSuspensionJoint(new THREE.Vector3(outerX, WHEEL_Y + 0.28, z), 0.105);
         addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.38, z), 0.100, true);
-        addSuspensionJoint(new THREE.Vector3(side * 0.88, 0.72, z), 0.092, true);
+        addSuspensionJoint(new THREE.Vector3(side * 0.84, 0.80, z), 0.092, true);
 
         // נאבה גדולה שמחברת ויזואלית את כל המתלה לגלגל.
         const hubMount = new THREE.Mesh(
