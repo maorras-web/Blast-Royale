@@ -3940,7 +3940,8 @@ window.addEventListener('DOMContentLoaded', () => {
         coin.userData = {
             vy: -0.04,
             spin: Math.random() * 6,
-            bob: Math.random() * Math.PI * 2
+            bob: Math.random() * Math.PI * 2,
+            age: 0
         };
         scene.add(coin);
         droppedCoins.push(coin);
@@ -4314,17 +4315,22 @@ window.addEventListener('DOMContentLoaded', () => {
         // ==========================================
         // מטבעות
         // ==========================================
-        // כלל האיסוף החדש:
-        // 1) אם המטבע נוגע בכיפת התותח - הוא נאסף מיד.
-        // 2) אם המטבע מגיע לרצפה - הוא נאסף מיד, גם אם הוא רחוק מהתותח.
-        // אין יותר אזור איסוף מלאכותי שמאפשר למטבע לעבור דרך התותח.
+        // כללי איסוף:
+        // 1) נגיעה בכיפה = איסוף מיידי.
+        // 2) הגעה לרצפה = איסוף מיידי בכל מקום.
+        // 3) אם מטבע נכנס מתחת/לתוך אזור התותח התחתון = איסוף מיידי.
+        // 4) המגנט מושך רק לרוחב/לעומק ואינו מחזיק יותר את המטבע באוויר.
+        // 5) Fail-safe: מטבע שנשאר בעולם זמן חריג נאסף אוטומטית.
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
 
+            c.userData.age = (c.userData.age || 0) + 1;
+
+            // המטבע תמיד ממשיך לרדת. זה מונע מצב שבו המגנט מחזיק אותו
+            // בגובה קבוע מתחת לתותח והוא "נדבק" לתנועת התותח.
+            c.position.y += c.userData.vy;
+
             if (magnetLvl > 0) {
-                // המגנט הוא בונוס בלבד: הוא מושך מטבעות קרובים לתותח,
-                // אבל אינו קובע אם המטבע נאסף. איסוף מתבצע רק במגע עם הכיפה
-                // או בהגעה לרצפה.
                 const magnetRadius = 2 + magnetLvl * 1.5;
                 const distToPlayer = Math.hypot(
                     c.position.x - cannonGroup.position.x,
@@ -4333,13 +4339,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (distToPlayer < magnetRadius) {
                     c.position.x += (cannonGroup.position.x - c.position.x) * 0.12;
-                    c.position.y += (1.12 - c.position.y) * 0.12;
                     c.position.z += (0.58 - c.position.z) * 0.12;
-                } else {
-                    c.position.y += c.userData.vy;
                 }
-            } else {
-                c.position.y += c.userData.vy;
             }
 
             c.userData.spin += 0.09;
@@ -4348,11 +4349,8 @@ window.addEventListener('DOMContentLoaded', () => {
             c.rotation.z = Math.sin(c.userData.bob) * 0.07;
 
             // ------------------------------------------
-            // 1. מגע אמיתי עם הכיפה הכחולה
+            // 1. מגע עם הכיפה הכחולה
             // ------------------------------------------
-            // הכיפה היא חצי-כדור ברדיוס ~0.90, והמטבע בקוטר ~0.88.
-            // לכן משתמשים ברדיוס מגע משולב שמאפשר איסוף בדיוק כשהמטבע
-            // מגיע לפני/על פני הכיפה, לפני שהוא יכול להיכנס לתוכה.
             const domeWorldPos = new THREE.Vector3();
             dome.getWorldPosition(domeWorldPos);
             const coinTouchRadius = 0.90 + 0.42;
@@ -4366,11 +4364,25 @@ window.addEventListener('DOMContentLoaded', () => {
             // ------------------------------------------
             // 2. המטבע הגיע לרצפה
             // ------------------------------------------
-            // אין קשר למרחק מהתותח: מטבע שנפל לרצפה נכנס מיד לארנק.
             const FLOOR_COIN_Y = 0.28;
             const touchesFloor = c.position.y <= FLOOR_COIN_Y;
 
-            if (touchesDome || touchesFloor) {
+            // ------------------------------------------
+            // 3. הגנת "מטבע תקוע מתחת לתותח"
+            // ------------------------------------------
+            // אם מטבע חדר לאזור שבין הגלגלים/מתחת לגוף, לא נותנים לו
+            // להמשיך לעקוב אחרי התותח. הוא נאסף מיד.
+            const dxCannon = Math.abs(c.position.x - cannonGroup.position.x);
+            const stuckUnderCannon =
+                dxCannon <= 1.35 * CANNON_SCALE &&
+                c.position.y <= cannonGroup.position.y + 1.15 * CANNON_SCALE;
+
+            // ------------------------------------------
+            // 4. Fail-safe למטבע חריג
+            // ------------------------------------------
+            const coinTimedOut = c.userData.age > 900;
+
+            if (touchesDome || touchesFloor || stuckUnderCannon || coinTimedOut) {
                 coins += 5;
                 playSound('coin');
                 disposeCoin(c);
