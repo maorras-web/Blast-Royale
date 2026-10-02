@@ -2538,6 +2538,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // כל הגלגלים ישרים ומתגלגלים יחד סביב ציר Z.
     // כדי לחסוך עומס, כל החלקים של גלגל אחד ממוזגים לכמה גיאומטריות בודדות (שמשותפות לארבעת הגלגלים).
     const cannonWheels = [];
+    const classicCannonWheels = [];
 
     // ---- מידות הצמיג (אפשר לשחק איתן) ----
     const TIRE_MAJOR_R = 0.355;                       // רדיוס הטבעת של הצמיג
@@ -2819,6 +2820,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         cannonGroup.add(wheelOuter);
         cannonWheels.push(wheelOuter);
+        classicCannonWheels.push(wheelOuter);
     });
 
     // =========================================================
@@ -3260,7 +3262,6 @@ window.addEventListener('DOMContentLoaded', () => {
         advancedCannonGroup.add(wheel);
         advancedCannonWheels.push(wheel);
         wheel.userData.spinGroup = wheel;
-        cannonWheels.push(wheel);
     });
 
     // נקודת רתיעה מקומית לתותח MK-II.
@@ -4715,6 +4716,24 @@ window.addEventListener('DOMContentLoaded', () => {
         // הגלגלים נשארים על הקרקע; הגוף הוא זה שצולל ומתרומם על המתלים.
         cannonGroup.position.y = cannonBaseY;
         updateSuspensionMotion();
+
+        // MK-II משתמש באותה תנועת גוף/מתלים בדיוק כמו התותח המקורי.
+        // הוא נשאר תותח חדש מבחינת העיצוב, אבל לא מקבל מערכת תנועה נפרדת.
+        if (activeCannon === 'mk2') {
+            advancedCannonGroup.position.set(
+                bodyRig.position.x,
+                bodyRig.position.y - BODY_PIVOT_Y,
+                bodyRig.position.z
+            );
+            advancedCannonGroup.rotation.copy(bodyRig.rotation);
+
+            for (let wi = 0; wi < advancedCannonWheels.length && wi < classicCannonWheels.length; wi++) {
+                const src = classicCannonWheels[wi];
+                const dst = advancedCannonWheels[wi];
+                dst.position.copy(src.position);
+                dst.rotation.copy(src.rotation);
+            }
+        }
 
         // ======================================
         // גלגול הגלגלים - תנועה אופקית אמיתית
