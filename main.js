@@ -3330,6 +3330,68 @@ window.addEventListener('DOMContentLoaded', () => {
         wheel.userData.spinGroup = spin;
     });
 
+    // ==========================================
+    // שריון כבד: מגני גלגלים, חצאיות צד, מעטפות לקנים, ברגים
+    // ==========================================
+    const mk2ArmorBlock = true;
+    const mk2BoltGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8);
+    // בורג על לוח שפונה אחורה/קדימה (ציר Z)
+    function addMk2BoltZ(x, y, z) { return addMk2Mesh(mk2BoltGeo, mk2EdgeMat, x, y, z, Math.PI / 2, 0, 0); }
+    // בורג על לוח שפונה לצדדים (ציר X)
+    function addMk2BoltX(x, y, z) { return addMk2Mesh(mk2BoltGeo, mk2EdgeMat, x, y, z, 0, 0, Math.PI / 2); }
+
+    // --- מגן קדמי ואחורי עבה על הקורה התחתונה (הצד האחורי פונה למצלמה) ---
+    [-1, 1].forEach(end => {
+        addMk2Rounded(1.78, 0.36, 0.16, 0.10, 0.05, mk2MidMetalMat, 0, 0.64, end * 0.62);
+        addMk2Rounded(1.20, 0.10, 0.20, 0.04, 0.03, mk2EdgeMat, 0, 0.84, end * 0.62);
+        for (let i = -3; i <= 3; i++) addMk2BoltZ(i * 0.25, 0.64, end * 0.71);
+    });
+
+    // --- חצאיות שריון בצדדים + לוחות עליונים משופעים ---
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.16, 0.56, 1.30, 0.06, 0.03, mk2EdgeMat, side * 1.14, 0.60, 0);
+        addMk2Rounded(0.10, 0.26, 1.00, 0.04, 0.03, mk2DarkMetalMat, side * 1.22, 0.56, 0);
+        for (let i = -2; i <= 2; i++) addMk2BoltX(side * 1.23, 0.74, i * 0.26);
+
+        // בלוק שריון עליון משופע בכל צד של הכיפה
+        addMk2Rounded(0.36, 0.44, 0.92, 0.09, 0.04, mk2DarkMetalMat, side * 0.88, 1.28, 0, 0, 0, -side * 0.35);
+        addMk2Rounded(0.14, 0.16, 0.70, 0.05, 0.03, mk2EdgeMat, side * 1.00, 1.46, 0, 0, 0, -side * 0.35);
+    });
+
+    // --- טבעת שריון סביב בסיס הצריח + לוח גג אחורי ---
+    addMk2Mesh(new THREE.CylinderGeometry(0.84, 0.94, 0.18, 8), mk2DarkMetalMat, 0, 1.20, 0, 0, Math.PI / 8, 0);
+    addMk2Mesh(new THREE.CylinderGeometry(0.90, 0.90, 0.05, 8), mk2EdgeMat, 0, 1.30, 0, 0, Math.PI / 8, 0);
+    addMk2Rounded(1.10, 0.16, 0.34, 0.05, 0.03, mk2MidMetalMat, 0, 1.52, 0.40);
+    for (let i = -2; i <= 2; i++) addMk2Mesh(mk2BoltGeo, mk2EdgeMat, i * 0.22, 1.62, 0.40);
+
+    // --- שריון סביב הקנים: טריז מרכזי, תיבות תחמושת, מעטפות ומעצורי לוע ---
+    addMk2Rounded(0.26, 0.42, 0.58, 0.05, 0.03, mk2EdgeMat, 0, 1.76, 0);
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.24, 0.36, 0.52, 0.07, 0.04, mk2MidMetalMat, side * 0.78, 1.70, 0.04);
+        addMk2Mesh(mk2BoltGeo, mk2EdgeMat, side * 0.78, 1.90, 0.04);
+
+        const bx = side * 0.37;
+        // מעטפת עבה על הקנה + שתי טבעות חיזוק
+        addMk2Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.40, 18), mk2DarkMetalMat, bx, 2.12, 0, 0, 0, 0, advancedBarrelAssembly);
+        addMk2Mesh(new THREE.TorusGeometry(0.26, 0.035, 8, 18), mk2EdgeMat, bx, 1.94, 0, Math.PI / 2, 0, 0, advancedBarrelAssembly);
+        addMk2Mesh(new THREE.TorusGeometry(0.245, 0.035, 8, 18), mk2EdgeMat, bx, 2.30, 0, Math.PI / 2, 0, 0, advancedBarrelAssembly);
+        // מעצור לוע גדול
+        addMk2Mesh(new THREE.CylinderGeometry(0.29, 0.25, 0.14, 18), mk2BlackMat, bx, 2.40, 0, 0, 0, 0, advancedBarrelAssembly);
+    });
+
+    // --- מגני גלגלים (קשת שריון מעל כל גלגל) ---
+    const mk2FenderMat = new THREE.MeshStandardMaterial({
+        color: 0x6a7076, roughness: 0.32, metalness: mk2Env ? 0.70 : 0.40,
+        envMap: mk2Env, envMapIntensity: 0.9, side: THREE.DoubleSide
+    });
+    const mk2FenderGeo = new THREE.CylinderGeometry(0.70, 0.70, 0.46, 24, 1, true, Math.PI * 0.62, Math.PI * 0.76);
+    const mk2FenderRimGeo = new THREE.TorusGeometry(0.70, 0.03, 6, 20, Math.PI * 0.76);
+    [[-WHEEL_X, 0.72], [WHEEL_X, 0.72], [-WHEEL_X, -0.72], [WHEEL_X, -0.72]].forEach(([x, z]) => {
+        addMk2Mesh(mk2FenderGeo, mk2FenderMat, x, WHEEL_Y, z, Math.PI / 2, 0, 0);
+        // פס קצה עבה בצד החיצוני של המגן
+        addMk2Mesh(mk2FenderRimGeo, mk2EdgeMat, x, WHEEL_Y, z + Math.sign(z) * 0.23, 0, 0, Math.PI * 0.12);
+    });
+
     // נקודת רתיעה מקומית לתותח MK-II.
     advancedBarrelAssembly.userData.baseY = advancedBarrelAssembly.position.y;
 
