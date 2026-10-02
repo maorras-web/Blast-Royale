@@ -4019,12 +4019,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function spawnForestThreat(x, y, hp = 5) {
         const group = new THREE.Group();
 
+        // סבב 1.5: שדרוג מראה האויב + הילה אדומה זוהרת.
         const coreMat = new THREE.MeshStandardMaterial({
-            color: 0x7cff6b,
-            emissive: 0x2dff3b,
-            emissiveIntensity: 1.35,
-            roughness: 0.28,
-            metalness: 0.18
+            color: 0x9aff83,
+            emissive: 0x35ff4a,
+            emissiveIntensity: 1.75,
+            roughness: 0.20,
+            metalness: 0.28
         });
 
         const darkMat = new THREE.MeshStandardMaterial({
@@ -4036,8 +4037,35 @@ window.addEventListener('DOMContentLoaded', () => {
             flatShading: true
         });
 
+        // הילה אדומה: כמה שכבות שקופות נותנות זוהר רך בלי להעמיס על המובייל.
+        const auraOuter = new THREE.Mesh(
+            new THREE.SphereGeometry(0.78, 16, 12),
+            new THREE.MeshBasicMaterial({
+                color: 0xff1f1f,
+                transparent: true,
+                opacity: 0.14,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        auraOuter.renderOrder = 2;
+        group.add(auraOuter);
+
+        const auraInner = new THREE.Mesh(
+            new THREE.SphereGeometry(0.58, 16, 12),
+            new THREE.MeshBasicMaterial({
+                color: 0xff3030,
+                transparent: true,
+                opacity: 0.18,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        auraInner.renderOrder = 3;
+        group.add(auraInner);
+
         const core = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(0.34, 1),
+            new THREE.IcosahedronGeometry(0.34, 2),
             coreMat
         );
         core.castShadow = true;
@@ -4091,7 +4119,8 @@ window.addEventListener('DOMContentLoaded', () => {
             phase: Math.random() * Math.PI * 2,
             spin: 0.018 + Math.random() * 0.012,
             hitCooldown: 0,
-            age: 0
+            age: 0,
+            auraPhase: Math.random() * Math.PI * 2
         };
 
         scene.add(group);
@@ -4742,6 +4771,16 @@ window.addEventListener('DOMContentLoaded', () => {
             threat.rotation.y += data.spin;
             threat.rotation.z = Math.sin(data.age * 0.08 + data.phase) * 0.18;
             threat.position.y += Math.sin(data.age * 0.065 + data.phase) * 0.010;
+
+            // פעימה עדינה של ההילה האדומה כדי שהאויב ירגיש חי ובולט יותר.
+            const auraPulse = 1 + Math.sin(data.age * 0.09 + data.auraPhase) * 0.10;
+            if (threat.children[0]) {
+                threat.children[0].scale.setScalar(auraPulse);
+                threat.children[0].material.opacity = 0.14 + (auraPulse - 0.9) * 0.08;
+            }
+            if (threat.children[1]) {
+                threat.children[1].scale.setScalar(1 + Math.sin(data.age * 0.12 + data.auraPhase) * 0.07);
+            }
 
             // גבולות המסך.
             if (Math.abs(threat.position.x) > screenLimitX + 0.7) {
