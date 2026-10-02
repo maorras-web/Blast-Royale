@@ -3601,6 +3601,91 @@ window.addEventListener('DOMContentLoaded', () => {
         { ax: 0.37, ay: 2.55, bx: 0.37, by: 2.55, r: 0.20 }    // קנה ימין
     ];
 
+    // ==========================================
+    // התנגשות סלע-סלע: הסלעים דוחפים זה את זה
+    // ==========================================
+    function resolveRockRockCollisions() {
+        for (let i = 0; i < rocks.length - 1; i++) {
+            const a = rocks[i];
+            if (!a || !a.userData) continue;
+            const ad = a.userData;
+            const ar = ad.size * 0.95;
+
+            for (let j = i + 1; j < rocks.length; j++) {
+                const b = rocks[j];
+                if (!b || !b.userData) continue;
+                const bd = b.userData;
+                const br = bd.size * 0.95;
+
+                let dx = b.position.x - a.position.x;
+                let dy = b.position.y - a.position.y;
+                let dist = Math.hypot(dx, dy);
+                const minDist = ar + br;
+
+                if (dist >= minDist) continue;
+
+                // אם המרכזים כמעט חופפים, בוחרים כיוון יציב ולא נותנים להם להישאר תקועים.
+                if (dist < 1e-4) {
+                    const angle = (i * 1.73 + j * 2.41) % (Math.PI * 2);
+                    dx = Math.cos(angle);
+                    dy = Math.sin(angle);
+                    dist = 1;
+                }
+
+                const nx = dx / dist;
+                const ny = dy / dist;
+                const overlap = minDist - dist;
+
+                // מסת משוערת לפי שטח החתך. הסלע הגדול מזיז את הקטן יותר.
+                const ma = Math.max(0.35, ar * ar);
+                const mb = Math.max(0.35, br * br);
+                const invA = 1 / ma;
+                const invB = 1 / mb;
+                const invSum = invA + invB;
+
+                // קודם מפרידים אותם פיזית, כדי שלא יוכלו להישאר אחד בתוך השני.
+                const correction = overlap + 0.008;
+                a.position.x -= nx * correction * (invA / invSum);
+                a.position.y -= ny * correction * (invA / invSum);
+                b.position.x += nx * correction * (invB / invSum);
+                b.position.y += ny * correction * (invB / invSum);
+
+                // אחר כך מעבירים תנע לאורך קו ההתנגשות.
+                const relVx = bd.vx - ad.vx;
+                const relVy = bd.vy - ad.vy;
+                const velAlongNormal = relVx * nx + relVy * ny;
+
+                if (velAlongNormal < 0) {
+                    const restitution = 0.72;
+                    const impulse = -(1 + restitution) * velAlongNormal / invSum;
+                    const ix = impulse * nx;
+                    const iy = impulse * ny;
+
+                    ad.vx -= ix * invA;
+                    ad.vy -= iy * invA;
+                    bd.vx += ix * invB;
+                    bd.vy += iy * invB;
+                }
+
+                // דחיפה קטנה גם במפגש כמעט-סטטי, כדי למנוע "הדבקה".
+                if (Math.abs(velAlongNormal) < 0.035) {
+                    const separationImpulse = 0.035 / invSum;
+                    const sx = separationImpulse * nx;
+                    const sy = separationImpulse * ny;
+                    ad.vx -= sx * invA;
+                    ad.vy -= sy * invA;
+                    bd.vx += sx * invB;
+                    bd.vy += sy * invB;
+                }
+
+                // מעט סיבוב מהפגיעה כדי שההתנגשות תרגיש פיזית ולא כמו החלקה מושלמת.
+                const tangent = -relVx * ny + relVy * nx;
+                ad.rotZ = THREE.MathUtils.clamp(ad.rotZ - tangent * 0.002, -0.06, 0.06);
+                bd.rotZ = THREE.MathUtils.clamp(bd.rotZ + tangent * 0.002, -0.06, 0.06);
+            }
+        }
+    }
+
     // מחזיר את מהירות הפגיעה (0 אם לא הייתה פגיעה).
     function collideRockWithCannon(rock, cannonVx) {
         const data = rock.userData;
@@ -4222,6 +4307,12 @@ window.addEventListener('DOMContentLoaded', () => {
             if (Math.abs(r.position.x) > screenLimitX) {
                 data.vx *= -1;
                 r.position.x = Math.sign(r.position.x) * screenLimitX;
+            }
+
+            // התנגשות בין כל זוגות הסלעים: מבוצעת פעם אחת בכל פריים.
+            // כך סלעים שנפגשים באמת דוחפים, מפרידים ומעבירים תנע אחד לשני.
+            if (rIdx === 0) {
+                resolveRockRockCollisions();
             }
 
             // ==================================
