@@ -4143,6 +4143,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (isGameStarted) return;
         isGameStarted = true;
         isGameOver = false;
+        pauseBtn.style.display = 'flex';
 
         if (splashScreen) splashScreen.classList.add('hidden');
 
@@ -4160,6 +4161,72 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (startBtn) startBtn.addEventListener('click', startGame);
+
+    // ==========================================
+    // כפתור עצירה (שלב 1)
+    // ==========================================
+    const PAUSE_BTN_TOP = 74;   // מרחק מהקצה העליון (px) — לשנות אם מתנגש עם ה-HUD
+
+    const pauseStyle = document.createElement('style');
+    pauseStyle.textContent = `
+        .pz-btn{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + ${PAUSE_BTN_TOP}px);z-index:55;width:44px;height:44px;
+            border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(20,12,22,.55);color:#fff;font-size:18px;
+            display:none;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
+        .pz-overlay{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(8,4,10,.7);
+            font-family:Rubik,system-ui,Arial,sans-serif;direction:rtl;color:#fff}
+        .pz-overlay.on{display:flex}
+        .pz-box{width:min(86vw,340px);background:linear-gradient(#2c1a30,#150c1a);border:2px solid rgba(255,214,140,.5);
+            border-radius:22px;padding:22px 18px;text-align:center}
+        .pz-box h2{margin:0 0 6px;font-size:30px;color:#ffd24a}
+        .pz-box p{margin:4px 0 10px;font-size:17px}
+        .pz-act{display:block;width:100%;margin-top:10px;padding:13px;border:0;border-radius:12px;font:inherit;font-weight:800;font-size:18px;
+            color:#3a1d05;background:linear-gradient(#ffe27a,#f0a028)}
+        .pz-act.alt{background:rgba(255,255,255,.16);color:#fff}
+    `;
+    document.head.appendChild(pauseStyle);
+
+    const pauseBtn = document.createElement('button');
+    pauseBtn.className = 'pz-btn';
+    pauseBtn.textContent = '⏸';
+    document.body.appendChild(pauseBtn);
+
+    const pauseOverlay = document.createElement('div');
+    pauseOverlay.className = 'pz-overlay';
+    pauseOverlay.innerHTML = `
+        <div class="pz-box">
+            <h2>⏸ מושהה</h2>
+            <p>ניקוד: <b id="pz-score">0</b></p>
+            <button class="pz-act" data-act="resume">▶ המשך</button>
+            <button class="pz-act alt" data-act="restart">↻ התחל מחדש</button>
+        </div>`;
+    document.body.appendChild(pauseOverlay);
+
+    function setPaused(p) {
+        if (!isGameStarted || isGameOver) return;
+        isPaused = p;
+        if (p) {
+            // משחררים שליטה כדי שהתותח לא "ייתקע" בגרירה.
+            isDragging = false;
+            dragPointerId = null;
+            localStorage.setItem('bb3d_coins', coins);
+            document.getElementById('pz-score').textContent = score;
+            pauseOverlay.classList.add('on');
+        } else {
+            pauseOverlay.classList.remove('on');
+        }
+    }
+
+    pauseBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); setPaused(true); });
+    pauseOverlay.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        if (b.dataset.act === 'resume') setPaused(false);
+        else if (b.dataset.act === 'restart') {
+            localStorage.setItem('bb3d_coins', coins);
+            location.reload();
+        }
+    });
 
     // ==========================================
     // 11. לולאת המשחק
