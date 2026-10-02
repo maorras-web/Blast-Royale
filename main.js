@@ -1749,7 +1749,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const palette = palettes[mapId] || palettes.forest;
 
         // שולי מסלול מדורגים יוצרים קווי עומק רציפים.
-        for (let sideIndex = 0; sideIndex < 2; sideIndex++) {
+        // במפת המדבר (המראה הפעיל) מדלגים עליהם: הם קופסאות ירוקות חלקות שיצרו
+        // מדרגות שטוחות עם קצוות חדים בצידי הדשא.
+        for (let sideIndex = 0; sideIndex < 2 && mapId !== 'desert'; sideIndex++) {
             const side = sideIndex === 0 ? -1 : 1;
 
             for (let i = 0; i < 12; i++) {
