@@ -2431,23 +2431,6 @@ window.addEventListener('DOMContentLoaded', () => {
         bodyRig.add(child);
     });
 
-    // ==========================================
-    // פתיח: התותח מכוון מעט לכיוון השחקן
-    // שלב 1 בלבד — ויזואלי, ללא שינוי בפיזיקת המשחק.
-    // ==========================================
-    const INTRO_AIM_X = THREE.MathUtils.degToRad(68);
-    const INTRO_SWAY_Z = THREE.MathUtils.degToRad(7);
-    const INTRO_AIM_Y = THREE.MathUtils.degToRad(0);
-
-    function updateIntroCannon(time) {
-        if (isGameStarted) return;
-
-        const sway = Math.sin(time * 0.00105) * INTRO_SWAY_Z;
-        barrelAssembly.rotation.x += (INTRO_AIM_X - barrelAssembly.rotation.x) * 0.08;
-        barrelAssembly.rotation.y += (INTRO_AIM_Y - barrelAssembly.rotation.y) * 0.08;
-        barrelAssembly.rotation.z += (sway - barrelAssembly.rotation.z) * 0.08;
-    }
-
     // כל המשתנים כאן נמדדים ביחידות של התותח (לפני CANNON_SCALE).
     const suspensionMotion = {
         dip: 0, dipV: 0,        // צלילה אנכית (חיובי = הגוף יורד)
@@ -4107,7 +4090,6 @@ window.addEventListener('DOMContentLoaded', () => {
         hasStartedFirstWave = false;
         cannonRecoil = 0;
         cannonGroup.position.set(0, cannonBaseY, 0);
-        barrelAssembly.rotation.set(0, 0, 0);
         selectedMap = 'forest';
         buildMap('forest');
         updateUI();
@@ -4125,7 +4107,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (grassWind) grassWind.uTime.value = time * 0.001;
 
         if (!isGameStarted || isPaused || isGameOver) {
-            updateIntroCannon(time);
             renderer.render(scene, camera);
             return;
         }
