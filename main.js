@@ -3227,7 +3227,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let firePowerLvl = parseInt(localStorage.getItem('bb3d_upg_power')) || 1;
     let fireRateLvl = parseInt(localStorage.getItem('bb3d_upg_rate')) || 1;
-    let magnetLvl = parseInt(localStorage.getItem('bb3d_upg_magnet')) || 0;
 
     let firePower = firePowerLvl;
     let fireRate = 1 + (fireRateLvl - 1) * 0.25;
@@ -3261,7 +3260,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const buyPowerBtn = document.getElementById('buy-power-btn');
     const buyRateBtn = document.getElementById('buy-rate-btn');
-    const buyMagnetBtn = document.getElementById('buy-magnet-btn');
     const mapButtons = Array.from(document.querySelectorAll('[data-map-id]'));
     mapButtons.forEach(btn => {
         if (btn.dataset.mapId !== 'forest') btn.remove();
@@ -3280,7 +3278,6 @@ window.addEventListener('DOMContentLoaded', () => {
         // מחירים לשדרוגים
         const powerCost = firePowerLvl * 50;
         const rateCost = fireRateLvl * 60;
-        const magnetCost = (magnetLvl + 1) * 100;
 
         if (buyPowerBtn) {
             buyPowerBtn.innerText = `${powerCost} C`;
@@ -3294,13 +3291,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('rate-lvl-text');
             if (el) el.innerText = `Lvl ${fireRateLvl}`;
         }
-        if (buyMagnetBtn) {
-            buyMagnetBtn.innerText = `${magnetCost} C`;
-            buyMagnetBtn.disabled = coins < magnetCost;
-            const el = document.getElementById('magnet-lvl-text');
-            if (el) el.innerText = `Lvl ${magnetLvl}`;
-        }
-
         forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
             const map = MAPS[mapId];
@@ -3364,19 +3354,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 fireRate = 1 + (fireRateLvl - 1) * 0.25;
                 localStorage.setItem('bb3d_coins', coins);
                 localStorage.setItem('bb3d_upg_rate', fireRateLvl);
-                updateUI();
-            }
-        });
-    }
-
-    if (buyMagnetBtn) {
-        buyMagnetBtn.addEventListener('click', () => {
-            const cost = (magnetLvl + 1) * 100;
-            if (coins >= cost) {
-                coins -= cost;
-                magnetLvl++;
-                localStorage.setItem('bb3d_coins', coins);
-                localStorage.setItem('bb3d_upg_magnet', magnetLvl);
                 updateUI();
             }
         });
@@ -3940,8 +3917,7 @@ window.addEventListener('DOMContentLoaded', () => {
         coin.userData = {
             vy: -0.04,
             spin: Math.random() * 6,
-            bob: Math.random() * Math.PI * 2,
-            age: 0
+            bob: Math.random() * Math.PI * 2
         };
         scene.add(coin);
         droppedCoins.push(coin);
@@ -4313,82 +4289,61 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // ==========================================
-        // מטבעות
+        // מטבעות - שאיבה אוטומטית כברירת מחדל
         // ==========================================
-        // כללי איסוף:
-        // 1) נגיעה בכיפה = איסוף מיידי.
-        // 2) הגעה לרצפה = איסוף מיידי בכל מקום.
-        // 3) אם מטבע נכנס מתחת/לתוך אזור התותח התחתון = איסוף מיידי.
-        // 4) המגנט מושך רק לרוחב/לעומק ואינו מחזיק יותר את המטבע באוויר.
-        // 5) Fail-safe: מטבע שנשאר בעולם זמן חריג נאסף אוטומטית.
+        // כל מטבע שנוצר במשחק נשאב אוטומטית ומהר אל התותח.
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
 
-            c.userData.age = (c.userData.age || 0) + 1;
+            const targetX = cannonGroup.position.x;
+            const targetY = cannonGroup.position.y + 1.05;
+            const targetZ = 0.58;
 
-            // המטבע תמיד ממשיך לרדת. זה מונע מצב שבו המגנט מחזיק אותו
-            // בגובה קבוע מתחת לתותח והוא "נדבק" לתנועת התותח.
-            c.position.y += c.userData.vy;
+            const dx = targetX - c.position.x;
+            const dy = targetY - c.position.y;
+            const dz = targetZ - c.position.z;
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-            if (magnetLvl > 0) {
-                const magnetRadius = 2 + magnetLvl * 1.5;
-                const distToPlayer = Math.hypot(
-                    c.position.x - cannonGroup.position.x,
-                    c.position.y - 1.12
-                );
+            // שאיבה מהירה וברורה: רחוק = מהיר יותר, קרוב = מעט עדין יותר.
+            const suctionSpeed = Math.min(
+                0.42,
+                0.14 + distance * 0.055
+            );
 
-                if (distToPlayer < magnetRadius) {
-                    c.position.x += (cannonGroup.position.x - c.position.x) * 0.12;
-                    c.position.z += (0.58 - c.position.z) * 0.12;
-                }
+            if (distance > 0.001) {
+                c.position.x += (dx / distance) * suctionSpeed;
+                c.position.y += (dy / distance) * suctionSpeed;
+                c.position.z += (dz / distance) * suctionSpeed;
             }
 
-            c.userData.spin += 0.09;
-            c.userData.bob += 0.055;
+            // סיבוב 3D בזמן השאיבה.
+            c.userData.spin += 0.13;
+            c.userData.bob += 0.08;
             c.rotation.y = c.userData.spin;
-            c.rotation.z = Math.sin(c.userData.bob) * 0.07;
+            c.rotation.z = Math.sin(c.userData.bob) * 0.10;
 
-            // ------------------------------------------
-            // 1. מגע עם הכיפה הכחולה
-            // ------------------------------------------
-            const domeWorldPos = new THREE.Vector3();
-            dome.getWorldPosition(domeWorldPos);
-            const coinTouchRadius = 0.90 + 0.42;
-            const dxDome = c.position.x - domeWorldPos.x;
-            const dyDome = c.position.y - domeWorldPos.y;
-            const domeDistance = Math.hypot(dxDome, dyDome);
-            const touchesDome =
-                dyDome >= -0.10 &&
-                domeDistance <= coinTouchRadius;
-
-            // ------------------------------------------
-            // 2. המטבע הגיע לרצפה
-            // ------------------------------------------
-            const FLOOR_COIN_Y = 0.28;
-            const touchesFloor = c.position.y <= FLOOR_COIN_Y;
-
-            // ------------------------------------------
-            // 3. הגנת "מטבע תקוע מתחת לתותח"
-            // ------------------------------------------
-            // אם מטבע חדר לאזור שבין הגלגלים/מתחת לגוף, לא נותנים לו
-            // להמשיך לעקוב אחרי התותח. הוא נאסף מיד.
-            const dxCannon = Math.abs(c.position.x - cannonGroup.position.x);
-            const stuckUnderCannon =
-                dxCannon <= 1.35 * CANNON_SCALE &&
-                c.position.y <= cannonGroup.position.y + 1.15 * CANNON_SCALE;
-
-            // ------------------------------------------
-            // 4. Fail-safe למטבע חריג
-            // ------------------------------------------
-            const coinTimedOut = c.userData.age > 900;
-
-            if (touchesDome || touchesFloor || stuckUnderCannon || coinTimedOut) {
+            // הגעה לאזור הכיפה = איסוף מיידי.
+            if (distance <= 0.82) {
                 coins += 5;
                 playSound('coin');
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
                 updateUI();
                 continue;
+            }
+
+            // Fail-safe נגד מטבע שאבד בגלל מצב קצה.
+            if (
+                c.position.y < -2 ||
+                !Number.isFinite(c.position.x) ||
+                !Number.isFinite(c.position.y) ||
+                !Number.isFinite(c.position.z)
+            ) {
+                coins += 5;
+                playSound('coin');
+                disposeCoin(c);
+                droppedCoins.splice(cIdx, 1);
+                updateUI();
             }
         }
 
