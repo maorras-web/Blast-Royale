@@ -1920,11 +1920,13 @@ window.addEventListener('DOMContentLoaded', () => {
             metalness: 0.01
         });
 
+        // הבסיס מונמך מתחת לנקודה הנמוכה ביותר של הקרקע המגלגלת (~ -0.19), אחרת
+        // פני השטח השטוחים שלו בצבע אחיד בצבצו מבעד לעמקי הקרקע ויצרו כתמים ירוקים חלקים.
         addMesh(
             new THREE.BoxGeometry(40, 0.55, 90),
             groundBaseMat,
             0,
-            -0.31,
+            -0.62,
             0,
             false,
             true
