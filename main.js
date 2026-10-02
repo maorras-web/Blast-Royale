@@ -2410,7 +2410,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // כל חלקי גוף התותח שנבנו עד לנקודה הזו מורמים, בעוד הגלגלים
     // והמתלים שנוצרים בהמשך נשארים נמוכים. כך מתקבל מבנה כמו ברפרנס:
     // גוף גבוה, מתלים גלויים מתחתיו וגלגלים בצדדים.
-    const CANNON_BODY_LIFT = 0.72;
+    const CANNON_BODY_LIFT = 0.90;
     cannonGroup.children.forEach(child => {
         child.position.y += CANNON_BODY_LIFT;
     });
@@ -2442,7 +2442,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const suspensionLinks = [];   // זרועות ובולמים: { mesh, a, b, aSprung, bSprung, len0 }
     const suspensionBags = [];    // כריות אוויר: { group, restTop, bottomY, h }
     const suspensionJoints = [];  // מפרקים שנעים עם הגוף: { mesh, rest }
-    const BAG_H = 0.72;
+    const BAG_H = 0.70;
 
     const _susPivot = new THREE.Vector3(0, BODY_PIVOT_Y, 0);
     const _susA = new THREE.Vector3();
@@ -2893,8 +2893,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // כרית האוויר יושבת ממש בין הגוף לגלגל, כמו ברפרנס.
         // היא בנויה כמפוח רציף + קפלים עבים, כדי שהצורה תישאר ברורה גם מרחוק.
-        const bagX = side * 1.22;
-        const bagY = 0.70;
+        const bagX = side * 0.80;
+        const bagY = 0.82;
         const airSpring = new THREE.Group();
         airSpring.position.set(bagX, bagY, z);
         cannonGroup.add(airSpring);
@@ -2961,8 +2961,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // חיבור עליון עבה לגוף.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 0.98, 1.00, z),
-            new THREE.Vector3(bagX, 0.94, z),
+            new THREE.Vector3(side * 0.98, 1.16, z),
+            new THREE.Vector3(bagX, 1.10, z),
             0.078,
             suspensionMetalMat,
             14,
@@ -2996,7 +2996,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // בולם כהה, עבה, צמוד לכרית - נותן עומק מכני.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(bagX, 0.83, z),
+            new THREE.Vector3(bagX, 0.98, z),
             new THREE.Vector3(outerX, WHEEL_Y + 0.15, z),
             0.070,
             suspensionDarkMetalMat,
