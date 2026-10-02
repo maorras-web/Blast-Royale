@@ -3854,11 +3854,94 @@ window.addEventListener('DOMContentLoaded', () => {
         return coinTexture;
     }
 
+    // מטבע 3D אמיתי: גוף גלילי עם עובי, חזית/גב עם סימן $, ושפת מתכת.
+    // הוא מסתובב סביב ציר Y ולכן רואים את העובי והברק שלו בזמן התנועה.
+    function create3DCoin() {
+        const group = new THREE.Group();
+        const radius = 0.48;
+        const thickness = 0.12;
+
+        const edgeMat = new THREE.MeshPhysicalMaterial({
+            color: 0xb9790d,
+            roughness: 0.22,
+            metalness: 0.86,
+            clearcoat: 0.35,
+            clearcoatRoughness: 0.14
+        });
+
+        const faceMat = new THREE.MeshPhysicalMaterial({
+            map: getCoinTexture(),
+            color: 0xffffff,
+            roughness: 0.20,
+            metalness: 0.48,
+            clearcoat: 0.42,
+            clearcoatRoughness: 0.12
+        });
+
+        const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius, thickness, 32, 1, false),
+            edgeMat
+        );
+        body.rotation.x = Math.PI / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+
+        const front = new THREE.Mesh(
+            new THREE.CircleGeometry(radius * 0.91, 32),
+            faceMat
+        );
+        front.position.z = thickness * 0.5 + 0.004;
+        front.castShadow = true;
+        group.add(front);
+
+        const back = new THREE.Mesh(
+            new THREE.CircleGeometry(radius * 0.91, 32),
+            faceMat
+        );
+        back.rotation.y = Math.PI;
+        back.position.z = -thickness * 0.5 - 0.004;
+        back.castShadow = true;
+        group.add(back);
+
+        const rim = new THREE.Mesh(
+            new THREE.TorusGeometry(radius * 0.91, 0.025, 8, 32),
+            edgeMat
+        );
+        rim.position.z = thickness * 0.5 + 0.009;
+        group.add(rim);
+
+        const rimBack = rim.clone();
+        rimBack.position.z = -thickness * 0.5 - 0.009;
+        rimBack.rotation.y = Math.PI;
+        group.add(rimBack);
+
+        group.scale.setScalar(0.92);
+        return group;
+    }
+
+    function disposeCoin(coin) {
+        coin.traverse(child => {
+            if (!child.isMesh) return;
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                else child.material.dispose();
+            }
+        });
+        scene.remove(coin);
+    }
+
     function spawnCoin(x, y) {
-        const coin = new THREE.Sprite(new THREE.SpriteMaterial({ map: getCoinTexture(), fog: false }));
-        coin.scale.set(0.95, 0.95, 1);
-        coin.position.set(x, y, 0);
-        coin.userData = { vy: -0.04, spin: Math.random() * 6 };
+        const coin = create3DCoin();
+        coin.position.set(x, y, 0.58);
+        coin.rotation.y = Math.random() * Math.PI * 2;
+        coin.rotation.z = (Math.random() - 0.5) * 0.18;
+        coin.userData = {
+            vy: -0.04,
+            spin: Math.random() * 6,
+            bob: Math.random() * Math.PI * 2
+        };
         scene.add(coin);
         droppedCoins.push(coin);
     }
@@ -4234,13 +4317,22 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
 
+            // נקודת איסוף נמצאת מעל הגוף, כדי שהמטבע לא ייכנס פיזית/ויזואלית לתוך התותח.
+            const coinCollectY = 1.12;
+            const coinCollectRadiusX = 1.28;
+            const coinCollectRadiusY = 0.58;
+
             if (magnetLvl > 0) {
-                const distToPlayer = Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.55);
+                const distToPlayer = Math.hypot(
+                    c.position.x - cannonGroup.position.x,
+                    c.position.y - coinCollectY
+                );
                 const magnetRadius = 2 + magnetLvl * 1.5;
 
                 if (distToPlayer < magnetRadius) {
                     c.position.x += (cannonGroup.position.x - c.position.x) * 0.12;
-                    c.position.y += (0.55 - c.position.y) * 0.12;
+                    c.position.y += (coinCollectY - c.position.y) * 0.12;
+                    c.position.z += (0.58 - c.position.z) * 0.12;
                 } else {
                     c.position.y += c.userData.vy;
                 }
@@ -4248,15 +4340,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.position.y += c.userData.vy;
             }
 
-            c.userData.spin += 0.07;
-            c.scale.x = 0.95 * (0.25 + 0.75 * Math.abs(Math.cos(c.userData.spin)));
+            c.userData.spin += 0.09;
+            c.userData.bob += 0.055;
+            c.rotation.y = c.userData.spin;
+            c.rotation.z = Math.sin(c.userData.bob) * 0.07;
 
-            if (Math.hypot(c.position.x - cannonGroup.position.x, c.position.y - 0.55) < 1.0) {
+            const dx = Math.abs(c.position.x - cannonGroup.position.x);
+            const dy = Math.abs(c.position.y - coinCollectY);
+
+            // איסוף לפני שהמטבע מגיע לגוף עצמו. כך הוא לא עובר דרך השריון/השלדה.
+            if (dx < coinCollectRadiusX && dy < coinCollectRadiusY && c.position.y <= 1.32) {
                 coins += 5;
                 playSound('coin');
-                scene.remove(c);
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) c.material.dispose();
+                disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
                 updateUI();
             } else if (c.position.y < 0.2) {
