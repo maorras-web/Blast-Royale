@@ -38,7 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 7.15, 14.9);
+        camera.position.set(0, 8.4, 18.0);
         camera.lookAt(0, 2.50, -8.8);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
@@ -4441,17 +4441,23 @@ window.addEventListener('DOMContentLoaded', () => {
         updateEffects();
         startNextWave();
 
-        // מצלמת 3D דינמית: מעקב עדין אחרי התותח + תנועה קלה
-        // בציר Y/Z כדי שהמרחק של הסביבה יורגש יותר.
-        const cameraTargetX = cannonGroup.position.x * 0.16;
-        const cameraTargetY = 7.5 + Math.abs(cannonGroup.position.x) * 0.035;
-        const cameraTargetZ = 15.3 + Math.abs(cannonGroup.position.x) * 0.045;
+        // מצלמת 3D דינמית: זום אאוט (יותר חלל נסיעה) + מעקב אחרי התותח
+        // שמתחיל כשהוא מתקרב לקצה ימין/שמאל.
+        const cannonX = cannonGroup.position.x;
 
-        camera.position.x += (cameraTargetX - camera.position.x) * 0.045;
+        // מרחק שעבר את "אזור המרכז" (55% מהגבול) — רק שם המצלמה מתחילה לעקוב חזק.
+        const edgeStart = screenLimitX * 0.55;
+        const edgeOver = Math.sign(cannonX) * Math.max(0, Math.abs(cannonX) - edgeStart);
+
+        const cameraTargetX = cannonX * 0.10 + edgeOver * 1.15;
+        const cameraTargetY = 8.6 + Math.abs(cannonX) * 0.035;
+        const cameraTargetZ = 18.2 + Math.abs(cannonX) * 0.045;
+
+        camera.position.x += (cameraTargetX - camera.position.x) * 0.06;
         camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
         camera.position.z += (cameraTargetZ - camera.position.z) * 0.035;
 
-        const lookX = cannonGroup.position.x * 0.08;
+        const lookX = cannonX * 0.08 + edgeOver * 0.75;
         const lookY = 2.45 + cannonRecoil * 0.15;
         const lookZ = -8.1;
 
