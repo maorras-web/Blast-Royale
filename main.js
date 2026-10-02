@@ -3141,6 +3141,148 @@ window.addEventListener('DOMContentLoaded', () => {
         [0.72, -0.72].forEach(z => addReferenceCoiloverSuspension(side, z));
     });
 
+    // ==========================================
+    // סבב 2 — תותח מתקדם MK-II, אפור כהה מטאלי
+    // ==========================================
+    // התותח החדש הוא שכבה נפרדת: הוא לא משנה את הפיזיקה,
+    // את הסלעים, את האויב החדש או את סביבת המפה.
+    const ADVANCED_CANNON_PRICE = 250;
+    let advancedCannonOwned = localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
+    let activeCannon = localStorage.getItem('bb3d_active_cannon') || 'classic';
+
+    const advancedCannonGroup = new THREE.Group();
+    advancedCannonGroup.visible = activeCannon === 'mk2';
+    advancedCannonGroup.position.set(0, 0, 0);
+    cannonGroup.add(advancedCannonGroup);
+
+    const mk2DarkMetalMat = new THREE.MeshPhysicalMaterial({
+        color: 0x24282b,
+        roughness: 0.30,
+        metalness: 0.92,
+        clearcoat: 0.18,
+        clearcoatRoughness: 0.18
+    });
+    const mk2MidMetalMat = new THREE.MeshPhysicalMaterial({
+        color: 0x3b4145,
+        roughness: 0.25,
+        metalness: 0.96,
+        clearcoat: 0.24,
+        clearcoatRoughness: 0.16
+    });
+    const mk2EdgeMat = new THREE.MeshStandardMaterial({
+        color: 0x596065,
+        roughness: 0.24,
+        metalness: 0.90
+    });
+    const mk2BlackMat = new THREE.MeshStandardMaterial({
+        color: 0x111416,
+        roughness: 0.72,
+        metalness: 0.35
+    });
+
+    function addMk2Mesh(geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(rx, ry, rz);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        advancedCannonGroup.add(mesh);
+        return mesh;
+    }
+
+    // רחב ונמוך יותר מהתותח הקלאסי — מראה של מכונת הגנה כבדה.
+    addMk2Mesh(new THREE.BoxGeometry(2.45, 0.42, 1.42), mk2DarkMetalMat, 0, 0.58, 0);
+    addMk2Mesh(new THREE.BoxGeometry(2.08, 0.48, 1.18), mk2MidMetalMat, 0, 0.86, 0);
+
+    // לוחות שריון משופעים בצדדים.
+    [-1, 1].forEach(side => {
+        addMk2Mesh(new THREE.BoxGeometry(0.16, 0.72, 1.18), mk2EdgeMat, side * 1.06, 0.86, 0, 0, 0, side * 0.10);
+        addMk2Mesh(new THREE.BoxGeometry(0.10, 0.48, 0.72), mk2BlackMat, side * 0.76, 1.08, 0.64, 0, 0, side * 0.06);
+    });
+
+    // צריח זוויתי, בניגוד לכיפה העגולה של התותח הקיים.
+    addMk2Mesh(new THREE.CylinderGeometry(0.78, 0.92, 0.20, 8), mk2BlackMat, 0, 1.13, 0);
+    addMk2Mesh(new THREE.CylinderGeometry(0.72, 0.82, 0.50, 8), mk2MidMetalMat, 0, 1.42, 0, 0, Math.PI / 8, 0);
+    addMk2Mesh(new THREE.BoxGeometry(1.18, 0.18, 0.86), mk2DarkMetalMat, 0, 1.68, 0);
+
+    // תותח מרכזי ארוך — עיצוב שונה לחלוטין, אבל הירי הקיים נשאר בטוח.
+    const advancedBarrelAssembly = new THREE.Group();
+    advancedBarrelAssembly.position.set(0, 1.72, 0.16);
+    advancedCannonGroup.add(advancedBarrelAssembly);
+
+    const mk2Barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.20, 1.55, 16),
+        mk2MidMetalMat
+    );
+    mk2Barrel.rotation.x = Math.PI / 2;
+    mk2Barrel.position.z = -0.72;
+    mk2Barrel.castShadow = true;
+    advancedBarrelAssembly.add(mk2Barrel);
+
+    const mk2Muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.19, 0.24, 16),
+        mk2BlackMat
+    );
+    mk2Muzzle.rotation.x = Math.PI / 2;
+    mk2Muzzle.position.z = -1.55;
+    mk2Muzzle.castShadow = true;
+    advancedBarrelAssembly.add(mk2Muzzle);
+
+    const mk2Bore = new THREE.Mesh(
+        new THREE.CircleGeometry(0.13, 16),
+        new THREE.MeshBasicMaterial({ color: 0x020304 })
+    );
+    mk2Bore.position.set(0, 0, -1.675);
+    mk2Bore.rotation.y = Math.PI;
+    advancedBarrelAssembly.add(mk2Bore);
+
+    // שתי מסילות צד שנותנות לתותח מראה טכנולוגי יותר.
+    [-1, 1].forEach(side => {
+        addMk2Mesh(new THREE.BoxGeometry(0.10, 0.14, 1.18), mk2EdgeMat, side * 0.43, 1.72, -0.56);
+        addMk2Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8), mk2EdgeMat, side * 0.50, 1.73, -0.05, 0, 0, Math.PI / 2);
+    });
+
+    // גלגלים חדשים ופשוטים יותר, כדי שהעיצוב באמת יהיה שונה גם בבסיס.
+    const mk2WheelGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.24, 20);
+    const mk2WheelHubGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.27, 16);
+    const advancedCannonWheels = [];
+    [[-1.56, 0.48, 0.66], [1.56, 0.48, 0.66], [-1.56, 0.48, -0.66], [1.56, 0.48, -0.66]].forEach(([x, y, z]) => {
+        const wheel = new THREE.Group();
+        wheel.position.set(x, y, z);
+        const tire = new THREE.Mesh(mk2WheelGeo, mk2BlackMat);
+        tire.rotation.z = Math.PI / 2;
+        tire.castShadow = true;
+        wheel.add(tire);
+        const hub = new THREE.Mesh(mk2WheelHubGeo, mk2EdgeMat);
+        hub.rotation.z = Math.PI / 2;
+        hub.castShadow = true;
+        wheel.add(hub);
+        advancedCannonGroup.add(wheel);
+        advancedCannonWheels.push(wheel);
+        wheel.userData.spinGroup = wheel;
+        cannonWheels.push(wheel);
+    });
+
+    // נקודת רתיעה מקומית לתותח MK-II.
+    advancedBarrelAssembly.userData.baseZ = advancedBarrelAssembly.position.z;
+
+    // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
+    const classicCannonParts = cannonGroup.children.slice();
+    classicCannonParts.forEach(child => {
+        if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
+    });
+
+    function setActiveCannon(type) {
+        activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : 'classic';
+        advancedCannonGroup.visible = activeCannon === 'mk2';
+        classicCannonParts.forEach(child => {
+            if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
+        });
+        localStorage.setItem('bb3d_active_cannon', activeCannon);
+    }
+
+    setActiveCannon(activeCannon);
+
    cannonGroup.scale.setScalar(
         CANNON_SCALE
     );
@@ -3262,6 +3404,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const buyPowerBtn = document.getElementById('buy-power-btn');
     const buyRateBtn = document.getElementById('buy-rate-btn');
+    // חנות תותחים — נבנית כאן כדי שסבב 2 לא ידרוש שינוי בקובץ HTML.
+    const cannonShopPanel = document.createElement('div');
+    cannonShopPanel.id = 'cannon-shop-panel';
+    cannonShopPanel.innerHTML = `
+        <div class="mk2-shop-title">MK-II • ADVANCED CANNON</div>
+        <div class="mk2-shop-sub">תותח מתקדם • אפור כהה מטאלי</div>
+        <button id="buy-mk2-cannon" type="button"></button>
+    `;
+    const cannonShopStyle = document.createElement('style');
+    cannonShopStyle.textContent = `
+        #cannon-shop-panel{margin:12px auto 0;max-width:330px;padding:12px 14px;border:1px solid rgba(170,180,190,.32);border-radius:14px;background:rgba(15,18,20,.70);box-shadow:0 8px 24px rgba(0,0,0,.22);text-align:center;color:#fff}
+        #cannon-shop-panel .mk2-shop-title{font-weight:900;letter-spacing:.8px;font-size:14px}
+        #cannon-shop-panel .mk2-shop-sub{margin:4px 0 9px;font-size:12px;opacity:.78}
+        #buy-mk2-cannon{width:100%;border:1px solid rgba(190,200,205,.45);border-radius:10px;padding:9px 12px;background:linear-gradient(180deg,#4a5156,#252a2d);color:#fff;font-weight:800;cursor:pointer}
+        #buy-mk2-cannon:disabled{opacity:.45;cursor:not-allowed}
+    `;
+    document.head.appendChild(cannonShopStyle);
+    if (splashScreen) splashScreen.appendChild(cannonShopPanel);
+    const buyMk2CannonBtn = document.getElementById('buy-mk2-cannon');
+
     const mapButtons = Array.from(document.querySelectorAll('[data-map-id]'));
     mapButtons.forEach(btn => {
         if (btn.dataset.mapId !== 'forest') btn.remove();
@@ -3293,6 +3455,19 @@ window.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('rate-lvl-text');
             if (el) el.innerText = `Lvl ${fireRateLvl}`;
         }
+        if (buyMk2CannonBtn) {
+            if (!advancedCannonOwned) {
+                buyMk2CannonBtn.innerText = `קנה תותח MK-II • ${ADVANCED_CANNON_PRICE} C`;
+                buyMk2CannonBtn.disabled = coins < ADVANCED_CANNON_PRICE;
+            } else if (activeCannon === 'mk2') {
+                buyMk2CannonBtn.innerText = 'MK-II נבחר • החלף לתותח הקלאסי';
+                buyMk2CannonBtn.disabled = false;
+            } else {
+                buyMk2CannonBtn.innerText = 'בחר תותח MK-II';
+                buyMk2CannonBtn.disabled = false;
+            }
+        }
+
         forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
             const map = MAPS[mapId];
@@ -3306,6 +3481,22 @@ window.addEventListener('DOMContentLoaded', () => {
             btn.classList.toggle('selected', selected);
             btn.classList.toggle('owned', owned);
             btn.disabled = !owned && coins < map.price;
+        });
+    }
+
+    if (buyMk2CannonBtn) {
+        buyMk2CannonBtn.addEventListener('click', () => {
+            if (!advancedCannonOwned) {
+                if (coins < ADVANCED_CANNON_PRICE) return;
+                coins -= ADVANCED_CANNON_PRICE;
+                advancedCannonOwned = true;
+                localStorage.setItem('bb3d_cannon_mk2_owned', '1');
+                localStorage.setItem('bb3d_coins', coins);
+                setActiveCannon('mk2');
+            } else {
+                setActiveCannon(activeCannon === 'mk2' ? 'classic' : 'mk2');
+            }
+            updateUI();
         });
     }
 
@@ -4516,6 +4707,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // רתיעה מכנית של מכלול הקנים - בנוסף לתנועת הגוף.
         barrelAssembly.position.z +=
             ((-cannonRecoil * 0.65) - barrelAssembly.position.z) * 0.35;
+        if (advancedCannonGroup.visible) {
+            advancedBarrelAssembly.position.z +=
+                ((advancedBarrelAssembly.userData.baseZ - cannonRecoil * 0.82) - advancedBarrelAssembly.position.z) * 0.35;
+        }
 
         // הגלגלים נשארים על הקרקע; הגוף הוא זה שצולל ומתרומם על המתלים.
         cannonGroup.position.y = cannonBaseY;
