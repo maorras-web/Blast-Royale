@@ -2973,49 +2973,50 @@ window.addEventListener('DOMContentLoaded', () => {
         bullets.push(bullet);
     }
 
+    // סלע חדש: גוף סלע "מגולף" וסגור (בלי קרעים), עם משטחים מחוספסים,
+    // מעבר צבע מבסיס כהה לראש בהיר ושונות עדינה בין סלע לסלע.
+    // הסטת הנקודות תלויה רק בכיוון שלהן, ולכן נקודות זהות זזות יחד והמשטח נשאר שלם.
     function createIrregularRockGeometry(size) {
-        const geo = new THREE.IcosahedronGeometry(size, 1);
+        const geo = new THREE.IcosahedronGeometry(1, 2);
         const position = geo.attributes.position;
+        const ph = Array.from({ length: 8 }, () => Math.random() * Math.PI * 2);
+        const sx = 1.05 + (Math.random() - 0.5) * 0.12;
+        const sy = 0.92 + (Math.random() - 0.5) * 0.10;
+        const sz = 1.00 + (Math.random() - 0.5) * 0.12;
+
+        const bottom = new THREE.Color(0.17, 0.145, 0.12);
+        const top = new THREE.Color(0.44, 0.39, 0.33);
+        const tmp = new THREE.Color();
         const colors = [];
 
         for (let i = 0; i < position.count; i++) {
-            const ox = position.getX(i);
-            const oy = position.getY(i);
-            const oz = position.getZ(i);
+            const dx = position.getX(i);
+            const dy = position.getY(i);
+            const dz = position.getZ(i);
+            const len = Math.hypot(dx, dy, dz) || 1;
+            const nx = dx / len, ny = dy / len, nz = dz / len;
 
-            const factorX = 0.82 + Math.random() * 0.32;
-            const factorY = 0.72 + Math.random() * 0.34;
-            const factorZ = 0.84 + Math.random() * 0.30;
-            const jitter = 0.93 + Math.random() * 0.14;
+            const bumps =
+                Math.sin(nx * 2.1 + ph[0]) * Math.cos(ny * 1.9 + ph[1]) * 0.55 +
+                Math.sin(ny * 3.7 + nz * 3.1 + ph[2]) * 0.30 +
+                Math.sin(nz * 6.3 + nx * 5.7 + ph[3]) * 0.15;
+            const r = (1 + 0.15 * bumps) * size;
 
-            position.setXYZ(
-                i,
-                ox * factorX * jitter,
-                oy * factorY,
-                oz * factorZ * jitter
-            );
+            position.setXYZ(i, nx * r * sx, ny * r * sy, nz * r * sz);
 
-            const shade = 0.72 +
-                (position.getY(i) / Math.max(size, 0.001) + 1) * 0.11 +
-                Math.random() * 0.08;
-
-            colors.push(
-                Math.min(1, shade),
-                Math.min(1, shade * 0.94),
-                Math.min(1, shade * 0.88)
-            );
+            const h = THREE.MathUtils.smoothstep(ny * 0.5 + 0.5, 0.15, 0.95);
+            const patch = Math.sin(nx * 9 + ph[4]) * Math.sin(nz * 9 + ph[5]);
+            tmp.copy(bottom).lerp(top, h).multiplyScalar(0.92 + 0.10 * patch);
+            colors.push(tmp.r, tmp.g, tmp.b);
         }
 
-        geo.setAttribute(
-            'color',
-            new THREE.Float32BufferAttribute(colors, 3)
-        );
+        geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
         geo.computeVertexNormals();
         return geo;
     }
 
     function getRockColor() {
-        return 0x3f4545;
+        return 0xffffff; // הצבע האמיתי מגיע מצבעי הקודקודים בגיאומטריה
     }
 
     // צל מגע דינמי לסלעים.
@@ -3042,14 +3043,31 @@ window.addEventListener('DOMContentLoaded', () => {
         return shadow;
     }
 
+    // מספר החיים על הסלע: לבן עם קו מתאר כהה כדי שיהיה קריא על כל רקע.
+    function drawRockLabel(ctx, hp) {
+        ctx.clearRect(0, 0, 128, 128);
+        ctx.font = 'Bold 62px Rubik, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 9;
+        ctx.strokeStyle = 'rgba(20,12,6,0.9)';
+        ctx.strokeText(hp, 64, 66);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(hp, 64, 66);
+    }
+
     function spawnRock(x, y, hp, size, launchVx = null, launchVy = null) {
         const geo = createIrregularRockGeometry(size);
         const mat = new THREE.MeshStandardMaterial({
             color: getRockColor(),
             vertexColors: true,
-            roughness: 0.92,
+            roughness: 0.95,
             metalness: 0.0,
-            flatShading: false
+            flatShading: true,
+            // זוהר חם עדין: מונע מהצד המוצל (מול השקיעה) להפוך לשחור מלא.
+            emissive: 0x24190f,
+            emissiveIntensity: 0.5
         });
 
         const rock = new THREE.Mesh(geo, mat);
@@ -3066,26 +3084,22 @@ window.addEventListener('DOMContentLoaded', () => {
         canvas.width = 128;
         canvas.height = 128;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'Bold 60px Rubik, Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.4)';
-        ctx.shadowBlur = 5;
-        ctx.fillText(hp, 64, 64);
+        drawRockLabel(ctx, hp);
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.generateMipmaps = false;
         texture.minFilter = THREE.LinearFilter;
 
+        // המספר במרכז הסלע: בלי depthTest הוא תמיד מצויר מעל הסלע (קודם הוא נבלע בתוכו ולא נראה).
         const spriteMat = new THREE.SpriteMaterial({
             map: texture,
             transparent: true,
-            depthTest: true
+            depthTest: false
         });
         const label = new THREE.Sprite(spriteMat);
-        label.scale.set(size * 1.0, size * 1.0, 1);
-        label.position.y = 0.08;
+        label.scale.set(size * 1.25, size * 1.25, 1);
+        label.renderOrder = 20;
+        label.position.y = 0.0;
         rock.add(label);
 
         rock.userData = {
@@ -3106,6 +3120,73 @@ window.addEventListener('DOMContentLoaded', () => {
 
         scene.add(rock);
         rocks.push(rock);
+    }
+
+    // ==========================================
+    // התנגשות סלע-תותח: הסלע קופץ מהתותח במקום לעבור דרכו
+    // ==========================================
+    // התותח מורכב מצורות פשוטות (קפסולה לגוף+כיפה, עיגולים לגלגלים ולקנים).
+    // הקואורדינטות בצד התותח (לפני CANNON_SCALE): x רוחב, y גובה מעל הקרקע.
+    const CANNON_COLLIDERS = [
+        { ax: -0.35, ay: 1.45, bx: 0.35, by: 1.45, r: 0.80 }, // גוף + כיפה
+        { ax: -1.58, ay: 0.04, bx: -1.58, by: 0.04, r: 0.50 }, // גלגל שמאל
+        { ax: 1.58, ay: 0.04, bx: 1.58, by: 0.04, r: 0.50 },   // גלגל ימין
+        { ax: -0.37, ay: 2.55, bx: -0.37, by: 2.55, r: 0.20 }, // קנה שמאל
+        { ax: 0.37, ay: 2.55, bx: 0.37, by: 2.55, r: 0.20 }    // קנה ימין
+    ];
+
+    // מחזיר את מהירות הפגיעה (0 אם לא הייתה פגיעה).
+    function collideRockWithCannon(rock, cannonVx) {
+        const data = rock.userData;
+        const s = CANNON_SCALE;
+        const cx = cannonGroup.position.x;
+        const cy = cannonGroup.position.y;
+        const rockR = data.size * 0.95;
+        let impact = 0;
+
+        for (const c of CANNON_COLLIDERS) {
+            const ax = cx + c.ax * s, ay = cy + c.ay * s;
+            const bx = cx + c.bx * s, by = cy + c.by * s;
+            const abx = bx - ax, aby = by - ay;
+            const len2 = abx * abx + aby * aby;
+
+            let t = len2 > 1e-6
+                ? ((rock.position.x - ax) * abx + (rock.position.y - ay) * aby) / len2
+                : 0;
+            t = THREE.MathUtils.clamp(t, 0, 1);
+
+            let dx = rock.position.x - (ax + abx * t);
+            let dy = rock.position.y - (ay + aby * t);
+            let dist = Math.hypot(dx, dy);
+            const minDist = rockR + c.r * s;
+            if (dist >= minDist) continue;
+
+            if (dist < 1e-4) { dx = 0; dy = 1; dist = 1; }
+            const nx = dx / dist, ny = dy / dist;
+
+            // דוחפים את הסלע החוצה כדי שלא יישאר בתוך התותח.
+            const push = minDist - dist;
+            rock.position.x += nx * push;
+            rock.position.y += ny * push;
+
+            // קפיצה: מחזירים את רכיב המהירות שלפני המשטח, ביחס לתותח הנע.
+            const vn = (data.vx - cannonVx) * nx + data.vy * ny;
+            if (vn < 0) {
+                const e = 0.92;
+                let j = -(1 + e) * vn;
+                if (-e * vn < 0.14) j = 0.14 - vn; // תמיד קפיצה מורגשת, לא "נדבק"
+                data.vx += j * nx;
+                data.vy += j * ny;
+
+                // נחיתה ישר על הראש: בועטים קצת הצידה כדי שלא יקפוץ אנכית לנצח.
+                if (ny > 0.85 && Math.abs(nx) < 0.15) {
+                    data.vx += (Math.random() - 0.5) * 0.05;
+                }
+                data.rotZ = THREE.MathUtils.clamp(data.rotZ - nx * 0.012, -0.05, 0.05);
+                impact = Math.max(impact, -vn);
+            }
+        }
+        return impact;
     }
 
     function spawnMuzzleFlash(x, y, z) {
@@ -3237,13 +3318,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateRockLabel(rock) {
-        const ctx = rock.userData.ctx;
-        ctx.clearRect(0, 0, 128, 128);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'Bold 60px Rubik, Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(rock.userData.hp, 64, 64);
+        drawRockLabel(rock.userData.ctx, rock.userData.hp);
         rock.userData.texture.needsUpdate = true;
     }
 
@@ -3537,6 +3612,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // סלעים
         // ======================================
+        // מהירות התותח בפריים הזה (לחישוב קפיצה נכונה כשהוא נע לתוך סלע).
+        const cannonColVx = cannonGroup.position.x - (cannonGroup.userData.prevColX ?? cannonGroup.position.x);
+        cannonGroup.userData.prevColX = cannonGroup.position.x;
+
         for (let rIdx = rocks.length - 1; rIdx >= 0; rIdx--) {
             const r = rocks[rIdx];
             const data = r.userData;
@@ -3635,11 +3714,12 @@ window.addEventListener('DOMContentLoaded', () => {
             // ==================================
             // פגיעה בתותח
             // ==================================
-            if (data.hitCooldown <= 0 && Math.hypot(r.position.x - cannonGroup.position.x, r.position.y - 0.55) < data.size + 0.65) {
+            const cannonImpact = collideRockWithCannon(r, cannonColVx);
+            if (cannonImpact > 0.02 && data.hitCooldown <= 0) {
                 playerHp -= 10;
                 data.hitCooldown = 24;
                 cannonRecoil = -0.08;
-                spawnDustBurst(cannonGroup.position.x, 0.3, 0);
+                spawnDustBurst(r.position.x, Math.max(0.3, r.position.y - data.size * 0.5), 0);
                 updateUI();
 
                 if (playerHp <= 0) {
