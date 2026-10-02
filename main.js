@@ -4314,24 +4314,26 @@ window.addEventListener('DOMContentLoaded', () => {
         // ==========================================
         // מטבעות
         // ==========================================
+        // כלל האיסוף החדש:
+        // 1) אם המטבע נוגע בכיפת התותח - הוא נאסף מיד.
+        // 2) אם המטבע מגיע לרצפה - הוא נאסף מיד, גם אם הוא רחוק מהתותח.
+        // אין יותר אזור איסוף מלאכותי שמאפשר למטבע לעבור דרך התותח.
         for (let cIdx = droppedCoins.length - 1; cIdx >= 0; cIdx--) {
             const c = droppedCoins[cIdx];
 
-            // נקודת איסוף נמצאת מעל הגוף, כדי שהמטבע לא ייכנס פיזית/ויזואלית לתוך התותח.
-            const coinCollectY = 1.12;
-            const coinCollectRadiusX = 1.28;
-            const coinCollectRadiusY = 0.58;
-
             if (magnetLvl > 0) {
+                // המגנט הוא בונוס בלבד: הוא מושך מטבעות קרובים לתותח,
+                // אבל אינו קובע אם המטבע נאסף. איסוף מתבצע רק במגע עם הכיפה
+                // או בהגעה לרצפה.
+                const magnetRadius = 2 + magnetLvl * 1.5;
                 const distToPlayer = Math.hypot(
                     c.position.x - cannonGroup.position.x,
-                    c.position.y - coinCollectY
+                    c.position.y - 1.12
                 );
-                const magnetRadius = 2 + magnetLvl * 1.5;
 
                 if (distToPlayer < magnetRadius) {
                     c.position.x += (cannonGroup.position.x - c.position.x) * 0.12;
-                    c.position.y += (coinCollectY - c.position.y) * 0.12;
+                    c.position.y += (1.12 - c.position.y) * 0.12;
                     c.position.z += (0.58 - c.position.z) * 0.12;
                 } else {
                     c.position.y += c.userData.vy;
@@ -4345,19 +4347,36 @@ window.addEventListener('DOMContentLoaded', () => {
             c.rotation.y = c.userData.spin;
             c.rotation.z = Math.sin(c.userData.bob) * 0.07;
 
-            const dx = Math.abs(c.position.x - cannonGroup.position.x);
-            const dy = Math.abs(c.position.y - coinCollectY);
+            // ------------------------------------------
+            // 1. מגע אמיתי עם הכיפה הכחולה
+            // ------------------------------------------
+            // הכיפה היא חצי-כדור ברדיוס ~0.90, והמטבע בקוטר ~0.88.
+            // לכן משתמשים ברדיוס מגע משולב שמאפשר איסוף בדיוק כשהמטבע
+            // מגיע לפני/על פני הכיפה, לפני שהוא יכול להיכנס לתוכה.
+            const domeWorldPos = new THREE.Vector3();
+            dome.getWorldPosition(domeWorldPos);
+            const coinTouchRadius = 0.90 + 0.42;
+            const dxDome = c.position.x - domeWorldPos.x;
+            const dyDome = c.position.y - domeWorldPos.y;
+            const domeDistance = Math.hypot(dxDome, dyDome);
+            const touchesDome =
+                dyDome >= -0.10 &&
+                domeDistance <= coinTouchRadius;
 
-            // איסוף לפני שהמטבע מגיע לגוף עצמו. כך הוא לא עובר דרך השריון/השלדה.
-            if (dx < coinCollectRadiusX && dy < coinCollectRadiusY && c.position.y <= 1.32) {
+            // ------------------------------------------
+            // 2. המטבע הגיע לרצפה
+            // ------------------------------------------
+            // אין קשר למרחק מהתותח: מטבע שנפל לרצפה נכנס מיד לארנק.
+            const FLOOR_COIN_Y = 0.28;
+            const touchesFloor = c.position.y <= FLOOR_COIN_Y;
+
+            if (touchesDome || touchesFloor) {
                 coins += 5;
                 playSound('coin');
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
                 updateUI();
-            } else if (c.position.y < 0.2) {
-                c.position.y = 0.2;
-                c.userData.vy = 0;
+                continue;
             }
         }
 
