@@ -2415,19 +2415,18 @@ window.addEventListener('DOMContentLoaded', () => {
         child.position.y += CANNON_BODY_LIFT;
     });
 
-    // גלגלים - ארבעה צמיגי שטח גדולים, שחורים, עם שיני אחיזה בולטות וחישוק כרום מבריק.
+    // גלגלים - צמיגי שטח גדולים ושחורים עם דוגמת שיני אחיזה, צדדים מעוצבים וחישוק כרום עמוק.
     // כל הגלגלים ישרים ומתגלגלים יחד סביב ציר Z.
+    // כדי לחסוך עומס, כל החלקים של גלגל אחד ממוזגים לכמה גיאומטריות בודדות (שמשותפות לארבעת הגלגלים).
     const cannonWheels = [];
 
     // ---- מידות הצמיג (אפשר לשחק איתן) ----
     const TIRE_MAJOR_R = 0.355;                       // רדיוס הטבעת של הצמיג
     const TIRE_MINOR_R = 0.19;                        // עובי הצמיג (חצי רוחב)
     const TIRE_OUTER_R = TIRE_MAJOR_R + TIRE_MINOR_R; // רדיוס חיצוני של הגומי (0.545)
-    const TIRE_GROUND_DROP = 0.425;                   // כמה מרכז הגלגל גבוה מהקרקע - נשאר כמו קודם
-    const WHEEL_X = 1.74;                             // המרחק של הגלגלים מאמצע התותח (הורחב קצת בשביל הצמיגים הגדולים)
+    const TIRE_GROUND_DROP = 0.425;                   // כמה מרכז הגלגל גבוה מהקרקע
+    const WHEEL_X = 1.74;                             // המרחק של הגלגלים מאמצע התותח
     const WHEEL_Y = TIRE_OUTER_R - TIRE_GROUND_DROP;  // גובה מרכז הגלגל: התחתית נשארת על הקרקע
-    const KNOB_COUNT = 16;
-    const KNOB_R = 0.545;                             // מרחק מרכז שן האחיזה ממרכז הגלגל
 
     // X = רוחב, Y = גובה, Z = קדימה/אחורה.
     const wheelPositions = [
@@ -2437,8 +2436,8 @@ window.addEventListener('DOMContentLoaded', () => {
         [ WHEEL_X, WHEEL_Y, -0.72]
     ];
 
-    // מפת סביבה קטנה (שמיים של שקיעה) רק בשביל ההשתקפות בכרום.
-    // בלי זה מתכת נראית כהה ועמומה. אם המכשיר לא תומך, נופלים לחומר רגיל בלי לשבור את המשחק.
+    // מפת סביבה קטנה (שמיים של שקיעה) בשביל ההשתקפות בכרום ובברק העדין של הגומי.
+    // אם המכשיר לא תומך, נופלים לחומרים רגילים בלי לשבור את המשחק.
     function createWheelEnvMap() {
         try {
             const c = document.createElement('canvas');
@@ -2472,18 +2471,184 @@ window.addEventListener('DOMContentLoaded', () => {
             pmrem.dispose();
             return rt.texture;
         } catch (err) {
-            console.warn('Wheel env map unavailable, using fallback chrome', err);
+            console.warn('Wheel env map unavailable, using fallback materials', err);
             return null;
         }
     }
     const wheelEnvMap = createWheelEnvMap();
 
-    // צמיג: שחור עמוק. שימו לב: בגרסת Three.js הזו צבעי חומר נכנסים לתאורה בלי gamma,
-    // ולכן ערך כמו 0x171413 נראה אפור-חום תחת אור השקיעה. כאן הערכים כהים בהרבה בכוונה.
-    const offroadTireMat = new THREE.MeshStandardMaterial({ color: 0x070707, roughness: 0.92, metalness: 0.0 });
-    const tireKnobMat = new THREE.MeshStandardMaterial({ color: 0x0f0e0e, roughness: 0.85, metalness: 0.0 });
+    // ---- כלים קטנים לבניית הגלגל ----
+    function smooth01(t) {
+        t = Math.min(1, Math.max(0, t));
+        return t * t * (3 - 2 * t);
+    }
 
-    // כרום מבריק לחישוק, לחישורים ולמכסה המרכזי.
+    // קופסה שהצד העליון שלה צר יותר (שיפוע), כדי שהקצוות יתפסו אור ויראו תלת-ממדיים.
+    // axis: 'y' / 'z' / '-z' = לאיזה כיוון הקופסה מצטמצמת.
+    function taperedBox(sx, sy, sz, axis, k) {
+        const g = new THREE.BoxGeometry(sx, sy, sz);
+        const p = g.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+            const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+            if (axis === 'y' && y > 0) { p.setX(i, x * k); p.setZ(i, z * k); }
+            else if (axis === 'z' && z > 0) { p.setX(i, x * k); p.setY(i, y * k); }
+            else if (axis === '-z' && z < 0) { p.setX(i, x * k); p.setY(i, y * k); }
+        }
+        g.computeVertexNormals();
+        return g;
+    }
+
+    function partMatrix(x, y, z, rx = 0, ry = 0, rz = 0) {
+        return new THREE.Matrix4().compose(
+            new THREE.Vector3(x, y, z),
+            new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)),
+            new THREE.Vector3(1, 1, 1)
+        );
+    }
+
+    // ממזג הרבה חלקים לגיאומטריה אחת. אם לחלקים יש צבע - נשמר צבע לכל קודקוד
+    // (אפשר גם פונקציית shade שמכהה/מבהירה לפי מיקום, כמו צל קטן ליד החישוק).
+    function mergeWheelParts(parts) {
+        const pos = [], nor = [], col = [];
+        const tmp = new THREE.Color();
+        parts.forEach(part => {
+            const g = part.geo.index ? part.geo.toNonIndexed() : part.geo.clone();
+            g.applyMatrix4(part.m);
+            const p = g.attributes.position.array;
+            const n = g.attributes.normal.array;
+            for (let i = 0; i < p.length; i++) {
+                pos.push(p[i]);
+                nor.push(n[i]);
+            }
+            if (part.color) {
+                for (let i = 0; i < p.length; i += 3) {
+                    const f = part.shade ? part.shade(p[i], p[i + 1], p[i + 2]) : 1;
+                    tmp.copy(part.color).multiplyScalar(f);
+                    col.push(tmp.r, tmp.g, tmp.b);
+                }
+            }
+            g.dispose();
+        });
+        const out = new THREE.BufferGeometry();
+        out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+        if (col.length) out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        return out;
+    }
+
+    // ---- הגומי: שחור עמוק עם ברק עדין ----
+    // בגרסת Three.js הזו צבעים נכנסים לתאורה בלי gamma, ולכן ערכים כהים מאוד נחוצים כדי שייראה שחור
+    // (ערכים בהירים יותר נראו חומים תחת אור השקיעה החם). הגוון הכחלחל מבטל את החום של השמש.
+    const COLOR_TIRE = new THREE.Color(0x030304);
+    const COLOR_LUG = new THREE.Color(0x09090b);
+
+    const LUG_N = 14;
+    const LUG_STEP = (Math.PI * 2) / LUG_N;
+    const centerLugGeo = taperedBox(0.17, 0.19, 0.17, 'y', 0.72);      // x משיכה, y רדיאלי, z רוחב
+    const shoulderLugGeo = taperedBox(0.15, 0.20, 0.125, 'y', 0.70);
+    const sideBlockGeoPos = taperedBox(0.075, 0.10, 0.04, 'z', 0.75);
+    const sideBlockGeoNeg = taperedBox(0.075, 0.10, 0.04, '-z', 0.75);
+
+    const rubberParts = [];
+
+    // גוף הצמיג (כהה יותר ליד החישוק, כאילו יש צל).
+    rubberParts.push({
+        geo: new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 40),
+        m: partMatrix(0, 0, 0),
+        color: COLOR_TIRE,
+        shade: (x, y) => 0.6 + 0.9 * smooth01((Math.hypot(x, y) - 0.17) / 0.38)
+    });
+
+    for (let i = 0; i < LUG_N; i++) {
+        const a = i * LUG_STEP;
+        const a2 = (i + 0.5) * LUG_STEP;
+
+        // שן אחיזה מרכזית גבוהה.
+        rubberParts.push({
+            geo: centerLugGeo,
+            m: partMatrix(Math.cos(a) * 0.57, Math.sin(a) * 0.57, 0, 0, 0, a - Math.PI / 2),
+            color: COLOR_LUG
+        });
+
+        [-1, 1].forEach(side => {
+            // שיני כתף משני הצדדים, מוסטות בחצי צעד - נותן דוגמת "זיגזג" של צמיג שטח אמיתי.
+            rubberParts.push({
+                geo: shoulderLugGeo,
+                m: partMatrix(Math.cos(a2) * 0.525, Math.sin(a2) * 0.525, side * 0.125, 0, 0, a2 - Math.PI / 2),
+                color: COLOR_LUG
+            });
+
+            // בלוקים מורמים על דופן הצמיג (מה שרואים מהמצלמה).
+            rubberParts.push({
+                geo: side > 0 ? sideBlockGeoPos : sideBlockGeoNeg,
+                m: partMatrix(Math.cos(a) * 0.47, Math.sin(a) * 0.47, side * 0.15, 0, 0, a - Math.PI / 2),
+                color: COLOR_LUG
+            });
+        });
+    }
+
+    // טבעת הגנה מורמת סביב החישוק, בכל צד.
+    [-1, 1].forEach(side => {
+        rubberParts.push({
+            geo: new THREE.TorusGeometry(0.335, 0.022, 6, 40),
+            m: partMatrix(0, 0, side * 0.183),
+            color: COLOR_LUG
+        });
+    });
+
+    // ---- החישוק: כרום + צלחת כהה-מתכתית עמוקה ----
+    const chromeParts = [];
+    const dishParts = [];
+    const spokeGeoPos = taperedBox(0.25, 0.085, 0.045, 'z', 0.7);
+    const spokeGeoNeg = taperedBox(0.25, 0.085, 0.045, '-z', 0.7);
+    const lipGeo = new THREE.TorusGeometry(0.29, 0.032, 10, 36);
+    const nutGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.05, 6);
+    const domeGeo = new THREE.SphereGeometry(0.09, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+    const capBaseGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.03, 20);
+    const dishOuterGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.04, 36);
+    const dishInnerGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.04, 28);
+
+    [-1, 1].forEach(side => {
+        // טבעת כרום עבה בקצה החישוק.
+        chromeParts.push({ geo: lipGeo, m: partMatrix(0, 0, side * 0.19) });
+
+        // 5 חישורים עם שיפוע בקצוות + 5 אומי גלגל בין החישורים.
+        for (let i = 0; i < 5; i++) {
+            const b = (i / 5) * Math.PI * 2 + Math.PI / 2;
+            chromeParts.push({
+                geo: side > 0 ? spokeGeoPos : spokeGeoNeg,
+                m: partMatrix(Math.cos(b) * 0.165, Math.sin(b) * 0.165, side * 0.178, 0, 0, b)
+            });
+            const nb = b + Math.PI / 5;
+            chromeParts.push({
+                geo: nutGeo,
+                m: partMatrix(Math.cos(nb) * 0.115, Math.sin(nb) * 0.115, side * 0.185, Math.PI / 2, 0, 0)
+            });
+        }
+
+        // מכסה מרכזי: בסיס + כיפה.
+        chromeParts.push({ geo: capBaseGeo, m: partMatrix(0, 0, side * 0.18, Math.PI / 2, 0, 0) });
+        chromeParts.push({ geo: domeGeo, m: partMatrix(0, 0, side * 0.185, side * Math.PI / 2, 0, 0) });
+
+        // צלחת עמוקה בשני מדרגות מאחורי החישורים.
+        dishParts.push({ geo: dishOuterGeo, m: partMatrix(0, 0, side * 0.15, Math.PI / 2, 0, 0) });
+        dishParts.push({ geo: dishInnerGeo, m: partMatrix(0, 0, side * 0.165, Math.PI / 2, 0, 0) });
+    });
+
+    const wheelRubberGeo = mergeWheelParts(rubberParts);
+    const wheelChromeGeo = mergeWheelParts(chromeParts);
+    const wheelDishGeo = mergeWheelParts(dishParts);
+
+    // ---- חומרים ----
+    const wheelRubberMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        roughness: wheelEnvMap ? 0.58 : 0.85,
+        metalness: 0.0,
+        envMap: wheelEnvMap,
+        envMapIntensity: 0.55
+    });
+
     const chromeMat = new THREE.MeshStandardMaterial({
         color: 0xe6ebee,
         roughness: 0.16,
@@ -2491,21 +2656,22 @@ window.addEventListener('DOMContentLoaded', () => {
         envMap: wheelEnvMap,
         envMapIntensity: 1.25
     });
+
+    const gunmetalMat = new THREE.MeshStandardMaterial({
+        color: 0x2a3036,
+        roughness: 0.32,
+        metalness: 1.0,
+        envMap: wheelEnvMap,
+        envMapIntensity: 1.0
+    });
+
     if (!wheelEnvMap) {
         chromeMat.metalness = 0.55;
         chromeMat.roughness = 0.22;
         chromeMat.emissive.setHex(0x2a2e31);
+        gunmetalMat.metalness = 0.5;
+        gunmetalMat.color.setHex(0x1a1f23);
     }
-
-    // תחתית החישוק (הצללה כהה בין החישורים, כדי שהכרום ייראה בולט).
-    const rimRecessMat = new THREE.MeshStandardMaterial({ color: 0x14181b, roughness: 0.5, metalness: 0.6 });
-
-    const tireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 32);
-    const knobGeo = new THREE.BoxGeometry(0.24, 0.15, 0.34);       // רדיאלי x משיכה x רוחב
-    const rimBarrelGeo = new THREE.CylinderGeometry(0.255, 0.255, 0.35, 28);
-    const rimLipGeo = new THREE.TorusGeometry(0.245, 0.03, 10, 28);
-    const spokeGeo = new THREE.BoxGeometry(0.47, 0.075, 0.03);
-    const rimCapGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.40, 18);
 
     wheelPositions.forEach(pos => {
         // wheelOuter = מיקום הגלגל. wheel = הציר שמסתובב.
@@ -2515,42 +2681,17 @@ window.addEventListener('DOMContentLoaded', () => {
         const wheel = new THREE.Group();
         wheelOuter.add(wheel);
 
-        const tire = new THREE.Mesh(tireGeo, offroadTireMat);
-        tire.castShadow = true;
-        tire.receiveShadow = true;
-        wheel.add(tire);
+        const tireMesh = new THREE.Mesh(wheelRubberGeo, wheelRubberMat);
+        tireMesh.castShadow = true;
+        tireMesh.receiveShadow = true;
+        wheel.add(tireMesh);
 
-        // שיני אחיזה גדולות סביב הצמיג, מכוונות רדיאלית (החוצה מהמרכז).
-        for (let i = 0; i < KNOB_COUNT; i++) {
-            const ang = (i / KNOB_COUNT) * Math.PI * 2;
-            const knob = new THREE.Mesh(knobGeo, tireKnobMat);
-            knob.position.set(Math.cos(ang) * KNOB_R, Math.sin(ang) * KNOB_R, 0);
-            knob.rotation.z = ang;
-            knob.castShadow = true;
-            wheel.add(knob);
-        }
+        const rimMesh = new THREE.Mesh(wheelChromeGeo, chromeMat);
+        wheel.add(rimMesh);
 
-        // גוף החישוק (כהה) + טבעת, חישורים ומכסה מרכזי מכרום.
-        const barrel = new THREE.Mesh(rimBarrelGeo, rimRecessMat);
-        barrel.rotation.x = Math.PI / 2;
-        wheel.add(barrel);
-
-        [-1, 1].forEach(side => {
-            const lip = new THREE.Mesh(rimLipGeo, chromeMat);
-            lip.position.z = side * 0.175;
-            wheel.add(lip);
-
-            for (let i = 0; i < 3; i++) {
-                const spoke = new THREE.Mesh(spokeGeo, chromeMat);
-                spoke.position.z = side * 0.178;
-                spoke.rotation.z = (i / 3) * Math.PI + Math.PI / 6;
-                wheel.add(spoke);
-            }
-        });
-
-        const cap = new THREE.Mesh(rimCapGeo, chromeMat);
-        cap.rotation.x = Math.PI / 2;
-        wheel.add(cap);
+        const dishMesh = new THREE.Mesh(wheelDishGeo, gunmetalMat);
+        dishMesh.receiveShadow = true;
+        wheel.add(dishMesh);
 
         // אין היגוי מלאכותי: התותח נע ימינה/שמאלה, ולכן כל ארבעת הגלגלים
         // מתגלגלים יחד סביב ציר Z. זה מונע סיבוב עקום בזמן שינוי כיוון.
@@ -3194,8 +3335,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // הקואורדינטות בצד התותח (לפני CANNON_SCALE): x רוחב, y גובה מעל הקרקע.
     const CANNON_COLLIDERS = [
         { ax: -0.35, ay: 1.45, bx: 0.35, by: 1.45, r: 0.80 }, // גוף + כיפה
-        { ax: -WHEEL_X, ay: WHEEL_Y, bx: -WHEEL_X, by: WHEEL_Y, r: 0.60 }, // גלגל שמאל
-        { ax: WHEEL_X, ay: WHEEL_Y, bx: WHEEL_X, by: WHEEL_Y, r: 0.60 },   // גלגל ימין
+        { ax: -WHEEL_X, ay: WHEEL_Y, bx: -WHEEL_X, by: WHEEL_Y, r: 0.62 }, // גלגל שמאל
+        { ax: WHEEL_X, ay: WHEEL_Y, bx: WHEEL_X, by: WHEEL_Y, r: 0.62 },   // גלגל ימין
         { ax: -0.37, ay: 2.55, bx: -0.37, by: 2.55, r: 0.20 }, // קנה שמאל
         { ax: 0.37, ay: 2.55, bx: 0.37, by: 2.55, r: 0.20 }    // קנה ימין
     ];
@@ -3628,7 +3769,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const currentCannonX = cannonGroup.position.x;
         const previousCannonX = cannonGroup.userData.previousWheelX ?? currentCannonX;
         const wheelTravel = currentCannonX - previousCannonX;
-        const wheelRadius = 0.58 * CANNON_SCALE;
+        const wheelRadius = 0.60 * CANNON_SCALE;
         const spinAmount = wheelRadius > 0.001 ? wheelTravel / wheelRadius : 0;
 
         cannonWheels.forEach(wheelOuter => {
