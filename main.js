@@ -639,11 +639,7 @@ window.addEventListener('DOMContentLoaded', () => {
             mapGroup.add(haze);
 
             // שלוש שכבות של דיונות/הרים יוצרות מרחק ברור.
-            // שיחים ירוקים בקצוות הקדמיים, באותו ירוק אחיד של הדשא.
-            addBush(-12.0, -8.0, 0.8, GRASS_GREEN);
-            addBush(12.0, -9.0, 0.7, GRASS_GREEN);
-            addBush(-10.5, -12.5, 0.62, GRASS_GREEN);
-            addBush(10.6, -13.0, 0.68, GRASS_GREEN);
+            // (הוסרו השיחים הירוקים החלקים בצדדים — הם נראו כגושים שטוחים.)
         } else if (mapId === 'forest') {
             // יער בשכבות: שורה רחוקה, שורה בינונית, ואז כמה עצים קרובים.
             addDistantHill(-10, 1.5, -22, 11, 5.0, 4.0, 0x28543a, 0.82);
@@ -931,26 +927,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const isIce = mapId === 'ice';
         const isVolcano = mapId === 'volcano';
 
-        // רכסי קרקע נמוכים בצדדים — לא פלטפורמה, אלא שולי שטח טבעיים.
-        const ridgeMat = new THREE.MeshStandardMaterial({
-            color: isIce ? 0xa7d0dd : isVolcano ? 0x24201f : (isForest || isDesert) ? GRASS_GREEN : 0x76532f,
-            roughness: 0.98,
-            metalness: 0.0,
-            flatShading: true
-        });
-
-        [-1, 1].forEach(side => {
-            const ridge = new THREE.Mesh(
-                new THREE.SphereGeometry(1, 12, 7),
-                ridgeMat
-            );
-            ridge.scale.set(6.8, 0.34, 10.5);
-            ridge.position.set(side * 9.4, 0.13, -8.7);
-            ridge.rotation.z = side * 0.025;
-            ridge.castShadow = true;
-            ridge.receiveShadow = true;
-            group.add(ridge);
-        });
+        // (הוסרו רכסי הקרקע החלקים בצדדים — הם כיסו את הדשא ויצרו גושים ירוקים שטוחים.)
 
         // אבנים שטוחות בפרונט, מפוזרות רק מחוץ למסלול התותח.
         const stonePalette = isIce
@@ -985,24 +962,7 @@ window.addEventListener('DOMContentLoaded', () => {
             group.add(stone);
         }
 
-        if (isDesert) {
-            // אדוות חול בולטות יותר במרחק קצר.
-            for (let i = 0; i < 7; i++) {
-                const dune = new THREE.Mesh(
-                    new THREE.SphereGeometry(1, 14, 8),
-                    new THREE.MeshStandardMaterial({
-                        color: GRASS_GREEN,
-                        roughness: 1,
-                        flatShading: true
-                    })
-                );
-                dune.scale.set(1.8 + Math.random() * 1.4, 0.16 + Math.random() * 0.12, 0.85 + Math.random() * 0.6);
-                dune.position.set((i % 2 === 0 ? -1 : 1) * (7.2 + Math.random() * 5.0), 0.12, -3.0 - i * 1.5);
-                dune.rotation.y = Math.random() * Math.PI;
-                dune.receiveShadow = true;
-                group.add(dune);
-            }
-        }
+        // (הוסרו גושי ה-dune הירוקים השטוחים מהקרקע.)
 
         if (isForest) {
             // צמחייה נמוכה עם גבעולים ועלים נפרדים — הרבה יותר נפח מעצים לבדם.
@@ -1742,37 +1702,6 @@ window.addEventListener('DOMContentLoaded', () => {
             group.add(tuft);
         }
 
-        // 2) אמצע המפה — גושים נמוכים שממלאים את המעבר ולא נראים כמו קיר.
-        for (let i = 0; i < 16; i++) {
-            const side = i % 2 === 0 ? -1 : 1;
-            const depth = Math.random();
-            const x = side * (6.4 + depth * 3.8);
-            const z = -9.0 - depth * 11.0;
-            const s = 0.42 + Math.random() * 0.55;
-
-            const mound = new THREE.Mesh(
-                new THREE.SphereGeometry(1, 9, 6),
-                midMat
-            );
-            mound.scale.set(0.75 * s, 0.22 * s, 1.0 * s);
-            mound.position.set(x, 0.16 * s, z);
-            mound.rotation.y = Math.random() * Math.PI;
-            mound.receiveShadow = true;
-            group.add(mound);
-
-            // כמה עשבים מעל הגושים כדי לחבר בין הקרקע לאופק.
-            if (i % 2 === 0) {
-                const grass = new THREE.Mesh(
-                    new THREE.ConeGeometry(0.06 * s, 0.55 * s, 5),
-                    midMat
-                );
-                grass.position.set(x + (Math.random() - 0.5) * 0.35, 0.48 * s, z);
-                grass.rotation.z = (Math.random() - 0.5) * 0.25;
-                grass.castShadow = true;
-                group.add(grass);
-            }
-        }
-
         // 3) שכבת מרחק — צלליות נמוכות שמייצרות מעבר רך אל הפירמידות.
         for (let i = 0; i < 10; i++) {
             const side = i % 2 === 0 ? -1 : 1;
@@ -1927,7 +1856,7 @@ window.addEventListener('DOMContentLoaded', () => {
             wrapped(x, y, r, (px, py) => {
                 const g = ctx.createRadialGradient(px, py, 0, px, py, r);
                 const c = light ? '120,170,60' : '20,50,15';
-                g.addColorStop(0, `rgba(${c},0.30)`);
+                g.addColorStop(0, `rgba(${c},0.12)`);
                 g.addColorStop(1, `rgba(${c},0)`);
                 ctx.fillStyle = g;
                 ctx.fillRect(px - r, py - r, r * 2, r * 2);
@@ -2022,23 +1951,7 @@ window.addEventListener('DOMContentLoaded', () => {
         terrain.rotation.x = -Math.PI / 2;
         terrain.position.y = 0.018;
 
-        // שביל היער הכהה והמתכנס לאופק — האלמנט המרכזי של המפה.
-        const pathMat = new THREE.MeshStandardMaterial({
-            color: 0xf2f2f2,
-            map: createLawnTexture(2.7, 2),
-            roughness: 0.95,
-            metalness: 0
-        });
-        const forestPath = addMesh(
-            createForestPathGeometry(),
-            pathMat,
-            0,
-            0,
-            0,
-            false,
-            true
-        );
-        forestPath.renderOrder = 1;
+        // (השביל הוסר: הוא נראה בדיוק כמו הקרקע ויצר רק קו תפר אלכסוני.)
 
         addGroundDetail(theme);
         addForegroundScenery(theme);
