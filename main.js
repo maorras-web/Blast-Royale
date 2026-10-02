@@ -1324,6 +1324,57 @@ window.addEventListener('DOMContentLoaded', () => {
         return { map, bumpMap };
     }
 
+    // פירמידה בעלת 4 פאות עם מיפוי טקסטורה בלי עיוות.
+    // ב-ConeGeometry הרגיל הטקסטורה נמתחת כמלבן על משולש, ולכן היא נדחסת לרוחב
+    // ככל שעולים לקצה ומתקבלים פסים מרוחים/מטושטשים בפסגה. כאן כל פאה מקבלת
+    // מיפוי שטוח לפי מידות אמיתיות, והנורמלים שטוחים (פאות חדות כמו בפירמידה אמיתית).
+    function createPyramidGeometry(radius, height, heightSegments) {
+        const base = new THREE.ConeGeometry(radius, height, 4, heightSegments);
+        const geo = base.toNonIndexed();
+        const pos = geo.attributes.position;
+        const uv = geo.attributes.uv;
+
+        const TILE = 22;                                              // גודל אריח הטקסטורה ביחידות עולם (לפני repeat)
+        const slantScale = Math.sqrt(height * height + radius * radius * 0.5) / height;
+        const halfH = height / 2;
+        const quarter = Math.PI / 2;
+
+        for (let i = 0; i < pos.count; i += 3) {
+            // שלושת הקודקודים של המשולש
+            let cx = 0, cz = 0, allBottom = true;
+            for (let k = 0; k < 3; k++) {
+                cx += pos.getX(i + k);
+                cz += pos.getZ(i + k);
+                if (Math.abs(pos.getY(i + k) + halfH) > 1e-4) allBottom = false;
+            }
+            if (allBottom) continue;                                  // בסיס תחתון (מוסתר): משאירים כמו שהוא
+
+            // איזו פאה זו? (פינות הפירמידה בזוויות 0, 90, 180, 270 מעלות)
+            let ang = Math.atan2(cx, cz);
+            if (ang < 0) ang += Math.PI * 2;
+            const face = Math.min(3, Math.floor(ang / quarter));
+
+            // כיוון הקצה התחתון של הפאה
+            const a0 = face * quarter, a1 = (face + 1) * quarter;
+            let ex = Math.sin(a1) - Math.sin(a0);
+            let ez = Math.cos(a1) - Math.cos(a0);
+            const el = Math.hypot(ex, ez) || 1;
+            ex /= el; ez /= el;
+
+            for (let k = 0; k < 3; k++) {
+                const x = pos.getX(i + k), y = pos.getY(i + k), z = pos.getZ(i + k);
+                const t = x * ex + z * ez;                            // מרחק לאורך הפאה
+                const v = (y + halfH) * slantScale;                   // מרחק לאורך השיפוע
+                uv.setXY(i + k, t / TILE + face * 0.37, v / TILE);
+            }
+        }
+        uv.needsUpdate = true;
+
+        geo.computeVertexNormals();                                   // נורמלים שטוחים לכל פאה
+        geo.parameters = base.parameters;
+        return geo;
+    }
+
     function createStoneTexture() {
         const canvas = document.createElement('canvas');
         const bumpCanvas = document.createElement('canvas');
@@ -1993,31 +2044,15 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
             // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
-            const p1 = addMesh(new THREE.ConeGeometry(7.4, 17.5, 4, 12), pyramidMatA, -11.6, 8.75, -29);
+            const p1 = addMesh(createPyramidGeometry(7.4, 17.5, 12), pyramidMatA, -11.6, 8.75, -29);
             p1.rotation.y = Math.PI / 4;
-            const p2 = addMesh(new THREE.ConeGeometry(7.8, 18.5, 4, 12), pyramidMatA, 12.0, 9.25, -32);
+            const p2 = addMesh(createPyramidGeometry(7.8, 18.5, 12), pyramidMatA, 12.0, 9.25, -32);
             p2.rotation.y = Math.PI / 4;
-            const p3 = addMesh(new THREE.ConeGeometry(10.5, 15.5, 4, 14), pyramidMatB, 0, 7.75, -47);
+            const p3 = addMesh(createPyramidGeometry(10.5, 15.5, 14), pyramidMatB, 0, 7.75, -47);
             p3.rotation.y = Math.PI / 4;
 
-            // פסי אור דקים בקצוות — נותנים לפירמידות מראה קולנועי בלי לשנות collision.
-            [p1, p2, p3].forEach((p, i) => {
-                const edgeMat = new THREE.MeshBasicMaterial({
-                    color: 0xffc36b,
-                    transparent: true,
-                    opacity: i === 2 ? 0.07 : 0.12,
-                    depthWrite: false,
-                    blending: THREE.AdditiveBlending
-                });
-                const edge = new THREE.Mesh(
-                    new THREE.ConeGeometry(p.geometry.parameters.radius * 0.995, p.geometry.parameters.height * 1.002, 4, 1, true),
-                    edgeMat
-                );
-                edge.position.copy(p.position);
-                edge.rotation.y = p.rotation.y;
-                edge.renderOrder = 2;
-                mapGroup.add(edge);
-            });
+            // (הוסרה שכבת הזוהר התוספתית שישבה כמעטפת כמעט חופפת על הפירמידות: היא יצרה
+            // כיפה מוארת מרצדת בקצוות. הקצוות נשארים נקיים וחדים.)
             addRockDecoration(-6, -5, 1.2, 0x6b5d52);
             addRockDecoration(7, -7, 0.85, 0x7d6d60);
 
