@@ -2435,14 +2435,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // פתיח: התותח מכוון מעט לכיוון השחקן
     // שלב 1 בלבד — ויזואלי, ללא שינוי בפיזיקת המשחק.
     // ==========================================
-    const INTRO_AIM_X = THREE.MathUtils.degToRad(22);
-    const INTRO_SWAY_Z = THREE.MathUtils.degToRad(4.5);
+    const INTRO_AIM_X = THREE.MathUtils.degToRad(68);
+    const INTRO_SWAY_Z = THREE.MathUtils.degToRad(7);
+    const INTRO_AIM_Y = THREE.MathUtils.degToRad(0);
 
     function updateIntroCannon(time) {
         if (isGameStarted) return;
 
         const sway = Math.sin(time * 0.00105) * INTRO_SWAY_Z;
         barrelAssembly.rotation.x += (INTRO_AIM_X - barrelAssembly.rotation.x) * 0.08;
+        barrelAssembly.rotation.y += (INTRO_AIM_Y - barrelAssembly.rotation.y) * 0.08;
         barrelAssembly.rotation.z += (sway - barrelAssembly.rotation.z) * 0.08;
     }
 
