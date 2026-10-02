@@ -2981,6 +2981,100 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.add(hubMount);
     }
 
+    // מסגרת מרכזית חדשה מתחת לגוף — ממלאת את החלל בין שני צדדי המתלה
+    // ונותנת חיבור מכני ברור במקום שהשלדה נראתה "מרחפת".
+    function addCentralSuspensionFrame() {
+        const frameDark = suspensionDarkMetalMat;
+        const frameMetal = suspensionMetalMat;
+
+        // קורת רוחב ראשית מתחת לגוף.
+        const mainBeam = new THREE.Mesh(
+            new THREE.BoxGeometry(1.72, 0.20, 0.28),
+            frameDark
+        );
+        mainBeam.position.set(0, 0.38, 0);
+        mainBeam.castShadow = true;
+        mainBeam.receiveShadow = true;
+        cannonGroup.add(mainBeam);
+
+        // פלטת חיזוק קדמית — זו החלקה הבולטת שרואים בין שני הגלגלים.
+        const frontPlate = new THREE.Mesh(
+            new THREE.BoxGeometry(1.48, 0.34, 0.10),
+            frameMetal
+        );
+        frontPlate.position.set(0, 0.49, 0.18);
+        frontPlate.castShadow = true;
+        frontPlate.receiveShadow = true;
+        cannonGroup.add(frontPlate);
+
+        // קורת תחתית ליצירת מסגרת סגורה וברורה.
+        const lowerBeam = new THREE.Mesh(
+            new THREE.BoxGeometry(1.30, 0.12, 0.24),
+            frameDark
+        );
+        lowerBeam.position.set(0, 0.24, 0.02);
+        lowerBeam.castShadow = true;
+        lowerBeam.receiveShadow = true;
+        cannonGroup.add(lowerBeam);
+
+        // שתי תושבות צד שמתחברות לאזור ה-inner pivots.
+        [-1, 1].forEach(side => {
+            const upperMount = new THREE.Mesh(
+                new THREE.BoxGeometry(0.18, 0.38, 0.30),
+                frameDark
+            );
+            upperMount.position.set(side * 0.70, 0.52, 0);
+            upperMount.castShadow = true;
+            upperMount.receiveShadow = true;
+            cannonGroup.add(upperMount);
+
+            const lowerMount = new THREE.Mesh(
+                new THREE.BoxGeometry(0.16, 0.28, 0.28),
+                frameMetal
+            );
+            lowerMount.position.set(side * 0.61, 0.30, 0.12);
+            lowerMount.castShadow = true;
+            lowerMount.receiveShadow = true;
+            cannonGroup.add(lowerMount);
+
+            // חיזוק אלכסוני — יוצר את צורת ה-V/טרפז של התמונה.
+            addSuspensionArmBetween(
+                new THREE.Vector3(side * 0.50, 0.27, 0.16),
+                new THREE.Vector3(side * 0.76, 0.58, 0.16),
+                0.105,
+                0.095,
+                frameMetal,
+                false,
+                false
+            );
+
+            // חיזוק אלכסוני נוסף בחלק האחורי.
+            addSuspensionArmBetween(
+                new THREE.Vector3(side * 0.53, 0.43, -0.12),
+                new THREE.Vector3(side * 0.76, 0.69, -0.12),
+                0.085,
+                0.085,
+                frameDark,
+                false,
+                false
+            );
+
+            // ברגים גדולים על המסגרת.
+            addSuspensionJoint(new THREE.Vector3(side * 0.70, 0.58, 0.20), 0.085);
+            addBolt(new THREE.Vector3(side * 0.70, 0.58, 0.255), 0.040);
+            addSuspensionJoint(new THREE.Vector3(side * 0.50, 0.27, 0.20), 0.075);
+            addBolt(new THREE.Vector3(side * 0.50, 0.27, 0.255), 0.036);
+        });
+
+        // ארבעה ברגי חזית שמדגישים שהקורה מחוברת לשלדה.
+        [-0.58, 0.58].forEach(x => {
+            [0.32, 0.54].forEach(y => {
+                addSuspensionJoint(new THREE.Vector3(x, y, 0.235), 0.060);
+                addBolt(new THREE.Vector3(x, y, 0.275), 0.028);
+            });
+        });
+    }
+
     function addReferenceCoiloverSuspension(side, z) {
         const outerX = side * (WHEEL_X - 0.10);
 
@@ -3038,6 +3132,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         addCoilOver(side, z);
     }
+
+    // מסגרת מרכזית מתחת לגוף — מחברת ויזואלית את שני צדדי המתלה.
+    addCentralSuspensionFrame();
 
     // ארבע יחידות מתלה — עכשיו Coil-over + Double Wishbone, ללא כריות אוויר.
     [-1, 1].forEach(side => {
