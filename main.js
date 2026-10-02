@@ -2439,10 +2439,9 @@ window.addEventListener('DOMContentLoaded', () => {
         prevX: null, prevVx: 0,
         rest: true
     };
-    const suspensionLinks = [];   // זרועות ובולמים: { mesh, a, b, aSprung, bSprung, len0 }
-    const suspensionBags = [];    // כריות אוויר: { group, restTop, bottomY, h }
+    const suspensionLinks = [];   // זרועות + בולמי קפיץ: { mesh, a, b, aSprung, bSprung, len0 }
+    const suspensionSprings = []; // קבוצות coil-over שמתעדכנות עם תנועת הגוף
     const suspensionJoints = [];  // מפרקים שנעים עם הגוף: { mesh, rest }
-    const BAG_H = 0.54;
 
     const _susPivot = new THREE.Vector3(0, BODY_PIVOT_Y, 0);
     const _susA = new THREE.Vector3();
@@ -2467,7 +2466,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateSuspensionMotion() {
         const S = suspensionMotion;
 
-        // מהירות ותאוצה אופקית של התותח (לפי הפריים).
         const x = cannonGroup.position.x;
         let vx = S.prevX === null ? 0 : x - S.prevX;
         S.prevX = x;
@@ -2475,10 +2473,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const ax = vx - S.prevVx;
         S.prevVx = vx;
 
-        // שינוי כיוון חד = צלילה קלה.
         S.dipV += Math.min(Math.abs(ax), 0.15) * 0.10;
-
-        // קפיצים: משיכה למנוחה + בלימה, כך שהגוף מתנדנד רך ונרגע.
         S.dipV += -S.dip * 0.12;
         S.dipV *= 0.82;
         S.dip = Math.max(-0.05, Math.min(0.11, S.dip + S.dipV));
@@ -2498,7 +2493,7 @@ window.addEventListener('DOMContentLoaded', () => {
             Math.abs(S.pitch) < 1e-4 && Math.abs(S.pitchV) < 1e-4;
 
         if (settled) {
-            if (S.rest) return;      // כבר במנוחה - אין מה לעדכן
+            if (S.rest) return;
             S.dip = S.dipV = S.roll = S.rollV = S.pitch = S.pitchV = 0;
             S.rest = true;
         } else {
@@ -2509,7 +2504,7 @@ window.addEventListener('DOMContentLoaded', () => {
         bodyRig.rotation.set(S.pitch, 0, S.roll);
         bodyRig.updateMatrix();
 
-        // זרועות ובולמים: נמתחים בין נקודה בגוף לנקודה בגלגל.
+        // זרועות: נמתחות בין נקודה בגוף לנקודה בגלגל.
         for (let i = 0; i < suspensionLinks.length; i++) {
             const L = suspensionLinks[i];
             susPoint(L.a, L.aSprung, _susA);
@@ -2521,18 +2516,18 @@ window.addEventListener('DOMContentLoaded', () => {
             L.mesh.scale.y = len / L.len0;
         }
 
-        // כריות אוויר: התחתית קבועה והראש עוקב אחרי הגוף. המיקום נשמר מתחת לשלדה כדי למנוע חדירה לגוף ולצמיג.
-        for (let i = 0; i < suspensionBags.length; i++) {
-            const B = suspensionBags[i];
-            susPoint(B.restTop, true, _susA);
-            const compress = B.restTop.y - _susA.y;
-            const sy = Math.max(0.7, Math.min(1.25, (B.h - compress) / B.h));
-            const bulge = 1 + (1 - sy) * 0.45;
-            B.group.scale.set(bulge, sy, bulge);
-            B.group.position.y = B.bottomY + (B.h * sy) / 2;
+        // קפיצי coil-over: הקצה העליון נע עם הגוף, התחתון נשאר באזור הנאבה.
+        for (let i = 0; i < suspensionSprings.length; i++) {
+            const K = suspensionSprings[i];
+            susPoint(K.a, K.aSprung, _susA);
+            susPoint(K.b, K.bSprung, _susB);
+            _susDir.subVectors(_susB, _susA);
+            const len = _susDir.length();
+            K.group.position.addVectors(_susA, _susB).multiplyScalar(0.5);
+            K.group.quaternion.setFromUnitVectors(_susUp, _susDir.multiplyScalar(1 / Math.max(len, 1e-6)));
+            K.group.scale.y = len / K.len0;
         }
 
-        // מפרקים פנימיים נעים עם הגוף.
         for (let i = 0; i < suspensionJoints.length; i++) {
             const J = suspensionJoints[i];
             susPoint(J.rest, true, J.mesh.position);
@@ -2827,33 +2822,29 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================
-    // מתלים בסגנון הרפרנס — Air Spring + Double Wishbone
-    // =========================================================
-    // המראה מכוון לתמונה ששלחת: כרית אוויר שחורה ועבה קרוב לגוף,
-    // שתי זרועות מתכת ארוכות שיורדות החוצה אל נאבת הגלגל, ומפרקים
-    // בולטים. זווית הגלגלים עצמה לא משתנה.
-     const suspensionRubberMat = new THREE.MeshStandardMaterial({
-        color: 0x101214,
-        roughness: 0.82,
-        metalness: 0.04
+    // מתלה חדש בסגנון התמונה שבחרת:
+    // Coil-over שחור + Double Wishbone מתכתי פתוח.
+    // אין כריות אוויר, ולכן אין יותר חדירה של מפוח לתוך גוף התותח או הצמיג.
+    const suspensionRubberMat = new THREE.MeshStandardMaterial({
+        color: 0x111315,
+        roughness: 0.76,
+        metalness: 0.06
     });
 
     const suspensionMetalMat = new THREE.MeshPhysicalMaterial({
-        color: 0xc2c7c8,
-        roughness: 0.18,
-        metalness: 0.95,
-        clearcoat: 0.34,
-        clearcoatRoughness: 0.12
+        color: 0xb8bec1,
+        roughness: 0.20,
+        metalness: 0.94,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.10
     });
 
     const suspensionDarkMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x30373b,
-        roughness: 0.24,
-        metalness: 0.90
+        color: 0x242a2d,
+        roughness: 0.23,
+        metalness: 0.92
     });
 
-    // מתלה ויזואלי בסגנון הרפרנס: כרית מפוח עבה, זרועות כפולות בולטות,
-    // מפרקים גדולים וחיבור ברור בין גוף הכלי לנאבת הגלגל.
     function addSuspensionCylinderBetween(a, b, radius, material, segments = 14, aSprung = false, bSprung = false) {
         const start = a.clone();
         const end = b.clone();
@@ -2864,10 +2855,25 @@ window.addEventListener('DOMContentLoaded', () => {
             material
         );
         mesh.position.copy(start).add(end).multiplyScalar(0.5);
-        mesh.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 1, 0),
-            direction.normalize()
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        cannonGroup.add(mesh);
+        suspensionLinks.push({ mesh, a: start, b: end, aSprung, bSprung, len0: Math.max(length, 1e-6) });
+        return mesh;
+    }
+
+    function addSuspensionArmBetween(a, b, width, depth, material, aSprung = false, bSprung = false) {
+        const start = a.clone();
+        const end = b.clone();
+        const direction = new THREE.Vector3().subVectors(end, start);
+        const length = direction.length();
+        const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(width, length, depth),
+            material
         );
+        mesh.position.copy(start).add(end).multiplyScalar(0.5);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         cannonGroup.add(mesh);
@@ -2888,132 +2894,84 @@ window.addEventListener('DOMContentLoaded', () => {
         return joint;
     }
 
-    function addReferenceAirSpring(side, z) {
+    function addBolt(position, radius = 0.055, sprung = false) {
+        const bolt = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius, 0.065, 14),
+            suspensionMetalMat
+        );
+        bolt.rotation.x = Math.PI / 2;
+        bolt.position.copy(position);
+        bolt.castShadow = true;
+        bolt.receiveShadow = true;
+        cannonGroup.add(bolt);
+        if (sprung) suspensionJoints.push({ mesh: bolt, rest: position.clone() });
+        return bolt;
+    }
+
+    function addCoilOver(side, z) {
         const hub = new THREE.Vector3(side * WHEEL_X, WHEEL_Y, z);
 
-        // כרית האוויר יושבת ממש בין הגוף לגלגל, כמו ברפרנס.
-        // היא בנויה כמפוח רציף + קפלים עבים, כדי שהצורה תישאר ברורה גם מרחוק.
-        const bagX = side * 0.82;
-        const bagY = 0.48;
-        const airSpring = new THREE.Group();
-        airSpring.position.set(bagX, bagY, z);
-        cannonGroup.add(airSpring);
-        suspensionBags.push({
-            group: airSpring,
-            restTop: new THREE.Vector3(bagX, bagY + BAG_H / 2, z),
-            bottomY: bagY - BAG_H / 2,
-            h: BAG_H
-        });
+        // מיקום פנימי ובטוח: הקפיץ נמצא בין הגוף לגלגל, אך לא בתוך הצמיג.
+        const springX = side * 1.17;
+        const springTop = new THREE.Vector3(springX, 1.03, z);
+        const springBottom = new THREE.Vector3(side * 1.47, WHEEL_Y + 0.16, z);
+        const direction = new THREE.Vector3().subVectors(springBottom, springTop);
+        const length = direction.length();
 
-        // גוף מפוח רציף עם פרופיל מדורג - לא גליל פשוט.
-        const bellowsProfile = [
-            [0.22, -0.39],
-            [0.285, -0.33],
-            [0.305, -0.27],
-            [0.275, -0.21],
-            [0.305, -0.14],
-            [0.275, -0.07],
-            [0.31,  0.00],
-            [0.275,  0.07],
-            [0.305,  0.14],
-            [0.275,  0.21],
-            [0.305,  0.27],
-            [0.285,  0.33],
-            [0.22,  0.39]
-        ];
-        const bellows = new THREE.Mesh(
-            new THREE.LatheGeometry(
-                bellowsProfile.map(([r, y]) => new THREE.Vector2(r, y)),
-                24
-            ),
-            suspensionRubberMat
+        const group = new THREE.Group();
+        group.position.copy(springTop).add(springBottom).multiplyScalar(0.5);
+        group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+        group.castShadow = true;
+        cannonGroup.add(group);
+
+        // בולם מרכזי שחור.
+        const damper = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.052, 0.052, length, 12),
+            suspensionDarkMetalMat
         );
-        bellows.castShadow = true;
-        bellows.receiveShadow = true;
-        airSpring.add(bellows);
+        damper.castShadow = true;
+        damper.receiveShadow = true;
+        group.add(damper);
 
-        // קפלים עבים וברורים - 7 במקום הרבה טבעות דקות.
-        const foldYs = [-0.27, -0.18, -0.09, 0, 0.09, 0.18, 0.27];
-        const foldRadii = [0.292, 0.318, 0.330, 0.340, 0.330, 0.318, 0.292];
-        foldYs.forEach((y, i) => {
-            const fold = new THREE.Mesh(
-                new THREE.TorusGeometry(foldRadii[i], 0.064, 10, 28),
+        // קפיץ סלילי רחב — 8 טבעות ברורות במקום כרית אוויר.
+        const coilYs = [-0.33, -0.235, -0.14, -0.045, 0.05, 0.145, 0.24, 0.335];
+        coilYs.forEach((y, i) => {
+            const coil = new THREE.Mesh(
+                new THREE.TorusGeometry(0.115 + (i % 2 ? 0.008 : 0), 0.027, 8, 22),
                 suspensionRubberMat
             );
-            fold.rotation.x = Math.PI / 2;
-            fold.position.y = y;
-            fold.castShadow = true;
-            fold.receiveShadow = true;
-            airSpring.add(fold);
+            coil.rotation.x = Math.PI / 2;
+            coil.position.y = y;
+            coil.castShadow = true;
+            coil.receiveShadow = true;
+            group.add(coil);
         });
 
-        // מכסי מתכת בולטים למעלה ולמטה.
-        [-1, 1].forEach(sign => {
-            const cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.245, 0.245, 0.065, 18),
-                suspensionMetalMat
-            );
-            cap.position.y = sign * 0.272;
-            cap.castShadow = true;
-            cap.receiveShadow = true;
-            airSpring.add(cap);
-        });
+        suspensionSprings.push({ group, a: springTop, b: springBottom, aSprung: true, bSprung: false, len0: Math.max(length, 1e-6) });
 
-        // חיבור עליון עבה לגוף.
+        // תושבות מתכת לקפיץ.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(side * 0.92, 0.82, z),
-            new THREE.Vector3(bagX, 0.76, z),
-            0.078,
+            new THREE.Vector3(side * 0.98, 1.02, z),
+            springTop,
+            0.070,
             suspensionMetalMat,
-            14,
+            12,
             true,
             true
         );
-
-        // =========================================================
-        // DOUBLE WISHBONE - שתי זרועות גדולות שקל לקרוא אותן מהמצלמה.
-        // הן מופרדות גם בגובה וגם מעט בעומק כדי שלא ייעלמו אחת בתוך השנייה.
-        // =========================================================
-        const outerX = side * (WHEEL_X - 0.18);
-
-        // זרוע תחתונה: ארוכה, נמוכה ובולטת.
-        const lowerA = new THREE.Vector3(side * 0.72, 0.38, z - 0.20);
-        const lowerB = new THREE.Vector3(side * 0.72, 0.38, z + 0.20);
-        const lowerOuterA = new THREE.Vector3(outerX, WHEEL_Y + 0.01, z - 0.13);
-        const lowerOuterB = new THREE.Vector3(outerX, WHEEL_Y + 0.01, z + 0.13);
-
-        addSuspensionCylinderBetween(lowerA, lowerOuterA, 0.108, suspensionMetalMat, 16, true, false);
-        addSuspensionCylinderBetween(lowerB, lowerOuterB, 0.108, suspensionMetalMat, 16, true, false);
-
-        // זרוע עליונה: יוצרת את ה-A-arm האופייני לתמונה.
-        const upperA = new THREE.Vector3(side * 0.84, 0.80, z - 0.18);
-        const upperB = new THREE.Vector3(side * 0.84, 0.80, z + 0.18);
-        const upperOuterA = new THREE.Vector3(outerX, WHEEL_Y + 0.28, z - 0.105);
-        const upperOuterB = new THREE.Vector3(outerX, WHEEL_Y + 0.28, z + 0.105);
-
-        addSuspensionCylinderBetween(upperA, upperOuterA, 0.082, suspensionMetalMat, 16, true, false);
-        addSuspensionCylinderBetween(upperB, upperOuterB, 0.082, suspensionMetalMat, 16, true, false);
-
-        // בולם כהה, עבה, צמוד לכרית - נותן עומק מכני.
         addSuspensionCylinderBetween(
-            new THREE.Vector3(bagX, 0.70, z),
-            new THREE.Vector3(outerX, WHEEL_Y + 0.15, z),
-            0.070,
-            suspensionDarkMetalMat,
-            16,
-            true,
+            springBottom,
+            new THREE.Vector3(side * 1.54, WHEEL_Y + 0.16, z),
+            0.060,
+            suspensionMetalMat,
+            12,
+            false,
             false
         );
 
-        // מפרקים גדולים בקצות הזרועות.
-        addSuspensionJoint(new THREE.Vector3(outerX, WHEEL_Y + 0.01, z), 0.125);
-        addSuspensionJoint(new THREE.Vector3(outerX, WHEEL_Y + 0.28, z), 0.105);
-        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.38, z), 0.100, true);
-        addSuspensionJoint(new THREE.Vector3(side * 0.84, 0.80, z), 0.092, true);
-
-        // נאבה גדולה שמחברת ויזואלית את כל המתלה לגלגל.
+        // נאבה/תושבת מרכזית.
         const hubMount = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.145, 0.145, 0.24, 16),
+            new THREE.CylinderGeometry(0.13, 0.13, 0.22, 16),
             suspensionDarkMetalMat
         );
         hubMount.rotation.x = Math.PI / 2;
@@ -3023,9 +2981,67 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.add(hubMount);
     }
 
-    // ארבע יחידות מתלה - אחת לכל גלגל.
+    function addReferenceCoiloverSuspension(side, z) {
+        const outerX = side * (WHEEL_X - 0.10);
+
+        // נקודות inner-pivot בגוף: שתי זרועות לכל A-arm, כמו ברפרנס.
+        const lowerInnerFront = new THREE.Vector3(side * 0.70, 0.40, z - 0.20);
+        const lowerInnerRear  = new THREE.Vector3(side * 0.70, 0.40, z + 0.20);
+        const lowerOuterFront = new THREE.Vector3(outerX, WHEEL_Y + 0.02, z - 0.12);
+        const lowerOuterRear  = new THREE.Vector3(outerX, WHEEL_Y + 0.02, z + 0.12);
+
+        addSuspensionArmBetween(lowerInnerFront, lowerOuterFront, 0.135, 0.105, suspensionMetalMat, true, false);
+        addSuspensionArmBetween(lowerInnerRear, lowerOuterRear, 0.135, 0.105, suspensionMetalMat, true, false);
+
+        const upperInnerFront = new THREE.Vector3(side * 0.83, 0.82, z - 0.18);
+        const upperInnerRear  = new THREE.Vector3(side * 0.83, 0.82, z + 0.18);
+        const upperOuterFront = new THREE.Vector3(outerX, WHEEL_Y + 0.27, z - 0.105);
+        const upperOuterRear  = new THREE.Vector3(outerX, WHEEL_Y + 0.27, z + 0.105);
+
+        addSuspensionArmBetween(upperInnerFront, upperOuterFront, 0.115, 0.095, suspensionMetalMat, true, false);
+        addSuspensionArmBetween(upperInnerRear, upperOuterRear, 0.115, 0.095, suspensionMetalMat, true, false);
+
+        // מפרקי inner/outer גדולים.
+        addSuspensionJoint(lowerOuterFront, 0.105);
+        addSuspensionJoint(lowerOuterRear, 0.105);
+        addSuspensionJoint(upperOuterFront, 0.092);
+        addSuspensionJoint(upperOuterRear, 0.092);
+        addSuspensionJoint(lowerInnerFront, 0.090, true);
+        addSuspensionJoint(lowerInnerRear, 0.090, true);
+        addSuspensionJoint(upperInnerFront, 0.080, true);
+        addSuspensionJoint(upperInnerRear, 0.080, true);
+
+        addBolt(lowerOuterFront, 0.045);
+        addBolt(lowerOuterRear, 0.045);
+        addBolt(upperOuterFront, 0.040);
+        addBolt(upperOuterRear, 0.040);
+
+        // חיבור קצר מהשלדה לכיוון ה-inner pivots כדי לתת מראה של מסגרת אמיתית.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(side * 0.48, 0.46, z),
+            new THREE.Vector3(side * 0.70, 0.40, z),
+            0.080,
+            suspensionDarkMetalMat,
+            12,
+            true,
+            true
+        );
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(side * 0.60, 0.90, z),
+            new THREE.Vector3(side * 0.83, 0.82, z),
+            0.070,
+            suspensionDarkMetalMat,
+            12,
+            true,
+            true
+        );
+
+        addCoilOver(side, z);
+    }
+
+    // ארבע יחידות מתלה — עכשיו Coil-over + Double Wishbone, ללא כריות אוויר.
     [-1, 1].forEach(side => {
-        [0.72, -0.72].forEach(z => addReferenceAirSpring(side, z));
+        [0.72, -0.72].forEach(z => addReferenceCoiloverSuspension(side, z));
     });
 
    cannonGroup.scale.setScalar(
