@@ -4229,11 +4229,151 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
+    // שמיים חיים: ציפורים ומטוסים מאחורי הפירמידות (שלב 2)
+    // ==========================================
+    // מהירויות ביחידות לשנייה (לא תלוי במהירות המסך). אפשר לשנות כאן.
+    const SKY_BIRD_SPEED = 1.0;    // מכפיל מהירות ציפורים
+    const SKY_PLANE_SPEED = 1.0;   // מכפיל מהירות מטוסים
+
+    const skyGroup = new THREE.Group();
+    scene.add(skyGroup);   // לא ב-mapGroup, כדי ש-buildMap לא ימחק אותם
+
+    // ציפור = שלושה משולשים (שתי כנפיים + גוף); "מנפנפים" אותה בשינוי scale.y.
+    const birdGeo = new THREE.BufferGeometry();
+    birdGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+        0, 0, 0,   -1.0, 0.42, 0,   -0.62, -0.02, 0,
+        0, 0, 0,    1.0, 0.42, 0,    0.62, -0.02, 0,
+        -0.14, 0.0, 0,  0.14, 0.0, 0,  0, -0.22, 0
+    ]), 3));
+    const birdMat = new THREE.MeshBasicMaterial({ color: 0x2b1b26, side: THREE.DoubleSide, fog: false });
+
+    const skyFlocks = [];
+    [
+        { n: 7, x: -26, y: 17, z: -58, s: 2.4, v: 3.0 },
+        { n: 5, x: 30, y: 24, z: -62, s: 2.8, v: -2.0 },
+        { n: 6, x: 0, y: 13, z: -56, s: 2.0, v: 1.6 },
+        { n: 4, x: -40, y: 27, z: -66, s: 3.0, v: 2.6 }
+    ].forEach((f, fi) => {
+        const flock = { v: f.v, birds: [], x: f.x, y: f.y, z: f.z, bob: fi * 1.7 };
+        for (let i = 0; i < f.n; i++) {
+            const m = new THREE.Mesh(birdGeo, birdMat);
+            const row = Math.ceil(i / 2) * (i % 2 ? 1 : -1);   // מבנה V של להקה
+            m.userData = {
+                ox: -Math.abs(row) * 2.4 * Math.sign(f.v),
+                oy: row * 0.9 + (Math.random() - 0.5) * 0.6,
+                oz: (Math.random() - 0.5) * 3,
+                ph: Math.random() * 6.28,
+                base: f.s * (0.85 + Math.random() * 0.3)
+            };
+            skyGroup.add(m);
+            flock.birds.push(m);
+        }
+        skyFlocks.push(flock);
+    });
+
+    // פס עשן למטוס: טקסטורה מדרגת שקיפות.
+    function makeContrailTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256; c.height = 8;
+        const g = c.getContext('2d');
+        const grad = g.createLinearGradient(0, 0, 256, 0);
+        grad.addColorStop(0, 'rgba(255,240,220,0.0)');
+        grad.addColorStop(0.35, 'rgba(255,236,210,0.28)');
+        grad.addColorStop(1, 'rgba(255,230,200,0.55)');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 256, 8);
+        return new THREE.CanvasTexture(c);
+    }
+    const contrailTex = makeContrailTexture();
+    const planeMat = new THREE.MeshBasicMaterial({ color: 0x35252d, fog: false });
+    const planeLightMat = new THREE.MeshBasicMaterial({ color: 0xff3a30, fog: false });
+
+    const skyPlanes = [];
+    [
+        { y: 26, z: -74, s: 3.2, v: 9, x: -70, jet: true },
+        { y: 20, z: -68, s: 2.4, v: -6, x: 75, jet: false }
+    ].forEach(p => {
+        const g = new THREE.Group();
+        const dir = Math.sign(p.v);
+        const fus = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 3.2, 8), planeMat);
+        fus.rotation.z = Math.PI / 2;
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 8), planeMat);
+        nose.rotation.z = -Math.PI / 2;
+        nose.position.x = 1.85;
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 3.2), planeMat);
+        wing.position.set(0.2, -0.02, 0);
+        const tailWing = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 2.4), planeMat);
+        tailWing.position.set(-1.35, 0.0, 0);
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.06), planeMat);
+        fin.position.set(-1.45, 0.5, 0);
+        g.add(fus, nose, wing, tailWing, fin);
+        if (p.jet) {
+            [-0.7, 0.7].forEach(z => {
+                const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8), planeMat);
+                eng.rotation.z = Math.PI / 2;
+                eng.position.set(0.3, -0.18, z);
+                g.add(eng);
+            });
+        }
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), planeLightMat);
+        light.position.set(-1.55, 0.95, 0);
+        g.add(light);
+
+        const trail = new THREE.Mesh(
+            new THREE.PlaneGeometry(10, 0.3),
+            new THREE.MeshBasicMaterial({ map: contrailTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })
+        );
+        trail.position.set(-6.7, 0, 0);
+        g.add(trail);
+
+        g.scale.set(p.s * dir, p.s, p.s);   // dir=-1 הופך כיוון טיסה
+        g.position.set(p.x, p.y, p.z);
+        g.userData = { v: p.v, y: p.y, light };
+        skyGroup.add(g);
+        skyPlanes.push(g);
+    });
+
+    let skyLastTime = null;
+    function updateSkyTraffic(time) {
+        if (skyLastTime === null) skyLastTime = time;
+        const dt = Math.min(0.1, Math.max(0, (time - skyLastTime) / 1000));
+        skyLastTime = time;
+        const t = time * 0.001;
+
+        skyFlocks.forEach(fl => {
+            fl.x += fl.v * SKY_BIRD_SPEED * dt;
+            if (fl.v > 0 && fl.x > 60) fl.x = -60;
+            if (fl.v < 0 && fl.x < -60) fl.x = 60;
+            const dir = Math.sign(fl.v);
+            fl.birds.forEach(b => {
+                const u = b.userData;
+                b.position.set(
+                    fl.x + u.ox,
+                    fl.y + u.oy + Math.sin(t * 0.8 + fl.bob + u.ph) * 0.6,
+                    fl.z + u.oz
+                );
+                b.scale.x = u.base * dir;
+                b.scale.y = u.base * (0.15 + Math.abs(Math.sin(t * 5 + u.ph)) * 0.85);
+                b.scale.z = u.base;
+            });
+        });
+
+        skyPlanes.forEach(p => {
+            p.position.x += p.userData.v * SKY_PLANE_SPEED * dt;
+            if (p.userData.v > 0 && p.position.x > 80) p.position.x = -80;
+            if (p.userData.v < 0 && p.position.x < -80) p.position.x = 80;
+            p.position.y = p.userData.y + Math.sin(t * 0.3 + p.userData.v) * 0.4;
+            p.userData.light.visible = (Math.floor(t * 1.6) % 2) === 0;
+        });
+    }
+
+    // ==========================================
     // 11. לולאת המשחק
     // ==========================================
     function animate(time) {
         requestAnimationFrame(animate);
         if (grassWind) grassWind.uTime.value = time * 0.001;
+        if (!isPaused) updateSkyTraffic(time);
 
         if (!isGameStarted || isPaused || isGameOver) {
             renderer.render(scene, camera);
