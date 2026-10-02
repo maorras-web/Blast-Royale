@@ -2442,7 +2442,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const suspensionLinks = [];   // זרועות ובולמים: { mesh, a, b, aSprung, bSprung, len0 }
     const suspensionBags = [];    // כריות אוויר: { group, restTop, bottomY, h }
     const suspensionJoints = [];  // מפרקים שנעים עם הגוף: { mesh, rest }
-    const BAG_H = 0.595;
+    const BAG_H = 0.74;
 
     const _susPivot = new THREE.Vector3(0, BODY_PIVOT_Y, 0);
     const _susA = new THREE.Vector3();
@@ -2905,7 +2905,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // ליבת גומי עבה.
         const core = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.21, 0.23, 0.52, 18),
+            new THREE.CylinderGeometry(0.265, 0.285, 0.64, 20),
             suspensionRubberMat
         );
         core.castShadow = true;
@@ -2913,9 +2913,10 @@ window.addEventListener('DOMContentLoaded', () => {
         airSpring.add(core);
 
         // קפלי גומי אופקיים שנותנים מראה של כרית/בולם אוויר אמיתי.
-        [-0.18, -0.09, 0, 0.09, 0.18].forEach((y, i) => {
+        [-0.28, -0.187, -0.094, 0, 0.094, 0.187, 0.28].forEach((y, i) => {
+            const centerBulge = 0.020 * (1 - Math.min(1, Math.abs(i - 3) / 3));
             const fold = new THREE.Mesh(
-                new THREE.TorusGeometry(0.225 - Math.abs(i - 2) * 0.008, 0.028, 8, 22),
+                new THREE.TorusGeometry(0.265 + centerBulge, 0.036, 9, 24),
                 suspensionRubberMat
             );
             fold.rotation.x = Math.PI / 2;
@@ -2927,10 +2928,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // כיפות מתכת עליונה ותחתונה.
         [-1, 1].forEach(sign => {
             const cap = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.17, 0.17, 0.055, 16),
+                new THREE.CylinderGeometry(0.205, 0.205, 0.060, 16),
                 suspensionMetalMat
             );
-            cap.position.y = sign * 0.285;
+            cap.position.y = sign * 0.355;
             cap.castShadow = true;
             airSpring.add(cap);
         });
@@ -2939,7 +2940,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addSuspensionCylinderBetween(
             new THREE.Vector3(side * 1.02, 1.02, z),
             new THREE.Vector3(bagX, 0.90, z),
-            0.055,
+            0.072,
             suspensionMetalMat,
             12,
             true,
@@ -2952,8 +2953,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const outerLowerA = new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z - 0.11);
         const outerLowerB = new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z + 0.11);
 
-        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.055, suspensionMetalMat, 12, true, false);
-        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.055, suspensionMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.075, suspensionMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.075, suspensionMetalMat, 12, true, false);
 
         // זרועות עליונות קצרות יותר ליצירת מבנה משולש אמיתי.
         const innerUpperA = new THREE.Vector3(side * 0.96, 0.78, z - 0.13);
@@ -2961,14 +2962,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const outerUpperA = new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z - 0.09);
         const outerUpperB = new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z + 0.09);
 
-        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.043, suspensionDarkMetalMat, 12, true, false);
-        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.043, suspensionDarkMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.060, suspensionDarkMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.060, suspensionDarkMetalMat, 12, true, false);
 
         // מוט בולם אלכסוני בין הכרית לאזור הנאבה.
         addSuspensionCylinderBetween(
             new THREE.Vector3(bagX, 0.82, z),
             new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.12, z),
-            0.038,
+            0.052,
             suspensionMetalMat,
             12,
             true,
@@ -2976,9 +2977,9 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         // מפרקים בולטים באזור הנאבה ובנקודות החיבור הפנימיות.
-        addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z), 0.095);
-        addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z), 0.080);
-        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.070, true);
+        addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z), 0.115);
+        addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z), 0.095);
+        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.082, true);
 
         // נאבה קטנה שמחברת ויזואלית את הזרועות לגלגל בלי לשנות את זוויתו.
         const hubMount = new THREE.Mesh(
