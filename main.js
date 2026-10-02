@@ -2415,6 +2415,130 @@ window.addEventListener('DOMContentLoaded', () => {
         child.position.y += CANNON_BODY_LIFT;
     });
 
+    // =========================================================
+    // תנועת מתלים: הגוף "צף" על המתלים, הגלגלים נשארים על הקרקע
+    // =========================================================
+    // כל חלקי הגוף (כולל הקנים) עוברים לקבוצה אחת שאפשר להוריד ולהטות מעט.
+    // הגלגלים, הנאבות והחלק התחתון של המתלים נשארים במקום, והכריות והזרועות
+    // נמתחות ומתכווצות בין הגוף לגלגלים, בלי לשנות את הצורה שלהם במנוחה.
+    const BODY_PIVOT_Y = 1.0;
+    const bodyRig = new THREE.Group();
+    bodyRig.position.set(0, BODY_PIVOT_Y, 0);
+    cannonGroup.add(bodyRig);
+    cannonGroup.children.slice().forEach(child => {
+        if (child === bodyRig) return;
+        child.position.y -= BODY_PIVOT_Y;
+        bodyRig.add(child);
+    });
+
+    // כל המשתנים כאן נמדדים ביחידות של התותח (לפני CANNON_SCALE).
+    const suspensionMotion = {
+        dip: 0, dipV: 0,        // צלילה אנכית (חיובי = הגוף יורד)
+        roll: 0, rollV: 0,      // הטיה לצדדים
+        pitch: 0, pitchV: 0,    // הטיה קדימה/אחורה
+        prevX: null, prevVx: 0,
+        rest: true
+    };
+    const suspensionLinks = [];   // זרועות ובולמים: { mesh, a, b, aSprung, bSprung, len0 }
+    const suspensionBags = [];    // כריות אוויר: { group, restTop, bottomY, h }
+    const suspensionJoints = [];  // מפרקים שנעים עם הגוף: { mesh, rest }
+    const BAG_H = 0.595;
+
+    const _susPivot = new THREE.Vector3(0, BODY_PIVOT_Y, 0);
+    const _susA = new THREE.Vector3();
+    const _susB = new THREE.Vector3();
+    const _susDir = new THREE.Vector3();
+    const _susUp = new THREE.Vector3(0, 1, 0);
+
+    // מתנע דחיפה קצרה (למשל בירי או כשסלע פוגע): הגוף ינוע ויחזור בקפיצה רכה.
+    function suspensionKick(dipKick, pitchKick) {
+        suspensionMotion.dipV += dipKick;
+        suspensionMotion.pitchV += pitchKick;
+        suspensionMotion.rest = false;
+    }
+
+    // נקודה שנעה עם הגוף (או נשארת במקום אם היא על הגלגל).
+    function susPoint(rest, sprung, out) {
+        out.copy(rest);
+        if (sprung) out.sub(_susPivot).applyMatrix4(bodyRig.matrix);
+        return out;
+    }
+
+    function updateSuspensionMotion() {
+        const S = suspensionMotion;
+
+        // מהירות ותאוצה אופקית של התותח (לפי הפריים).
+        const x = cannonGroup.position.x;
+        let vx = S.prevX === null ? 0 : x - S.prevX;
+        S.prevX = x;
+        if (Math.abs(vx) > 1.2) vx = 0;
+        const ax = vx - S.prevVx;
+        S.prevVx = vx;
+
+        // שינוי כיוון חד = צלילה קלה.
+        S.dipV += Math.min(Math.abs(ax), 0.15) * 0.10;
+
+        // קפיצים: משיכה למנוחה + בלימה, כך שהגוף מתנדנד רך ונרגע.
+        S.dipV += -S.dip * 0.12;
+        S.dipV *= 0.82;
+        S.dip = Math.max(-0.05, Math.min(0.11, S.dip + S.dipV));
+
+        const rollTarget = Math.max(-0.05, Math.min(0.05, vx * 0.13));
+        S.rollV += (rollTarget - S.roll) * 0.10;
+        S.rollV *= 0.80;
+        S.roll += S.rollV;
+
+        S.pitchV += -S.pitch * 0.10;
+        S.pitchV *= 0.84;
+        S.pitch = Math.max(-0.04, Math.min(0.04, S.pitch + S.pitchV));
+
+        const settled =
+            Math.abs(S.dip) < 1e-4 && Math.abs(S.dipV) < 1e-4 &&
+            Math.abs(S.roll) < 1e-4 && Math.abs(S.rollV) < 1e-4 &&
+            Math.abs(S.pitch) < 1e-4 && Math.abs(S.pitchV) < 1e-4;
+
+        if (settled) {
+            if (S.rest) return;      // כבר במנוחה - אין מה לעדכן
+            S.dip = S.dipV = S.roll = S.rollV = S.pitch = S.pitchV = 0;
+            S.rest = true;
+        } else {
+            S.rest = false;
+        }
+
+        bodyRig.position.set(0, BODY_PIVOT_Y - S.dip, 0);
+        bodyRig.rotation.set(S.pitch, 0, S.roll);
+        bodyRig.updateMatrix();
+
+        // זרועות ובולמים: נמתחים בין נקודה בגוף לנקודה בגלגל.
+        for (let i = 0; i < suspensionLinks.length; i++) {
+            const L = suspensionLinks[i];
+            susPoint(L.a, L.aSprung, _susA);
+            susPoint(L.b, L.bSprung, _susB);
+            _susDir.subVectors(_susB, _susA);
+            const len = _susDir.length();
+            L.mesh.position.addVectors(_susA, _susB).multiplyScalar(0.5);
+            L.mesh.quaternion.setFromUnitVectors(_susUp, _susDir.multiplyScalar(1 / Math.max(len, 1e-6)));
+            L.mesh.scale.y = len / L.len0;
+        }
+
+        // כריות אוויר: התחתית קבועה, הראש עוקב אחרי הגוף. מתכווצת = מעט רחבה יותר.
+        for (let i = 0; i < suspensionBags.length; i++) {
+            const B = suspensionBags[i];
+            susPoint(B.restTop, true, _susA);
+            const compress = B.restTop.y - _susA.y;
+            const sy = Math.max(0.7, Math.min(1.25, (B.h - compress) / B.h));
+            const bulge = 1 + (1 - sy) * 0.45;
+            B.group.scale.set(bulge, sy, bulge);
+            B.group.position.y = B.bottomY + (B.h * sy) / 2;
+        }
+
+        // מפרקים פנימיים נעים עם הגוף.
+        for (let i = 0; i < suspensionJoints.length; i++) {
+            const J = suspensionJoints[i];
+            susPoint(J.rest, true, J.mesh.position);
+        }
+    }
+
     // גלגלים - צמיגי שטח גדולים ושחורים עם דוגמת שיני אחיזה, צדדים מעוצבים וחישוק כרום עמוק.
     // כל הגלגלים ישרים ומתגלגלים יחד סביב ציר Z.
     // כדי לחסוך עומס, כל החלקים של גלגל אחד ממוזגים לכמה גיאומטריות בודדות (שמשותפות לארבעת הגלגלים).
@@ -2728,7 +2852,7 @@ window.addEventListener('DOMContentLoaded', () => {
         metalness: 0.84
     });
 
-    function addSuspensionCylinderBetween(a, b, radius, material, segments = 12) {
+    function addSuspensionCylinderBetween(a, b, radius, material, segments = 12, aSprung = false, bSprung = false) {
         const start = a.clone();
         const end = b.clone();
         const direction = new THREE.Vector3().subVectors(end, start);
@@ -2745,10 +2869,11 @@ window.addEventListener('DOMContentLoaded', () => {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         cannonGroup.add(mesh);
+        suspensionLinks.push({ mesh, a: start, b: end, aSprung, bSprung, len0: Math.max(length, 1e-6) });
         return mesh;
     }
 
-    function addSuspensionJoint(position, radius = 0.09) {
+    function addSuspensionJoint(position, radius = 0.09, sprung = false) {
         const joint = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 14, 10),
             suspensionDarkMetalMat
@@ -2757,6 +2882,7 @@ window.addEventListener('DOMContentLoaded', () => {
         joint.castShadow = true;
         joint.receiveShadow = true;
         cannonGroup.add(joint);
+        if (sprung) suspensionJoints.push({ mesh: joint, rest: position.clone() });
         return joint;
     }
 
@@ -2770,6 +2896,12 @@ window.addEventListener('DOMContentLoaded', () => {
         const airSpring = new THREE.Group();
         airSpring.position.set(bagX, bagY, z);
         cannonGroup.add(airSpring);
+        suspensionBags.push({
+            group: airSpring,
+            restTop: new THREE.Vector3(bagX, bagY + BAG_H / 2, z),
+            bottomY: bagY - BAG_H / 2,
+            h: BAG_H
+        });
 
         // ליבת גומי עבה.
         const core = new THREE.Mesh(
@@ -2808,7 +2940,10 @@ window.addEventListener('DOMContentLoaded', () => {
             new THREE.Vector3(side * 1.02, 1.02, z),
             new THREE.Vector3(bagX, 0.90, z),
             0.055,
-            suspensionMetalMat
+            suspensionMetalMat,
+            12,
+            true,
+            true
         );
 
         // זרועות wishbone תחתונות ארוכות — האלמנט הבולט ברפרנס.
@@ -2817,8 +2952,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const outerLowerA = new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z - 0.11);
         const outerLowerB = new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z + 0.11);
 
-        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.055, suspensionMetalMat);
-        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.055, suspensionMetalMat);
+        addSuspensionCylinderBetween(innerLowerA, outerLowerA, 0.055, suspensionMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerLowerB, outerLowerB, 0.055, suspensionMetalMat, 12, true, false);
 
         // זרועות עליונות קצרות יותר ליצירת מבנה משולש אמיתי.
         const innerUpperA = new THREE.Vector3(side * 0.96, 0.78, z - 0.13);
@@ -2826,21 +2961,24 @@ window.addEventListener('DOMContentLoaded', () => {
         const outerUpperA = new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z - 0.09);
         const outerUpperB = new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z + 0.09);
 
-        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.043, suspensionDarkMetalMat);
-        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.043, suspensionDarkMetalMat);
+        addSuspensionCylinderBetween(innerUpperA, outerUpperA, 0.043, suspensionDarkMetalMat, 12, true, false);
+        addSuspensionCylinderBetween(innerUpperB, outerUpperB, 0.043, suspensionDarkMetalMat, 12, true, false);
 
         // מוט בולם אלכסוני בין הכרית לאזור הנאבה.
         addSuspensionCylinderBetween(
             new THREE.Vector3(bagX, 0.82, z),
             new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.12, z),
             0.038,
-            suspensionMetalMat
+            suspensionMetalMat,
+            12,
+            true,
+            false
         );
 
         // מפרקים בולטים באזור הנאבה ובנקודות החיבור הפנימיות.
         addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.10), WHEEL_Y + 0.04, z), 0.095);
         addSuspensionJoint(new THREE.Vector3(side * (WHEEL_X - 0.12), WHEEL_Y + 0.24, z), 0.080);
-        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.070);
+        addSuspensionJoint(new THREE.Vector3(side * 0.72, 0.45, z), 0.070, true);
 
         // נאבה קטנה שמחברת ויזואלית את הזרועות לגלגל בלי לשנות את זוויתו.
         const hubMount = new THREE.Mesh(
@@ -3759,7 +3897,9 @@ window.addEventListener('DOMContentLoaded', () => {
         barrelAssembly.position.z +=
             ((-cannonRecoil * 0.65) - barrelAssembly.position.z) * 0.35;
 
-        cannonGroup.position.y += ((cannonBaseY + cannonRecoil) - cannonGroup.position.y) * 0.35;
+        // הגלגלים נשארים על הקרקע; הגוף הוא זה שצולל ומתרומם על המתלים.
+        cannonGroup.position.y = cannonBaseY;
+        updateSuspensionMotion();
 
         // ======================================
         // גלגול הגלגלים - תנועה אופקית אמיתית
@@ -3794,6 +3934,7 @@ window.addEventListener('DOMContentLoaded', () => {
             spawnMuzzleFlash(rightX, bulletY, 0);
 
             cannonRecoil = 0.14;
+            suspensionKick(0.016, 0.010);
             playSound('shoot');
             lastShotTime = time;
         }
@@ -3925,6 +4066,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 playerHp -= 10;
                 data.hitCooldown = 24;
                 cannonRecoil = -0.08;
+                suspensionKick(0.032, 0);
                 spawnDustBurst(r.position.x, Math.max(0.3, r.position.y - data.size * 0.5), 0);
                 updateUI();
 
