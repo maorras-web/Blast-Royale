@@ -3396,21 +3396,74 @@ window.addEventListener('DOMContentLoaded', () => {
     [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.50, 0.025, 0.04), mk2BlackMat, s * 0.72, 0.62, 0.93)); // חריצים
     addMk2Rounded(0.50, 0.20, 0.30, 0.05, 0.03, mk2DarkMetalMat, 0, 0.44, 0.62);     // תפס תחתון במרכז
 
-    // ---- גוף עליון: מדף רחב + כיפה מתומנת משופעת + לוח אחורי ----
-    addMk2Rounded(1.46, 0.30, 1.00, 0.10, 0.05, mk2MidMetalMat, 0, 1.28, 0.0);
-    const mk2DomeGeo = new THREE.CylinderGeometry(0.66, 0.92, 0.55, 8);
+    // =========================================================
+    // HEAVY ARMOR - שלב 1: הגדלה והכבדה של הגוף המרכזי בלבד
+    // =========================================================
+    // המטרה: לתת לתותח מסה ונוכחות של כלי משוריין כבד בלי לשנות
+    // גלגלים, מתלים, פיזיקה או נקודות ירי. כל התוספות כאן ויזואליות.
+
+    // 1) אמבט שריון מרכזי - רחב, גבוה ועמוק יותר מהמדף הקודם.
+    addMk2Rounded(1.92, 0.46, 1.22, 0.12, 0.055, mk2DarkMetalMat, 0, 1.24, 0.02);
+    addMk2Rounded(1.72, 0.22, 1.30, 0.09, 0.045, mk2MidMetalMat, 0, 1.48, 0.00);
+
+    // 2) לוחות כתף עבים משני הצדדים - מרחיבים את הסילואט בלי לגעת בגלגלים.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.48, 0.58, 1.08, 0.10, 0.05, mk2MidMetalMat, side * 0.82, 1.40, 0.02, 0, 0, side * -0.10);
+        addMk2Rounded(0.18, 0.48, 1.14, 0.06, 0.035, mk2EdgeMat, side * 1.02, 1.38, 0.02, 0, 0, side * -0.13);
+
+        // פס שריון כהה שקוע בתוך כל כתף.
+        addMk2Rounded(0.12, 0.31, 0.82, 0.035, 0.02, mk2BlackMat, side * 0.86, 1.39, 0.18, 0, 0, side * -0.10);
+    });
+
+    // 3) חזית משופעת מתחת לקנים - יוצרת מראה של "אף" משוריין.
+    addMk2Rounded(1.56, 0.30, 0.68, 0.08, 0.045, mk2MidMetalMat, 0, 1.62, 0.31, -0.24, 0, 0);
+    addMk2Rounded(1.28, 0.13, 0.74, 0.05, 0.03, mk2EdgeMat, 0, 1.76, 0.28, -0.24, 0, 0);
+
+    // חריץ כהה בחזית - נותן עומק ומפריד בין השריון לבין בית הקנים.
+    addMk2Rounded(0.92, 0.10, 0.08, 0.025, 0.015, mk2BlackMat, 0, 1.69, 0.69, -0.18, 0, 0);
+
+    // 4) גוף עליון/צריח גדול יותר - כיפה מתומנת רחבה וכבדה.
+    const mk2DomeGeo = new THREE.CylinderGeometry(0.76, 1.02, 0.66, 8);
     mk2DomeGeo.rotateY(Math.PI / 8);
-    mk2DomeGeo.scale(1, 1, 0.80);
-    addMk2Mesh(mk2DomeGeo, mk2DarkMetalMat, 0, 1.70, 0);
-    const mk2DomeTopGeo = new THREE.CylinderGeometry(0.58, 0.64, 0.08, 8);
+    mk2DomeGeo.scale(1, 1, 0.86);
+    addMk2Mesh(mk2DomeGeo, mk2DarkMetalMat, 0, 1.82, -0.02);
+
+    // שכבת שריון שנייה סביב בסיס הכיפה.
+    const mk2DomeSkirtGeo = new THREE.CylinderGeometry(0.92, 1.08, 0.20, 8);
+    mk2DomeSkirtGeo.rotateY(Math.PI / 8);
+    mk2DomeSkirtGeo.scale(1, 1, 0.88);
+    addMk2Mesh(mk2DomeSkirtGeo, mk2MidMetalMat, 0, 1.57, -0.01);
+
+    const mk2DomeTopGeo = new THREE.CylinderGeometry(0.66, 0.74, 0.10, 8);
     mk2DomeTopGeo.rotateY(Math.PI / 8);
-    mk2DomeTopGeo.scale(1, 1, 0.80);
-    addMk2Mesh(mk2DomeTopGeo, mk2MidMetalMat, 0, 2.00, 0);
-    addMk2Rounded(0.95, 0.40, 0.07, 0.06, 0.03, mk2MidMetalMat, 0, 1.70, 0.60, -0.33, 0, 0);
-    [0.09, -0.09].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.80, 0.03, 0.04), mk2BlackMat, 0, 1.70 + dy, 0.645 - dy * 0.33, -0.33, 0, 0));
-    // מסגרת בהירה סביב הלוח האחורי
-    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.04, 0.42, 0.05), mk2EdgeMat, s * 0.49, 1.70, 0.625, -0.33, 0, 0));
-    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.98, 0.04, 0.05), mk2EdgeMat, 0, 1.70 + s * 0.20, 0.625 - s * 0.20 * 0.33, -0.33, 0, 0));
+    mk2DomeTopGeo.scale(1, 1, 0.84);
+    addMk2Mesh(mk2DomeTopGeo, mk2EdgeMat, 0, 2.18, -0.02);
+
+    // 5) "לחיים" משוריינות סביב שני הקנים - בית קנים מסיבי יותר.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.46, 0.66, 0.72, 0.09, 0.045, mk2DarkMetalMat, side * 0.55, 1.93, 0.00, 0, 0, side * -0.035);
+        addMk2Rounded(0.12, 0.52, 0.76, 0.04, 0.025, mk2EdgeMat, side * 0.78, 1.90, 0.00, 0, 0, side * -0.035);
+    });
+
+    // גשר שריון מרכזי בין הקנים.
+    addMk2Rounded(0.30, 0.70, 0.78, 0.06, 0.035, mk2MidMetalMat, 0, 1.95, 0.00);
+
+    // 6) לוח אחורי גדול יותר עם מסגרת כבדה.
+    addMk2Rounded(1.18, 0.48, 0.08, 0.07, 0.035, mk2MidMetalMat, 0, 1.78, 0.68, -0.33, 0, 0);
+    [0.11, -0.11].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.98, 0.035, 0.045), mk2BlackMat, 0, 1.78 + dy, 0.725 - dy * 0.33, -0.33, 0, 0));
+    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.05, 0.50, 0.055), mk2EdgeMat, s * 0.60, 1.78, 0.70, -0.33, 0, 0));
+    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(1.18, 0.05, 0.055), mk2EdgeMat, 0, 1.78 + s * 0.24, 0.70 - s * 0.24 * 0.33, -0.33, 0, 0));
+
+    // 7) ברגי שריון גדולים על הכתפיים והחזית.
+    const mk2HeavyBoltGeo = new THREE.CylinderGeometry(0.055, 0.055, 0.065, 8);
+    [-1, 1].forEach(side => {
+        [1.22, 1.52].forEach(y => {
+            addMk2Mesh(mk2HeavyBoltGeo, mk2EdgeMat, side * 0.94, y, 0.58, Math.PI / 2, 0, 0);
+        });
+    });
+    [-0.50, 0, 0.50].forEach(x => {
+        addMk2Mesh(mk2HeavyBoltGeo, mk2EdgeMat, x, 1.60, 0.66, Math.PI / 2, 0, 0);
+    });
 
     // ==========================================
     // שני קנים מלבניים (קבוצת הרתיעה; מיושרים לנקודות הירי ±0.35)
