@@ -3799,21 +3799,51 @@ window.addEventListener('DOMContentLoaded', () => {
         bullets.push(bullet);
     }
 
-    // סלע חדש: גוף סלע "מגולף" וסגור (בלי קרעים), עם משטחים מחוספסים,
-    // מעבר צבע מבסיס כהה לראש בהיר ושונות עדינה בין סלע לסלע.
-    // הסטת הנקודות תלויה רק בכיוון שלהן, ולכן נקודות זהות זזות יחד והמשטח נשאר שלם.
-    function createIrregularRockGeometry(size) {
-        const geo = new THREE.IcosahedronGeometry(1, 2);
+    // ==========================================
+    // סלעים: צורה מסותתת + צבע לפי כמות החיים
+    // ==========================================
+    // צבע הסלע מראה כמה הוא "כבד": חול -> חום -> חלודה -> סלע געשי כהה.
+    // כשסלע מתפצל, הצאצאים (עם חצי חיים) נעשים בהירים יותר, כך שרואים את הדרגה בלי לקרוא מספרים.
+    const ROCK_TIERS = [
+        { max: 24,       bottom: [0.20, 0.17, 0.14], top: [0.54, 0.47, 0.38], emissive: 0x24190f },  // חול
+        { max: 60,       bottom: [0.17, 0.12, 0.09], top: [0.46, 0.34, 0.25], emissive: 0x2a160b },  // חום
+        { max: 120,      bottom: [0.14, 0.08, 0.06], top: [0.48, 0.25, 0.17], emissive: 0x34140a },  // חלודה
+        { max: Infinity, bottom: [0.07, 0.06, 0.07], top: [0.30, 0.22, 0.24], emissive: 0x3a1208 }   // געשי
+    ];
+    const ROCK_FLASH_COLOR = new THREE.Color(0xd9a15a);
+
+    function getRockTier(hp) {
+        for (let i = 0; i < ROCK_TIERS.length; i++) {
+            if (hp <= ROCK_TIERS[i].max) return ROCK_TIERS[i];
+        }
+        return ROCK_TIERS[ROCK_TIERS.length - 1];
+    }
+
+    // גוף סלע סגור (בלי קרעים). ההסטה תלויה רק בכיוון הנקודה, ולכן נקודות זהות זזות יחד.
+    // 1) גיבשושיות רחבות + חספוס עדין  2) 5-7 "חיתוכים" שטוחים שנותנים מראה של סלע מסותת
+    // 3) צבע לכל פאה בנפרד: בהיר בראש ובפאות שפונות למעלה, כהה בסדקים ובבסיס, עם שונות אקראית.
+    function createIrregularRockGeometry(size, hp = 0) {
+        const geo = new THREE.IcosahedronGeometry(1, 2).toNonIndexed();
         const position = geo.attributes.position;
         const ph = Array.from({ length: 8 }, () => Math.random() * Math.PI * 2);
         const sx = 1.05 + (Math.random() - 0.5) * 0.12;
         const sy = 0.92 + (Math.random() - 0.5) * 0.10;
         const sz = 1.00 + (Math.random() - 0.5) * 0.12;
 
-        const bottom = new THREE.Color(0.17, 0.145, 0.12);
-        const top = new THREE.Color(0.44, 0.39, 0.33);
-        const tmp = new THREE.Color();
-        const colors = [];
+        // מישורי חיתוך אקראיים
+        const planes = [];
+        const planeCount = 5 + Math.floor(Math.random() * 3);
+        for (let k = 0; k < planeCount; k++) {
+            const n = new THREE.Vector3(
+                Math.random() * 2 - 1,
+                Math.random() * 2 - 1,
+                Math.random() * 2 - 1
+            ).normalize();
+            planes.push({ n, d: 0.78 + Math.random() * 0.14 });
+        }
+
+        const p = new THREE.Vector3();
+        const FIT = 1.03;   // מפצה על החיתוכים, כדי שהגודל הנראה יישאר קרוב לאזור ההתנגשות
 
         for (let i = 0; i < position.count; i++) {
             const dx = position.getX(i);
@@ -3826,18 +3856,44 @@ window.addEventListener('DOMContentLoaded', () => {
                 Math.sin(nx * 2.1 + ph[0]) * Math.cos(ny * 1.9 + ph[1]) * 0.55 +
                 Math.sin(ny * 3.7 + nz * 3.1 + ph[2]) * 0.30 +
                 Math.sin(nz * 6.3 + nx * 5.7 + ph[3]) * 0.15;
-            const r = (1 + 0.15 * bumps) * size;
+            const fine = Math.sin(nx * 11 + ph[4]) * Math.sin(ny * 9 + ph[5]) * Math.sin(nz * 10 + ph[6]);
+            const r = 1 + 0.15 * bumps + 0.04 * fine;
 
-            position.setXYZ(i, nx * r * sx, ny * r * sy, nz * r * sz);
+            p.set(nx * r, ny * r, nz * r);
+            for (let k = 0; k < planes.length; k++) {
+                const over = p.dot(planes[k].n) - planes[k].d;
+                if (over > 0) p.addScaledVector(planes[k].n, -over);
+            }
 
-            const h = THREE.MathUtils.smoothstep(ny * 0.5 + 0.5, 0.15, 0.95);
-            const patch = Math.sin(nx * 9 + ph[4]) * Math.sin(nz * 9 + ph[5]);
-            tmp.copy(bottom).lerp(top, h).multiplyScalar(0.92 + 0.10 * patch);
-            colors.push(tmp.r, tmp.g, tmp.b);
+            position.setXYZ(i, p.x * size * sx * FIT, p.y * size * sy * FIT, p.z * size * sz * FIT);
+        }
+
+        geo.computeVertexNormals();   // גיאומטריה לא-אינדקסית: נורמל שטוח לכל פאה
+        const normal = geo.attributes.normal;
+
+        const tier = getRockTier(hp);
+        const bottom = new THREE.Color(tier.bottom[0], tier.bottom[1], tier.bottom[2]);
+        const top = new THREE.Color(tier.top[0], tier.top[1], tier.top[2]);
+        const tmp = new THREE.Color();
+        const colors = [];
+
+        for (let i = 0; i < position.count; i += 3) {
+            const cx = (position.getX(i) + position.getX(i + 1) + position.getX(i + 2)) / 3;
+            const cy = (position.getY(i) + position.getY(i + 1) + position.getY(i + 2)) / 3;
+            const cz = (position.getZ(i) + position.getZ(i + 1) + position.getZ(i + 2)) / 3;
+
+            const height = THREE.MathUtils.smoothstep((cy / (size * sy)) * 0.5 + 0.5, 0.10, 0.95);
+            const facingUp = normal.getY(i) * 0.5 + 0.5;
+            const radial = Math.hypot(cx / sx, cy / sy, cz / sz) / size;          // ~0.8 בסדקים, ~1.1 בבליטות
+            const proud = THREE.MathUtils.clamp((radial - 0.82) / 0.25, 0, 1);
+            const jitter = 0.88 + Math.random() * 0.24;
+
+            tmp.copy(bottom).lerp(top, 0.55 * height + 0.45 * facingUp);
+            tmp.multiplyScalar(jitter * (0.78 + 0.30 * proud));
+            for (let v = 0; v < 3; v++) colors.push(tmp.r, tmp.g, tmp.b);
         }
 
         geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geo.computeVertexNormals();
         return geo;
     }
 
@@ -3884,7 +3940,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function spawnRock(x, y, hp, size, launchVx = null, launchVy = null) {
-        const geo = createIrregularRockGeometry(size);
+        const tier = getRockTier(hp);
+        const geo = createIrregularRockGeometry(size, hp);
         const mat = new THREE.MeshStandardMaterial({
             color: getRockColor(),
             vertexColors: true,
@@ -3892,7 +3949,7 @@ window.addEventListener('DOMContentLoaded', () => {
             metalness: 0.0,
             flatShading: true,
             // זוהר חם עדין: מונע מהצד המוצל (מול השקיעה) להפוך לשחור מלא.
-            emissive: 0x24190f,
+            emissive: tier.emissive,
             emissiveIntensity: 0.5
         });
 
@@ -3939,7 +3996,9 @@ window.addEventListener('DOMContentLoaded', () => {
             rotZ: (Math.random() - 0.5) * 0.028,
             ctx,
             texture,
-            hitCooldown: 0
+            hitCooldown: 0,
+            flash: 0,                                   // הבהוב קצר בפגיעת כדור (0..1)
+            baseEmissive: new THREE.Color(tier.emissive)
         };
 
         rock.userData.contactShadow = createRockContactShadow(size);
@@ -4851,6 +4910,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (data.hitCooldown > 0) data.hitCooldown -= 1;
 
+            // הבהוב פגיעה: הסלע מתחמם לרגע ו"קופץ" מעט בגודל, ואז חוזר לרגיל.
+            if (data.flash > 0) {
+                data.flash = Math.max(0, data.flash - 0.12);
+                r.material.emissive.copy(data.baseEmissive).lerp(ROCK_FLASH_COLOR, data.flash);
+                r.material.emissiveIntensity = 0.5 + data.flash * 0.8;
+                r.scale.setScalar(1 + data.flash * 0.05);
+            }
+
             data.vy -= 0.0025;
             r.position.x += data.vx;
             r.position.y += data.vy;
@@ -4922,6 +4989,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     bullets.splice(bIdx, 1);
 
                     data.hp -= firePower;
+                    data.flash = 1;
                     score += firePower;
                     spawnImpactBurst(r.position.x, r.position.y, r.position.z);
                     playSound('hit');
