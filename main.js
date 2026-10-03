@@ -3710,6 +3710,343 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סיום Heavy Armor Pass — כל החלקים הם MK-II בלבד.
 
+
+    // =========================================================
+    // MK-II ARMOR STRUCTURE PASS — VISUAL ONLY
+    // =========================================================
+    // שכבת מבנה נוספת ל-MK-II בלבד.
+    // אין שינוי בתותח הקלאסי, בירי, בהתנגשויות או בפיזיקה.
+
+    // ---- מעטפת גוף מרכזית: שכבות משוריינות שמכסות את הליבה ----
+    addMk2Rounded(
+        1.78, 0.46, 0.78,
+        0.09, 0.035,
+        mk2ArmorDarkMat,
+        0, 1.00, 0.05
+    );
+
+    addMk2Rounded(
+        1.56, 0.34, 0.84,
+        0.075, 0.03,
+        mk2ArmorMat,
+        0, 1.12, 0.00
+    );
+
+    // לוח קדמי משופע — יוצר silhouette של גוף משוריין.
+    addMk2Rounded(
+        1.46, 0.58, 0.16,
+        0.065, 0.03,
+        mk2ArmorMat,
+        0, 1.02, -0.47,
+        -0.16, 0, 0
+    );
+
+    addMk2Rounded(
+        1.16, 0.28, 0.08,
+        0.04, 0.02,
+        mk2ArmorEdgeMat,
+        0, 1.07, -0.57,
+        -0.16, 0, 0
+    );
+
+    // פאנל כהה במרכז הלוח הקדמי.
+    addMk2Rounded(
+        0.68, 0.15, 0.035,
+        0.025, 0.01,
+        mk2ArmorBlackMat,
+        0, 1.07, -0.625,
+        -0.16, 0, 0
+    );
+
+    // ---- לוחות שריון מדורגים בצדי הגוף ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.16, 0.54, 0.96,
+            0.05, 0.025,
+            mk2ArmorMat,
+            side * 0.86, 1.03, 0.02,
+            0, 0, side * 0.055
+        );
+
+        addMk2Rounded(
+            0.11, 0.40, 0.78,
+            0.035, 0.018,
+            mk2ArmorDarkMat,
+            side * 0.965, 1.04, 0.02,
+            0, 0, side * 0.055
+        );
+
+        // קצה שריון בהיר.
+        addMk2Rounded(
+            0.045, 0.43, 0.72,
+            0.015, 0.008,
+            mk2ArmorEdgeMat,
+            side * 1.035, 1.04, 0.02,
+            0, 0, side * 0.055
+        );
+
+        // שלושה פאנלים קטנים לאורך הצד.
+        [0.82, 1.03, 1.24].forEach((yy, index) => {
+            addMk2Rounded(
+                0.035, 0.07, 0.42 - index * 0.03,
+                0.012, 0.006,
+                index === 1 ? mk2ArmorEdgeMat : mk2ArmorBlackMat,
+                side * 1.065, yy, 0.05,
+                0, 0, side * 0.055
+            );
+        });
+    });
+
+    // ---- Housing משוריין סביב שני הקנים ----
+    // בסיס משותף שמסתיר את המעבר בין הקנים לגוף.
+    addMk2Rounded(
+        1.16, 0.54, 0.66,
+        0.09, 0.035,
+        mk2ArmorDarkMat,
+        0, 1.68, 0.02
+    );
+
+    addMk2Rounded(
+        1.02, 0.38, 0.70,
+        0.065, 0.025,
+        mk2ArmorMat,
+        0, 1.74, -0.01
+    );
+
+    // שתי "אוזניים" משוריינות לצד כל קנה.
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2Rounded(
+            0.18, 0.62, 0.62,
+            0.045, 0.02,
+            mk2ArmorEdgeMat,
+            bx + side * 0.22, 1.91, 0.02,
+            0, 0, 0
+        );
+
+        addMk2Rounded(
+            0.52, 0.16, 0.66,
+            0.035, 0.018,
+            mk2ArmorDarkMat,
+            bx, 2.03, 0.02
+        );
+
+        // טבעת שריון בבסיס הקנה.
+        addMk2ZCylinder(
+            0.29, 0.29, 0.16,
+            mk2ArmorEdgeMat,
+            bx, 1.64, 0.02,
+            advancedBarrelAssembly, 14
+        );
+    });
+
+    // ---- מגן עליון משופע שמחבר את הכיפה לגוף ----
+    addMk2Rounded(
+        1.38, 0.20, 0.76,
+        0.055, 0.025,
+        mk2ArmorDarkMat,
+        0, 1.48, 0.02,
+        -0.20, 0, 0
+    );
+
+    addMk2Rounded(
+        1.10, 0.09, 0.62,
+        0.025, 0.012,
+        mk2ArmorEdgeMat,
+        0, 1.56, -0.015,
+        -0.20, 0, 0
+    );
+
+    // ---- מסילות צד: מראה של שלדה מודולרית ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.74, 0.74, 0.68],
+            [side * 1.20, 0.74, 0.68],
+            0.12, 0.13,
+            mk2ArmorEdgeMat
+        );
+
+        addMk2Link(
+            [side * 0.74, 0.88, 0.69],
+            [side * 1.16, 1.18, 0.69],
+            0.095, 0.10,
+            mk2ArmorDarkMat
+        );
+
+        // נקודות חיבור למסילה.
+        [0.84, 1.03, 1.21].forEach(x => {
+            addMk2ZCylinder(
+                0.055, 0.055, 0.08,
+                mk2ArmorEdgeMat,
+                side * x, 0.75, 0.69,
+                advancedCannonGroup, 8
+            );
+        });
+    });
+
+    // ---- מגן מפרק חיצוני: כיסוי שמקיף את ציר הזרוע ----
+    [-1, 1].forEach(side => {
+        const px = side * MK2_PX;
+
+        addMk2ZCylinder(
+            0.43, 0.43, 0.18,
+            mk2ArmorMat,
+            px, 0.80, 1.43,
+            advancedCannonGroup, 18
+        );
+
+        addMk2ZCylinder(
+            0.34, 0.34, 0.23,
+            mk2ArmorEdgeMat,
+            px, 0.80, 1.44,
+            advancedCannonGroup, 18
+        );
+
+        addMk2ZCylinder(
+            0.23, 0.23, 0.27,
+            mk2ArmorBlackMat,
+            px, 0.80, 1.45,
+            advancedCannonGroup, 14
+        );
+    });
+
+    // ---- זרועות קדמיות: קורת בסיס + קורת שריון עליונה ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.54, 1.31, -0.38],
+            [side * 1.78, MK2_WY + 0.56, -0.62],
+            0.30, 0.56,
+            mk2ArmorDarkMat
+        );
+
+        addMk2Link(
+            [side * 0.68, 1.42, -0.42],
+            [side * 1.66, MK2_WY + 0.70, -0.60],
+            0.13, 0.60,
+            mk2ArmorEdgeMat
+        );
+
+        // מפרק קטן באמצע הזרוע.
+        const mx = side * 1.18;
+        const my = MK2_WY + 0.91;
+        addMk2ZCylinder(
+            0.17, 0.17, 0.24,
+            mk2ArmorMat,
+            mx, my, -0.61,
+            advancedCannonGroup, 12
+        );
+
+        addMk2ZCylinder(
+            0.075, 0.075, 0.28,
+            mk2ArmorBlackMat,
+            mx, my, -0.61,
+            advancedCannonGroup, 10
+        );
+    });
+
+    // ---- קורת תחתית מרכזית: "שלדת משנה" מתחת לגוף ----
+    addMk2Rounded(
+        1.28, 0.20, 0.48,
+        0.045, 0.02,
+        mk2ArmorMat,
+        0, 0.47, 0.05
+    );
+
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.48, 0.58, 0.16],
+            [side * 0.88, 0.82, 0.16],
+            0.12, 0.14,
+            mk2ArmorEdgeMat
+        );
+    });
+
+    // ---- פאנל אחורי מפורק לשכבות ----
+    addMk2Rounded(
+        1.34, 0.46, 0.12,
+        0.055, 0.025,
+        mk2ArmorDarkMat,
+        0, 0.98, 0.93
+    );
+
+    addMk2Rounded(
+        1.08, 0.28, 0.055,
+        0.035, 0.018,
+        mk2ArmorMat,
+        0, 1.00, 1.005
+    );
+
+    // שני לוחות אנכיים מאחור.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.28, 0.34, 0.035,
+            0.025, 0.012,
+            mk2ArmorBlackMat,
+            side * 0.37, 1.00, 1.045
+        );
+
+        addMk2Rounded(
+            0.035, 0.30, 0.025,
+            0.008, 0.004,
+            mk2ArmorEdgeMat,
+            side * 0.37, 1.00, 1.065
+        );
+    });
+
+    // ---- גלגלים: שכבת מגן חיצונית סביב החישוק ----
+    [[-MK2_WX, 0.72], [MK2_WX, 0.72], [-MK2_WX, -0.72], [MK2_WX, -0.72]].forEach(([x, z]) => {
+        const guard = new THREE.Group();
+        guard.position.set(x, MK2_WY, z);
+        advancedCannonGroup.add(guard);
+
+        addMk2ZCylinder(
+            0.39, 0.39, 0.16,
+            mk2ArmorDarkMat,
+            0, 0, 0,
+            guard, 16
+        );
+
+        addMk2ZCylinder(
+            0.33, 0.33, 0.19,
+            mk2ArmorEdgeMat,
+            0, 0, 0,
+            guard, 16
+        );
+
+        // מרכז כהה שמשאיר את החישוק המקורי גלוי.
+        addMk2ZCylinder(
+            0.25, 0.25, 0.22,
+            mk2ArmorBlackMat,
+            0, 0, 0,
+            guard, 14
+        );
+    });
+
+    // ---- ברגי שריון גדולים סביב הגוף ----
+    [-1, 1].forEach(side => {
+        [0.70, 0.94, 1.18].forEach(yy => {
+            addMk2ZCylinder(
+                0.052, 0.052, 0.07,
+                mk2ArmorEdgeMat,
+                side * 1.075, yy, 0.53,
+                advancedCannonGroup, 8
+            );
+        });
+    });
+
+    // ---- קווי חיבור בין פאנלים ----
+    [-0.54, -0.18, 0.18, 0.54].forEach(x => {
+        addMk2Rounded(
+            0.025, 0.025, 0.62,
+            0.008, 0.004,
+            mk2ArmorBlackMat,
+            x, 1.27, 0.43
+        );
+    });
+
+    // סיום Armor Structure Pass.
+
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
     classicCannonParts.forEach(child => {
