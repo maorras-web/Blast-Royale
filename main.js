@@ -4436,6 +4436,19 @@ window.addEventListener('DOMContentLoaded', () => {
         droppedCoins.push(coin);
     }
 
+    // גובה (בעולם) של קצה המסך העליון במישור הסלעים (z=0) — כדי שסלעים ייכנסו מלמעלה
+    // מחוץ למסך ולא יופיעו פתאום באמצע השמיים.
+    const _skyRayTmp = new THREE.Vector3();
+    function getScreenTopWorldY() {
+        camera.updateMatrixWorld(true);
+        _skyRayTmp.set(0, 1, 0.5).unproject(camera);
+        const origin = camera.position;
+        const dir = _skyRayTmp.sub(origin);
+        if (Math.abs(dir.z) < 1e-6) return 25;
+        const t = (0 - origin.z) / dir.z;
+        return origin.y + dir.y * t;
+    }
+
     let hasStartedFirstWave = false;
     function startNextWave() {
         // לא מתחילים גל חדש עד שכל הסלעים נעלמו.
@@ -4448,7 +4461,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 const size = 0.95 + Math.random() * 0.8;
                 const hp = Math.floor((8 + level * 6) * (size / 1.2));
                 const spawnX = (Math.random() - 0.5) * (screenLimitX * 1.4);
-                spawnRock(spawnX, 12 + i * 3, hp, size);
+                // מתחילים מעל קצה המסך העליון (+ גודל הסלע + מרווח), עם דחיפה קלה כלפי מטה
+                const spawnY = getScreenTopWorldY() + size * 1.6 + 1.5 + i * 3;
+                spawnRock(spawnX, spawnY, hp, size, null, -0.12);
             }
 
             updateUI();
