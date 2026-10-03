@@ -3272,6 +3272,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // MK-II לפי תמונת היעד: קורה רחבה עם מפרקים עגולים, זרועות כבדות שיורדות
     // לגלגלי אופנוע רחבים, בוכנות, כיפה מתומנת משופעת ושני קנים מלבניים.
     // ==========================================
+    // הגדלה כללית של התותח. הקנים מוזזים פנימה בהתאמה כדי שהקליעים ימשיכו לצאת מהם.
+    const MK2_SCALE = 1.25;
+    advancedCannonGroup.scale.setScalar(MK2_SCALE);
     const MK2_WS = 1.05;                                     // קנה מידה לגלגל
     const MK2_WX = 1.95;                                     // מרחק הגלגלים מהמרכז
     const MK2_PX = 0.74;                                     // מרחק מפרקי הזרועות מהמרכז
@@ -3299,6 +3302,9 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Mesh(mk2DomeTopGeo, mk2MidMetalMat, 0, 2.00, 0);
     addMk2Rounded(0.95, 0.40, 0.07, 0.06, 0.03, mk2MidMetalMat, 0, 1.70, 0.60, -0.33, 0, 0);
     [0.09, -0.09].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.80, 0.03, 0.04), mk2BlackMat, 0, 1.70 + dy, 0.645 - dy * 0.33, -0.33, 0, 0));
+    // מסגרת בהירה סביב הלוח האחורי
+    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.04, 0.42, 0.05), mk2EdgeMat, s * 0.49, 1.70, 0.625, -0.33, 0, 0));
+    [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.98, 0.04, 0.05), mk2EdgeMat, 0, 1.70 + s * 0.20, 0.625 - s * 0.20 * 0.33, -0.33, 0, 0));
 
     // ==========================================
     // שני קנים מלבניים (קבוצת הרתיעה; מיושרים לנקודות הירי ±0.35)
@@ -3309,12 +3315,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const BG = advancedBarrelAssembly;
 
     [-1, 1].forEach(side => {
-        const bx = side * 0.37;
-        addMk2Rounded(0.44, 1.10, 0.52, 0.06, 0.03, mk2DarkMetalMat, bx, 2.00, 0, 0, 0, 0, BG);   // גוף הקנה
-        addMk2Rounded(0.30, 0.66, 0.04, 0.04, 0.02, mk2EdgeMat, bx, 2.08, 0.285, 0, 0, 0, BG);   // פס בהיר בחזית
-        addMk2Rounded(0.54, 0.12, 0.62, 0.04, 0.03, mk2MidMetalMat, bx, 1.58, 0, 0, 0, 0, BG);   // צווארון
-        addMk2Rounded(0.38, 0.08, 0.46, 0.03, 0.02, mk2EdgeMat, bx, 2.58, 0, 0, 0, 0, BG);       // כיפת לוע משופעת
-        addMk2Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.28), mk2BlackMat, bx, 2.625, 0, 0, 0, 0, BG); // פתח הלוע
+        const bx = side * 0.37 / MK2_SCALE;
+        addMk2Rounded(0.42, 1.10, 0.52, 0.06, 0.03, mk2DarkMetalMat, bx, 2.00, 0, 0, 0, 0, BG);   // גוף הקנה
+        addMk2Rounded(0.28, 0.66, 0.04, 0.04, 0.02, mk2EdgeMat, bx, 2.08, 0.285, 0, 0, 0, BG);   // פס בהיר בחזית
+        addMk2Rounded(0.50, 0.12, 0.62, 0.04, 0.03, mk2MidMetalMat, bx, 1.58, 0, 0, 0, 0, BG);   // צווארון
+        addMk2Rounded(0.36, 0.08, 0.46, 0.03, 0.02, mk2EdgeMat, bx, 2.58, 0, 0, 0, 0, BG);       // כיפת לוע משופעת
+        addMk2Mesh(new THREE.BoxGeometry(0.20, 0.02, 0.28), mk2BlackMat, bx, 2.625, 0, 0, 0, 0, BG); // פתח הלוע
     });
     addMk2Rounded(0.16, 0.70, 0.40, 0.04, 0.02, mk2EdgeMat, 0, 2.00, 0);                          // טריז בין הקנים
 
@@ -4793,7 +4799,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (activeCannon === 'mk2') {
             advancedCannonGroup.position.set(
                 bodyRig.position.x,
-                bodyRig.position.y - BODY_PIVOT_Y,
+                bodyRig.position.y - BODY_PIVOT_Y + TIRE_GROUND_DROP * (MK2_SCALE - 1),
                 bodyRig.position.z
             );
             advancedCannonGroup.rotation.copy(bodyRig.rotation);
@@ -4802,7 +4808,7 @@ window.addEventListener('DOMContentLoaded', () => {
             for (let wi = 0; wi < advancedCannonWheels.length && wi < classicCannonWheels.length; wi++) {
                 const srcSpin = classicCannonWheels[wi].userData.spinGroup;
                 const dstSpin = advancedCannonWheels[wi].userData.spinGroup;
-                if (srcSpin && dstSpin) dstSpin.rotation.z = srcSpin.rotation.z;
+                if (srcSpin && dstSpin) dstSpin.rotation.z = srcSpin.rotation.z / (MK2_WS * MK2_SCALE);
             }
         }
 
