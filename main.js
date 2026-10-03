@@ -3204,16 +3204,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- חומרים: אפור-תותחים (Gunmetal) בהיר יותר, עם השתקפות עדינה ----
     const mk2Env = (typeof wheelEnvMap !== 'undefined' && wheelEnvMap) ? wheelEnvMap : null;
     const mk2DarkMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x24282c, roughness: 0.42, metalness: 0.65,
-        envMap: mk2Env, envMapIntensity: 0.8
+        color: 0x15181b, roughness: 0.38, metalness: 0.75,
+        envMap: mk2Env, envMapIntensity: 0.55
     });
     const mk2MidMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x454b51, roughness: 0.34, metalness: 0.70,
-        envMap: mk2Env, envMapIntensity: 0.9
+        color: 0x2a2f34, roughness: 0.30, metalness: 0.80,
+        envMap: mk2Env, envMapIntensity: 0.65
     });
     const mk2EdgeMat = new THREE.MeshStandardMaterial({
-        color: 0xb4bcc2, roughness: 0.20, metalness: 0.85,
-        envMap: mk2Env, envMapIntensity: 1.0
+        color: 0x8d969d, roughness: 0.18, metalness: 0.90,
+        envMap: mk2Env, envMapIntensity: 0.85
     });
     const mk2BlackMat = new THREE.MeshStandardMaterial({
         color: 0x15171a, roughness: 0.80, metalness: 0.25
@@ -3271,6 +3271,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // גוף: משושה כהה + כנפי שריון בצורת V + רגליים מפרקיות (לפי תמונת היעד)
     // ==========================================
+    // גלגלים גדולים ועמדה רחבה (רק מראה; הסנכרון והירי לא משתנים)
+    const MK2_WS = 1.30;                                    // קנה מידה לגלגל
+    const MK2_WX = 1.90;                                    // מרחק הגלגלים מהמרכז
+    const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP; // מרכז הגלגל: התחתית על הקרקע
+
     // קורה תחתונה + לוח בטן בהיר
     addMk2Rounded(1.90, 0.34, 1.15, 0.12, 0.05, mk2MidMetalMat, 0, 0.68, 0);
     addMk2Mesh(new THREE.BoxGeometry(1.00, 0.10, 0.80), mk2EdgeMat, 0, 0.48, 0);
@@ -3331,24 +3336,24 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     [-1, 1].forEach(side => {
         [-1, 1].forEach(end => {
-            const zArm = end * 1.0;
-            const S = [side * 0.95, 0.82, zArm];       // כתף על הקורה
-            const K = [side * 1.40, 1.12, zArm];       // ברך מורמת
-            const H = [side * WHEEL_X, WHEEL_Y, zArm]; // ציר הגלגל
+            const zArm = end * 1.10;
+            const S = [side * 0.90, 0.95, zArm];       // כתף על הקורה
+            const K = [side * 1.50, 1.10, zArm];       // ברך מורמת
+            const H = [side * MK2_WX, MK2_WY, zArm];   // ציר הגלגל
 
-            addMk2Link(S, K, 0.30, 0.16, mk2MidMetalMat);
-            addMk2Link(K, H, 0.26, 0.16, mk2EdgeMat);
+            addMk2Link(S, K, 0.38, 0.20, mk2MidMetalMat);
+            addMk2Link(K, H, 0.34, 0.20, mk2EdgeMat);
             // בוכנה הידראולית דקה לעומק
-            addMk2Link([side * 0.95, 0.52, zArm], K, 0.09, 0.10, mk2DarkMetalMat);
+            addMk2Link([side * 0.95, 0.52, zArm], K, 0.11, 0.12, mk2DarkMetalMat);
 
-            addMk2ZCylinder(0.26, 0.26, 0.20, mk2DarkMetalMat, S[0], S[1], zArm);
-            addMk2ZCylinder(0.22, 0.22, 0.24, mk2EdgeMat, K[0], K[1], zArm);
-            addMk2ZCylinder(0.10, 0.10, 0.28, mk2BlackMat, K[0], K[1], zArm);
-            addMk2ZCylinder(0.17, 0.17, 0.22, mk2EdgeMat, H[0], H[1], zArm);
+            addMk2ZCylinder(0.32, 0.32, 0.24, mk2DarkMetalMat, S[0], S[1], zArm);
+            addMk2ZCylinder(0.27, 0.27, 0.28, mk2EdgeMat, K[0], K[1], zArm);
+            addMk2ZCylinder(0.12, 0.12, 0.32, mk2BlackMat, K[0], K[1], zArm);
+            addMk2ZCylinder(0.22, 0.22, 0.26, mk2EdgeMat, H[0], H[1], zArm);
         });
 
         // מוט חיבור לאורך הקורה בין הרגל הקדמית לאחורית
-        addMk2ZCylinder(0.09, 0.09, 2.0, mk2DarkMetalMat, side * 0.95, 0.82, 0, advancedCannonGroup, 12);
+        addMk2ZCylinder(0.11, 0.11, 2.2, mk2DarkMetalMat, side * 0.90, 0.95, 0, advancedCannonGroup, 12);
     });
 
     // ==========================================
@@ -3361,9 +3366,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const advancedCannonWheels = [];
 
     // אותו סדר כמו בגלגלים הקלאסיים: כך גלגול הגלגלים מסתנכרן אחד לאחד.
-    [[-WHEEL_X, 0.72], [WHEEL_X, 0.72], [-WHEEL_X, -0.72], [WHEEL_X, -0.72]].forEach(([x, z]) => {
+    [[-MK2_WX, 0.72], [MK2_WX, 0.72], [-MK2_WX, -0.72], [MK2_WX, -0.72]].forEach(([x, z]) => {
         const wheel = new THREE.Group();
-        wheel.position.set(x, WHEEL_Y, z);
+        wheel.position.set(x, MK2_WY, z);
+        wheel.scale.setScalar(MK2_WS);
 
         const spin = new THREE.Group();
         wheel.add(spin);
