@@ -4511,6 +4511,302 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סיום Industrial Finish Pass.
 
+
+    // =========================================================
+    // MK-II HERO DETAIL PASS — VISUAL ONLY
+    // =========================================================
+    // שכבת גימור "Hero" ל-MK-II בלבד.
+    // אין שינוי בתותח הקלאסי, בירי, בפיזיקה או בהתנגשויות.
+
+    const mk2HeroBodyMat = new THREE.MeshStandardMaterial({
+        color: 0x3a3e42,
+        roughness: 0.27,
+        metalness: 0.90,
+        envMap: mk2Env,
+        envMapIntensity: 0.62
+    });
+
+    const mk2HeroDarkMat = new THREE.MeshStandardMaterial({
+        color: 0x111315,
+        roughness: 0.58,
+        metalness: 0.52
+    });
+
+    const mk2HeroTrimMat = new THREE.MeshStandardMaterial({
+        color: 0x747a7f,
+        roughness: 0.24,
+        metalness: 0.93,
+        envMap: mk2Env,
+        envMapIntensity: 0.72
+    });
+
+    const mk2HeroAccentMat = new THREE.MeshStandardMaterial({
+        color: 0x5e7882,
+        emissive: 0x14272d,
+        emissiveIntensity: 0.42,
+        roughness: 0.24,
+        metalness: 0.72
+    });
+
+    // ---- CORE מרכזי: "לב" מכני של התותח ----
+    addMk2Rounded(
+        0.86, 0.52, 0.56,
+        0.085, 0.03,
+        mk2HeroDarkMat,
+        0, 1.05, -0.02
+    );
+
+    addMk2Rounded(
+        0.68, 0.40, 0.48,
+        0.065, 0.025,
+        mk2HeroBodyMat,
+        0, 1.10, -0.05
+    );
+
+    addMk2Rounded(
+        0.48, 0.28, 0.38,
+        0.045, 0.018,
+        mk2HeroDarkMat,
+        0, 1.15, -0.075
+    );
+
+    // פס מרכזי בוהק שמגדיר את ה-core.
+    addMk2Rounded(
+        0.055, 0.34, 0.42,
+        0.012, 0.005,
+        mk2HeroTrimMat,
+        0, 1.13, -0.28
+    );
+
+    // שני פסי accent עדינים.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.035, 0.25, 0.30,
+            0.008, 0.004,
+            mk2HeroAccentMat,
+            side * 0.21, 1.15, -0.285
+        );
+    });
+
+    // ---- כתפי שריון גדולות: שינוי silhouette ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.30, 0.62, 1.00,
+            0.085, 0.03,
+            mk2HeroBodyMat,
+            side * 0.92, 1.27, 0.02,
+            0, 0, side * 0.12
+        );
+
+        addMk2Rounded(
+            0.16, 0.45, 0.82,
+            0.05, 0.018,
+            mk2HeroDarkMat,
+            side * 1.075, 1.28, 0.03,
+            0, 0, side * 0.12
+        );
+
+        // קצה שריון חד.
+        addMk2Link(
+            [side * 0.86, 1.50, 0.22],
+            [side * 1.14, 1.63, 0.22],
+            0.075, 0.18,
+            mk2HeroTrimMat
+        );
+
+        // שלושה fasteners על הכתף.
+        [1.08, 1.28, 1.48].forEach((yy, i) => {
+            addMk2ZCylinder(
+                0.045,
+                0.045,
+                0.065,
+                i === 1 ? mk2HeroTrimMat : mk2HeroDarkMat,
+                side * 1.14,
+                yy,
+                0.49,
+                advancedCannonGroup,
+                8
+            );
+        });
+    });
+
+    // ---- בית קנים עליון: מעטפת אחת שמאחדת את שני הקנים ----
+    addMk2Rounded(
+        1.36, 0.22, 0.66,
+        0.08, 0.028,
+        mk2HeroBodyMat,
+        0, 1.78, 0.08
+    );
+
+    addMk2Rounded(
+        1.12, 0.14, 0.54,
+        0.05, 0.018,
+        mk2HeroDarkMat,
+        0, 1.86, 0.08
+    );
+
+    // מסגרת עליונה.
+    addMk2Rounded(
+        0.96, 0.07, 0.46,
+        0.025, 0.008,
+        mk2HeroTrimMat,
+        0, 1.96, 0.08
+    );
+
+    // ---- מגני צד סביב הקנים ----
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2Rounded(
+            0.14, 0.58, 0.58,
+            0.04, 0.015,
+            mk2HeroBodyMat,
+            bx + side * 0.28, 2.03, 0.08,
+            0, 0, side * 0.04
+        );
+
+        addMk2Rounded(
+            0.055, 0.40, 0.44,
+            0.014, 0.005,
+            mk2HeroTrimMat,
+            bx + side * 0.37, 2.03, 0.10,
+            0, 0, side * 0.04
+        );
+    });
+
+    // ---- כיסוי מרכזי בין הקנים ----
+    addMk2Rounded(
+        0.26, 0.34, 0.32,
+        0.055, 0.018,
+        mk2HeroDarkMat,
+        0, 2.04, 0.10
+    );
+
+    addMk2Rounded(
+        0.12, 0.24, 0.20,
+        0.03, 0.009,
+        mk2HeroAccentMat,
+        0, 2.06, 0.285
+    );
+
+    // ---- Wheel Hub Hero Detail ----
+    // שכבות hub קטנות שמוסיפות עומק לגלגלים בלי להחליף אותם.
+    [
+        [-MK2_WX, -0.72],
+        [ MK2_WX, -0.72],
+        [-MK2_WX,  0.72],
+        [ MK2_WX,  0.72]
+    ].forEach(([x, z]) => {
+        const hub = new THREE.Group();
+        hub.position.set(x, MK2_WY, z);
+        advancedCannonGroup.add(hub);
+
+        addMk2ZCylinder(
+            0.24, 0.24, 0.24,
+            mk2HeroDarkMat,
+            0, 0, 0,
+            hub,
+            14
+        );
+
+        addMk2ZCylinder(
+            0.17, 0.17, 0.28,
+            mk2HeroBodyMat,
+            0, 0, -0.015,
+            hub,
+            12
+        );
+
+        addMk2ZCylinder(
+            0.085, 0.085, 0.34,
+            mk2HeroTrimMat,
+            0, 0, -0.025,
+            hub,
+            12
+        );
+
+        // חמישה ברגים.
+        for (let i = 0; i < 5; i++) {
+            const a = i * Math.PI * 2 / 5;
+            addMk2ZCylinder(
+                0.028, 0.028, 0.045,
+                mk2HeroTrimMat,
+                Math.cos(a) * 0.115,
+                Math.sin(a) * 0.115,
+                -0.045,
+                hub,
+                8
+            );
+        }
+    });
+
+    // ---- מגני גלגל עליונים ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.20, 0.22, 0.74,
+            0.055, 0.018,
+            mk2HeroBodyMat,
+            side * 1.52, MK2_WY + 0.04, 0.18,
+            0, 0, side * 0.18
+        );
+
+        addMk2Rounded(
+            0.07, 0.14, 0.58,
+            0.018, 0.006,
+            mk2HeroTrimMat,
+            side * 1.64, MK2_WY + 0.04, 0.18,
+            0, 0, side * 0.18
+        );
+    });
+
+    // ---- לוח אחורי מרכזי בולט ----
+    addMk2Rounded(
+        0.82, 0.34, 0.075,
+        0.06, 0.02,
+        mk2HeroBodyMat,
+        0, 1.05, 1.07
+    );
+
+    addMk2Rounded(
+        0.52, 0.18, 0.035,
+        0.025, 0.008,
+        mk2HeroTrimMat,
+        0, 1.07, 1.115
+    );
+
+    // ---- זוג פסי שריון לאורך הגוף ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.44, 0.82, 0.74],
+            [side * 0.88, 1.36, 0.74],
+            0.08,
+            0.55,
+            mk2HeroTrimMat
+        );
+
+        addMk2Link(
+            [side * 0.48, 0.82, 0.77],
+            [side * 0.82, 1.30, 0.77],
+            0.035,
+            0.50,
+            mk2HeroDarkMat
+        );
+    });
+
+    // ---- ארבעה סימוני סטטוס קטנים ----
+    [-1, 1].forEach(side => {
+        [-0.10, 0.10].forEach(dy => {
+            addMk2Rounded(
+                0.025, 0.055, 0.025,
+                0.007, 0.003,
+                mk2HeroAccentMat,
+                side * 0.74, 1.12 + dy, -0.34
+            );
+        });
+    });
+
+    // סיום Hero Detail Pass.
+
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
     classicCannonParts.forEach(child => {
