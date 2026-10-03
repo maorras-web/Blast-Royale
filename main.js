@@ -5099,6 +5099,18 @@ window.addEventListener('DOMContentLoaded', () => {
         renderer.render(scene, camera);
     }
 
+    // ==========================================
+    // מסך מלא: נכנסים בנגיעה/לחיצה הראשונה (הדפדפן דורש מחווה של המשתמש)
+    // ==========================================
+    document.addEventListener('click', () => {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && el.requestFullscreen) {
+            el.requestFullscreen({ navigationUI: 'hide' })
+                .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait'))
+                .catch(() => {});
+        }
+    });
+
     window.addEventListener('resize', () => {
         updateCameraForDevice();
         updateMobileViewportState();
