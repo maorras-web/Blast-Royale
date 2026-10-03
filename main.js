@@ -33,6 +33,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // לקרב את המצלמה: להקטין. (ערכים קודמים: Y=8.4–8.6, Z=18.0–18.2)
     const CAM_BASE_Y = 10.0;
     const CAM_BASE_Z = 23.0;
+    // הורדת התותח במסך: 0 = כמו קודם, 0.17 = התותח יורד בערך 17% מגובה המסך.
+    // זו הזזה ויזואלית בלבד של התמונה — לא משנה מיקומים, התנגשויות או ירי.
+    const CAM_SHIFT_DOWN = 0.17;
 
     // ==========================================
     // MOBILE ONLY
@@ -49,6 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // שומרים על טווח תנועה מתאים למסך טלפון.
         screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
 
+        camera.setViewOffset(width, height, 0, -height * CAM_SHIFT_DOWN, width, height);
         camera.updateProjectionMatrix();
 
         renderer.setSize(
