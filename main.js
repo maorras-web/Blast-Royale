@@ -2146,7 +2146,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // 4. עיצוב התותח - 3D DETAIL PASS
     // ==========================================
     const cannonGroup = new THREE.Group();
-    const CANNON_SCALE = 1.14;
+    const CANNON_SCALE = 1.18;
 
     // גוף תלת-ממדי עם קצוות מעוגלים.
     function createRoundedBoxGeometry(width, height, depth, radius, bevelSize = 0.08, bevelSegments = 2) {
@@ -2192,23 +2192,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // חומרים שונים כדי שהמתכת, הגומי והצבע לא ייראו כמו חומר אחד.
     const darkMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x18232d,
-        roughness: 0.26,
-        metalness: 0.72
+        color: 0x14191d,
+        roughness: 0.30,
+        metalness: 0.78
     });
 
     const bodyMetalMat = new THREE.MeshPhysicalMaterial({
-        color: 0x2d3e49,
-        roughness: 0.27,
-        metalness: 0.72,
+        color: 0x30383d,
+        roughness: 0.30,
+        metalness: 0.78,
         clearcoat: 0.22,
         clearcoatRoughness: 0.18
     });
 
     const edgeMetalMat = new THREE.MeshPhysicalMaterial({
-        color: 0x526572,
-        roughness: 0.20,
-        metalness: 0.88,
+        color: 0x697177,
+        roughness: 0.24,
+        metalness: 0.90,
         clearcoat: 0.16,
         clearcoatRoughness: 0.16
     });
@@ -2220,9 +2220,9 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     const hubMat = new THREE.MeshStandardMaterial({
-        color: 0x778994,
-        roughness: 0.28,
-        metalness: 0.78
+        color: 0x596269,
+        roughness: 0.30,
+        metalness: 0.84
     });
 
     const boltMat = new THREE.MeshStandardMaterial({
@@ -2328,8 +2328,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const dome = new THREE.Mesh(
         new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
         new THREE.MeshPhysicalMaterial({
-            color: 0x1f7fc4,
-            emissive: 0x06304f,
+            color: 0x30383d,
+            emissive: 0x071014,
             roughness: 0.28,
             metalness: 0.2,
             clearcoat: 1.0,
@@ -2344,8 +2344,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // צוואר צריח קטן — כחול כדי שלא יופיע חלק שחור על/מתחת לכיפה הכחולה.
     // שינוי ויזואלי בלבד: לא נוגעים במיקום, בגלגלים, במתלים או בפיזיקה.
     const turretCollarMat = new THREE.MeshPhysicalMaterial({
-        color: 0x1f7fc4,
-        emissive: 0x06304f,
+        color: 0x30383d,
+        emissive: 0x071014,
         roughness: 0.30,
         metalness: 0.18,
         clearcoat: 0.85,
@@ -2446,6 +2446,112 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         bore.position.set(x, 1.125, 0);
         barrelAssembly.add(bore);
+    });
+
+    // =========================================================
+    // ARMOR PASS — תותח כבד ומשוריין יותר, בהשראת תמונת הרפרנס
+    // שינוי ויזואלי בלבד: לא נוגעים בנקודות הירי, בגלגלים או בפיזיקה.
+    // =========================================================
+    const heavyArmorMat = new THREE.MeshPhysicalMaterial({
+        color: 0x242b30,
+        roughness: 0.34,
+        metalness: 0.82,
+        clearcoat: 0.28,
+        clearcoatRoughness: 0.20
+    });
+    const armorEdgeMat = new THREE.MeshStandardMaterial({
+        color: 0x778087,
+        roughness: 0.25,
+        metalness: 0.88
+    });
+    const armorDarkMat = new THREE.MeshStandardMaterial({
+        color: 0x0d1114,
+        roughness: 0.62,
+        metalness: 0.48
+    });
+
+    // לוחות שריון צדדיים עבים — נותנים לגוף רוחב ונוכחות כבדה.
+    [-1, 1].forEach(side => {
+        const cheek = addCannonPart(
+            createRoundedBoxGeometry(0.24, 0.62, 1.42, 0.07, 0.045, 2),
+            heavyArmorMat,
+            new THREE.Vector3(side * 1.08, 0.57, 0.02)
+        );
+        cheek.rotation.z = side * 0.08;
+
+        // לוח חיזוק משופע מעל הגלגל.
+        const shoulder = addCannonPart(
+            createRoundedBoxGeometry(0.18, 0.46, 1.16, 0.055, 0.035, 2),
+            armorEdgeMat,
+            new THREE.Vector3(side * 0.91, 0.92, 0.08)
+        );
+        shoulder.rotation.z = side * -0.20;
+
+        // ברגי שריון גדולים — כמו בתותח תעשייתי כבד.
+        [-0.46, 0.0, 0.46].forEach(z => {
+            const bolt = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.075, 0.075, 0.075, 10),
+                armorEdgeMat
+            );
+            bolt.rotation.z = Math.PI / 2;
+            bolt.position.set(side * 1.225, 0.57, z);
+            bolt.castShadow = true;
+            cannonGroup.add(bolt);
+        });
+    });
+
+    // שריון קדמי/אחורי מרכזי — שכבות מדורגות במקום קופסה חלקה אחת.
+    addCannonPart(
+        createRoundedBoxGeometry(1.70, 0.34, 0.18, 0.07, 0.035, 2),
+        heavyArmorMat,
+        new THREE.Vector3(0, 0.53, 0.82)
+    );
+    addCannonPart(
+        createRoundedBoxGeometry(1.36, 0.18, 0.10, 0.045, 0.025, 2),
+        armorEdgeMat,
+        new THREE.Vector3(0, 0.78, 0.91)
+    );
+    addCannonPart(
+        createRoundedBoxGeometry(1.30, 0.30, 0.14, 0.055, 0.03, 2),
+        armorDarkMat,
+        new THREE.Vector3(0, 0.40, -0.86)
+    );
+
+    // מסכת קנים עבה — מחזקת את אזור החיבור בלי להסתיר את שני הקנים.
+    addCannonPart(
+        createRoundedBoxGeometry(1.28, 0.30, 0.72, 0.09, 0.045, 2),
+        heavyArmorMat,
+        new THREE.Vector3(0, 0.83, 0.10)
+    );
+
+    // שני מגני-כתף קטנים מעל המסכה.
+    [-1, 1].forEach(side => {
+        const cap = addCannonPart(
+            new THREE.CylinderGeometry(0.30, 0.34, 0.16, 8),
+            armorEdgeMat,
+            new THREE.Vector3(side * 0.58, 1.00, 0.05)
+        );
+        cap.rotation.x = Math.PI / 2;
+    });
+
+    // טבעת שריון נוספת סביב בסיס הצריח.
+    const heavyTurretRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.88, 0.13, 8, 28),
+        armorEdgeMat
+    );
+    heavyTurretRing.rotation.x = Math.PI / 2;
+    heavyTurretRing.position.set(0, 0.78, 0);
+    heavyTurretRing.castShadow = true;
+    cannonGroup.add(heavyTurretRing);
+
+    // פסי שריון צרים על הגוף כדי ליצור מראה של פאנלים מרותכים.
+    [-0.70, 0.70].forEach(x => {
+        const rail = addCannonPart(
+            createRoundedBoxGeometry(0.10, 0.10, 1.26, 0.03, 0.018, 2),
+            armorEdgeMat,
+            new THREE.Vector3(x, 0.91, 0.02)
+        );
+        rail.rotation.y = x > 0 ? -0.05 : 0.05;
     });
 
     // =========================================================
