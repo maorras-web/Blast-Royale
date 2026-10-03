@@ -1,4 +1,4 @@
-window.addEventListener(‘DOMContentLoaded’, () => {
+window.addEventListener('DOMContentLoaded', () => {
 
     if (typeof THREE === 'undefined') {
         console.error('Three.js library is missing!');
@@ -9,7 +9,7 @@ window.addEventListener(‘DOMContentLoaded’, () => {
     // 1. הגדרת סצנה וגרפיקה נקייה
     // ==========================================
     const scene = new THREE.Scene();
-
+    
     // סביבה צבעונית רכה ושקיעה פסטלית
     scene.background = new THREE.Color(0x5a4a50);
     scene.fog = new THREE.Fog(0xd09a6d, 25, 92);
@@ -26,7 +26,7 @@ window.addEventListener(‘DOMContentLoaded’, () => {
     const FOG_FAR = 92;
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
-
+    
     let screenLimitX = 4.8;
 
     // מרחק המצלמה מהתותח — להגדלת "המקום" במסך: הגדל את שני הערכים (אחורה וגם למעלה קצת).
@@ -5998,218 +5998,6 @@ window.addEventListener(‘DOMContentLoaded’, () => {
         );
     });
 
-    // =========================================================
-    // MK-II ROUND 2 — HEAVY MECHANICAL ARMOR DETAIL
-    // =========================================================
-    // סבב ויזואלי בלבד. כל החלקים נמצאים בתוך advancedCannonGroup.
-    // התותח הקלאסי, הירי, הקליעים, ההתנגשויות והפיזיקה אינם משתנים.
-
-    const mk2R2Body = new THREE.MeshStandardMaterial({
-        color: 0x34383b,
-        roughness: 0.32,
-        metalness: 0.88,
-        envMap: mk2Env,
-        envMapIntensity: 0.58
-    });
-
-    const mk2R2Dark = new THREE.MeshStandardMaterial({
-        color: 0x141719,
-        roughness: 0.54,
-        metalness: 0.58
-    });
-
-    const mk2R2Edge = new THREE.MeshStandardMaterial({
-        color: 0x777d81,
-        roughness: 0.24,
-        metalness: 0.92,
-        envMap: mk2Env,
-        envMapIntensity: 0.64
-    });
-
-    // 1) שריון קדמי משופע — נותן לתותח חזית כבדה וברורה יותר.
-    addMk2Rounded(
-        1.34, 0.34, 0.18,
-        0.055, 0.022,
-        mk2R2Body,
-        0, 1.16, 0.70,
-        -0.12, 0, 0
-    );
-
-    addMk2Rounded(
-        1.04, 0.08, 0.08,
-        0.022, 0.010,
-        mk2R2Edge,
-        0, 1.29, 0.78,
-        -0.12, 0, 0
-    );
-
-    // 2) לוח שריון מרכזי עמוק עם חריץ שחור.
-    addMk2Rounded(
-        0.74, 0.48, 0.14,
-        0.06, 0.025,
-        mk2R2Dark,
-        0, 1.06, 0.735,
-        -0.10, 0, 0
-    );
-
-    addMk2Rounded(
-        0.46, 0.055, 0.035,
-        0.012, 0.006,
-        mk2R2Edge,
-        0, 1.16, 0.815,
-        -0.10, 0, 0
-    );
-
-    // 3) מגני צד משוריינים — מחפים חלקית על אזור המתלים.
-    [-1, 1].forEach(side => {
-        addMk2Rounded(
-            0.34, 0.58, 0.22,
-            0.065, 0.025,
-            mk2R2Body,
-            side * 0.98, 0.96, 0.42,
-            0, side * 0.10, side * 0.08
-        );
-
-        addMk2Rounded(
-            0.10, 0.38, 0.035,
-            0.018, 0.008,
-            mk2R2Edge,
-            side * 1.15, 0.96, 0.54,
-            0, side * 0.10, side * 0.08
-        );
-
-        // שני ברגים בולטים בכל מגן צד.
-        [0.84, 1.08].forEach(y => {
-            addMk2ZCylinder(
-                0.045, 0.045, 0.055,
-                mk2R2Edge,
-                side * 1.15, y, 0.58,
-                advancedCannonGroup,
-                10
-            );
-        });
-    });
-
-    // 4) טבעות שריון גדולות יותר סביב בסיסי הקנים.
-    [-1, 1].forEach(side => {
-        const bx = side * 0.37 / MK2_SCALE;
-
-        addMk2ZCylinder(
-            0.31, 0.31, 0.10,
-            mk2R2Dark,
-            bx, 1.82, 0.48,
-            advancedBarrelAssembly,
-            20
-        );
-
-        addMk2ZCylinder(
-            0.255, 0.255, 0.13,
-            mk2R2Edge,
-            bx, 1.82, 0.54,
-            advancedBarrelAssembly,
-            18
-        );
-
-        // לוחון קטן מתחת לכל קנה.
-        addMk2Rounded(
-            0.30, 0.16, 0.22,
-            0.035, 0.012,
-            mk2R2Body,
-            bx, 1.60, 0.48,
-            0, 0, 0,
-            advancedBarrelAssembly
-        );
-    });
-
-    // 5) מעטפת שריון קצרה לאורך תחילת כל קנה.
-    [-1, 1].forEach(side => {
-        const bx = side * 0.37 / MK2_SCALE;
-
-        addMk2Rounded(
-            0.52, 0.34, 0.60,
-            0.065, 0.025,
-            mk2R2Body,
-            bx, 2.12, 0.02,
-            0, 0, 0,
-            advancedBarrelAssembly
-        );
-
-        addMk2Rounded(
-            0.40, 0.06, 0.50,
-            0.018, 0.008,
-            mk2R2Edge,
-            bx, 2.30, 0.02,
-            0, 0, 0,
-            advancedBarrelAssembly
-        );
-    });
-
-    // 6) זרועות חיזוק כפולות — יוצרות תחושה של מתלה אמיתי וכבד.
-    [-1, 1].forEach(side => {
-        addMk2Link(
-            [side * 0.72, 0.92, 0.72],
-            [side * 1.72, MK2_WY + 0.34, 0.72],
-            0.13, 0.24,
-            mk2R2Edge
-        );
-
-        addMk2Link(
-            [side * 0.76, 0.82, -0.50],
-            [side * 1.70, MK2_WY + 0.28, -0.50],
-            0.11, 0.20,
-            mk2R2Edge
-        );
-
-        // מפרק עגול גדול באמצע כל זרוע.
-        addMk2ZCylinder(
-            0.13, 0.13, 0.18,
-            mk2R2Dark,
-            side * 1.22, MK2_WY + 0.24, 0.72,
-            advancedCannonGroup,
-            14
-        );
-
-        addMk2ZCylinder(
-            0.075, 0.075, 0.21,
-            mk2R2Edge,
-            side * 1.22, MK2_WY + 0.24, 0.72,
-            advancedCannonGroup,
-            12
-        );
-    });
-
-    // 7) מגן תחתון קדמי קטן — נותן לגוף מראה יותר "בנוי".
-    addMk2Rounded(
-        1.30, 0.18, 0.48,
-        0.045, 0.018,
-        mk2R2Dark,
-        0, 0.66, 0.02
-    );
-
-    addMk2Rounded(
-        0.96, 0.055, 0.32,
-        0.015, 0.008,
-        mk2R2Edge,
-        0, 0.76, 0.18
-    );
-
-    // 8) שישה ברגים קטנים סביב החזית.
-    [
-        [-0.50, 1.20, 0.82], [0.50, 1.20, 0.82],
-        [-0.42, 0.96, 0.82], [0.42, 0.96, 0.82],
-        [-0.32, 0.76, 0.24], [0.32, 0.76, 0.24]
-    ].forEach(([x, y, z]) => {
-        addMk2ZCylinder(
-            0.035, 0.035, 0.065,
-            mk2R2Edge,
-            x, y, z,
-            advancedCannonGroup,
-            10
-        );
-    });
-
-    // סיום Round 2 — ויזואלי בלבד.
-
     // סיום Reference Match Pass.
 
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
@@ -6229,7 +6017,9 @@ window.addEventListener(‘DOMContentLoaded’, () => {
 
     setActiveCannon(activeCannon);
 
-cannonGroup.scale.setScalar( CANNON_SCALE );
+   cannonGroup.scale.setScalar(
+        CANNON_SCALE
+    );
 
     scene.add(
         cannonGroup
@@ -7919,5 +7709,4 @@ cannonGroup.scale.setScalar( CANNON_SCALE );
     });
 
     animate(0);
-
 });
