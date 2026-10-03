@@ -4651,47 +4651,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // שמיים חיים: ציפורים ומטוסים מאחורי הפירמידות (שלב 2)
+    // שמיים חיים: מטוסים מאחורי הפירמידות (שלב 2)
     // ==========================================
-    // מהירויות ביחידות לשנייה (לא תלוי במהירות המסך). אפשר לשנות כאן.
-    const SKY_BIRD_SPEED = 1.0;    // מכפיל מהירות ציפורים
-    const SKY_PLANE_SPEED = 1.0;   // מכפיל מהירות מטוסים
+    // אפשר לשנות כאן. מהירות ביחידות לשנייה (לא תלוי במהירות המסך).
+    const SKY_PLANE_SPEED = 1.0;      // מכפיל מהירות מטוסים
+    // תדירות המטוסים: אחרי שמטוס יוצא מהמסך הוא נעלם ומופיע שוב רק אחרי הפסקה אקראית בין שני הערכים (בשניות).
+    // להגדיל = מטוסים נדירים יותר, להקטין = תכופים יותר.
+    const SKY_PLANE_GAP_MIN = 35;
+    const SKY_PLANE_GAP_MAX = 70;
+    const SKY_PLANE_FIRST_MIN = 10;   // הופעה ראשונה אחרי תחילת המשחק (שניות)
+    const SKY_PLANE_FIRST_MAX = 25;
 
     const skyGroup = new THREE.Group();
     scene.add(skyGroup);   // לא ב-mapGroup, כדי ש-buildMap לא ימחק אותם
-
-    // ציפור = שלושה משולשים (שתי כנפיים + גוף); "מנפנפים" אותה בשינוי scale.y.
-    const birdGeo = new THREE.BufferGeometry();
-    birdGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-        0, 0, 0,   -1.0, 0.42, 0,   -0.62, -0.02, 0,
-        0, 0, 0,    1.0, 0.42, 0,    0.62, -0.02, 0,
-        -0.14, 0.0, 0,  0.14, 0.0, 0,  0, -0.22, 0
-    ]), 3));
-    const birdMat = new THREE.MeshBasicMaterial({ color: 0x2b1b26, side: THREE.DoubleSide, fog: false });
-
-    const skyFlocks = [];
-    [
-        { n: 7, x: -26, y: 17, z: -58, s: 2.4, v: 3.0 },
-        { n: 5, x: 30, y: 24, z: -62, s: 2.8, v: -2.0 },
-        { n: 6, x: 0, y: 13, z: -56, s: 2.0, v: 1.6 },
-        { n: 4, x: -40, y: 27, z: -66, s: 3.0, v: 2.6 }
-    ].forEach((f, fi) => {
-        const flock = { v: f.v, birds: [], x: f.x, y: f.y, z: f.z, bob: fi * 1.7 };
-        for (let i = 0; i < f.n; i++) {
-            const m = new THREE.Mesh(birdGeo, birdMat);
-            const row = Math.ceil(i / 2) * (i % 2 ? 1 : -1);   // מבנה V של להקה
-            m.userData = {
-                ox: -Math.abs(row) * 2.4 * Math.sign(f.v),
-                oy: row * 0.9 + (Math.random() - 0.5) * 0.6,
-                oz: (Math.random() - 0.5) * 3,
-                ph: Math.random() * 6.28,
-                base: f.s * (0.85 + Math.random() * 0.3)
-            };
-            skyGroup.add(m);
-            flock.birds.push(m);
-        }
-        skyFlocks.push(flock);
-    });
 
     // פס עשן למטוס: טקסטורה מדרגת שקיפות.
     function makeContrailTexture() {
@@ -4749,8 +4721,13 @@ window.addEventListener('DOMContentLoaded', () => {
         g.add(trail);
 
         g.scale.set(p.s * dir, p.s, p.s);   // dir=-1 הופך כיוון טיסה
-        g.position.set(p.x, p.y, p.z);
-        g.userData = { v: p.v, y: p.y, light };
+        const startX = dir > 0 ? -80 : 80;
+        g.position.set(startX, p.y, p.z);
+        g.visible = false;                  // המטוס מחכה מחוץ למסך עד שהטיימר מסתיים
+        g.userData = {
+            v: p.v, y: p.y, light, startX,
+            wait: SKY_PLANE_FIRST_MIN + Math.random() * (SKY_PLANE_FIRST_MAX - SKY_PLANE_FIRST_MIN)
+        };
         skyGroup.add(g);
         skyPlanes.push(g);
     });
@@ -4762,30 +4739,26 @@ window.addEventListener('DOMContentLoaded', () => {
         skyLastTime = time;
         const t = time * 0.001;
 
-        skyFlocks.forEach(fl => {
-            fl.x += fl.v * SKY_BIRD_SPEED * dt;
-            if (fl.v > 0 && fl.x > 60) fl.x = -60;
-            if (fl.v < 0 && fl.x < -60) fl.x = 60;
-            const dir = Math.sign(fl.v);
-            fl.birds.forEach(b => {
-                const u = b.userData;
-                b.position.set(
-                    fl.x + u.ox,
-                    fl.y + u.oy + Math.sin(t * 0.8 + fl.bob + u.ph) * 0.6,
-                    fl.z + u.oz
-                );
-                b.scale.x = u.base * dir;
-                b.scale.y = u.base * (0.15 + Math.abs(Math.sin(t * 5 + u.ph)) * 0.85);
-                b.scale.z = u.base;
-            });
-        });
-
         skyPlanes.forEach(p => {
-            p.position.x += p.userData.v * SKY_PLANE_SPEED * dt;
-            if (p.userData.v > 0 && p.position.x > 80) p.position.x = -80;
-            if (p.userData.v < 0 && p.position.x < -80) p.position.x = 80;
-            p.position.y = p.userData.y + Math.sin(t * 0.3 + p.userData.v) * 0.4;
-            p.userData.light.visible = (Math.floor(t * 1.6) % 2) === 0;
+            const u = p.userData;
+
+            // ממתין מחוץ למסך עד שהטיימר מסתיים, ואז יוצא למעבר חדש.
+            if (u.wait > 0) {
+                u.wait -= dt;
+                if (u.wait > 0) return;
+                p.position.x = u.startX;
+                p.visible = true;
+            }
+
+            p.position.x += u.v * SKY_PLANE_SPEED * dt;
+            p.position.y = u.y + Math.sin(t * 0.3 + u.v) * 0.4;
+            u.light.visible = (Math.floor(t * 1.6) % 2) === 0;
+
+            // סיים את המעבר: נעלם ומחכה הפסקה אקראית לפני המעבר הבא.
+            if ((u.v > 0 && p.position.x > 80) || (u.v < 0 && p.position.x < -80)) {
+                p.visible = false;
+                u.wait = SKY_PLANE_GAP_MIN + Math.random() * (SKY_PLANE_GAP_MAX - SKY_PLANE_GAP_MIN);
+            }
         });
     }
 
