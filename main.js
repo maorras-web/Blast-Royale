@@ -4289,6 +4289,228 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סיום Mechanical Detail Pass.
 
+
+    // =========================================================
+    // MK-II INDUSTRIAL FINISH PASS — VISUAL ONLY
+    // =========================================================
+    // הסבב הזה משפר את הקריאות והגימור של ה-MK-II:
+    // mantlets, recessed panels, vents, fasteners and mechanical trim.
+    // התותח הקלאסי אינו מקבל שום שינוי.
+
+    const mk2FinishInsetMat = new THREE.MeshStandardMaterial({
+        color: 0x0b0d0f,
+        roughness: 0.72,
+        metalness: 0.38
+    });
+
+    const mk2FinishPlateMat = new THREE.MeshStandardMaterial({
+        color: 0x565b5f,
+        roughness: 0.31,
+        metalness: 0.86,
+        envMap: mk2Env,
+        envMapIntensity: 0.58
+    });
+
+    const mk2FinishBrightMat = new THREE.MeshStandardMaterial({
+        color: 0xb0b4b7,
+        roughness: 0.20,
+        metalness: 0.94,
+        envMap: mk2Env,
+        envMapIntensity: 0.76
+    });
+
+    // ---- Mantlet כפול: מסגרת משוריינת סביב כל קנה ----
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2Rounded(
+            0.56, 0.56, 0.18,
+            0.10, 0.035,
+            mk2FinishPlateMat,
+            bx, 1.92, 0.035
+        );
+
+        addMk2Rounded(
+            0.43, 0.43, 0.20,
+            0.075, 0.025,
+            mk2FinishInsetMat,
+            bx, 1.96, 0.05
+        );
+
+        addMk2ZCylinder(
+            0.255, 0.255, 0.12,
+            mk2FinishBrightMat,
+            bx, 1.98, 0.06,
+            advancedBarrelAssembly, 16
+        );
+
+        // ארבעה fasteners סביב כל mantlet.
+        [
+            [-0.17, -0.17],
+            [ 0.17, -0.17],
+            [-0.17,  0.17],
+            [ 0.17,  0.17]
+        ].forEach(([dx, dy]) => {
+            addMk2ZCylinder(
+                0.035, 0.035, 0.055,
+                mk2FinishBrightMat,
+                bx + dx, 1.92 + dy, 0.15,
+                advancedCannonGroup, 8
+            );
+        });
+    });
+
+    // ---- גריל מרכזי שקוע בגוף ----
+    addMk2Rounded(
+        0.62, 0.30, 0.045,
+        0.035, 0.012,
+        mk2FinishInsetMat,
+        0, 1.18, -0.66
+    );
+
+    [-0.20, -0.10, 0, 0.10, 0.20].forEach(x => {
+        addMk2Rounded(
+            0.035, 0.20, 0.018,
+            0.008, 0.004,
+            mk2FinishBrightMat,
+            x, 1.18, -0.685
+        );
+    });
+
+    // ---- פסי שריון קדמיים משופעים ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.075, 0.52, 0.12,
+            0.018, 0.007,
+            mk2FinishBrightMat,
+            side * 0.60, 1.33, -0.61,
+            0, 0, side * 0.18
+        );
+
+        addMk2Rounded(
+            0.045, 0.40, 0.055,
+            0.012, 0.005,
+            mk2FinishInsetMat,
+            side * 0.60, 1.33, -0.675,
+            0, 0, side * 0.18
+        );
+    });
+
+    // ---- פאנלים שקועים בצדי הגוף ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.055, 0.34, 0.52,
+            0.016, 0.006,
+            mk2FinishInsetMat,
+            side * 1.11, 1.08, 0.34,
+            0, 0, side * 0.055
+        );
+
+        addMk2Rounded(
+            0.035, 0.24, 0.38,
+            0.010, 0.004,
+            mk2FinishPlateMat,
+            side * 1.145, 1.08, 0.35,
+            0, 0, side * 0.055
+        );
+
+        // שני פינים בולטים לכל פאנל.
+        [0.94, 1.22].forEach(yy => {
+            addMk2ZCylinder(
+                0.042, 0.042, 0.065,
+                mk2FinishBrightMat,
+                side * 1.17, yy, 0.57,
+                advancedCannonGroup, 8
+            );
+        });
+    });
+
+    // ---- תעלות שריון לאורך הכתפיים ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.72, 1.42, 0.34],
+            [side * 1.05, 1.57, 0.34],
+            0.055, 0.20,
+            mk2FinishBrightMat
+        );
+
+        addMk2Link(
+            [side * 0.78, 1.34, 0.37],
+            [side * 1.14, 1.49, 0.37],
+            0.035, 0.18,
+            mk2FinishInsetMat
+        );
+    });
+
+    // ---- טבעות חיזוק קטנות סביב הצירים הקדמיים ----
+    [-1, 1].forEach(side => {
+        const px = side * 1.80;
+        const py = MK2_WY + 0.55;
+        const pz = -0.80;
+
+        addMk2ZCylinder(
+            0.22, 0.22, 0.10,
+            mk2FinishPlateMat,
+            px, py, pz,
+            advancedCannonGroup, 14
+        );
+
+        addMk2ZCylinder(
+            0.125, 0.125, 0.14,
+            mk2FinishInsetMat,
+            px, py, pz - 0.02,
+            advancedCannonGroup, 12
+        );
+    });
+
+    // ---- לוחית מרכזית עליונה ----
+    addMk2Rounded(
+        0.52, 0.18, 0.045,
+        0.025, 0.009,
+        mk2FinishPlateMat,
+        0, 1.48, 0.48
+    );
+
+    addMk2Rounded(
+        0.30, 0.055, 0.025,
+        0.012, 0.004,
+        mk2FinishInsetMat,
+        0, 1.51, 0.51
+    );
+
+    // ---- שורת ברגים עליונה ----
+    [-0.36, -0.12, 0.12, 0.36].forEach(x => {
+        addMk2ZCylinder(
+            0.032, 0.032, 0.045,
+            mk2FinishBrightMat,
+            x, 1.61, 0.48,
+            advancedCannonGroup, 8
+        );
+    });
+
+    // ---- חריצי אוורור עמוקים יותר מאחורי אזור הקנים ----
+    [-0.42, -0.21, 0, 0.21, 0.42].forEach(x => {
+        addMk2Rounded(
+            0.065, 0.025, 0.18,
+            0.010, 0.004,
+            mk2FinishInsetMat,
+            x, 1.54, 0.33,
+            -0.12, 0, 0
+        );
+    });
+
+    // ---- חיזוקי קצה דקים לזרועות ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.60, 0.73, -0.68],
+            [side * 1.72, MK2_WY + 0.49, -0.78],
+            0.055, 0.58,
+            mk2FinishBrightMat
+        );
+    });
+
+    // סיום Industrial Finish Pass.
+
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
     classicCannonParts.forEach(child => {
