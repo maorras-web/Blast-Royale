@@ -3540,7 +3540,6 @@ window.addEventListener('DOMContentLoaded', () => {
     let bullets = [];
     let rocks = [];
     // סבב 1: איום חדש ליער, נפרד לחלוטין ממערכת הסלעים.
-    let forestThreats = [];
     let droppedCoins = [];
 
     let lastShotTime = 0;
@@ -4369,113 +4368,10 @@ window.addEventListener('DOMContentLoaded', () => {
         droppedCoins.push(coin);
     }
 
-    // ==========================================
-    // סבב 1 — איום חדש: Forest Wisp
-    // ==========================================
-    // זהו איום אווירי נפרד מהסלעים:
-    // הוא מרחף, זז מצד לצד ומנסה להתקרב לתותח.
-    // הוא משתמש במערך משלו כדי לא לשנות את הפיזיקה של הסלעים.
-    function spawnForestThreat(x, y, hp = 5) {
-        const group = new THREE.Group();
-
-        const coreMat = new THREE.MeshStandardMaterial({
-            color: 0x7cff6b,
-            emissive: 0x2dff3b,
-            emissiveIntensity: 1.35,
-            roughness: 0.28,
-            metalness: 0.18
-        });
-
-        const darkMat = new THREE.MeshStandardMaterial({
-            color: 0x17351c,
-            emissive: 0x08150a,
-            emissiveIntensity: 0.35,
-            roughness: 0.72,
-            metalness: 0.35,
-            flatShading: true
-        });
-
-        const core = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(0.34, 1),
-            coreMat
-        );
-        core.castShadow = true;
-        core.receiveShadow = true;
-        group.add(core);
-
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.48, 0.075, 8, 18),
-            darkMat
-        );
-        ring.rotation.x = Math.PI * 0.5;
-        ring.castShadow = true;
-        group.add(ring);
-
-        const topSpike = new THREE.Mesh(
-            new THREE.ConeGeometry(0.10, 0.38, 6),
-            darkMat
-        );
-        topSpike.position.y = 0.42;
-        topSpike.rotation.z = Math.PI;
-        topSpike.castShadow = true;
-        group.add(topSpike);
-
-        const bottomSpike = topSpike.clone();
-        bottomSpike.position.y = -0.42;
-        bottomSpike.rotation.z = 0;
-        group.add(bottomSpike);
-
-        const sideSpikeL = new THREE.Mesh(
-            new THREE.ConeGeometry(0.085, 0.30, 6),
-            darkMat
-        );
-        sideSpikeL.position.x = -0.40;
-        sideSpikeL.rotation.z = -Math.PI * 0.5;
-        sideSpikeL.castShadow = true;
-        group.add(sideSpikeL);
-
-        const sideSpikeR = sideSpikeL.clone();
-        sideSpikeR.position.x = 0.40;
-        sideSpikeR.rotation.z = Math.PI * 0.5;
-        group.add(sideSpikeR);
-
-        group.position.set(x, y, 0.15);
-        group.scale.setScalar(0.92);
-
-        group.userData = {
-            hp,
-            maxHp: hp,
-            vx: (Math.random() - 0.5) * 0.028,
-            vy: -(0.010 + Math.random() * 0.006),
-            phase: Math.random() * Math.PI * 2,
-            spin: 0.018 + Math.random() * 0.012,
-            hitCooldown: 0,
-            age: 0
-        };
-
-        scene.add(group);
-        forestThreats.push(group);
-    }
-
-    function removeForestThreat(threat, index) {
-        spawnImpactBurst(threat.position.x, threat.position.y, threat.position.z);
-
-        threat.traverse(child => {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) {
-                if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                else child.material.dispose();
-            }
-        });
-
-        scene.remove(threat);
-        forestThreats.splice(index, 1);
-    }
-
     let hasStartedFirstWave = false;
     function startNextWave() {
-        // הסבב החדש נחשב חלק מהגל: לא מתחילים גל נוסף עד שגם האיום החדש נעלם.
-        if (rocks.length === 0 && forestThreats.length === 0) {
+        // לא מתחילים גל חדש עד שכל הסלעים נעלמו.
+        if (rocks.length === 0) {
             if (hasStartedFirstWave) level++;
             hasStartedFirstWave = true;
 
@@ -4485,21 +4381,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 const hp = Math.floor((8 + level * 6) * (size / 1.2));
                 const spawnX = (Math.random() - 0.5) * (screenLimitX * 1.4);
                 spawnRock(spawnX, 12 + i * 3, hp, size);
-            }
-
-            // הגל הראשון נשאר בדיוק כמו שהיה.
-            // החל מ-Level 2 נכנס גם האיום החדש, בהדרגה.
-            if (level >= 2) {
-                const threatCount = Math.min(1 + Math.floor((level - 2) / 4), 2);
-                for (let i = 0; i < threatCount; i++) {
-                    const threatHp = 4 + level * 2;
-                    const threatX = (Math.random() - 0.5) * (screenLimitX * 1.5);
-                    spawnForestThreat(
-                        threatX,
-                        8.5 + i * 2.2,
-                        threatHp
-                    );
-                }
             }
 
             updateUI();
@@ -5087,109 +4968,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     alert(`Game Over!\nScore: ${score}`);
                     location.reload();
                 }
-            }
-        }
-
-        // ==========================================
-        // סבב 1 — איום אווירי Forest Wisp
-        // ==========================================
-        // נפרד לחלוטין מהסלעים: אין שינוי בפיזיקת הסלעים או בהתנגשויות שלהם.
-        for (let tIdx = forestThreats.length - 1; tIdx >= 0; tIdx--) {
-            const threat = forestThreats[tIdx];
-            const data = threat.userData;
-
-            if (!threat || !data) {
-                forestThreats.splice(tIdx, 1);
-                continue;
-            }
-
-            data.age += 1;
-            if (data.hitCooldown > 0) data.hitCooldown -= 1;
-
-            // תנועה אווירית: ירידה איטית + זיגזג + משיכה קלה לכיוון התותח.
-            const targetThreatX = cannonGroup.position.x;
-            data.vx += THREE.MathUtils.clamp(
-                (targetThreatX - threat.position.x) * 0.00055,
-                -0.0012,
-                0.0012
-            );
-            data.vx *= 0.985;
-            data.vx = THREE.MathUtils.clamp(data.vx, -0.075, 0.075);
-
-            threat.position.x += data.vx;
-            threat.position.y += data.vy;
-            threat.position.x += Math.sin(data.age * 0.055 + data.phase) * 0.012;
-
-            threat.rotation.y += data.spin;
-            threat.rotation.z = Math.sin(data.age * 0.08 + data.phase) * 0.18;
-            threat.position.y += Math.sin(data.age * 0.065 + data.phase) * 0.010;
-
-            // גבולות המסך.
-            if (Math.abs(threat.position.x) > screenLimitX + 0.7) {
-                threat.position.x = Math.sign(threat.position.x) * (screenLimitX + 0.7);
-                data.vx *= -0.65;
-            }
-
-            // פגיעה בכדור: האיום החדש ניתן להשמדה בירי רגיל.
-            for (let bIdx = bullets.length - 1; bIdx >= 0; bIdx--) {
-                const b = bullets[bIdx];
-
-                if (b.position.distanceTo(threat.position) < 0.58) {
-                    scene.remove(b);
-                    b.traverse(child => {
-                        if (child.geometry) child.geometry.dispose();
-                        if (child.material) child.material.dispose();
-                    });
-                    bullets.splice(bIdx, 1);
-
-                    data.hp -= firePower;
-                    score += firePower;
-                    spawnImpactBurst(threat.position.x, threat.position.y, threat.position.z);
-                    playSound('hit');
-
-                    if (data.hp <= 0) {
-                        if (Math.random() > 0.35) {
-                            spawnCoin(threat.position.x, threat.position.y);
-                        }
-                        score += 8;
-                        removeForestThreat(threat, tIdx);
-                        updateUI();
-                        break;
-                    }
-                }
-            }
-
-            if (!forestThreats[tIdx]) continue;
-
-            // כשהאיום יורד מספיק נמוך — הוא פוגע בתותח ויוצר נזק משמעותי יותר מסלע.
-            const dx = threat.position.x - cannonGroup.position.x;
-            const dy = threat.position.y - (cannonGroup.position.y + 1.35);
-            const distance = Math.hypot(dx, dy);
-
-            if (distance < 0.95 && data.hitCooldown <= 0) {
-                playerHp -= 25;
-                data.hitCooldown = 40;
-                cannonRecoil = -0.12;
-                suspensionKick(0.040, 0);
-                spawnImpactBurst(threat.position.x, threat.position.y, threat.position.z);
-                playSound('hit');
-                updateUI();
-
-                removeForestThreat(threat, tIdx);
-
-                if (playerHp <= 0) {
-                    isGameOver = true;
-                    if (score > bestScore) {
-                        bestScore = score;
-                        localStorage.setItem('bb3d_best', bestScore);
-                    }
-                    localStorage.setItem('bb3d_coins', coins);
-                    alert(`Game Over!\nScore: ${score}`);
-                    location.reload();
-                }
-            } else if (threat.position.y < -1.5) {
-                // Fail-safe: לא מאפשרים לאיום להיתקע מתחת לעולם.
-                removeForestThreat(threat, tIdx);
             }
         }
 
