@@ -5635,6 +5635,126 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סיום Command Turret / Signature Silhouette Pass.
 
+
+    // =========================================================
+    // MK-II HEAVY FRAME PASS — VISUAL ONLY
+    // =========================================================
+
+    const mk2HeavyBody = new THREE.MeshStandardMaterial({
+        color: 0x3a3e41, roughness: 0.26, metalness: 0.93,
+        envMap: mk2Env, envMapIntensity: 0.68
+    });
+
+    const mk2HeavyDark = new THREE.MeshStandardMaterial({
+        color: 0x111315, roughness: 0.50, metalness: 0.60
+    });
+
+    const mk2HeavyEdge = new THREE.MeshStandardMaterial({
+        color: 0x8b9195, roughness: 0.20, metalness: 0.97,
+        envMap: mk2Env, envMapIntensity: 0.78
+    });
+
+    // שריון צד ראשי — מכסה חלק גדול מהמכניקה הפנימית
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.48, 0.78, 0.98, 0.12, 0.04, mk2HeavyBody,
+            side * 1.00, 1.12, -0.02, 0, 0, side * 0.16);
+
+        addMk2Rounded(0.24, 0.58, 0.76, 0.07, 0.022, mk2HeavyDark,
+            side * 1.20, 1.14, 0.03, 0, 0, side * 0.16);
+
+        addMk2Link([side * 0.78, 0.78, -0.48],
+                   [side * 1.24, 1.46, -0.48], 0.075, 0.26, mk2HeavyEdge);
+    });
+
+    // Cross-member קדמי רחב
+    addMk2Rounded(2.18, 0.30, 0.54, 0.10, 0.032, mk2HeavyDark,
+        0, 1.08, -0.42);
+    addMk2Rounded(1.94, 0.18, 0.42, 0.06, 0.020, mk2HeavyBody,
+        0, 1.15, -0.48);
+
+    // כתפיים קדמיות גדולות
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.58, 0.48, 0.72, 0.12, 0.038, mk2HeavyBody,
+            side * 1.18, 1.58, -0.12, -0.12, 0, side * 0.20);
+
+        addMk2Rounded(0.26, 0.30, 0.56, 0.07, 0.022, mk2HeavyDark,
+            side * 1.39, 1.58, -0.09, -0.12, 0, side * 0.20);
+
+        addMk2Rounded(0.12, 0.08, 0.50, 0.025, 0.008, mk2HeavyEdge,
+            side * 1.46, 1.60, -0.13, -0.12, 0, side * 0.20);
+    });
+
+    // Housing מאוחד לשני הקנים
+    addMk2Rounded(1.72, 0.88, 0.66, 0.15, 0.05, mk2HeavyDark,
+        0, 2.00, -0.02);
+    addMk2Rounded(1.48, 0.70, 0.54, 0.11, 0.036, mk2HeavyBody,
+        0, 2.06, -0.01);
+    addMk2Rounded(1.32, 0.52, 0.16, 0.08, 0.025, mk2HeavyEdge,
+        0, 2.10, -0.34);
+
+    // בתי קנים נפרדים בתוך ה-housing
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2Rounded(0.54, 0.60, 0.72, 0.11, 0.036, mk2HeavyDark,
+            bx, 2.12, 0.08);
+        addMk2Rounded(0.40, 0.48, 0.60, 0.075, 0.024, mk2HeavyBody,
+            bx, 2.17, 0.10);
+
+        addMk2ZCylinder(0.32, 0.32, 0.18, mk2HeavyEdge,
+            bx, 2.25, 0.12, advancedBarrelAssembly, 20);
+        addMk2ZCylinder(0.23, 0.23, 0.20, mk2HeavyDark,
+            bx, 2.30, 0.13, advancedBarrelAssembly, 18);
+    });
+
+    // כיפת command קטנה
+    addMk2Rounded(0.92, 0.22, 0.48, 0.07, 0.024, mk2HeavyBody,
+        0, 2.56, 0.06, -0.10, 0, 0);
+    addMk2Rounded(0.62, 0.07, 0.30, 0.022, 0.007, mk2HeavyEdge,
+        0, 2.64, 0.04, -0.10, 0, 0);
+
+    // שריון סביב בסיסי הזרועות
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.52, 0.46, 0.62, 0.12, 0.038, mk2HeavyDark,
+            side * 0.78, 0.86, 0.22, 0, 0, side * 0.12);
+        addMk2Rounded(0.34, 0.30, 0.54, 0.075, 0.024, mk2HeavyBody,
+            side * 0.84, 0.92, 0.25, 0, 0, side * 0.12);
+    });
+
+    // Belly armor
+    addMk2Rounded(1.56, 0.36, 0.66, 0.10, 0.032, mk2HeavyDark,
+        0, 0.66, -0.02);
+    addMk2Rounded(1.28, 0.22, 0.54, 0.065, 0.020, mk2HeavyBody,
+        0, 0.74, -0.08);
+    addMk2Rounded(0.86, 0.08, 0.06, 0.02, 0.006, mk2HeavyEdge,
+        0, 0.86, -0.37);
+
+    // מגני גלגל גדולים יותר
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.40, 0.34, 0.92, 0.10, 0.032, mk2HeavyBody,
+            side * 1.55, MK2_WY + 0.28, 0.00, 0, 0, side * 0.17);
+        addMk2Rounded(0.15, 0.20, 0.72, 0.045, 0.014, mk2HeavyDark,
+            side * 1.72, MK2_WY + 0.30, 0.02, 0, 0, side * 0.17);
+    });
+
+    // טבעות מפרק גדולות
+    [-1, 1].forEach(side => {
+        addMk2ZCylinder(0.38, 0.38, 0.26, mk2HeavyDark,
+            side * 0.82, 0.78, 0.60, advancedCannonGroup, 20);
+        addMk2ZCylinder(0.27, 0.27, 0.30, mk2HeavyEdge,
+            side * 0.82, 0.78, 0.62, advancedCannonGroup, 18);
+    });
+
+    // פסי חיזוק גדולים
+    [-1, 1].forEach(side => {
+        addMk2Link([side * 0.88, 0.90, 0.48],
+                   [side * 1.48, 1.52, 0.48], 0.10, 0.32, mk2HeavyDark);
+        addMk2Link([side * 0.96, 0.98, 0.52],
+                   [side * 1.40, 1.46, 0.52], 0.045, 0.25, mk2HeavyEdge);
+    });
+
+    // סיום Heavy Frame Pass.
+
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
     classicCannonParts.forEach(child => {
