@@ -4047,6 +4047,248 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סיום Armor Structure Pass.
 
+
+    // =========================================================
+    // MK-II MECHANICAL DETAIL PASS — VISUAL ONLY
+    // =========================================================
+    // מטרת הסבב: להפוך את השריון למכלול מכני אמין יותר.
+    // כל החלקים נמצאים ב-advancedCannonGroup בלבד.
+
+    const mk2DetailMat = new THREE.MeshStandardMaterial({
+        color: 0x303438,
+        roughness: 0.38,
+        metalness: 0.82,
+        envMap: mk2Env,
+        envMapIntensity: 0.50
+    });
+
+    const mk2DetailDarkMat = new THREE.MeshStandardMaterial({
+        color: 0x151719,
+        roughness: 0.62,
+        metalness: 0.48
+    });
+
+    const mk2DetailEdgeMat = new THREE.MeshStandardMaterial({
+        color: 0x9a9fa3,
+        roughness: 0.24,
+        metalness: 0.92,
+        envMap: mk2Env,
+        envMapIntensity: 0.70
+    });
+
+    // ---- תיבת רתיעה מרכזית בין שני הקנים ----
+    addMk2Rounded(
+        0.56, 0.34, 0.38,
+        0.065, 0.025,
+        mk2DetailDarkMat,
+        0, 1.63, 0.39
+    );
+
+    addMk2Rounded(
+        0.40, 0.24, 0.30,
+        0.045, 0.018,
+        mk2DetailMat,
+        0, 1.68, 0.43
+    );
+
+    // פסי מתכת משני צדי תיבת הרתיעה.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.055, 0.28, 0.30,
+            0.014, 0.007,
+            mk2DetailEdgeMat,
+            side * 0.245, 1.68, 0.455
+        );
+    });
+
+    // ---- טבעות חיזוק מדורגות סביב בסיסי הקנים ----
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2ZCylinder(
+            0.34, 0.34, 0.10,
+            mk2DetailDarkMat,
+            bx, 1.74, 0.02,
+            advancedBarrelAssembly, 16
+        );
+
+        addMk2ZCylinder(
+            0.31, 0.31, 0.08,
+            mk2DetailEdgeMat,
+            bx, 1.79, 0.02,
+            advancedBarrelAssembly, 16
+        );
+
+        // טבעת פנימית כהה.
+        addMk2ZCylinder(
+            0.245, 0.245, 0.095,
+            mk2DetailDarkMat,
+            bx, 1.83, 0.02,
+            advancedBarrelAssembly, 16
+        );
+    });
+
+    // ---- לוחות חזית עם קווי חיבור ----
+    addMk2Rounded(
+        1.10, 0.025, 0.46,
+        0.012, 0.005,
+        mk2DetailDarkMat,
+        0, 1.22, -0.585
+    );
+
+    [-0.40, 0, 0.40].forEach(x => {
+        addMk2Rounded(
+            0.025, 0.025, 0.34,
+            0.007, 0.003,
+            mk2DetailEdgeMat,
+            x, 1.22, -0.60
+        );
+    });
+
+    // ---- ברגי פאנל קדמי גדולים ----
+    [-1, 1].forEach(side => {
+        [-0.38, 0.38].forEach(x => {
+            addMk2ZCylinder(
+                0.052, 0.052, 0.055,
+                mk2DetailEdgeMat,
+                x, 1.22, -0.625,
+                advancedCannonGroup, 10
+            );
+        });
+    });
+
+    // ---- מפעילים הידראוליים/מכניים לאורך הזרועות ----
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 0.67, 1.05, -0.50],
+            [side * 1.42, MK2_WY + 0.72, -0.66],
+            0.075, 0.52,
+            mk2DetailEdgeMat
+        );
+
+        addMk2Link(
+            [side * 0.75, 1.06, -0.50],
+            [side * 1.38, MK2_WY + 0.73, -0.66],
+            0.045, 0.48,
+            mk2DetailDarkMat
+        );
+
+        // צילינדר בקצה המפעיל.
+        addMk2ZCylinder(
+            0.115, 0.115, 0.20,
+            mk2DetailDarkMat,
+            side * 1.43, MK2_WY + 0.72, -0.66,
+            advancedCannonGroup, 12
+        );
+
+        addMk2ZCylinder(
+            0.065, 0.065, 0.24,
+            mk2DetailEdgeMat,
+            side * 1.43, MK2_WY + 0.72, -0.66,
+            advancedCannonGroup, 10
+        );
+    });
+
+    // ---- מכסי מפרקים עם ברגים היקפיים ----
+    [-1, 1].forEach(side => {
+        const px = side * MK2_PX;
+        const py = 0.80;
+        const pz = 1.56;
+
+        [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(a => {
+            addMk2ZCylinder(
+                0.038, 0.038, 0.055,
+                mk2DetailEdgeMat,
+                px + Math.cos(a) * 0.29,
+                py + Math.sin(a) * 0.29,
+                pz,
+                advancedCannonGroup, 8
+            );
+        });
+    });
+
+    // ---- מגן לוע: קולר חיצוני בולט לכל קנה ----
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2ZCylinder(
+            0.285, 0.285, 0.12,
+            mk2DetailMat,
+            bx, 2.60, 0.02,
+            advancedBarrelAssembly, 16
+        );
+
+        addMk2ZCylinder(
+            0.30, 0.30, 0.055,
+            mk2DetailEdgeMat,
+            bx, 2.66, 0.02,
+            advancedBarrelAssembly, 16
+        );
+    });
+
+    // ---- פאנלים קטנים בצדי הגוף: מראה מודולרי ----
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.045, 0.30, 0.42,
+            0.012, 0.006,
+            mk2DetailEdgeMat,
+            side * 1.075, 1.48, 0.50,
+            0, 0, side * 0.05
+        );
+
+        addMk2Rounded(
+            0.032, 0.20, 0.26,
+            0.008, 0.004,
+            mk2DetailDarkMat,
+            side * 1.102, 1.48, 0.51,
+            0, 0, side * 0.05
+        );
+    });
+
+    // ---- ברגי קורה תחתונה ----
+    [-0.52, -0.26, 0, 0.26, 0.52].forEach(x => {
+        addMk2ZCylinder(
+            0.042, 0.042, 0.055,
+            mk2DetailEdgeMat,
+            x, 0.49, 0.31,
+            advancedCannonGroup, 8
+        );
+    });
+
+    // ---- פין מרכזי בכל מפרק זרוע קדמי ----
+    [-1, 1].forEach(side => {
+        addMk2ZCylinder(
+            0.10, 0.10, 0.34,
+            mk2DetailEdgeMat,
+            side * 1.80, MK2_WY + 0.55, -0.72,
+            advancedCannonGroup, 12
+        );
+
+        addMk2ZCylinder(
+            0.055, 0.055, 0.38,
+            mk2DetailDarkMat,
+            side * 1.80, MK2_WY + 0.55, -0.73,
+            advancedCannonGroup, 10
+        );
+    });
+
+    // ---- פאנל זיהוי קטן במרכז הגוף ----
+    addMk2Rounded(
+        0.52, 0.12, 0.035,
+        0.018, 0.008,
+        mk2DetailDarkMat,
+        0, 1.01, -0.635
+    );
+
+    addMk2Rounded(
+        0.30, 0.035, 0.020,
+        0.008, 0.004,
+        mk2DetailEdgeMat,
+        0, 1.04, -0.655
+    );
+
+    // סיום Mechanical Detail Pass.
+
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
     classicCannonParts.forEach(child => {
