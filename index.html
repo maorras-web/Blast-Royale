@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
     
     <!-- ספריית Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -69,49 +69,77 @@
 
     <!-- מסך פתיחה (Splash / Start) -->
     <div id="splash-screen" class="modal-overlay">
-        <div class="modal-card">
+        <div class="modal-card splash-sheet">
             <h1 class="game-title">CANNON<br><span>BLAST 3D</span></h1>
-            
-            <div class="stats-box">
-                <div>שיא אישי: <strong id="start-best-score">0</strong></div>
-                <div>מטבעות: <strong id="start-coins">0</strong></div>
-            </div>
 
-            <!-- שדרוגים בחנות -->
-            <div class="shop-section-title">שדרוגים</div>
-            <div class="upgrades-list">
-                <div class="upgrade-item">
-                    <div>
-                        <div class="upg-name">עוצמת ירייה</div>
-                        <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
-                    </div>
-                    <button id="buy-power-btn" class="btn-upg">50 C</button>
+            <!-- שורת נתונים קבועה: מטבעות ושיא -->
+            <div class="splash-head">
+                <div class="head-stat">
+                    <span class="head-label">🪙 מטבעות</span>
+                    <strong id="start-coins">0</strong>
                 </div>
-
-                <div class="upgrade-item">
-                    <div>
-                        <div class="upg-name">קצב אש</div>
-                        <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
-                    </div>
-                    <button id="buy-rate-btn" class="btn-upg">60 C</button>
+                <div class="head-stat">
+                    <span class="head-label">🏆 שיא</span>
+                    <strong id="start-best-score">0</strong>
                 </div>
             </div>
 
-            <div class="shop-section-title maps-title">מפה</div>
-            <div class="maps-grid">
-                <button class="map-card selected owned" data-map-id="forest">
-                    <span class="map-icon">🔺</span>
-                    <span class="map-info"><strong>PYRAMIDS</strong><small>פרמידות</small></span>
-                    <span class="map-action">נבחרה</span>
-                    <span class="map-state">ACTIVE</span>
-                </button>
+            <!-- אזור הגלילה: תותח, שדרוגים, מפה -->
+            <div class="splash-scroll">
+                <section class="splash-section">
+                    <div class="shop-section-title">תותח</div>
+                    <div class="cannon-grid">
+                        <button id="cannon-classic" class="map-card cannon-card owned selected" type="button">
+                            <span class="map-icon">⚙️</span>
+                            <span class="map-info"><strong>קלאסי</strong><small>מאוזן</small></span>
+                            <span class="map-action">נבחר</span>
+                        </button>
+                        <button id="cannon-mk2" class="map-card cannon-card" type="button">
+                            <span class="map-icon">🛡️</span>
+                            <span class="map-info"><strong>MK-II</strong><small>משוריין וכבד</small></span>
+                            <span class="map-action">250 C</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="splash-section">
+                    <div class="shop-section-title">שדרוגים</div>
+                    <div class="upgrades-list">
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">עוצמת ירייה</div>
+                                <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-power-btn" class="btn-upg">50 C</button>
+                        </div>
+
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">קצב אש</div>
+                                <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-rate-btn" class="btn-upg">60 C</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="splash-section">
+                    <div class="shop-section-title">מפה</div>
+                    <div class="maps-grid">
+                        <button class="map-card selected owned" data-map-id="forest" type="button">
+                            <span class="map-icon">🔺</span>
+                            <span class="map-info"><strong>PYRAMIDS</strong><small>פרמידות</small></span>
+                            <span class="map-action">נבחרה</span>
+                        </button>
+                    </div>
+                </section>
             </div>
 
-            <button id="start-btn" class="btn-primary">התחל משחק</button>
+            <button id="start-btn" class="btn-primary" type="button">התחל משחק</button>
         </div>
     </div>
 
     <!-- קובץ המשחק הראשי -->
-    <script src="main.js"></script>
+    <script src="main.js?v=3"></script>
 </body>
 </html>

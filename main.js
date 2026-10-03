@@ -3568,31 +3568,41 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const buyPowerBtn = document.getElementById('buy-power-btn');
     const buyRateBtn = document.getElementById('buy-rate-btn');
-    // חנות תותחים — נבנית כאן כדי שסבב 2 לא ידרוש שינוי בקובץ HTML.
-    const cannonShopPanel = document.createElement('div');
-    cannonShopPanel.id = 'cannon-shop-panel';
-    cannonShopPanel.innerHTML = `
-        <div class="mk2-shop-title">MK-II • ADVANCED CANNON</div>
-        <div class="mk2-shop-sub">תותח מתקדם • אפור כהה מטאלי</div>
-        <button id="buy-mk2-cannon" type="button"></button>
-    `;
-    const cannonShopStyle = document.createElement('style');
-    cannonShopStyle.textContent = `
-        #cannon-shop-panel{margin:12px auto 0;max-width:330px;padding:12px 14px;border:1px solid rgba(170,180,190,.32);border-radius:14px;background:rgba(15,18,20,.70);box-shadow:0 8px 24px rgba(0,0,0,.22);text-align:center;color:#fff}
-        #cannon-shop-panel .mk2-shop-title{font-weight:900;letter-spacing:.8px;font-size:14px}
-        #cannon-shop-panel .mk2-shop-sub{margin:4px 0 9px;font-size:12px;opacity:.78}
-        #buy-mk2-cannon{width:100%;border:1px solid rgba(190,200,205,.45);border-radius:10px;padding:9px 12px;background:linear-gradient(180deg,#4a5156,#252a2d);color:#fff;font-weight:800;cursor:pointer}
-        #buy-mk2-cannon:disabled{opacity:.45;cursor:not-allowed}
-    `;
-    document.head.appendChild(cannonShopStyle);
-    if (splashScreen) splashScreen.appendChild(cannonShopPanel);
-    const buyMk2CannonBtn = document.getElementById('buy-mk2-cannon');
+    // בחירת תותח: שני כרטיסים קבועים בתוך כרטיס הפתיחה (index.html).
+    const cannonClassicBtn = document.getElementById('cannon-classic');
+    const cannonMk2Btn = document.getElementById('cannon-mk2');
 
     const mapButtons = Array.from(document.querySelectorAll('[data-map-id]'));
     mapButtons.forEach(btn => {
         if (btn.dataset.mapId !== 'forest') btn.remove();
     });
     const forestMapButtons = Array.from(document.querySelectorAll('[data-map-id="forest"]'));
+
+    // מצב כרטיס תותח: נבחר / בחר / מחיר (נעול אם אין מספיק מטבעות).
+    function renderCannonTile(btn, { selected, owned, label, locked }) {
+        if (!btn) return;
+        btn.classList.toggle('selected', selected);
+        btn.classList.toggle('owned', owned);
+        btn.disabled = !!locked;
+        const action = btn.querySelector('.map-action');
+        if (action) action.innerText = label;
+    }
+
+    function updateCannonTiles() {
+        const mk2Active = activeCannon === 'mk2';
+        renderCannonTile(cannonClassicBtn, {
+            selected: !mk2Active,
+            owned: true,
+            label: !mk2Active ? 'נבחר' : 'בחר',
+            locked: false
+        });
+        renderCannonTile(cannonMk2Btn, {
+            selected: mk2Active,
+            owned: advancedCannonOwned,
+            label: !advancedCannonOwned ? `${ADVANCED_CANNON_PRICE} C` : (mk2Active ? 'נבחר' : 'בחר'),
+            locked: !advancedCannonOwned && coins < ADVANCED_CANNON_PRICE
+        });
+    }
 
     function updateUI() {
         if (coinsValEl) coinsValEl.innerText = coins;
@@ -3619,18 +3629,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const el = document.getElementById('rate-lvl-text');
             if (el) el.innerText = `Lvl ${fireRateLvl}`;
         }
-        if (buyMk2CannonBtn) {
-            if (!advancedCannonOwned) {
-                buyMk2CannonBtn.innerText = `קנה תותח MK-II • ${ADVANCED_CANNON_PRICE} C`;
-                buyMk2CannonBtn.disabled = coins < ADVANCED_CANNON_PRICE;
-            } else if (activeCannon === 'mk2') {
-                buyMk2CannonBtn.innerText = 'MK-II נבחר • החלף לתותח הקלאסי';
-                buyMk2CannonBtn.disabled = false;
-            } else {
-                buyMk2CannonBtn.innerText = 'בחר תותח MK-II';
-                buyMk2CannonBtn.disabled = false;
-            }
-        }
+        updateCannonTiles();
 
         forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
@@ -3648,18 +3647,23 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (buyMk2CannonBtn) {
-        buyMk2CannonBtn.addEventListener('click', () => {
+    if (cannonClassicBtn) {
+        cannonClassicBtn.addEventListener('click', () => {
+            setActiveCannon('classic');
+            updateUI();
+        });
+    }
+
+    if (cannonMk2Btn) {
+        cannonMk2Btn.addEventListener('click', () => {
             if (!advancedCannonOwned) {
                 if (coins < ADVANCED_CANNON_PRICE) return;
                 coins -= ADVANCED_CANNON_PRICE;
                 advancedCannonOwned = true;
                 localStorage.setItem('bb3d_cannon_mk2_owned', '1');
                 localStorage.setItem('bb3d_coins', coins);
-                setActiveCannon('mk2');
-            } else {
-                setActiveCannon(activeCannon === 'mk2' ? 'classic' : 'mk2');
             }
+            setActiveCannon('mk2');
             updateUI();
         });
     }
