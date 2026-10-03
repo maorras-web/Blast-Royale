@@ -29,6 +29,11 @@ window.addEventListener('DOMContentLoaded', () => {
     
     let screenLimitX = 4.8;
 
+    // מרחק המצלמה מהתותח — להגדלת "המקום" במסך: הגדל את שני הערכים (אחורה וגם למעלה קצת).
+    // לקרב את המצלמה: להקטין. (ערכים קודמים: Y=8.4–8.6, Z=18.0–18.2)
+    const CAM_BASE_Y = 10.0;
+    const CAM_BASE_Z = 23.0;
+
     // ==========================================
     // MOBILE ONLY
     // ==========================================
@@ -38,7 +43,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const height = Math.max(window.innerHeight, 1);
 
         camera.aspect = width / height;
-        camera.position.set(0, 8.4, 18.0);
+        camera.position.set(0, CAM_BASE_Y, CAM_BASE_Z);
         camera.lookAt(0, 2.50, -8.8);
 
         // שומרים על טווח תנועה מתאים למסך טלפון.
@@ -5083,8 +5088,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const edgeOver = Math.sign(cannonX) * Math.max(0, Math.abs(cannonX) - edgeStart);
 
         const cameraTargetX = cannonX * 0.10 + edgeOver * 1.15;
-        const cameraTargetY = 8.6 + Math.abs(cannonX) * 0.035;
-        const cameraTargetZ = 18.2 + Math.abs(cannonX) * 0.045;
+        const cameraTargetY = CAM_BASE_Y + 0.2 + Math.abs(cannonX) * 0.035;
+        const cameraTargetZ = CAM_BASE_Z + 0.2 + Math.abs(cannonX) * 0.045;
 
         camera.position.x += (cameraTargetX - camera.position.x) * 0.06;
         camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
