@@ -3276,8 +3276,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_SCALE = 1.25;
     advancedCannonGroup.scale.setScalar(MK2_SCALE);
     const MK2_WS = 1.05;                                     // קנה מידה לגלגל
-    const MK2_WX = 1.95;                                     // מרחק הגלגלים מהמרכז
-    const MK2_PX = 0.74;                                     // מרחק מפרקי הזרועות מהמרכז
+    const MK2_WX = 1.82;                                     // מרחק הגלגלים מהמרכז
+    const MK2_PX = 0.70;                                     // מרחק מפרקי הזרועות מהמרכז
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP; // מרכז הגלגל (התחתית על הקרקע)
     const MK2_ARM_Z = 1.20;                                  // מישור הזרועות האחוריות
     const mk2Lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -5754,6 +5754,251 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // סיום Heavy Frame Pass.
+
+
+    // =========================================================
+    // MK-II REFERENCE MATCH PASS — LOW / WIDE ARMORED CANNON
+    // =========================================================
+    // סבב ויזואלי בלבד, בהשראת תמונת ההמחשה שסופקה:
+    // גוף נמוך ורחב, שריון אפור כהה מט, ארבעה גלגלים חשופים,
+    // מפרקי מתלה גדולים, זרועות מתכת ברורות ושני קנים קומפקטיים.
+    // אין שינוי בירי, בנקודות הקליעים, בהתנגשויות או בפיזיקה.
+
+    const mk2RefDark = new THREE.MeshStandardMaterial({
+        color: 0x202326,
+        roughness: 0.62,
+        metalness: 0.58,
+        envMap: mk2Env,
+        envMapIntensity: 0.32
+    });
+
+    const mk2RefBody = new THREE.MeshStandardMaterial({
+        color: 0x4a4d4f,
+        roughness: 0.48,
+        metalness: 0.72,
+        envMap: mk2Env,
+        envMapIntensity: 0.42
+    });
+
+    const mk2RefEdge = new THREE.MeshStandardMaterial({
+        color: 0x8b8e90,
+        roughness: 0.30,
+        metalness: 0.82,
+        envMap: mk2Env,
+        envMapIntensity: 0.52
+    });
+
+    const mk2RefBlack = new THREE.MeshStandardMaterial({
+        color: 0x111315,
+        roughness: 0.76,
+        metalness: 0.28
+    });
+
+    // 1) גוף מרכזי נמוך ורחב — זה האלמנט שהכי מקרב את הצללית לתמונה.
+    addMk2Rounded(
+        1.92, 0.48, 0.92,
+        0.14, 0.045,
+        mk2RefBody,
+        0, 0.96, 0.12
+    );
+
+    // לוח קדמי משופע מעט, בלי להסתיר את הקנים.
+    addMk2Rounded(
+        1.58, 0.34, 0.16,
+        0.07, 0.028,
+        mk2RefDark,
+        0, 1.18, 0.58,
+        -0.08, 0, 0
+    );
+
+    addMk2Rounded(
+        1.28, 0.07, 0.18,
+        0.025, 0.010,
+        mk2RefEdge,
+        0, 1.34, 0.62,
+        -0.08, 0, 0
+    );
+
+    // 2) כתפיים צדדיות משופעות — נותנות את המראה הרחב וה"משוריין".
+    [-1, 1].forEach(side => {
+        addMk2Rounded(
+            0.28, 0.54, 0.82,
+            0.08, 0.035,
+            mk2RefBody,
+            side * 0.93, 1.03, 0.08,
+            0, 0, side * 0.10
+        );
+
+        addMk2Rounded(
+            0.10, 0.34, 0.66,
+            0.035, 0.015,
+            mk2RefDark,
+            side * 1.08, 1.03, 0.08,
+            0, 0, side * 0.10
+        );
+    });
+
+    // 3) מכסה עליון שטוח במקום מראה של "כיפה" גבוהה מדי.
+    addMk2Rounded(
+        1.18, 0.18, 0.62,
+        0.06, 0.022,
+        mk2RefBody,
+        0, 1.48, 0.02,
+        -0.06, 0, 0
+    );
+
+    addMk2Rounded(
+        0.82, 0.06, 0.44,
+        0.022, 0.008,
+        mk2RefEdge,
+        0, 1.59, 0.00,
+        -0.06, 0, 0
+    );
+
+    // 4) מגן מרכזי קטן בין הקנים — מראה של מכלול נשק אחד.
+    addMk2Rounded(
+        0.34, 0.38, 0.20,
+        0.055, 0.022,
+        mk2RefBlack,
+        0, 1.77, 0.40
+    );
+
+    // 5) טבעות חיבור גדולות בבסיס הקנים.
+    [-1, 1].forEach(side => {
+        const bx = side * 0.37 / MK2_SCALE;
+
+        addMk2ZCylinder(
+            0.24, 0.24, 0.14,
+            mk2RefDark,
+            bx, 1.76, 0.42,
+            advancedBarrelAssembly,
+            18
+        );
+
+        addMk2ZCylinder(
+            0.18, 0.18, 0.17,
+            mk2RefEdge,
+            bx, 1.76, 0.44,
+            advancedBarrelAssembly,
+            16
+        );
+    });
+
+    // 6) ארבעה מפרקי מתלה בולטים — פרט מרכזי בתמונת ההמחשה.
+    [
+        [-MK2_WX, MK2_WY,  0.72],
+        [ MK2_WX, MK2_WY,  0.72],
+        [-MK2_WX, MK2_WY, -0.72],
+        [ MK2_WX, MK2_WY, -0.72]
+    ].forEach(([x, y, z]) => {
+        addMk2ZCylinder(
+            0.28, 0.28, 0.26,
+            mk2RefDark,
+            x, y, z,
+            advancedCannonGroup,
+            18
+        );
+
+        addMk2ZCylinder(
+            0.19, 0.19, 0.30,
+            mk2RefEdge,
+            x, y, z,
+            advancedCannonGroup,
+            16
+        );
+
+        addMk2ZCylinder(
+            0.075, 0.075, 0.34,
+            mk2RefBlack,
+            x, y, z,
+            advancedCannonGroup,
+            10
+        );
+    });
+
+    // 7) זרועות צד עבות, פתוחות וברורות.
+    [-1, 1].forEach(side => {
+        const rearWheel = [side * MK2_WX, MK2_WY, 0.72];
+        const rearMount = [side * 0.62, 0.92, 0.72];
+
+        addMk2Link(
+            rearMount,
+            [side * 1.54, MK2_WY + 0.20, 0.72],
+            0.20, 0.28,
+            mk2RefDark
+        );
+
+        addMk2Link(
+            [side * 0.68, 1.06, 0.74],
+            [side * 1.55, MK2_WY + 0.34, 0.74],
+            0.075, 0.22,
+            mk2RefEdge
+        );
+
+        // מוט מתלה קדמי-אחורי.
+        addMk2Link(
+            [side * 0.54, 0.76, -0.50],
+            [side * 1.46, MK2_WY + 0.40, -0.50],
+            0.14, 0.22,
+            mk2RefDark
+        );
+    });
+
+    // 8) קורה תחתונה רציפה שמחברת את ארבעת הגלגלים.
+    addMk2Rounded(
+        1.72, 0.20, 0.52,
+        0.05, 0.020,
+        mk2RefDark,
+        0, 0.60, 0.02
+    );
+
+    // 9) סמל עגול קטן במרכז — בהשראת המטבע/סמל שעל התותח בתמונת ההמחשה.
+    const mk2BadgeGold = new THREE.MeshStandardMaterial({
+        color: 0xb88a24,
+        roughness: 0.34,
+        metalness: 0.72
+    });
+
+    const mk2BadgeDark = new THREE.MeshStandardMaterial({
+        color: 0x493719,
+        roughness: 0.52,
+        metalness: 0.42
+    });
+
+    const badge = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.22, 0.07, 20),
+        mk2BadgeGold
+    );
+    badge.rotation.x = Math.PI / 2;
+    badge.position.set(0, 1.62, 0.56);
+    badge.castShadow = true;
+    advancedCannonGroup.add(badge);
+
+    const badgeInner = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.145, 0.145, 0.075, 20),
+        mk2BadgeDark
+    );
+    badgeInner.rotation.x = Math.PI / 2;
+    badgeInner.position.set(0, 1.62, 0.602);
+    badgeInner.castShadow = true;
+    advancedCannonGroup.add(badgeInner);
+
+    // 10) שישה ברגים גדולים בלבד — פחות "רעש", יותר מראה מכני.
+    [
+        [-0.68, 1.16, 0.64], [0.68, 1.16, 0.64],
+        [-0.82, 0.88, 0.64], [0.82, 0.88, 0.64],
+        [-0.60, 0.72, -0.52], [0.60, 0.72, -0.52]
+    ].forEach(([x, y, z]) => {
+        addMk2ZCylinder(
+            0.045, 0.045, 0.07,
+            mk2RefEdge,
+            x, y, z,
+            advancedCannonGroup,
+            10
+        );
+    });
+
+    // סיום Reference Match Pass.
 
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
