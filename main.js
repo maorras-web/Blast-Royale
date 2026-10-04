@@ -3212,7 +3212,7 @@ window.addEventListener('DOMContentLoaded', () => {
         envMap: mk2Env, envMapIntensity: 0.30
     });
     const mk2EdgeMat = new THREE.MeshStandardMaterial({
-        color: 0x7d786f, roughness: 0.24, metalness: 0.85,
+        color: 0x605c55, roughness: 0.30, metalness: 0.80,
         envMap: mk2Env, envMapIntensity: 0.45
     });
     const mk2BlackMat = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: 0.80, metalness: 0.25 });
@@ -3297,7 +3297,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     addMk2Hex(0.78, 0.94, 0.52, 0.88, mk2BodyMat, 0, 1.54, 0.32);
     addMk2Hex(0.52, 0.74, 0.36, 0.88, mk2BodyMat, 0, 1.93, 0.30);
-    addMk2Rounded(0.95, 0.10, 0.80, 0.05, 0.02, mk2EdgeMat, 0, 2.14, 0.30);
+    addMk2Rounded(0.95, 0.10, 0.80, 0.05, 0.02, mk2BodyMat, 0, 2.14, 0.30);
     addMk2Rounded(0.70, 0.30, 0.06, 0.05, 0.02, mk2EdgeMat, 0, 1.60, 1.15, -0.28, 0, 0);   // לוח חזית בהיר
     addMk2Rounded(0.54, 0.20, 0.06, 0.04, 0.02, mk2DarkMat, 0, 1.60, 1.18, -0.28, 0, 0);   // לוח חזית כהה
     addMk2Rounded(0.50, 0.20, 0.05, 0.04, 0.02, mk2EdgeMat, 0, 2.00, 0.93, -0.30, 0, 0);   // לוח עליון
@@ -3349,7 +3349,6 @@ window.addEventListener('DOMContentLoaded', () => {
         addMk2Link(mk2Lerp(A, B, 0.40), mk2Lerp(A, B, 0.95), 0.18, 0.18, mk2EdgeMat);
 
         // לוח שריון צדדי משופע שיורד אל הגלגל הקדמי
-        addMk2Rounded(0.70, 0.14, 1.70, 0.06, 0.03, mk2BodyMat, s * 1.00, 1.30, -0.05, 0, 0, s * -0.45);
         addMk2Link([s * 0.95, 1.05, 0.10], [s * (MK2_WX - 0.10), MK2_WY + 0.10, -0.58], 0.46, 0.30, mk2BodyMat);
         addMk2ZCylinder(0.14, 0.14, 0.40, mk2EdgeMat, s * MK2_WX, MK2_WY, -0.45, advancedCannonGroup, 6);
     });
@@ -5224,6 +5223,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סנכרון גודל ה-canvas והמצלמה לגודל המסך האמיתי
     function syncViewport() {
+        // גובה אמיתי אחד לכל המסך (קנבס + תפריט) - מונע מהתפריט "לקפוץ" במעבר למסך מלא.
+        document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
         updateCameraForDevice();
         updateMobileViewportState();
         // setSize(..., false) לא מעדכן את ה-style של ה-canvas, אז עושים את זה ידנית
@@ -5232,13 +5233,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     window.addEventListener('resize', syncViewport);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', syncViewport);
     document.addEventListener('fullscreenchange', () => {
         syncViewport();
         setTimeout(syncViewport, 150);
+        setTimeout(syncViewport, 450);
     });
     window.addEventListener('orientationchange', () => {
         setTimeout(syncViewport, 120);
     });
 
+    syncViewport();
     animate(0);
 });

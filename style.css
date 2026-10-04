@@ -712,3 +712,25 @@ canvas {
     #splash-screen .maps-grid .map-card { min-height: 46px; }
     #splash-screen #start-btn { min-height: 48px; font-size: 17px; }
 }
+
+/* ==========================================
+   תיקון קפיצת התפריט: גובה אחד משותף לכל המסך
+   ==========================================
+   קודם: הרקע והתפריט נמדדו ב-dvh, הקנבס ב-svh והכרטיס ב-svh - שלוש מדידות שונות.
+   כשהדפדפן נכנס/יוצא ממסך מלא הן לא תמיד מסתנכרנות, והתפריט (שצמוד לתחתית) ברח מהמסך.
+   עכשיו main.js מעדכן את --app-h לגובה האמיתי של החלון, וכולם משתמשים בו. */
+body {
+    height: var(--app-h, 100dvh);
+}
+
+canvas {
+    height: var(--app-h, 100dvh) !important;
+}
+
+.modal-card {
+    max-height: calc(var(--app-h, 100svh) * 0.88);
+}
+
+#splash-screen .splash-sheet {
+    max-height: min(calc(var(--app-h, 100svh) * 0.54), 480px);
+}
