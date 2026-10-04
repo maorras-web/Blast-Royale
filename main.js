@@ -3204,7 +3204,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- חומרים: אפור-תותחים מתכתי ----
     const mk2Env = (typeof wheelEnvMap !== 'undefined' && wheelEnvMap) ? wheelEnvMap : null;
     const mk2BodyMat = new THREE.MeshStandardMaterial({
-        color: 0x28323f, roughness: 0.32, metalness: 0.60,
+        color: 0x1d252f, roughness: 0.32, metalness: 0.60,
         envMap: mk2Env, envMapIntensity: 0.28
     });
     const mk2DarkMat = new THREE.MeshStandardMaterial({
@@ -3268,6 +3268,12 @@ window.addEventListener('DOMContentLoaded', () => {
         return mesh;
     }
 
+    // אור כחלחל עדין שמקזז את השמש החמה ונותן לגוף מראה של פלדה כהה.
+    // אם הגוף עדיין נראה חום: להגדיל את 0.9. אם הוא כחול מדי: להקטין.
+    const mk2CoolFill = new THREE.PointLight(0x9cbcff, 0.9, 9, 1.5);
+    mk2CoolFill.position.set(0, 2.8, 3.2);
+    advancedCannonGroup.add(mk2CoolFill);
+
     // ---- קבועים (MK2_SCALE ו-MK2_WS משמשים גם את לולאת האנימציה) ----
     const MK2_SCALE = 1.30;
     advancedCannonGroup.scale.setScalar(MK2_SCALE);
@@ -3309,6 +3315,14 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Rounded(0.50, 0.20, 0.05, 0.03, 0.02, mk2DarkMat, 0, 0.92, 1.52);          // לוח מרכזי כהה
     [-1, 1].forEach(i => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.04), mk2BlackMat, i * 0.07, 0.92, 1.55));
     [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.36, 0.025, 0.04), mk2BlackMat, s * 0.62, 0.92, 1.52));
+
+    // צינורות פליטה על הקורה האחורית
+    [-1, 1].forEach(sd => {
+        addMk2Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.26, 12), mk2DarkMat, sd * 0.45, 1.25, 1.38);
+        addMk2Mesh(new THREE.TorusGeometry(0.078, 0.02, 6, 14), mk2EdgeMat, sd * 0.45, 1.38, 1.38, Math.PI / 2, 0, 0);
+    });
+    // חריצי אוורור בפגוש
+    [0.54, 0.58, 0.62].forEach(y => addMk2Mesh(new THREE.BoxGeometry(0.34, 0.025, 0.02), mk2BlackMat, 0, y, 1.705));
 
     // כריות כתף מעל מפרקי הרגליים
     [-1, 1].forEach(sd => {
@@ -3397,6 +3411,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2LugGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.64, 8);
     const mk2LipGeo = new THREE.TorusGeometry(0.31, 0.035, 8, 32);
     const advancedCannonWheels = [];
+    const mk2TreadParts = [], mk2FaceParts = [];
+    const mk2TreadBlock = new THREE.BoxGeometry(0.15, 0.075, 0.30);
+    for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2;
+        mk2TreadParts.push({ geo: mk2TreadBlock, m: partMatrix(Math.cos(a) * 0.535, Math.sin(a) * 0.535, 0, 0, 0, a - Math.PI / 2) });
+    }
+    const mk2SpokeGeo = new THREE.BoxGeometry(0.07, 0.20, 0.03);
+    const mk2FaceRingGeo = new THREE.TorusGeometry(0.22, 0.025, 6, 24);
+    [-1, 1].forEach(sd => {
+        mk2FaceParts.push({ geo: mk2FaceRingGeo, m: partMatrix(0, 0, sd * 0.30) });
+        for (let i = 0; i < 5; i++) {
+            const a = (i / 5) * Math.PI * 2;
+            mk2FaceParts.push({ geo: mk2SpokeGeo, m: partMatrix(Math.cos(a) * 0.14, Math.sin(a) * 0.14, sd * 0.30, 0, 0, a - Math.PI / 2) });
+        }
+    });
+    const mk2TreadGeo = mergeWheelParts(mk2TreadParts);
+    const mk2FaceGeo = mergeWheelParts(mk2FaceParts);
 
     // אותו סדר כמו בגלגלים הקלאסיים כדי שהסיבוב יסתנכרן.
     [[-MK2_WX, 0.72], [MK2_WX, 0.72], [-MK2_WX, -0.72], [MK2_WX, -0.72]].forEach(([x, z]) => {
@@ -3410,6 +3441,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const tire = addMk2Mesh(mk2TireGeo, mk2TireMat, 0, 0, 0, 0, 0, 0, spin);
         tire.scale.z = 1.05; // צר יותר, כמו גלגל אופנוע בתמונה
         [-1, 1].forEach(sd => addMk2Mesh(mk2LipGeo, mk2EdgeMat, 0, 0, sd * 0.285, 0, 0, 0, spin));
+        addMk2Mesh(mk2TreadGeo, mk2DarkMat, 0, 0, 0, 0, 0, 0, spin);   // דוגמת אחיזה בצמיג
+        addMk2Mesh(mk2FaceGeo, mk2EdgeMat, 0, 0, 0, 0, 0, 0, spin);    // טבעת וחישורים בחישוק
         addMk2Mesh(mk2RimGeo, mk2BodyMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2RimCoreGeo, mk2BlackMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2HubGeo, mk2EdgeMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
