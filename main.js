@@ -5,14 +5,6 @@ window.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // גישה בטוחה ל-localStorage: בדפדפנים שחוסמים אחסון (גלישה פרטית, דפדפן פנימי) המשחק ימשיך לעבוד.
-    function safeGet(key) {
-        try { return localStorage.getItem(key); } catch (_) { return null; }
-    }
-    function safeSet(key, value) {
-        try { localStorage.setItem(key, value); } catch (_) {}
-    }
-
     // ==========================================
     // 1. הגדרת סצנה וגרפיקה נקייה
     // ==========================================
@@ -104,32 +96,26 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     document.body.appendChild(cinematicGrade);
 
-    // כשחסימה מופיעה באמצע משחק — עוצרים אותו (מוגדר בהמשך, אחרי setPaused).
-    let onViewportBlocked = null;
-
     function updateMobileViewportState() {
         const desktopBlocker = document.getElementById('desktop-blocker');
         const landscapeBlocker = document.getElementById('landscape-blocker');
 
-        // זיהוי מכשיר מגע לפי סוג המצביע, לא לפי רוחב: טלפונים אופקיים מגיעים ל-850-930px.
-        const isTouchDevice =
-            window.matchMedia('(pointer: coarse)').matches ||
-            ((navigator.maxTouchPoints || 0) > 0 &&
-                Math.min(window.innerWidth, window.innerHeight) <= 820);
+        const isDesktopViewport =
+            window.innerWidth > 768;
 
-        const isLandscape = window.innerWidth > window.innerHeight;
-        const showLandscape = isTouchDevice && isLandscape;
-        const showDesktop = !isTouchDevice && window.innerWidth > 768;
+        const isLandscapePhone =
+            window.innerWidth <= 768 &&
+            window.innerWidth > window.innerHeight;
 
         if (desktopBlocker) {
-            desktopBlocker.style.display = showDesktop ? 'flex' : 'none';
+            desktopBlocker.style.display =
+                isDesktopViewport ? 'flex' : 'none';
         }
 
         if (landscapeBlocker) {
-            landscapeBlocker.style.display = showLandscape ? 'flex' : 'none';
+            landscapeBlocker.style.display =
+                isLandscapePhone ? 'flex' : 'none';
         }
-
-        if ((showLandscape || showDesktop) && onViewportBlocked) onViewportBlocked();
     }
 
     updateCameraForDevice();
@@ -194,8 +180,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let purchasedMaps = ['forest'];
 
     // מנקים בחירה ישנה של מפות שהיו בגרסאות קודמות.
-    safeSet('bb3d_map', 'forest');
-    safeSet('bb3d_purchased_maps', JSON.stringify(['forest']));
+    localStorage.setItem('bb3d_map', 'forest');
+    localStorage.setItem('bb3d_purchased_maps', JSON.stringify(['forest']));
 
     function clearMapGroup() {
         while (mapGroup.children.length) {
@@ -3207,8 +3193,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // התותח החדש הוא שכבה נפרדת: הוא לא משנה את הפיזיקה,
     // את הסלעים, את האויב החדש או את סביבת המפה.
     const ADVANCED_CANNON_PRICE = 250;
-    let advancedCannonOwned = safeGet('bb3d_cannon_mk2_owned') === '1';
-    let activeCannon = safeGet('bb3d_active_cannon') || 'classic';
+    let advancedCannonOwned = localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
+    let activeCannon = localStorage.getItem('bb3d_active_cannon') || 'classic';
 
     const advancedCannonGroup = new THREE.Group();
     advancedCannonGroup.visible = activeCannon === 'mk2';
@@ -6026,7 +6012,7 @@ window.addEventListener('DOMContentLoaded', () => {
         classicCannonParts.forEach(child => {
             if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
         });
-        safeSet('bb3d_active_cannon', activeCannon);
+        localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
 
     setActiveCannon(activeCannon);
@@ -6109,14 +6095,14 @@ window.addEventListener('DOMContentLoaded', () => {
     let isGameOver = false;
 
     let score = 0;
-    let coins = parseInt(safeGet('bb3d_coins')) || 0;
-    let bestScore = parseInt(safeGet('bb3d_best')) || 0;
+    let coins = parseInt(localStorage.getItem('bb3d_coins')) || 0;
+    let bestScore = parseInt(localStorage.getItem('bb3d_best')) || 0;
     let level = 1;
     let playerHp = 1000;
     let maxHp = 1000;
 
-    let firePowerLvl = parseInt(safeGet('bb3d_upg_power')) || 1;
-    let fireRateLvl = parseInt(safeGet('bb3d_upg_rate')) || 1;
+    let firePowerLvl = parseInt(localStorage.getItem('bb3d_upg_power')) || 1;
+    let fireRateLvl = parseInt(localStorage.getItem('bb3d_upg_rate')) || 1;
 
     let firePower = firePowerLvl;
     let fireRate = 1 + (fireRateLvl - 1) * 0.25;
@@ -6194,7 +6180,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (startBestScoreEl) startBestScoreEl.innerText = bestScore;
         if (hpTextEl) hpTextEl.innerText = `${Math.max(0, playerHp)} / ${maxHp}`;
         if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (playerHp / maxHp) * 100)}%`;
-        if (levelTextEl) levelTextEl.innerText = level;
+        if (levelTextEl) levelTextEl.innerText = `LEVEL ${level}`;
 
         // מחירים לשדרוגים
         const powerCost = firePowerLvl * 50;
@@ -6243,8 +6229,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (coins < ADVANCED_CANNON_PRICE) return;
                 coins -= ADVANCED_CANNON_PRICE;
                 advancedCannonOwned = true;
-                safeSet('bb3d_cannon_mk2_owned', '1');
-                safeSet('bb3d_coins', coins);
+                localStorage.setItem('bb3d_cannon_mk2_owned', '1');
+                localStorage.setItem('bb3d_coins', coins);
             }
             setActiveCannon('mk2');
             updateUI();
@@ -6263,12 +6249,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (coins < map.price) return;
                 coins -= map.price;
                 purchasedMaps.push(mapId);
-                safeSet('bb3d_coins', coins);
-                safeSet('bb3d_purchased_maps', JSON.stringify(purchasedMaps));
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_purchased_maps', JSON.stringify(purchasedMaps));
             }
 
             selectedMap = mapId;
-            safeSet('bb3d_map', selectedMap);
+            localStorage.setItem('bb3d_map', selectedMap);
             buildMap('forest');
             updateUI();
         });
@@ -6282,8 +6268,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 coins -= cost;
                 firePowerLvl++;
                 firePower = firePowerLvl;
-                safeSet('bb3d_coins', coins);
-                safeSet('bb3d_upg_power', firePowerLvl);
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_upg_power', firePowerLvl);
                 updateUI();
             }
         });
@@ -6296,8 +6282,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 coins -= cost;
                 fireRateLvl++;
                 fireRate = 1 + (fireRateLvl - 1) * 0.25;
-                safeSet('bb3d_coins', coins);
-                safeSet('bb3d_upg_rate', fireRateLvl);
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_upg_rate', fireRateLvl);
                 updateUI();
             }
         });
@@ -6318,29 +6304,10 @@ window.addEventListener('DOMContentLoaded', () => {
         return audioCtx;
     }
 
-    // iOS Safari מאפשר סאונד רק אם AudioContext נוצר ומופעל בתוך נגיעה של המשתמש.
-    // קוראים לזה מכפתור "התחל משחק" / "שחק שוב".
-    function unlockAudio() {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        if (ctx.state !== 'running') {
-            try { Promise.resolve(ctx.resume()).catch(() => {}); } catch (_) {}
-        }
-        try {
-            const buffer = ctx.createBuffer(1, 1, 22050);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(ctx.destination);
-            source.start(0);
-        } catch (_) {}
-    }
-
     function playSound(type) {
         const ctx = getAudioCtx();
         if (!ctx) return;
-        if (ctx.state !== 'running') {
-            try { Promise.resolve(ctx.resume()).catch(() => {}); } catch (_) {}
-        }
+        if (ctx.state === 'suspended') ctx.resume();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
@@ -6599,7 +6566,6 @@ window.addEventListener('DOMContentLoaded', () => {
             rotZ: (Math.random() - 0.5) * 0.028,
             ctx,
             texture,
-            label,
             hitCooldown: 0,
             flash: 0,                                   // הבהוב קצר בפגיעת כדור (0..1)
             baseEmissive: new THREE.Color(tier.emissive)
@@ -6896,30 +6862,27 @@ window.addEventListener('DOMContentLoaded', () => {
         rock.userData.texture.needsUpdate = true;
     }
 
-    // שחרור כל המשאבים של סלע (בלי אפקטים) — משמש גם לניקוי בין ריצות.
-    function disposeRock(rock) {
-        const ud = rock.userData;
-        if (ud.contactShadow) {
-            scene.remove(ud.contactShadow);
-            if (ud.contactShadow.geometry) ud.contactShadow.geometry.dispose();
-            if (ud.contactShadow.material) ud.contactShadow.material.dispose();
-            ud.contactShadow = null;
-        }
-
-        if (ud.label && ud.label.material) ud.label.material.dispose();
-        if (ud.texture) ud.texture.dispose();
-        if (rock.geometry) rock.geometry.dispose();
-        if (rock.material) rock.material.dispose();
-        scene.remove(rock);
-    }
-
     function removeRock(rock, index) {
         spawnImpactBurst(rock.position.x, rock.position.y, rock.position.z);
         if (rock.position.y < 2.2) {
             spawnDustBurst(rock.position.x, rock.position.y, rock.position.z);
         }
 
-        disposeRock(rock);
+        if (rock.userData.contactShadow) {
+            scene.remove(rock.userData.contactShadow);
+            if (rock.userData.contactShadow.geometry) {
+                rock.userData.contactShadow.geometry.dispose();
+            }
+            if (rock.userData.contactShadow.material) {
+                rock.userData.contactShadow.material.dispose();
+            }
+            rock.userData.contactShadow = null;
+        }
+
+        if (rock.userData.texture) rock.userData.texture.dispose();
+        if (rock.geometry) rock.geometry.dispose();
+        if (rock.material) rock.material.dispose();
+        scene.remove(rock);
         rocks.splice(index, 1);
     }
 
@@ -7185,7 +7148,21 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // ניקוי כל מה שנוצר במהלך ריצה (סלעים, כדורים, מטבעות, אפקטים) ואיפוס המצב — בלי רענון דף.
     function resetRunState() {
-        for (let i = rocks.length - 1; i >= 0; i--) disposeRock(rocks[i]);
+        for (let i = rocks.length - 1; i >= 0; i--) {
+            const rock = rocks[i];
+            const ud = rock.userData;
+            if (ud.contactShadow) {
+                scene.remove(ud.contactShadow);
+                if (ud.contactShadow.geometry) ud.contactShadow.geometry.dispose();
+                if (ud.contactShadow.material) ud.contactShadow.material.dispose();
+                ud.contactShadow = null;
+            }
+            rock.children.forEach(child => { if (child.material) child.material.dispose(); });
+            if (ud.texture) ud.texture.dispose();
+            if (rock.geometry) rock.geometry.dispose();
+            if (rock.material) rock.material.dispose();
+            scene.remove(rock);
+        }
         rocks.length = 0;
 
         bullets.forEach(b => {
@@ -7215,26 +7192,29 @@ window.addEventListener('DOMContentLoaded', () => {
         playerHp = maxHp;
         level = 1;
         hasStartedFirstWave = false;
-        hudScoreDirty = false;
         cannonRecoil = 0;
         cannonGroup.position.set(0, cannonBaseY, 0);
         cannonGroup.userData.previousWheelX = 0;
         cannonGroup.userData.prevColX = 0;
-        stepAccumulator = 0;
     }
 
     function startGame() {
         if (isGameStarted) return;
-        unlockAudio();   // חייב לקרות בתוך הנגיעה על הכפתור (iOS)
         isGameStarted = true;
         isGameOver = false;
         pauseBtn.style.display = 'flex';
 
         if (splashScreen) splashScreen.classList.add('hidden');
 
-        // המפה נבנתה פעם אחת בטעינה ואינה משתנה במשחק — אין צורך לבנות אותה מחדש בכל ריצה.
         resetRunState();
+        score = 0;
+        playerHp = maxHp;
+        level = 1;
+        hasStartedFirstWave = false;
+        cannonRecoil = 0;
+        cannonGroup.position.set(0, cannonBaseY, 0);
         selectedMap = 'forest';
+        buildMap('forest');
         updateUI();
 
         startNextWave();
@@ -7289,7 +7269,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // משחררים שליטה כדי שהתותח לא "ייתקע" בגרירה.
             isDragging = false;
             dragPointerId = null;
-            safeSet('bb3d_coins', coins);
+            localStorage.setItem('bb3d_coins', coins);
             document.getElementById('pz-score').textContent = score;
             pauseOverlay.classList.add('on');
         } else {
@@ -7299,11 +7279,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     pauseBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
     pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); setPaused(true); });
-    // עוצרים אוטומטית כשהחסימה (טלפון אופקי / דסקטופ) מופיעה באמצע משחק.
-    onViewportBlocked = () => {
-        if (isGameStarted && !isGameOver && !isPaused) setPaused(true);
-    };
-
     // ---- מסך Game Over (במקום alert + רענון דף) ----
     const gameOverOverlay = document.createElement('div');
     gameOverOverlay.className = 'pz-overlay';
@@ -7330,9 +7305,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const isNewBest = score > bestScore;
         if (isNewBest) {
             bestScore = score;
-            safeSet('bb3d_best', bestScore);
+            localStorage.setItem('bb3d_best', bestScore);
         }
-        safeSet('bb3d_coins', coins);
+        localStorage.setItem('bb3d_coins', coins);
 
         pauseBtn.style.display = 'none';
         goScoreEl.textContent = score;
@@ -7349,7 +7324,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isPaused = false;
         isGameStarted = false;
         isGameOver = false;
-        saveProgress();
+        localStorage.setItem('bb3d_coins', coins);
         startGame();
     }
 
@@ -7362,7 +7337,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isGameOver = false;
         pauseBtn.style.display = 'none';
         resetRunState();
-        saveProgress();
+        localStorage.setItem('bb3d_coins', coins);
         if (splashScreen) splashScreen.classList.remove('hidden');
         updateUI();
     }
@@ -7494,32 +7469,15 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 11. לולאת המשחק
     // ==========================================
-    // ----- לולאה בצעדים קבועים -----
-    // כל הפיזיקה כאן מחושבת "לפי צעד" (מהירויות, כבידה, קולדאון). כדי שהמשחק ירוץ באותה מהירות
-    // בכל מכשיר, הלוגיקה רצה בקצב קבוע של צעדים בשנייה והרינדור נעשה פעם אחת לכל פריים של המסך.
-    // 120 = המהירות המקורית של המשחק במסך 120Hz (אחד לאחד, חלק לגמרי ב-120Hz).
-    // במסך 60Hz יתבצעו שני צעדים לפריים, כך שהמהירות זהה. מהיר מדי: להקטין (90 / 75 / 60). איטי מדי: להגדיל.
-    const SIM_STEPS_PER_SECOND = 120;
-    // מהירות הסלעים: 1 = המהירות המקורית, נמוך יותר = איטי יותר (אותו מסלול, רק בקצב נמוך).
-    // לא משפיע על הירי, על התותח ועל קצב האש. לשנות כאן אם עדיין מהיר/איטי מדי.
-    const ROCK_SPEED = 1;
-    const STEP_MS = 1000 / SIM_STEPS_PER_SECOND;
-    const STEP_TOLERANCE_MS = 1;     // מונע "צעד כפול / חסר" מרעידות זעירות בתזמון הפריימים
-    const MAX_STEPS_PER_FRAME = 8;   // הגנה: אחרי עיכוב ארוך לא "מזנקים" קדימה
-    let simTime = 0;
-    let stepAccumulator = 0;
-    let lastFrameTime = null;
-    let hudScoreDirty = false;
+    function animate(time) {
+        requestAnimationFrame(animate);
+        if (grassWind) grassWind.uTime.value = time * 0.001;
+        if (!isPaused) updateSkyTraffic(time);
 
-    // שמירת התקדמות: נקרא בעת איסוף מטבע, עצירה, יציאה מהדף או מעבר לרקע.
-    function saveProgress() {
-        safeSet('bb3d_coins', coins);
-        safeSet('bb3d_best', Math.max(bestScore, score));
-    }
-
-    function gameStep() {
-        simTime += STEP_MS;
-        const time = simTime;
+        if (!isGameStarted || isPaused || isGameOver) {
+            renderer.render(scene, camera);
+            return;
+        }
 
         updateWeatherParticles();
 
@@ -7637,12 +7595,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 r.scale.setScalar(1 + data.flash * 0.05);
             }
 
-            data.vy -= 0.0025 * ROCK_SPEED;
-            r.position.x += data.vx * ROCK_SPEED;
-            r.position.y += data.vy * ROCK_SPEED;
-            r.rotation.x += data.rotX * ROCK_SPEED;
-            r.rotation.y += data.rotY * ROCK_SPEED;
-            r.rotation.z += data.rotZ * ROCK_SPEED;
+            data.vy -= 0.0025;
+            r.position.x += data.vx;
+            r.position.y += data.vy;
+            r.rotation.x += data.rotX;
+            r.rotation.y += data.rotY;
+            r.rotation.z += data.rotZ;
 
             // צל מגע דינמי: כשהסלע עולה, הצל קטן ונחלש.
             if (data.contactShadow) {
@@ -7710,7 +7668,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     data.hp -= firePower;
                     data.flash = 1;
                     score += firePower;
-                    hudScoreDirty = true;
                     spawnImpactBurst(r.position.x, r.position.y, r.position.z);
                     playSound('hit');
 
@@ -7732,13 +7689,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // סלע שהושמד (HP <= 0) כבר הוסר מהמערך — לא בודקים לו התנגשות עם התותח.
-            if (data.hp <= 0) continue;
+            if (!rocks[rIdx]) continue;
 
             // ==================================
             // פגיעה בתותח
             // ==================================
-            const cannonImpact = collideRockWithCannon(r, cannonColVx / ROCK_SPEED);
+            const cannonImpact = collideRockWithCannon(r, cannonColVx);
             if (cannonImpact > 0.02 && data.hitCooldown <= 0) {
                 playerHp -= 10;
                 data.hitCooldown = 24;
@@ -7795,7 +7751,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
                 updateUI();
-                saveProgress();
                 continue;
             }
 
@@ -7811,7 +7766,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
                 updateUI();
-                saveProgress();
             }
         }
 
@@ -7840,36 +7794,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         camera.lookAt(lookX, lookY, lookZ);
 
-        // עדכון הניקוד ב-HUD פעם אחת לצעד (במקום רק כשסלע מתפוצץ).
-        if (hudScoreDirty) {
-            if (scoreValEl) scoreValEl.textContent = score;
-            hudScoreDirty = false;
-        }
-    }
-
-    function animate(time) {
-        requestAnimationFrame(animate);
-        if (grassWind) grassWind.uTime.value = time * 0.001;
-        if (!isPaused) updateSkyTraffic(time);
-
-        const frameDelta = lastFrameTime === null ? STEP_MS : Math.min(time - lastFrameTime, 100);
-        lastFrameTime = time;
-
-        if (!isGameStarted || isPaused || isGameOver) {
-            stepAccumulator = 0;   // אחרי עצירה לא מנסים "להשלים" זמן שעבר
-            renderer.render(scene, camera);
-            return;
-        }
-
-        stepAccumulator += frameDelta;
-        let steps = 0;
-        while (stepAccumulator >= STEP_MS - STEP_TOLERANCE_MS && steps < MAX_STEPS_PER_FRAME && !isGameOver) {
-            gameStep();
-            stepAccumulator -= STEP_MS;
-            steps++;
-        }
-        if (steps === MAX_STEPS_PER_FRAME) stepAccumulator = 0;
-
         renderer.render(scene, camera);
     }
 
@@ -7884,17 +7808,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 .catch(() => {});
         }
     });
-
-    // שמירה כשעוברים לאפליקציה אחרת / סוגרים את הדף, ועצירה אוטומטית של המשחק.
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            saveProgress();
-            setPaused(true);
-        } else if (audioCtx && audioCtx.state !== 'running') {
-            try { Promise.resolve(audioCtx.resume()).catch(() => {}); } catch (_) {}
-        }
-    });
-    window.addEventListener('pagehide', saveProgress);
 
     window.addEventListener('resize', () => {
         updateCameraForDevice();
