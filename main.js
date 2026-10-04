@@ -7494,12 +7494,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 11. לולאת המשחק
     // ==========================================
-    // ----- לולאה בצעדים קבועים (60 צעדים בשנייה) -----
+    // ----- לולאה בצעדים קבועים -----
     // כל הפיזיקה כאן מחושבת "לפי צעד" (מהירויות, כבידה, קולדאון). כדי שהמשחק ירוץ באותה מהירות
-    // במסכי 30/60/90/120Hz, הלוגיקה רצה בצעדים קבועים והרינדור נעשה פעם אחת לכל פריים של המסך.
-    const STEP_MS = 1000 / 60;
-    const STEP_TOLERANCE_MS = 2;     // מונע "צעד כפול / חסר" מרעידות זעירות בתזמון הפריימים
-    const MAX_STEPS_PER_FRAME = 5;   // הגנה: אחרי עיכוב ארוך לא "מזנקים" קדימה
+    // בכל מכשיר, הלוגיקה רצה בקצב קבוע של צעדים בשנייה והרינדור נעשה פעם אחת לכל פריים של המסך.
+    // 120 = המהירות המקורית של המשחק במסך 120Hz (אחד לאחד, חלק לגמרי ב-120Hz).
+    // במסך 60Hz יתבצעו שני צעדים לפריים, כך שהמהירות זהה. מהיר מדי: להקטין (90 / 75 / 60). איטי מדי: להגדיל.
+    const SIM_STEPS_PER_SECOND = 120;
+    // מהירות הסלעים: 1 = המהירות המקורית, נמוך יותר = איטי יותר (אותו מסלול, רק בקצב נמוך).
+    // לא משפיע על הירי, על התותח ועל קצב האש. לשנות כאן אם עדיין מהיר/איטי מדי.
+    const ROCK_SPEED = 1;
+    const STEP_MS = 1000 / SIM_STEPS_PER_SECOND;
+    const STEP_TOLERANCE_MS = 1;     // מונע "צעד כפול / חסר" מרעידות זעירות בתזמון הפריימים
+    const MAX_STEPS_PER_FRAME = 8;   // הגנה: אחרי עיכוב ארוך לא "מזנקים" קדימה
     let simTime = 0;
     let stepAccumulator = 0;
     let lastFrameTime = null;
@@ -7631,12 +7637,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 r.scale.setScalar(1 + data.flash * 0.05);
             }
 
-            data.vy -= 0.0025;
-            r.position.x += data.vx;
-            r.position.y += data.vy;
-            r.rotation.x += data.rotX;
-            r.rotation.y += data.rotY;
-            r.rotation.z += data.rotZ;
+            data.vy -= 0.0025 * ROCK_SPEED;
+            r.position.x += data.vx * ROCK_SPEED;
+            r.position.y += data.vy * ROCK_SPEED;
+            r.rotation.x += data.rotX * ROCK_SPEED;
+            r.rotation.y += data.rotY * ROCK_SPEED;
+            r.rotation.z += data.rotZ * ROCK_SPEED;
 
             // צל מגע דינמי: כשהסלע עולה, הצל קטן ונחלש.
             if (data.contactShadow) {
@@ -7732,7 +7738,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // ==================================
             // פגיעה בתותח
             // ==================================
-            const cannonImpact = collideRockWithCannon(r, cannonColVx);
+            const cannonImpact = collideRockWithCannon(r, cannonColVx / ROCK_SPEED);
             if (cannonImpact > 0.02 && data.hitCooldown <= 0) {
                 playerHp -= 10;
                 data.hitCooldown = 24;
