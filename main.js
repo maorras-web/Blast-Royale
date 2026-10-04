@@ -3297,10 +3297,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // צריח משופע + עריסה לקנים
     // ==========================================
-    addMk2Rounded(1.15, 0.40, 1.10, 0.14, 0.07, mk2BodyMat, 0, 1.02, 0.35);        // צריח
-    addMk2Rounded(0.95, 0.07, 0.96, 0.03, 0.02, mk2EdgeMat, 0, 1.24, 0.35);        // שפה בהירה
-    addMk2Rounded(0.74, 0.18, 0.05, 0.03, 0.02, mk2DarkMat, 0, 1.02, 0.92, -0.20, 0, 0); // לוח אחורי כהה
-    addMk2Rounded(1.00, 0.30, 0.80, 0.08, 0.04, mk2DarkMat, 0, 1.44, 0.50);        // עריסה
+    addMk2Rounded(1.40, 0.52, 1.20, 0.16, 0.08, mk2BodyMat, 0, 1.04, 0.35);        // צריח
+    addMk2Rounded(1.16, 0.08, 1.00, 0.03, 0.02, mk2EdgeMat, 0, 1.31, 0.35);        // שפה בהירה
+    addMk2Rounded(0.90, 0.22, 0.05, 0.03, 0.02, mk2DarkMat, 0, 1.04, 0.97, -0.20, 0, 0); // לוח אחורי כהה
+    addMk2Rounded(1.04, 0.30, 0.80, 0.10, 0.05, mk2BodyMat, 0, 1.46, 0.45);        // עריסה
 
     // ==========================================
     // שני קנים מכוונים למעלה, כמו בתותח הרגיל (קבוצת הרתיעה).
@@ -3335,21 +3335,23 @@ window.addEventListener('DOMContentLoaded', () => {
         const H = [side * MK2_WX, MK2_WY, z];
 
         // מפרק כתף
-        addMk2ZCylinder(0.22, 0.22, 0.40, mk2DarkMat, S[0], S[1], z);
-        addMk2ZCylinder(0.14, 0.14, 0.44, mk2EdgeMat, S[0], S[1], z);
-        // זרוע עליונה
-        addMk2Link(S, K, 0.26, 0.34, mk2BodyMat);
-        addMk2Link(mk2Lerp(S, K, 0.18), mk2Lerp(S, K, 0.82), 0.08, 0.38, mk2EdgeMat);
-        // מפרק ברך
-        addMk2ZCylinder(0.24, 0.24, 0.44, mk2DarkMat, K[0], K[1], z);
-        addMk2ZCylinder(0.16, 0.16, 0.48, mk2EdgeMat, K[0], K[1], z);
-        addMk2ZCylinder(0.06, 0.06, 0.52, mk2BlackMat, K[0], K[1], z);
-        // זרוע תחתונה אל הגלגל
-        addMk2Link(K, H, 0.28, 0.34, mk2BodyMat);
-        addMk2Link(mk2Lerp(K, H, 0.16), mk2Lerp(K, H, 0.84), 0.08, 0.38, mk2EdgeMat);
-        // כיסוי רכזת
-        addMk2ZCylinder(0.20, 0.20, 0.34, mk2EdgeMat, H[0], H[1], z);
-        addMk2ZCylinder(0.07, 0.07, 0.38, mk2BlackMat, H[0], H[1], z);
+        addMk2ZCylinder(0.32, 0.32, 0.52, mk2DarkMat, S[0], S[1], z);
+        addMk2ZCylinder(0.22, 0.22, 0.56, mk2EdgeMat, S[0], S[1], z);
+        // זרוע עליונה: לוח שריון עבה
+        addMk2Link(S, K, 0.44, 0.52, mk2BodyMat);
+        addMk2Link(mk2Lerp(S, K, 0.16), mk2Lerp(S, K, 0.84), 0.14, 0.58, mk2EdgeMat);
+        // מפרק ברך כבד
+        addMk2ZCylinder(0.36, 0.36, 0.56, mk2DarkMat, K[0], K[1], z);
+        addMk2ZCylinder(0.27, 0.27, 0.60, mk2EdgeMat, K[0], K[1], z);
+        addMk2ZCylinder(0.16, 0.16, 0.64, mk2BodyMat, K[0], K[1], z);
+        addMk2ZCylinder(0.07, 0.07, 0.68, mk2BlackMat, K[0], K[1], z);
+        // זרוע תחתונה אל הגלגל: לוח שריון עבה
+        addMk2Link(K, H, 0.46, 0.52, mk2BodyMat);
+        addMk2Link(mk2Lerp(K, H, 0.14), mk2Lerp(K, H, 0.86), 0.14, 0.58, mk2EdgeMat);
+        // כיסוי רכזת גדול
+        addMk2ZCylinder(0.30, 0.30, 0.40, mk2DarkMat, H[0], H[1], z);
+        addMk2ZCylinder(0.22, 0.22, 0.44, mk2EdgeMat, H[0], H[1], z);
+        addMk2ZCylinder(0.08, 0.08, 0.48, mk2BlackMat, H[0], H[1], z);
     }
 
     [-1, 1].forEach(side => {
@@ -3359,8 +3361,8 @@ window.addEventListener('DOMContentLoaded', () => {
         // בוכנה הידראולית דקה לזרוע האחורית
         const A = [side * 0.56, 0.50, 1.22];
         const B = mk2Lerp([side * 1.34, 1.12, 1.24], [side * MK2_WX, MK2_WY, 1.24], 0.45);
-        addMk2Link(A, B, 0.10, 0.10, mk2DarkMat);
-        addMk2Link(mk2Lerp(A, B, 0.45), mk2Lerp(A, B, 0.95), 0.15, 0.15, mk2EdgeMat);
+        addMk2Link(A, B, 0.14, 0.14, mk2DarkMat);
+        addMk2Link(mk2Lerp(A, B, 0.45), mk2Lerp(A, B, 0.95), 0.20, 0.20, mk2EdgeMat);
     });
 
     // ==========================================
