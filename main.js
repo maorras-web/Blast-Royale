@@ -7798,9 +7798,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // מסך מלא: נכנסים בנגיעה/לחיצה הראשונה (הדפדפן דורש מחווה של המשתמש)
+    // מסך מלא + מניעת זום
     // ==========================================
+
+    // מניעת זום בלחיצה כפולה ובצביטה (לא פוגע בלחיצות על כפתורים)
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+    document.body.style.touchAction = 'pan-x pan-y';
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+        document.addEventListener(type, e => e.preventDefault(), { passive: false });
+    });
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+    // בקשת מסך מלא פעם אחת בלבד, ולא בכל לחיצה
+    let fullscreenTried = false;
     document.addEventListener('click', () => {
+        if (fullscreenTried) return;
+        fullscreenTried = true;
         const el = document.documentElement;
         if (!document.fullscreenElement && el.requestFullscreen) {
             el.requestFullscreen({ navigationUI: 'hide' })
@@ -7809,16 +7822,22 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.addEventListener('resize', () => {
+    // סנכרון גודל ה-canvas והמצלמה לגודל המסך האמיתי
+    function syncViewport() {
         updateCameraForDevice();
         updateMobileViewportState();
-    });
+        // setSize(..., false) לא מעדכן את ה-style של ה-canvas, אז עושים את זה ידנית
+        renderer.domElement.style.width = window.innerWidth + 'px';
+        renderer.domElement.style.height = window.innerHeight + 'px';
+    }
 
+    window.addEventListener('resize', syncViewport);
+    document.addEventListener('fullscreenchange', () => {
+        syncViewport();
+        setTimeout(syncViewport, 150);
+    });
     window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-            updateCameraForDevice();
-            updateMobileViewportState();
-        }, 120);
+        setTimeout(syncViewport, 120);
     });
 
     animate(0);
