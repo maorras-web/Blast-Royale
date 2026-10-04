@@ -3204,16 +3204,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- חומרים: אפור-תותחים מתכתי ----
     const mk2Env = (typeof wheelEnvMap !== 'undefined' && wheelEnvMap) ? wheelEnvMap : null;
     const mk2BodyMat = new THREE.MeshStandardMaterial({
-        color: 0x4a5058, roughness: 0.32, metalness: 0.66,
-        envMap: mk2Env, envMapIntensity: 0.55
+        color: 0x2a2f36, roughness: 0.38, metalness: 0.66,
+        envMap: mk2Env, envMapIntensity: 0.45
     });
     const mk2DarkMat = new THREE.MeshStandardMaterial({
-        color: 0x1f2328, roughness: 0.40, metalness: 0.70,
+        color: 0x14171b, roughness: 0.40, metalness: 0.70,
         envMap: mk2Env, envMapIntensity: 0.40
     });
     const mk2EdgeMat = new THREE.MeshStandardMaterial({
-        color: 0xa9b4c0, roughness: 0.20, metalness: 0.88,
-        envMap: mk2Env, envMapIntensity: 0.75
+        color: 0x7e8791, roughness: 0.22, metalness: 0.88,
+        envMap: mk2Env, envMapIntensity: 0.60
     });
     const mk2BlackMat = new THREE.MeshStandardMaterial({
         color: 0x111214, roughness: 0.80, metalness: 0.25
@@ -3310,6 +3310,10 @@ window.addEventListener('DOMContentLoaded', () => {
     [-1, 1].forEach(i => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.04), mk2BlackMat, i * 0.07, 0.92, 1.55));
     [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.36, 0.025, 0.04), mk2BlackMat, s * 0.62, 0.92, 1.52));
 
+    // פגוש שריון תחתון מול המצלמה
+    addMk2Rounded(1.30, 0.20, 0.40, 0.08, 0.04, mk2BodyMat, 0, 0.58, 1.50);
+    addMk2Rounded(1.10, 0.04, 0.42, 0.02, 0.01, mk2EdgeMat, 0, 0.68, 1.50);
+
     // עריסה קטנה מתחת לקנים
     addMk2Rounded(1.02, 0.20, 0.80, 0.08, 0.04, mk2BodyMat, 0, 1.62, 0.35);
 
@@ -3322,6 +3326,7 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(advancedBarrelAssembly);
     const BG = advancedBarrelAssembly;
 
+    addMk2Rounded(0.34, 0.18, 0.34, 0.06, 0.02, mk2DarkMat, 0, 1.78, 0, 0, 0, 0, BG);   // גשר בין הקנים
     const mk2BarrelGeo = new THREE.CylinderGeometry(0.15, 0.17, 0.90, 20);
     const mk2MuzzleGeo = new THREE.CylinderGeometry(0.20, 0.18, 0.12, 20);
     const mk2BoreGeo = new THREE.CylinderGeometry(0.10, 0.10, 0.125, 16, 1, true);
@@ -3349,13 +3354,16 @@ window.addEventListener('DOMContentLoaded', () => {
         addMk2ZCylinder(0.25, 0.25, 0.58, mk2EdgeMat, J[0], J[1], z);
         addMk2ZCylinder(0.12, 0.12, 0.62, mk2BodyMat, J[0], J[1], z);
         addMk2ZCylinder(0.05, 0.05, 0.66, mk2BlackMat, J[0], J[1], z);
-        // זרוע שריון עבה
-        addMk2Link(J, W, 0.44, 0.52, mk2BodyMat);
-        addMk2Link(mk2Lerp(J, W, 0.14), mk2Lerp(J, W, 0.86), 0.12, 0.58, mk2EdgeMat);
-        // טבעת מפרק באמצע הזרוע
-        const M = mk2Lerp(J, W, 0.50);
-        addMk2ZCylinder(0.25, 0.25, 0.56, mk2DarkMat, M[0], M[1], z);
-        addMk2ZCylinder(0.17, 0.17, 0.60, mk2EdgeMat, M[0], M[1], z);
+        // זרוע עליונה עד המרפק + זרוע תחתונה שיורדת אל הגלגל (מרפק שבור כמו בתמונה)
+        const K = [side * 1.40, 0.80, z];
+        addMk2Link(J, K, 0.46, 0.54, mk2BodyMat);
+        addMk2Link(mk2Lerp(J, K, 0.12), mk2Lerp(J, K, 0.88), 0.12, 0.60, mk2EdgeMat);
+        // מפרק המרפק
+        addMk2ZCylinder(0.30, 0.30, 0.58, mk2DarkMat, K[0], K[1], z);
+        addMk2ZCylinder(0.21, 0.21, 0.62, mk2EdgeMat, K[0], K[1], z);
+        addMk2ZCylinder(0.09, 0.09, 0.66, mk2BlackMat, K[0], K[1], z);
+        addMk2Link(K, W, 0.40, 0.50, mk2BodyMat);
+        addMk2Link(mk2Lerp(K, W, 0.15), mk2Lerp(K, W, 0.85), 0.11, 0.56, mk2EdgeMat);
         // כיסוי רכזת הגלגל
         addMk2ZCylinder(0.30, 0.30, 0.40, mk2DarkMat, W[0], W[1], z);
         addMk2ZCylinder(0.21, 0.21, 0.44, mk2EdgeMat, W[0], W[1], z);
@@ -3368,7 +3376,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // בוכנה דקה מתחת לקורה אל הזרוע
         const A = [side * 0.52, 0.70, 1.57];
-        const B = mk2Lerp([side * 0.82, 0.92, 1.57], [side * MK2_WX, MK2_WY, 1.57], 0.62);
+        const B = mk2Lerp([side * 1.40, 0.80, 1.57], [side * MK2_WX, MK2_WY, 1.57], 0.40);
         addMk2Link(A, B, 0.12, 0.12, mk2DarkMat);
         addMk2Link(mk2Lerp(A, B, 0.45), mk2Lerp(A, B, 0.95), 0.17, 0.17, mk2EdgeMat);
     });
@@ -3377,10 +3385,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // גלגלי אופנוע גדולים: צמיג רחב, חישוק אפור, מרכז כהה וברגים
     // ==========================================
     const mk2TireGeo = new THREE.TorusGeometry(0.30, 0.245, 14, 32);
-    const mk2RimGeo = new THREE.CylinderGeometry(0.31, 0.31, 0.80, 28);
-    const mk2RimCoreGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.82, 20);
+    const mk2RimGeo = new THREE.CylinderGeometry(0.31, 0.31, 0.58, 28);
+    const mk2RimCoreGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.60, 20);
     const mk2HubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.90, 14);
-    const mk2LugGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.86, 8);
+    const mk2LugGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.64, 8);
+    const mk2LipGeo = new THREE.TorusGeometry(0.31, 0.035, 8, 32);
     const advancedCannonWheels = [];
 
     // אותו סדר כמו בגלגלים הקלאסיים כדי שהסיבוב יסתנכרן.
@@ -3393,7 +3402,8 @@ window.addEventListener('DOMContentLoaded', () => {
         wheel.add(spin);
 
         const tire = addMk2Mesh(mk2TireGeo, mk2TireMat, 0, 0, 0, 0, 0, 0, spin);
-        tire.scale.z = 1.5; // רחב כמו צמיג אופנוע
+        tire.scale.z = 1.05; // צר יותר, כמו גלגל אופנוע בתמונה
+        [-1, 1].forEach(sd => addMk2Mesh(mk2LipGeo, mk2EdgeMat, 0, 0, sd * 0.285, 0, 0, 0, spin));
         addMk2Mesh(mk2RimGeo, mk2BodyMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2RimCoreGeo, mk2BlackMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2HubGeo, mk2EdgeMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
