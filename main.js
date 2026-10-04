@@ -3204,16 +3204,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- חומרים: אפור-תותחים מתכתי ----
     const mk2Env = (typeof wheelEnvMap !== 'undefined' && wheelEnvMap) ? wheelEnvMap : null;
     const mk2BodyMat = new THREE.MeshStandardMaterial({
-        color: 0x2a2f36, roughness: 0.38, metalness: 0.66,
-        envMap: mk2Env, envMapIntensity: 0.45
+        color: 0x28323f, roughness: 0.32, metalness: 0.60,
+        envMap: mk2Env, envMapIntensity: 0.28
     });
     const mk2DarkMat = new THREE.MeshStandardMaterial({
-        color: 0x14171b, roughness: 0.40, metalness: 0.70,
+        color: 0x10151c, roughness: 0.40, metalness: 0.70,
         envMap: mk2Env, envMapIntensity: 0.40
     });
     const mk2EdgeMat = new THREE.MeshStandardMaterial({
-        color: 0x7e8791, roughness: 0.22, metalness: 0.88,
-        envMap: mk2Env, envMapIntensity: 0.60
+        color: 0x7f8b9b, roughness: 0.22, metalness: 0.85,
+        envMap: mk2Env, envMapIntensity: 0.45
     });
     const mk2BlackMat = new THREE.MeshStandardMaterial({
         color: 0x111214, roughness: 0.80, metalness: 0.25
@@ -3310,6 +3310,12 @@ window.addEventListener('DOMContentLoaded', () => {
     [-1, 1].forEach(i => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.04), mk2BlackMat, i * 0.07, 0.92, 1.55));
     [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.36, 0.025, 0.04), mk2BlackMat, s * 0.62, 0.92, 1.52));
 
+    // כריות כתף מעל מפרקי הרגליים
+    [-1, 1].forEach(sd => {
+        addMk2Rounded(0.62, 0.16, 0.60, 0.07, 0.03, mk2BodyMat, sd * 0.88, 1.18, 1.25);
+        addMk2Rounded(0.50, 0.04, 0.50, 0.02, 0.01, mk2EdgeMat, sd * 0.88, 1.28, 1.25);
+    });
+
     // פגוש שריון תחתון מול המצלמה
     addMk2Rounded(1.30, 0.20, 0.40, 0.08, 0.04, mk2BodyMat, 0, 0.58, 1.50);
     addMk2Rounded(1.10, 0.04, 0.42, 0.02, 0.01, mk2EdgeMat, 0, 0.68, 1.50);
@@ -3326,11 +3332,11 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(advancedBarrelAssembly);
     const BG = advancedBarrelAssembly;
 
-    addMk2Rounded(0.34, 0.18, 0.34, 0.06, 0.02, mk2DarkMat, 0, 1.78, 0, 0, 0, 0, BG);   // גשר בין הקנים
-    const mk2BarrelGeo = new THREE.CylinderGeometry(0.15, 0.17, 0.90, 20);
-    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.20, 0.18, 0.12, 20);
-    const mk2BoreGeo = new THREE.CylinderGeometry(0.10, 0.10, 0.125, 16, 1, true);
-    const mk2RingGeo = new THREE.TorusGeometry(0.175, 0.03, 8, 20);
+    addMk2Rounded(0.42, 0.22, 0.40, 0.06, 0.02, mk2DarkMat, 0, 1.78, 0, 0, 0, 0, BG);   // גשר בין הקנים
+    const mk2BarrelGeo = new THREE.CylinderGeometry(0.19, 0.21, 0.90, 20);
+    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.25, 0.22, 0.14, 20);
+    const mk2BoreGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.145, 16, 1, true);
+    const mk2RingGeo = new THREE.TorusGeometry(0.215, 0.035, 8, 20);
     const mk2BoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
 
     [-1, 1].forEach(side => {
