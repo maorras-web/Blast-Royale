@@ -3188,11 +3188,11 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // תותח משוריין MK-II — HEAVY ARMOR SHAPE PASS V5
-    // ==========================================
+    // תותח משוריין MK-II — HEAVY ARMORED SILHOUETTE PASS V6
+    // ==========================================================
     // חשוב: רק ה-MK-II האפור משתנה כאן. התותח הכחול/הקלאסי נשאר ללא שינוי.
-    // המטרה בסבב הזה היא לשנות את הסילואט והצורה של החלקים עצמם,
-    // ולא רק להוסיף עוד פרטים קטנים.
+    // V6 מתקן קודם כל את הסילואט: גוף משוריין אחד, צריח זוויתי,
+    // בית קנים אמיתי, לוחות צד ומכלולי מתלה בעלי צורה מכנית ברורה.
     const ADVANCED_CANNON_PRICE = 250;
     let advancedCannonOwned = localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
     let activeCannon = localStorage.getItem('bb3d_active_cannon') || 'classic';
@@ -3202,67 +3202,44 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.position.set(0, 0, 0);
     cannonGroup.add(advancedCannonGroup);
 
-    // ---- פלטת צבעים: שריון אפור-פלדה, שקעים כהים וקצוות מתכתיים ----
+    // ---- צבעים: אפור שריון כהה + לוחות פלדה + שקעים שחורים ----
     const mk2Env = (typeof wheelEnvMap !== 'undefined' && wheelEnvMap) ? wheelEnvMap : null;
 
     const mk2BodyMat = new THREE.MeshStandardMaterial({
-        color: 0x51534f,
-        roughness: 0.36,
-        metalness: 0.62,
-        envMap: mk2Env,
-        envMapIntensity: 0.34
+        color: 0x3d4140, roughness: 0.40, metalness: 0.70,
+        envMap: mk2Env, envMapIntensity: 0.28
     });
-
     const mk2ArmorMat = new THREE.MeshStandardMaterial({
-        color: 0x6c6f69,
-        roughness: 0.31,
-        metalness: 0.70,
-        envMap: mk2Env,
-        envMapIntensity: 0.38
+        color: 0x565b5a, roughness: 0.34, metalness: 0.76,
+        envMap: mk2Env, envMapIntensity: 0.34
     });
-
     const mk2EdgeMat = new THREE.MeshStandardMaterial({
-        color: 0x9a9d95,
-        roughness: 0.30,
-        metalness: 0.78,
-        envMap: mk2Env,
-        envMapIntensity: 0.48
+        color: 0x858b89, roughness: 0.30, metalness: 0.82,
+        envMap: mk2Env, envMapIntensity: 0.40
     });
-
     const mk2DarkMat = new THREE.MeshStandardMaterial({
-        color: 0x292b28,
-        roughness: 0.43,
-        metalness: 0.66,
-        envMap: mk2Env,
-        envMapIntensity: 0.30
+        color: 0x202423, roughness: 0.45, metalness: 0.72,
+        envMap: mk2Env, envMapIntensity: 0.25
     });
-
     const mk2RecessMat = new THREE.MeshStandardMaterial({
-        color: 0x151715,
-        roughness: 0.63,
-        metalness: 0.40
+        color: 0x111514, roughness: 0.64, metalness: 0.38
     });
-
     const mk2BlackMat = new THREE.MeshStandardMaterial({
-        color: 0x0d0f0d,
-        roughness: 0.80,
-        metalness: 0.12
+        color: 0x070909, roughness: 0.86, metalness: 0.08
     });
-
     const mk2TireMat = new THREE.MeshStandardMaterial({
-        color: 0x080908,
-        roughness: 0.94,
-        metalness: 0.0
+        color: 0x050606, roughness: 0.96, metalness: 0.0
     });
 
     if (!mk2Env) {
         [mk2BodyMat, mk2ArmorMat, mk2EdgeMat, mk2DarkMat].forEach(m => {
-            m.metalness = Math.min(m.metalness, 0.46);
+            m.metalness = Math.min(m.metalness, 0.48);
         });
     }
 
-    const mk2CoolFill = new THREE.PointLight(0xb7c9ff, 0.48, 9.0, 1.5);
-    mk2CoolFill.position.set(0, 2.9, 3.2);
+    // תאורת מילוי עדינה רק ל-MK-II כדי שהשכבות יישארו קריאות.
+    const mk2CoolFill = new THREE.PointLight(0xb7c9ff, 0.30, 8.0, 1.6);
+    mk2CoolFill.position.set(-1.8, 3.0, 2.8);
     advancedCannonGroup.add(mk2CoolFill);
 
     function addMk2Mesh(geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, parent = advancedCannonGroup) {
@@ -3287,6 +3264,34 @@ window.addEventListener('DOMContentLoaded', () => {
         return addMk2Mesh(geo, material, x, y, z, rx, ry, rz, parent);
     }
 
+    // מנסרה משוריינת: החלק העליון נסוג לאחור כדי ליצור חזית משופעת אמיתית.
+    function addMk2Wedge(w, h, d, frontTopInset, backTopInset, material, x, y, z, parent = advancedCannonGroup) {
+        const hw = w / 2, hh = h / 2, hd = d / 2;
+        const zFrontBottom = hd;
+        const zBackBottom = -hd;
+        const zFrontTop = hd - frontTopInset;
+        const zBackTop = -hd + backTopInset;
+        const verts = new Float32Array([
+            -hw, -hh, zFrontBottom,  hw, -hh, zFrontBottom,
+             hw, -hh, zBackBottom,  -hw, -hh, zBackBottom,
+            -hw,  hh, zFrontTop,     hw,  hh, zFrontTop,
+             hw,  hh, zBackTop,      -hw,  hh, zBackTop
+        ]);
+        const idx = [
+            0,1,5, 0,5,4,
+            1,2,6, 1,6,5,
+            2,3,7, 2,7,6,
+            3,0,4, 3,4,7,
+            4,5,6, 4,6,7,
+            3,2,1, 3,1,0
+        ];
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        return addMk2Mesh(geo, material, x, y, z, 0, 0, 0, parent);
+    }
+
     function addMk2ZCylinder(rTop, rBottom, length, material, x, y, z, parent = advancedCannonGroup, segments = 18) {
         return addMk2Mesh(
             new THREE.CylinderGeometry(rTop, rBottom, length, segments),
@@ -3297,15 +3302,6 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    function addMk2Hex(rTop, rBottom, h, zScale, material, x, y, z) {
-        const g = new THREE.CylinderGeometry(rTop, rBottom, h, 6);
-        g.rotateY(Math.PI / 6);
-        g.scale(1, 1, zScale);
-        return addMk2Mesh(g, material, x, y, z);
-    }
-
-    const _mk2Up = new THREE.Vector3(0, 1, 0);
-
     function addMk2Link(pa, pb, width, depth, material, parent = advancedCannonGroup) {
         const A = new THREE.Vector3(pa[0], pa[1], pa[2]);
         const B = new THREE.Vector3(pb[0], pb[1], pb[2]);
@@ -3313,189 +3309,185 @@ window.addEventListener('DOMContentLoaded', () => {
         const len = dir.length();
         const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, Math.max(0.03, len), depth), material);
         mesh.position.addVectors(A, B).multiplyScalar(0.5);
-        mesh.quaternion.setFromUnitVectors(_mk2Up, dir.normalize());
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         parent.add(mesh);
         return mesh;
     }
 
-    function addMk2Bolt(x, y, z, radius = 0.075, depth = 0.08, material = mk2EdgeMat) {
+    function addMk2Bolt(x, y, z, radius = 0.065, depth = 0.08, material = mk2EdgeMat) {
         return addMk2ZCylinder(radius, radius, depth, material, x, y, z, advancedCannonGroup, 8);
     }
 
-    // ---- פרופורציות בסיס ----
-    const MK2_SCALE = 1.22;
+    const MK2_SCALE = 1.24;
     advancedCannonGroup.scale.setScalar(MK2_SCALE);
 
-    // הגלגלים נשארים בגודל דומה; הגוף והשריון הם שמקבלים את המסה.
-    const MK2_WS = 1.25;
-    const MK2_WX = 1.98;
-    const MK2_WZ = 0.92;
+    // הגלגלים נשארים בערך בגודל הנוכחי; המסה עוברת אל הגוף והשריון.
+    const MK2_WS = 1.23;
+    const MK2_WX = 2.02;
+    const MK2_WZ = 0.94;
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP;
-
-    const mk2Lerp = (a, b, t) => [
-        a[0] + (b[0] - a[0]) * t,
-        a[1] + (b[1] - a[1]) * t,
-        a[2] + (b[2] - a[2]) * t
-    ];
-
-    // הצד הקדמי שפונה למצלמה.
     const BZ = 1.34;
 
     // ==========================================
-    // 1. גוף: צורה רחבה, נמוכה ומשוריינת — לא קופסה שטוחה
+    // 1. גוף ראשי — יחידה אחת כבדה ולא קופסה שטוחה
     // ==========================================
-    addMk2Rounded(2.78, 0.94, 0.92, 0.17, 0.080, mk2BodyMat, 0, 0.99, BZ);
+    // גוף תחתון רחב עם חזית מעט משופעת.
+    addMk2Wedge(3.18, 0.88, 1.02, 0.16, 0.03, mk2BodyMat, 0, 0.96, BZ);
 
-    // חגורת שריון עליונה שמרחיבה את הכתפיים.
-    addMk2Rounded(2.48, 0.36, 0.82, 0.10, 0.045, mk2ArmorMat, 0, 1.30, BZ - 0.01);
+    // חגורת שריון עליונה שיוצרת כתפיים רחבות ומעבר מדורג לצריח.
+    addMk2Wedge(2.82, 0.42, 0.90, 0.22, 0.08, mk2ArmorMat, 0, 1.42, BZ - 0.02);
 
-    // חזית משופעת: שתי שכבות בזווית כדי לשבור את צורת הקופסה.
-    addMk2Rounded(2.38, 0.52, 0.16, 0.055, 0.025, mk2ArmorMat, 0, 1.02, BZ + 0.48, -0.10, 0, 0);
-    addMk2Rounded(2.10, 0.34, 0.085, 0.040, 0.018, mk2DarkMat, 0, 0.84, BZ + 0.56, -0.10, 0, 0);
+    // לוח חזית ראשי — גדול, משופע ומסגרת סביבו.
+    addMk2Wedge(2.42, 0.54, 0.22, 0.17, 0.02, mk2ArmorMat, 0, 1.08, BZ + 0.50);
+    addMk2Rounded(2.18, 0.34, 0.055, 0.025, 0.012, mk2DarkMat, 0, 0.99, BZ + 0.625, -0.10, 0, 0);
 
-    // פאנל מרכזי עמוק, רחב יותר ובולט לעין מרחוק.
-    addMk2Rounded(1.42, 0.36, 0.075, 0.055, 0.022, mk2RecessMat, 0, 1.03, BZ + 0.585);
-    addMk2Rounded(1.58, 0.055, 0.090, 0.018, 0.008, mk2EdgeMat, 0, 1.25, BZ + 0.60);
-    addMk2Rounded(1.58, 0.055, 0.090, 0.018, 0.008, mk2EdgeMat, 0, 0.81, BZ + 0.60);
-    [-0.73, 0.73].forEach(x => addMk2Rounded(0.055, 0.34, 0.090, 0.018, 0.008, mk2EdgeMat, x, 1.03, BZ + 0.60));
+    // פאנל מרכזי שקוע — צורה ברורה מרחוק.
+    addMk2Rounded(1.55, 0.38, 0.07, 0.045, 0.018, mk2RecessMat, 0, 1.04, BZ + 0.665);
+    addMk2Rounded(1.72, 0.055, 0.085, 0.015, 0.006, mk2EdgeMat, 0, 1.27, BZ + 0.695);
+    addMk2Rounded(1.72, 0.055, 0.085, 0.015, 0.006, mk2EdgeMat, 0, 0.81, BZ + 0.695);
+    [-0.78, 0.78].forEach(x => addMk2Rounded(0.055, 0.34, 0.085, 0.015, 0.006, mk2EdgeMat, x, 1.04, BZ + 0.695));
 
-    // שלושה חריצים אנכיים בתוך הפאנל.
-    [-0.13, 0, 0.13].forEach(x => {
-        addMk2Rounded(0.038, 0.19, 0.030, 0.009, 0.004, mk2BlackMat, x, 1.03, BZ + 0.635);
+    // חריצים אופקיים בתוך הפאנל.
+    [-0.11, 0.0, 0.11].forEach(y => {
+        addMk2Rounded(0.72, 0.028, 0.026, 0.008, 0.003, mk2BlackMat, 0, 1.04 + y, BZ + 0.735);
     });
 
-    // שריון תחתון קדמי — יוצר מסה כבדה מתחת לפאנל.
-    addMk2Rounded(1.50, 0.30, 0.76, 0.075, 0.032, mk2DarkMat, 0, 0.61, BZ - 0.02);
-    addMk2Rounded(1.08, 0.18, 0.78, 0.045, 0.020, mk2ArmorMat, 0, 0.43, BZ - 0.02);
-    addMk2Rounded(0.84, 0.10, 0.12, 0.025, 0.010, mk2EdgeMat, 0, 0.58, BZ + 0.40);
+    // שריון תחתון קדמי — יוצר "סנטר" כבד.
+    addMk2Wedge(1.76, 0.30, 0.78, 0.10, 0.03, mk2DarkMat, 0, 0.57, BZ - 0.03);
+    addMk2Rounded(1.20, 0.15, 0.74, 0.035, 0.014, mk2ArmorMat, 0, 0.40, BZ + 0.10);
 
-    // כתפי שריון רחבות — החיבור בין הגוף לזרועות.
+    // כתפי שריון שממשיכות אל המתלים.
     [-1, 1].forEach(s => {
-        addMk2Rounded(0.68, 0.48, 0.78, 0.10, 0.040, mk2ArmorMat, s * 1.04, 1.08, BZ - 0.02, 0, 0, s * 0.08);
-        addMk2Rounded(0.54, 0.22, 0.16, 0.035, 0.015, mk2EdgeMat, s * 1.06, 1.22, BZ + 0.39, -0.10, 0, s * 0.08);
-        addMk2Bolt(s * 0.80, 1.18, BZ + 0.45, 0.085, 0.085);
-        addMk2Bolt(s * 1.27, 1.10, BZ + 0.45, 0.085, 0.085);
+        addMk2Wedge(0.74, 0.52, 0.84, 0.17, 0.04, mk2ArmorMat, s * 1.15, 1.12, BZ - 0.02);
+        addMk2Rounded(0.54, 0.18, 0.11, 0.025, 0.009, mk2EdgeMat, s * 1.12, 1.36, BZ + 0.43, -0.10, 0, s * 0.06);
+        addMk2Bolt(s * 0.84, 1.18, BZ + 0.52);
+        addMk2Bolt(s * 1.38, 1.14, BZ + 0.52);
     });
 
-    // לוחות צד משופעים — עוברים מהגוף לכיוון הגלגלים.
+    // לוחות צד משופעים גדולים — מחברים את הגוף לגלגלים.
     [-1, 1].forEach(s => {
-        addMk2Rounded(0.28, 0.52, 0.68, 0.055, 0.022, mk2DarkMat, s * 1.28, 0.92, BZ - 0.02, 0, 0, s * 0.16);
-        addMk2Rounded(0.18, 0.36, 0.56, 0.040, 0.016, mk2ArmorMat, s * 1.43, 0.99, BZ - 0.02, 0, 0, s * 0.16);
+        addMk2Wedge(0.34, 0.64, 0.86, 0.18, 0.04, mk2DarkMat, s * 1.43, 0.91, BZ - 0.03, advancedCannonGroup);
+        addMk2Wedge(0.22, 0.48, 0.64, 0.14, 0.03, mk2ArmorMat, s * 1.59, 0.98, BZ + 0.01, advancedCannonGroup);
     });
 
     // ==========================================
-    // 2. צריח: בסיס רחב + גוף משוריין קומפקטי
+    // 2. צריח — בסיס רחב, גוף זוויתי וגג משוריין
     // ==========================================
-    addMk2ZCylinder(0.86, 0.92, 0.18, mk2DarkMat, 0, 1.48, BZ - 0.02, advancedCannonGroup, 28);
-    addMk2ZCylinder(0.76, 0.82, 0.09, mk2EdgeMat, 0, 1.56, BZ - 0.02, advancedCannonGroup, 28);
+    const turretBase = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.98, 0.20, 24), mk2DarkMat);
+    turretBase.position.set(0, 1.50, BZ - 0.04);
+    turretBase.castShadow = true; turretBase.receiveShadow = true;
+    advancedCannonGroup.add(turretBase);
 
-    // גוף צריח נמוך ורחב, עם מדרגה עליונה.
-    addMk2Hex(0.82, 0.94, 0.48, 0.94, mk2BodyMat, 0, 1.68, 0.30);
-    addMk2Hex(0.62, 0.76, 0.34, 0.90, mk2ArmorMat, 0, 1.99, 0.30);
-
-    // גג משוריין — מלבן שטוח עם שפה.
-    addMk2Rounded(1.08, 0.13, 0.84, 0.055, 0.022, mk2BodyMat, 0, 2.18, 0.30);
-    addMk2Rounded(1.18, 0.045, 0.92, 0.016, 0.007, mk2EdgeMat, 0, 2.25, 0.30);
-
-    // מגן חזית לצריח, משופע לאחור.
-    addMk2Rounded(0.78, 0.26, 0.12, 0.038, 0.016, mk2ArmorMat, 0, 1.72, 1.10, -0.32, 0, 0);
-    addMk2Rounded(0.58, 0.13, 0.08, 0.026, 0.010, mk2RecessMat, 0, 1.70, 1.17, -0.32, 0, 0);
-
-    // לוחות צד משולבים בצריח.
-    [-1, 1].forEach(s => {
-        addMk2Rounded(0.38, 0.28, 0.13, 0.032, 0.013, mk2ArmorMat, s * 0.53, 1.76, 0.99, -0.28, s * 0.38, 0);
-        addMk2Rounded(0.43, 0.10, 0.09, 0.020, 0.008, mk2EdgeMat, s * 0.53, 2.02, 0.94, -0.30, s * 0.35, 0);
-    });
-
-    const mk2TurretRing = new THREE.Mesh(new THREE.TorusGeometry(0.79, 0.045, 8, 30), mk2EdgeMat);
+    const mk2TurretRing = new THREE.Mesh(new THREE.TorusGeometry(0.84, 0.052, 8, 30), mk2EdgeMat);
     mk2TurretRing.rotation.x = Math.PI / 2;
-    mk2TurretRing.position.set(0, 1.47, BZ - 0.02);
-    mk2TurretRing.castShadow = true;
-    mk2TurretRing.receiveShadow = true;
+    mk2TurretRing.position.set(0, 1.61, BZ - 0.04);
+    mk2TurretRing.castShadow = true; mk2TurretRing.receiveShadow = true;
     advancedCannonGroup.add(mk2TurretRing);
 
+    // גוף הצריח הוא טרפז ולא כיפה.
+    addMk2Wedge(1.48, 0.56, 0.92, 0.26, 0.08, mk2BodyMat, 0, 1.82, BZ - 0.08);
+    addMk2Wedge(1.16, 0.34, 0.78, 0.20, 0.06, mk2ArmorMat, 0, 2.16, BZ - 0.10);
+
+    // גג שטוח עם שפה.
+    addMk2Rounded(1.16, 0.12, 0.74, 0.045, 0.018, mk2DarkMat, 0, 2.37, BZ - 0.12);
+    addMk2Rounded(1.30, 0.045, 0.82, 0.012, 0.005, mk2EdgeMat, 0, 2.43, BZ - 0.12);
+
+    // מגן קדמי לקנים — החלק שנותן לצריח את האופי הכבד.
+    addMk2Wedge(1.18, 0.34, 0.18, 0.10, 0.02, mk2ArmorMat, 0, 1.83, BZ + 0.54);
+    addMk2Rounded(0.92, 0.13, 0.065, 0.020, 0.008, mk2RecessMat, 0, 1.83, BZ + 0.65);
+
+    // לוחות משופעים בצדי הצריח.
+    [-1, 1].forEach(s => {
+        addMk2Wedge(0.38, 0.30, 0.16, 0.07, 0.02, mk2ArmorMat, s * 0.61, 1.88, BZ + 0.38, advancedCannonGroup);
+        addMk2Rounded(0.42, 0.06, 0.08, 0.014, 0.005, mk2EdgeMat, s * 0.62, 2.13, BZ + 0.35, -0.12, 0, s * 0.10);
+    });
+
     // ==========================================
-    // 3. קנים: גליליים, קצרים ועבים — לא קוביות דקות
+    // 3. בית קנים + שני קנים עבים
     // ==========================================
     const advancedBarrelAssembly = new THREE.Group();
     advancedBarrelAssembly.position.set(0, 0, 0);
     advancedCannonGroup.add(advancedBarrelAssembly);
     const BG = advancedBarrelAssembly;
 
-    // גשר משוריין בין שני הקנים.
-    addMk2Rounded(0.82, 0.17, 0.54, 0.045, 0.018, mk2DarkMat, 0, 2.25, 0.30, 0, 0, 0, BG);
+    // בית משותף לשני הקנים — מחבר אותם לצריח.
+    addMk2Rounded(1.02, 0.32, 0.50, 0.07, 0.028, mk2DarkMat, 0, 2.02, BZ + 0.35, 0, 0, 0, BG);
+    addMk2Rounded(0.88, 0.18, 0.56, 0.045, 0.018, mk2ArmorMat, 0, 2.16, BZ + 0.38, 0, 0, 0, BG);
 
     [-1, 1].forEach(side => {
-        const bx = side * 0.37 / MK2_SCALE;
+        const bx = side * 0.32;
 
-        // מעטפת גלילית עבה של הקנה.
-        addMk2ZCylinder(0.24, 0.27, 0.58, mk2BodyMat, bx, 2.30, 0.30, BG, 16);
+        // הקנה עצמו — גליל עבה וקצר.
+        addMk2ZCylinder(0.225, 0.255, 0.72, mk2BodyMat, bx, 2.31, BZ + 0.52, BG, 18);
 
-        // מעטפת עליונה משוריינת.
-        addMk2Rounded(0.38, 0.11, 0.46, 0.028, 0.011, mk2ArmorMat, bx, 2.48, 0.30, 0, 0, 0, BG);
+        // טבעת בסיס + טבעת קדמית.
+        addMk2ZCylinder(0.29, 0.29, 0.105, mk2DarkMat, bx, 2.06, BZ + 0.52, BG, 18);
+        addMk2ZCylinder(0.255, 0.255, 0.125, mk2EdgeMat, bx, 2.07, BZ + 0.52, BG, 18);
+        addMk2ZCylinder(0.27, 0.30, 0.13, mk2DarkMat, bx, 2.72, BZ + 0.52, BG, 18);
 
-        // טבעת חיזוק בבסיס.
-        addMk2ZCylinder(0.30, 0.30, 0.11, mk2DarkMat, bx, 2.05, 0.30, BG, 16);
-        addMk2ZCylinder(0.25, 0.25, 0.13, mk2EdgeMat, bx, 2.06, 0.30, BG, 16);
+        // פתח לוע שחור, קטן ומוגדר.
+        addMk2ZCylinder(0.18, 0.18, 0.035, mk2BlackMat, bx, 2.80, BZ + 0.52, BG, 18);
 
-        // בלם לוע קצר ומסיבי.
-        addMk2ZCylinder(0.28, 0.31, 0.16, mk2DarkMat, bx, 2.65, 0.30, BG, 16);
-        addMk2ZCylinder(0.18, 0.18, 0.17, mk2BlackMat, bx, 2.75, 0.30, BG, 16);
+        // פס חיזוק עליון לכל קנה.
+        addMk2Rounded(0.34, 0.075, 0.48, 0.018, 0.007, mk2ArmorMat, bx, 2.48, BZ + 0.52, 0, 0, 0, BG);
     });
 
     // ==========================================
-    // 4. זרועות ומפרקים: צורות כבדות וברורות
+    // 4. מתלה: מפרק גדול + שתי זרועות + בוכנה + בית ציר
     // ==========================================
+    const advancedCannonWheels = [];
+
     [-1, 1].forEach(s => {
-        const J = [s * 0.94, 0.98, BZ];
-        const W = [s * MK2_WX, MK2_WY - 0.03, BZ];
+        const J = [s * 1.12, 0.98, BZ + 0.02];
+        const W = [s * MK2_WX, MK2_WY, BZ + 0.02];
 
-        // מפרק ראשי גדול, עמוק ושכבתי.
-        addMk2ZCylinder(0.34, 0.34, 0.76, mk2DarkMat, J[0], J[1], BZ);
-        addMk2ZCylinder(0.255, 0.255, 0.82, mk2EdgeMat, J[0], J[1], BZ);
-        addMk2ZCylinder(0.16, 0.16, 0.88, mk2BodyMat, J[0], J[1], BZ);
-        addMk2ZCylinder(0.105, 0.105, 0.92, mk2EdgeMat, J[0], J[1], BZ, advancedCannonGroup, 8);
+        // מפרק ראשי גדול ושכבתי.
+        addMk2ZCylinder(0.36, 0.36, 0.78, mk2DarkMat, J[0], J[1], J[2], advancedCannonGroup, 18);
+        addMk2ZCylinder(0.275, 0.275, 0.84, mk2EdgeMat, J[0], J[1], J[2], advancedCannonGroup, 18);
+        addMk2ZCylinder(0.18, 0.18, 0.90, mk2BodyMat, J[0], J[1], J[2], advancedCannonGroup, 14);
+        addMk2Bolt(J[0], J[1], J[2] + 0.48, 0.09, 0.08);
 
-        // זרוע ראשית — רחבה יותר ומדורגת.
-        addMk2Link(J, W, 0.48, 0.34, mk2ArmorMat);
+        // זרוע עליונה — לוח רחב ולא מוט דק.
+        addMk2Link(J, W, 0.44, 0.34, mk2ArmorMat);
         addMk2Link(
-            mk2Lerp(J, W, 0.16),
-            mk2Lerp(J, W, 0.84),
-            0.14,
-            0.38,
-            mk2EdgeMat
+            [J[0], J[1] - 0.10, J[2] - 0.16],
+            [W[0], W[1] - 0.04, W[2] - 0.16],
+            0.16, 0.40, mk2DarkMat
         );
 
         // זרוע תחתונה מקבילה.
-        const J2 = [s * 0.56, 0.62, BZ - 0.13];
-        const W2 = [s * (MK2_WX - 0.08), MK2_WY + 0.04, BZ - 0.13];
-        addMk2Link(J2, W2, 0.25, 0.20, mk2DarkMat);
-
-        // בוכנה הידראולית בולטת.
-        const shockA = [s * 0.52, 0.70, BZ - 0.24];
-        const shockB = mk2Lerp([J[0], J[1], BZ - 0.24], [W[0], W[1], BZ - 0.24], 0.58);
-        addMk2Link(shockA, shockB, 0.18, 0.17, mk2DarkMat);
-        addMk2Link(mk2Lerp(shockA, shockB, 0.34), mk2Lerp(shockA, shockB, 0.98), 0.105, 0.105, mk2EdgeMat);
-
-        // לוח צד שמחבר פיזית בין השריון לגלגל.
+        const J2 = [s * 0.72, 0.56, BZ - 0.14];
+        const W2 = [s * (MK2_WX - 0.10), MK2_WY + 0.03, BZ - 0.14];
+        addMk2Link(J2, W2, 0.25, 0.22, mk2DarkMat);
         addMk2Link(
-            [s * 1.10, 1.18, 0.20],
-            [s * (MK2_WX - 0.10), MK2_WY + 0.13, -0.40],
-            0.56,
-            0.36,
-            mk2ArmorMat
+            [J2[0], J2[1] + 0.05, J2[2] - 0.04],
+            [W2[0], W2[1] + 0.05, W2[2] - 0.04],
+            0.10, 0.26, mk2EdgeMat
         );
 
-        // בית ציר גלגל עבה.
-        addMk2Rounded(0.72, 0.74, 0.46, 0.10, 0.040, mk2BodyMat, W[0], W[1], BZ);
-        addMk2ZCylinder(0.16, 0.16, 0.56, mk2EdgeMat, W[0], W[1], BZ + 0.22, advancedCannonGroup, 8);
-        addMk2ZCylinder(0.105, 0.105, 0.58, mk2DarkMat, W[0], W[1], (BZ + MK2_WZ) / 2, advancedCannonGroup, 8);
+        // בוכנה הידראולית ברורה.
+        const shockA = [s * 0.66, 0.73, BZ - 0.28];
+        const shockB = [s * 1.58, 0.69, BZ - 0.28];
+        addMk2Link(shockA, shockB, 0.17, 0.17, mk2DarkMat);
+        addMk2Link(
+            [s * 1.12, 0.71, BZ - 0.28],
+            [s * 1.58, 0.69, BZ - 0.28],
+            0.085, 0.085, mk2EdgeMat
+        );
+
+        // לוח חיבור משוריין מעל המתלה.
+        addMk2Wedge(0.46, 0.54, 0.44, 0.12, 0.03, mk2ArmorMat, s * 1.56, 1.10, BZ - 0.03, advancedCannonGroup);
+
+        // בית ציר גדול ליד הגלגל.
+        addMk2Rounded(0.68, 0.68, 0.52, 0.10, 0.040, mk2BodyMat, W[0], W[1], W[2]);
+        addMk2ZCylinder(0.19, 0.19, 0.60, mk2EdgeMat, W[0], W[1], W[2] + 0.25, advancedCannonGroup, 12);
+        addMk2ZCylinder(0.11, 0.11, 0.62, mk2DarkMat, W[0], W[1], W[2] - 0.12, advancedCannonGroup, 12);
     });
 
     // ==========================================
-    // 5. גלגלים: עבים, עמוקים, עם מגן מעליהם
+    // 5. גלגלים — נשארים קרובים לגודל הנוכחי, אבל מקבלים עומק
     // ==========================================
     const mk2TireGeo = new THREE.TorusGeometry(0.365, 0.285, 14, 32);
     const mk2RimGeo = new THREE.CylinderGeometry(0.355, 0.355, 0.66, 28);
@@ -3503,9 +3495,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2HubBoltGeo = new THREE.CylinderGeometry(0.078, 0.078, 0.76, 6);
     const mk2LipGeo = new THREE.TorusGeometry(0.355, 0.040, 8, 32);
     const mk2InnerRingGeo = new THREE.TorusGeometry(0.215, 0.032, 6, 24);
-    const MK2_FENDER_ARC = 2.12;
-    const mk2FenderGeo = new THREE.TorusGeometry(0.70, 0.080, 7, 24, MK2_FENDER_ARC);
-    const advancedCannonWheels = [];
+    const MK2_FENDER_ARC = 2.05;
+    const mk2FenderGeo = new THREE.TorusGeometry(0.70, 0.082, 7, 24, MK2_FENDER_ARC);
 
     [[-MK2_WX, MK2_WZ], [MK2_WX, MK2_WZ], [-MK2_WX, -MK2_WZ], [MK2_WX, -MK2_WZ]].forEach(([x, z]) => {
         const wheel = new THREE.Group();
@@ -3517,17 +3508,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
         addMk2Mesh(mk2TireGeo, mk2TireMat, 0, 0, 0, 0, 0, 0, spin);
         addMk2Mesh(mk2RimGeo, mk2DarkMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
-
         [-1, 1].forEach(sd => {
             addMk2Mesh(mk2LipGeo, mk2EdgeMat, 0, 0, sd * 0.31, 0, 0, 0, spin);
             addMk2Mesh(mk2InnerRingGeo, mk2EdgeMat, 0, 0, sd * 0.325, 0, 0, 0, spin);
         });
-
-        addMk2Mesh(new THREE.TorusGeometry(0.29, 0.020, 6, 28), mk2DarkMat, 0, 0, 0.335, 0, 0, 0, spin);
         addMk2Mesh(mk2HubGeo, mk2BodyMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2HubBoltGeo, mk2EdgeMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
 
-        // ארבעה ברגים מסביב לטבור.
         [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(a => {
             addMk2Mesh(
                 new THREE.CylinderGeometry(0.038, 0.038, 0.078, 6),
@@ -3540,7 +3527,7 @@ window.addEventListener('DOMContentLoaded', () => {
             );
         });
 
-        // מגן גלגל — רחב יותר ומחובר לשריון הצד.
+        // מגן גלגל חלקי שמתחבר לשריון הצד.
         const fender = addMk2Mesh(
             mk2FenderGeo,
             mk2ArmorMat,
@@ -3549,25 +3536,22 @@ window.addEventListener('DOMContentLoaded', () => {
             Math.PI / 2 - MK2_FENDER_ARC / 2,
             wheel
         );
-        fender.scale.z = 4.8;
+        fender.scale.z = 4.7;
 
         const fenderLip = addMk2Mesh(
-            new THREE.TorusGeometry(0.705, 0.026, 5, 22, MK2_FENDER_ARC),
+            new THREE.TorusGeometry(0.705, 0.025, 5, 22, MK2_FENDER_ARC),
             mk2EdgeMat,
             0, 0, 0,
             0, 0,
             Math.PI / 2 - MK2_FENDER_ARC / 2,
             wheel
         );
-        fenderLip.scale.z = 4.8;
+        fenderLip.scale.z = 4.7;
 
         advancedCannonGroup.add(wheel);
         advancedCannonWheels.push(wheel);
         wheel.userData.spinGroup = spin;
     });
-
-    // נקודת רתיעה מקומית לתותח MK-II.
-    advancedBarrelAssembly.userData.baseY = advancedBarrelAssembly.position.y;
 
     // סיום תותח MK-II.
 
