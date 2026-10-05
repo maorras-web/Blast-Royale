@@ -3328,6 +3328,14 @@ window.addEventListener('DOMContentLoaded', () => {
     mk2ShellTopGeo.scale(1, 1, 0.86);
     addMk2Mesh(mk2ShellTopGeo, mk2EdgeMat, 0, 1.70, 0.20);
 
+    // פאות צד משופעות על הצריח + לוח סנטר משופע מתחת לחזית
+    [-1, 1].forEach(s => {
+        addMk2Rounded(0.30, 0.34, 0.62, 0.05, 0.02, mk2BodyMat, s * 0.60, 1.50, 0.18, 0, 0, s * -0.50);
+        addMk2Rounded(0.05, 0.30, 0.56, 0.02, 0.01, mk2EdgeMat, s * 0.72, 1.46, 0.18, 0, 0, s * -0.50);
+    });
+    addMk2Rounded(0.80, 0.22, 0.06, 0.04, 0.02, mk2BodyMat, 0, 1.18, 0.98, -0.65, 0, 0);
+    addMk2Rounded(0.62, 0.04, 0.07, 0.02, 0.01, mk2EdgeMat, 0, 1.28, 1.01, -0.65, 0, 0);
+
     // לוחות על חזית הקונכייה (הצד שהמצלמה רואה): מסגרת בהירה + לוח כהה + חריץ
     addMk2Rounded(0.86, 0.30, 0.05, 0.04, 0.02, mk2EdgeMat, 0, 1.42, 0.93, -0.30, 0, 0);
     addMk2Rounded(0.72, 0.20, 0.05, 0.03, 0.02, mk2DarkMat, 0, 1.42, 0.96, -0.30, 0, 0);
@@ -3367,14 +3375,15 @@ window.addEventListener('DOMContentLoaded', () => {
     [-1, 1].forEach(side => {
         const bx = side * 0.37 / MK2_SCALE;
         const bz = 0.20;
-        addMk2Rounded(0.44, 0.96, 0.44, 0.07, 0.03, mk2BodyMat, bx, 1.98, bz, 0, 0, 0, BG);          // גוף הקנה (בלוק מרובע)
-        addMk2Rounded(0.07, 0.80, 0.05, 0.02, 0.01, mk2EdgeMat, bx - side * 0.17, 1.96, bz + 0.22, 0, 0, 0, BG); // פס שריון בהיר בחזית
+        addMk2Rounded(0.44, 1.18, 0.44, 0.07, 0.03, mk2BodyMat, bx, 2.09, bz, 0, 0, 0, BG);          // גוף הקנה (בלוק מרובע)
+        addMk2Rounded(0.07, 1.00, 0.05, 0.02, 0.01, mk2EdgeMat, bx - side * 0.17, 2.06, bz + 0.22, 0, 0, 0, BG); // פס שריון בהיר בחזית
         addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 1.68, bz, 0, 0, 0, BG);          // טבעת חיזוק תחתונה
-        addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 2.12, bz, 0, 0, 0, BG);          // טבעת חיזוק עליונה
-        addMk2Rounded(0.46, 0.10, 0.48, 0.04, 0.02, mk2DarkMat, bx, 2.46, bz, 0, 0, 0, BG);          // בלם לוע
-        addMk2Mesh(new THREE.BoxGeometry(0.24, 0.012, 0.24), mk2BlackMat, bx, 2.512, bz, 0, 0, 0, BG); // פתח הלוע
+        addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 2.30, bz, 0, 0, 0, BG);          // טבעת חיזוק עליונה
+        addMk2Rounded(0.46, 0.05, 0.48, 0.02, 0.01, mk2EdgeMat, bx, 1.98, bz, 0, 0, 0, BG);          // טבעת חיזוק אמצעית
+        addMk2Rounded(0.46, 0.10, 0.48, 0.04, 0.02, mk2DarkMat, bx, 2.66, bz, 0, 0, 0, BG);          // בלם לוע
+        addMk2Mesh(new THREE.BoxGeometry(0.24, 0.012, 0.24), mk2BlackMat, bx, 2.712, bz, 0, 0, 0, BG); // פתח הלוע
         // שני חריצי אוורור בצד הקנה
-        [-0.12, 0.04].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.10, 0.30), mk2BlackMat, bx + side * 0.205, 1.96 + dy, bz, 0, 0, 0, BG));
+        [-0.12, 0.04].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.10, 0.30), mk2BlackMat, bx + side * 0.205, 2.06 + dy, bz, 0, 0, 0, BG));
     });
 
     // ==========================================
@@ -3401,6 +3410,11 @@ window.addEventListener('DOMContentLoaded', () => {
         // זרוע תחתונה (צרה יותר) עם שפה בהירה
         addMk2Link(K, W, 0.38, 0.46, mk2BodyMat);
         addMk2Link(mk2Lerp(K, W, 0.18), mk2Lerp(K, W, 0.82), 0.10, 0.52, mk2EdgeMat);
+        // צלעות חוליות לאורך שתי הזרועות (מראה שרשרת מפרקית)
+        [0.28, 0.50, 0.72].forEach(t => {
+            addMk2Link(mk2Lerp(J, K, t - 0.014), mk2Lerp(J, K, t + 0.014), 0.54, 0.60, mk2DarkMat);
+            addMk2Link(mk2Lerp(K, W, t - 0.014), mk2Lerp(K, W, t + 0.014), 0.46, 0.54, mk2DarkMat);
+        });
         // כיסוי רכזת הגלגל
         addMk2ZCylinder(0.32, 0.32, 0.42, mk2DarkMat, W[0], W[1], z);
         addMk2ZCylinder(0.22, 0.22, 0.46, mk2EdgeMat, W[0], W[1], z);
