@@ -3364,17 +3364,17 @@ window.addEventListener('DOMContentLoaded', () => {
     // בית הקנים: צריח גבוה ומחוטב שהקנים יוצאים ממנו (במקום שני בלוקים על לוח שטוח)
     // ==========================================
     const TZ = 0.22;                                                                   // מרכז הצריח לאורך Z
-    addMk2Rounded(1.16, 0.42, 0.70, 0.10, 0.05, mk2BodyMat, 0, 1.85, TZ);              // גוף הבית
-    addMk2Rounded(1.22, 0.05, 0.76, 0.03, 0.01, mk2EdgeMat, 0, 2.08, TZ);              // שפה עליונה בהירה
+    addMk2Rounded(1.16, 0.27, 0.70, 0.10, 0.05, mk2BodyMat, 0, 1.775, TZ);              // גוף הבית
+    addMk2Rounded(1.22, 0.05, 0.76, 0.03, 0.01, mk2EdgeMat, 0, 1.93, TZ);              // שפה עליונה בהירה
     addMk2Rounded(1.20, 0.04, 0.74, 0.03, 0.01, mk2DarkMat, 0, 1.64, TZ);              // שפה תחתונה כהה
     // חזית משופעת (כלפי המצלמה): מסגרת בהירה + לוח כהה + שני חריצים
-    addMk2Rounded(1.02, 0.36, 0.06, 0.04, 0.02, mk2EdgeMat, 0, 1.84, TZ + 0.42, -0.50, 0, 0);
-    addMk2Rounded(0.86, 0.26, 0.06, 0.03, 0.02, mk2DarkMat, 0, 1.84, TZ + 0.45, -0.50, 0, 0);
-    [-0.20, 0.20].forEach(x => addMk2Mesh(new THREE.BoxGeometry(0.18, 0.025, 0.04), mk2BlackMat, x, 1.84, TZ + 0.48, -0.50, 0, 0));
+    addMk2Rounded(1.02, 0.24, 0.06, 0.04, 0.02, mk2EdgeMat, 0, 1.77, TZ + 0.42, -0.50, 0, 0);
+    addMk2Rounded(0.86, 0.16, 0.06, 0.03, 0.02, mk2DarkMat, 0, 1.77, TZ + 0.45, -0.50, 0, 0);
+    [-0.20, 0.20].forEach(x => addMk2Mesh(new THREE.BoxGeometry(0.18, 0.025, 0.04), mk2BlackMat, x, 1.77, TZ + 0.48, -0.50, 0, 0));
     // לחיים צדדיות משופעות
     [-1, 1].forEach(sd => {
-        addMk2Rounded(0.16, 0.44, 0.62, 0.05, 0.02, mk2BodyMat, sd * 0.62, 1.82, TZ, 0, 0, sd * -0.30);
-        addMk2Rounded(0.04, 0.36, 0.56, 0.02, 0.01, mk2EdgeMat, sd * 0.70, 1.80, TZ, 0, 0, sd * -0.30);
+        addMk2Rounded(0.16, 0.30, 0.62, 0.05, 0.02, mk2BodyMat, sd * 0.62, 1.76, TZ, 0, 0, sd * -0.30);
+        addMk2Rounded(0.04, 0.24, 0.56, 0.02, 0.01, mk2EdgeMat, sd * 0.70, 1.75, TZ, 0, 0, sd * -0.30);
     });
 
     // ==========================================
@@ -3392,15 +3392,15 @@ window.addEventListener('DOMContentLoaded', () => {
     [-1, 1].forEach(side => {
         const bx = side * 0.37 / MK2_SCALE;
         const bz = 0.20;
-        addMk2Rounded(0.44, 1.18, 0.44, 0.07, 0.03, mk2BodyMat, bx, 2.09, bz, 0, 0, 0, BG);          // גוף הקנה (בלוק מרובע)
-        addMk2Rounded(0.07, 1.00, 0.05, 0.02, 0.01, mk2EdgeMat, bx - side * 0.17, 2.06, bz + 0.22, 0, 0, 0, BG); // פס שריון בהיר בחזית
+        addMk2Rounded(0.44, 1.33, 0.44, 0.07, 0.03, mk2BodyMat, bx, 2.165, bz, 0, 0, 0, BG);          // גוף הקנה (בלוק מרובע)
+        addMk2Rounded(0.07, 1.10, 0.05, 0.02, 0.01, mk2EdgeMat, bx - side * 0.17, 2.18, bz + 0.22, 0, 0, 0, BG); // פס שריון בהיר בחזית
         addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 1.68, bz, 0, 0, 0, BG);          // טבעת חיזוק תחתונה
-        addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 2.30, bz, 0, 0, 0, BG);          // טבעת חיזוק עליונה
-        addMk2Rounded(0.46, 0.05, 0.48, 0.02, 0.01, mk2EdgeMat, bx, 1.98, bz, 0, 0, 0, BG);          // טבעת חיזוק אמצעית
-        addMk2Rounded(0.46, 0.10, 0.48, 0.04, 0.02, mk2DarkMat, bx, 2.66, bz, 0, 0, 0, BG);          // בלם לוע
-        addMk2Mesh(new THREE.BoxGeometry(0.24, 0.012, 0.24), mk2BlackMat, bx, 2.712, bz, 0, 0, 0, BG); // פתח הלוע
+        addMk2Rounded(0.46, 0.06, 0.48, 0.03, 0.01, mk2EdgeMat, bx, 2.45, bz, 0, 0, 0, BG);          // טבעת חיזוק עליונה
+        addMk2Rounded(0.46, 0.05, 0.48, 0.02, 0.01, mk2EdgeMat, bx, 2.12, bz, 0, 0, 0, BG);          // טבעת חיזוק אמצעית
+        addMk2Rounded(0.46, 0.10, 0.48, 0.04, 0.02, mk2DarkMat, bx, 2.81, bz, 0, 0, 0, BG);          // בלם לוע
+        addMk2Mesh(new THREE.BoxGeometry(0.24, 0.012, 0.24), mk2BlackMat, bx, 2.862, bz, 0, 0, 0, BG); // פתח הלוע
         // שני חריצי אוורור בצד הקנה
-        [-0.12, 0.04].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.10, 0.30), mk2BlackMat, bx + side * 0.205, 2.06 + dy, bz, 0, 0, 0, BG));
+        [-0.12, 0.04].forEach(dy => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.10, 0.30), mk2BlackMat, bx + side * 0.205, 2.18 + dy, bz, 0, 0, 0, BG));
     });
 
     // ==========================================
@@ -5328,6 +5328,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // סנכרון גודל ה-canvas והמצלמה לגודל המסך האמיתי
     function syncViewport() {
+        // גובה אמיתי אחד לכל המסך (ה-CSS משתמש ב-var(--app-h) לרקע, לתפריט ולקנבס)
+        document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px');
         updateCameraForDevice();
         updateMobileViewportState();
         // setSize(..., false) לא מעדכן את ה-style של ה-canvas, אז עושים את זה ידנית
@@ -5343,6 +5345,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('orientationchange', () => {
         setTimeout(syncViewport, 120);
     });
+    // חזרה אחורה / חזרה לדף מהזיכרון, ושינויי סרגל הכתובת בטלפון
+    window.addEventListener('pageshow', () => {
+        syncViewport();
+        setTimeout(syncViewport, 150);
+    });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncViewport);
+    }
+    syncViewport();
 
     animate(0);
 });
