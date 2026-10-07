@@ -173,15 +173,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // בשלב הזה המשחק מתמקד במפה אחת בלבד: יער.
     // שומרים את ההגדרה פשוטה כדי שכל השיפור הגרפי יושקע בעולם אחד.
     const MAPS = {
-        forest: { name: 'FOREST', label: 'יער', price: 0 }
+        forest: { name: 'PYRAMIDS', label: 'פירמידות', price: 0 },
+        volcano: { name: 'VOLCANO', label: 'הרי געש', price: 0 }   // לשנות price כדי להפוך את המפה לנעולה/בתשלום
     };
 
-    let selectedMap = 'forest';
-    let purchasedMaps = ['forest'];
-
-    // מנקים בחירה ישנה של מפות שהיו בגרסאות קודמות.
-    localStorage.setItem('bb3d_map', 'forest');
-    localStorage.setItem('bb3d_purchased_maps', JSON.stringify(['forest']));
+    let selectedMap = localStorage.getItem('bb3d_map');
+    let purchasedMaps = [];
+    try { purchasedMaps = JSON.parse(localStorage.getItem('bb3d_purchased_maps') || '[]'); } catch (e) { purchasedMaps = []; }
+    purchasedMaps = purchasedMaps.filter(id => MAPS[id]);
+    Object.keys(MAPS).forEach(id => { if (MAPS[id].price === 0 && !purchasedMaps.includes(id)) purchasedMaps.push(id); });
+    if (!MAPS[selectedMap] || !purchasedMaps.includes(selectedMap)) selectedMap = 'forest';
+    localStorage.setItem('bb3d_map', selectedMap);
+    localStorage.setItem('bb3d_purchased_maps', JSON.stringify(purchasedMaps));
 
     function clearMapGroup() {
         while (mapGroup.children.length) {
@@ -1962,9 +1965,135 @@ window.addEventListener('DOMContentLoaded', () => {
         return texture;
     }
 
+    // ==========================================
+    // מפת VOLCANO: הרי געש במקום פירמידות + קרקע בזלת במקום דשא
+    // ==========================================
+    function createBasaltTexture(repeatX, repeatY) {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#2e2622';
+        ctx.fillRect(0, 0, size, size);
+
+        const wrapped = (x, y, margin, draw) => {
+            const xs = [0], ys = [0];
+            if (x < margin) xs.push(size); else if (x > size - margin) xs.push(-size);
+            if (y < margin) ys.push(size); else if (y > size - margin) ys.push(-size);
+            xs.forEach(dx => ys.forEach(dy => draw(x + dx, y + dy)));
+        };
+
+        // כתמים בהירים/כהים שוברים את החזרתיות.
+        for (let i = 0; i < 46; i++) {
+            const x = Math.random() * size, y = Math.random() * size;
+            const r = 40 + Math.random() * 90;
+            const c = Math.random() < 0.5 ? '80,58,48' : '10,7,6';
+            wrapped(x, y, r, (px, py) => {
+                const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+                g.addColorStop(0, `rgba(${c},0.16)`);
+                g.addColorStop(1, `rgba(${c},0)`);
+                ctx.fillStyle = g;
+                ctx.fillRect(px - r, py - r, r * 2, r * 2);
+            });
+        }
+
+        // גרגרי בזלת.
+        const shades = ['#1d1714', '#271f1b', '#3a2e28', '#4a3a31', '#5c4a3e'];
+        for (let i = 0; i < 6000; i++) {
+            ctx.fillStyle = shades[(Math.random() * shades.length) | 0];
+            ctx.globalAlpha = 0.5 + Math.random() * 0.4;
+            const s = 1 + Math.random() * 2.5;
+            wrapped(Math.random() * size, Math.random() * size, 4, (px, py) => ctx.fillRect(px, py, s, s));
+        }
+        ctx.globalAlpha = 1;
+
+        // סדקי לבה זוהרים (נציירים גם מוזזים כדי שהמרקם יתחבר בקצוות).
+        ctx.lineCap = ctx.lineJoin = 'round';
+        for (let i = 0; i < 18; i++) {
+            let x = Math.random() * size, y = Math.random() * size;
+            let a = Math.random() * Math.PI * 2;
+            const pts = [[x, y]];
+            for (let k = 0; k < 7; k++) {
+                a += (Math.random() - 0.5) * 1.3;
+                x += Math.cos(a) * (14 + Math.random() * 22);
+                y += Math.sin(a) * (14 + Math.random() * 22);
+                pts.push([x, y]);
+            }
+            [[4, 'rgba(170,42,8,0.35)'], [1.4, 'rgba(255,122,40,0.95)']].forEach(([w, col]) => {
+                ctx.lineWidth = w;
+                ctx.strokeStyle = col;
+                [-size, 0, size].forEach(dx => [-size, 0, size].forEach(dy => {
+                    ctx.beginPath();
+                    pts.forEach(([px, py], n) => n ? ctx.lineTo(px + dx, py + dy) : ctx.moveTo(px + dx, py + dy));
+                    ctx.stroke();
+                }));
+            });
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(repeatX, repeatY);
+        texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        texture.encoding = THREE.sRGBEncoding;
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    function addVolcanoes(rockTexture) {
+        const rockMat = new THREE.MeshStandardMaterial({
+            color: 0x3a2c25, map: rockTexture.map, bumpMap: rockTexture.bumpMap, bumpScale: 0.9, roughness: 0.95, metalness: 0
+        });
+        const lavaMat = new THREE.MeshBasicMaterial({ color: 0xff6a1f, fog: false });
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: 0.32, depthWrite: false, fog: false });
+        const smokeMat = new THREE.MeshBasicMaterial({ color: 0x3b302b, transparent: true, opacity: 0.4, depthWrite: false });
+
+        // אותם מיקומים של הפירמידות: [x, z, רדיוס בסיס, גובה]
+        [[-11.6, -29, 8.6, 15.5], [12.0, -32, 9.0, 16.5], [0, -47, 12.5, 14.5]].forEach(([x, z, R, H], vi) => {
+            const r = R * 0.2;
+            addMesh(new THREE.CylinderGeometry(r, R, H, 24, 5), rockMat, x, H / 2, z);
+            addMesh(new THREE.CylinderGeometry(r * 0.9, r * 0.9, 0.1, 24), lavaMat, x, H + 0.02, z, false, false);
+            const halo = addMesh(new THREE.SphereGeometry(r * 1.7, 10, 8), glowMat, x, H + 0.4, z, false, false);
+            halo.scale.y = 0.6;
+            for (let s = 0; s < 3; s++) {
+                addMesh(new THREE.SphereGeometry(r * (1.2 + s * 0.35), 8, 6), smokeMat,
+                    x + s * 0.9 - 0.9, H + 2.2 + s * 2.6, z - 0.5, false, false);
+            }
+
+            // זרמי לבה לאורך המדרון, פונים למצלמה.
+            const slope = Math.atan((R - r) / H);
+            for (let i = 0; i < 4; i++) {
+                const len = 0.45 + ((i + vi) % 3) * 0.1;
+                const tc = len / 2;
+                const holder = new THREE.Group();
+                holder.position.set(x, 0, z);
+                holder.rotation.y = -Math.PI * (0.25 + 0.17 * i);
+                const streak = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.07, (H * len) / Math.cos(slope), 0.22 + (i % 2) * 0.12),
+                    lavaMat
+                );
+                streak.position.set(r + (R - r) * tc + 0.1, H * (1 - tc), 0);
+                streak.rotation.z = slope;
+                holder.add(streak);
+                mapGroup.add(holder);
+            }
+        });
+
+        // אובך לבה בבסיס ההרים + שלוליות לבה בצדי המסלול.
+        const haze = addMesh(new THREE.PlaneGeometry(40, 2.4),
+            new THREE.MeshBasicMaterial({ color: 0xff5a1a, transparent: true, opacity: 0.12, depthWrite: false, fog: false }),
+            0, 1.2, -26, false, false);
+        haze.renderOrder = -5;
+        [[-9, -14, 1.5], [10, -18, 1.9]].forEach(([x, z, rad]) => {
+            addMesh(new THREE.CylinderGeometry(rad, rad, 0.03, 20), lavaMat, x, 0.04, z, false, false);
+        });
+    }
+
     function buildMap(mapId) {
-        mapId = 'forest';   // ה-id נשאר 'forest' כדי לא לשבור את ה-UI והשמירה
-        const theme = 'desert'; // העיצוב בפועל: פירמידות בשקיעה זהובה על דשא ירוק
+        if (!MAPS[mapId]) mapId = 'forest';
+        const isVolcano = mapId === 'volcano';
+        const theme = 'desert'; // שמיים/שמש/ערפל/סלעים משותפים לשתי המפות; ההבדל: הרי געש+בזלת מול פירמידות+דשא
         clearMapGroup();
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
@@ -1972,7 +2101,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addEnvironmentalDepth(theme);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
-        const groundColor = GRASS_GREEN;
+        const groundColor = isVolcano ? 0x2a211d : GRASS_GREEN;
         const groundRoughness = 0.92;
 
         // בסיס שקוע שנותן לקרקע עובי בלי להיראות כפלטפורמה.
@@ -1997,7 +2126,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // קרקע עם טקסטורת מדשאה צפופה (במקום צבע אחיד).
         const terrainMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            map: createLawnTexture(10, 22),
+            map: isVolcano ? createBasaltTexture(10, 22) : createLawnTexture(10, 22),
             roughness: groundRoughness,
             metalness: 0.0
         });
@@ -2017,12 +2146,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // (השביל הוסר: הוא נראה בדיוק כמו הקרקע ויצר רק קו תפר אלכסוני.)
 
-        addGroundDetail(theme);
+        addGroundDetail(isVolcano ? 'volcano' : theme);   // 'volcano' = חלוקים כהים בלי עשבונים
         addForegroundScenery(theme);
         addPerspectiveDepthDetails(theme);
         addDeepPerspectiveCorridor(theme);
-        addDesertDepthTransition(theme);
-        add3DGrass(mapId);
+        if (!isVolcano) addDesertDepthTransition(theme);   // קבוצות עשב וצלליות ירוקות
+        add3DGrass(mapId);   // מחזיר מיד אם המפה אינה 'forest'
         addWeatherParticles(theme);
 
         if (theme === 'desert') {
@@ -2053,12 +2182,14 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
             // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
+            if (isVolcano) addVolcanoes(rockTexture); else {
             const p1 = addMesh(createPyramidGeometry(7.4, 17.5, 12), pyramidMatA, -11.6, 8.75, -29);
             p1.rotation.y = Math.PI / 4;
             const p2 = addMesh(createPyramidGeometry(7.8, 18.5, 12), pyramidMatA, 12.0, 9.25, -32);
             p2.rotation.y = Math.PI / 4;
             const p3 = addMesh(createPyramidGeometry(10.5, 15.5, 14), pyramidMatB, 0, 7.75, -47);
             p3.rotation.y = Math.PI / 4;
+            }
 
             // (הוסרה שכבת הזוהר התוספתית שישבה כמעטפת כמעט חופפת על הפירמידות: היא יצרה
             // כיפה מוארת מרצדת בקצוות. הקצוות נשארים נקיים וחדים.)
@@ -2084,7 +2215,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const rootShadow = new THREE.Mesh(
                 new THREE.BoxGeometry(40, 0.05, 0.18),
-                new THREE.MeshBasicMaterial({ color: 0x263713, transparent: true, opacity: 0.55 })
+                new THREE.MeshBasicMaterial({ color: isVolcano ? 0x1a0e08 : 0x263713, transparent: true, opacity: 0.55 })
             );
             rootShadow.position.set(0, 0.03, 10.52);
             mapGroup.add(rootShadow);
@@ -2140,7 +2271,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    buildMap('forest');
+    buildMap(selectedMap);
 
     // ==========================================
     // 4. עיצוב התותח - 3D DETAIL PASS
@@ -3744,9 +3875,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const mapButtons = Array.from(document.querySelectorAll('[data-map-id]'));
     mapButtons.forEach(btn => {
-        if (btn.dataset.mapId !== 'forest') btn.remove();
+        if (!MAPS[btn.dataset.mapId]) btn.remove();
     });
-    const forestMapButtons = Array.from(document.querySelectorAll('[data-map-id="forest"]'));
+    const forestMapButtons = mapButtons.filter(btn => MAPS[btn.dataset.mapId]);
 
     // מצב כרטיס תותח: נבחר / בחר / מחיר (נעול אם אין מספיק מטבעות).
     function renderCannonTile(btn, { selected, owned, label, locked }) {
@@ -3856,7 +3987,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             selectedMap = mapId;
             localStorage.setItem('bb3d_map', selectedMap);
-            buildMap('forest');
+            buildMap(selectedMap);
             updateUI();
         });
     });
@@ -4815,8 +4946,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hasStartedFirstWave = false;
         cannonRecoil = 0;
         cannonGroup.position.set(0, cannonBaseY, 0);
-        selectedMap = 'forest';
-        buildMap('forest');
+        buildMap(selectedMap);
         updateUI();
 
         startNextWave();
