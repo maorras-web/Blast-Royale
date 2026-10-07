@@ -3410,9 +3410,75 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ---- שכבת מבנה חדשה: גוף זוויתי יותר ובסיס אמיתי לארבעת הקנים ----
+    // סף תחתון רחב — נותן לתותח מסה בלי להגביה אותו.
+    addMk2Rounded(4.08, 0.22, 2.68, 0.08, 0.04, mk2BlackMat, 0, 0.68, 0);
+    addMk2Rounded(3.74, 0.16, 2.46, 0.06, 0.03, mk2DetailMat, 0, 0.96, 0);
+
+    // לוחות כתף משופעים — יוצרים silhouette זוויתי במקום קופסה שטוחה.
+    [-1, 1].forEach(side => {
+        addMk2Mesh(
+            new THREE.BoxGeometry(0.62, 0.34, 1.88),
+            mk2BodyMat,
+            side * 1.54, 1.42, 0,
+            0, 0, side * 0.16
+        ).castShadow = true;
+
+        addMk2Mesh(
+            new THREE.BoxGeometry(0.22, 0.42, 1.72),
+            mk2DetailMat,
+            side * 1.88, 1.30, 0,
+            0, 0, side * 0.10
+        ).castShadow = true;
+    });
+
+    // מסגרת נשיאה לארבעת הקנים — ארבעה בתי בסיס נפרדים בתוך הגוף.
+    [-0.58, -0.32, 0.32, 0.58].forEach(bx => {
+        addMk2Rounded(0.34, 0.30, 0.62, 0.07, 0.03, mk2DetailMat, bx, 1.92, 0);
+        addMk2Rounded(0.26, 0.12, 0.48, 0.035, 0.018, mk2EdgeMat, bx, 2.08, 0);
+    });
+
+    // קורת חיבור קדמית/אחורית מתחת לבסיסי הקנים.
+    addMk2Rounded(2.54, 0.20, 0.30, 0.055, 0.025, mk2DarkMat, 0, 1.94, 0.64);
+    addMk2Rounded(2.54, 0.16, 0.26, 0.045, 0.02, mk2DetailMat, 0, 1.91, -0.64);
+
+    // מסגרות צד סביב הגלגלים — חיבור ויזואלי בין הגוף לשלדה.
+    [-1, 1].forEach(side => {
+        [0.72, -0.72].forEach(z => {
+            addMk2Rounded(0.58, 0.24, 0.62, 0.05, 0.025, mk2DarkMat, side * 1.82, 0.94, z);
+            addMk2Rounded(0.40, 0.12, 0.46, 0.03, 0.015, mk2EdgeMat, side * 1.90, 1.08, z);
+        });
+    });
+
+    // לוחות קדמיים זוויתיים שמקיפים את אזור הליבה בלי להסתיר אותה.
+    addMk2Mesh(
+        new THREE.BoxGeometry(2.78, 0.22, 0.18),
+        mk2DetailMat,
+        0, 1.34, 1.38,
+        0, 0, 0
+    ).castShadow = true;
+    addMk2Mesh(
+        new THREE.BoxGeometry(2.48, 0.16, 0.16),
+        mk2BodyMat,
+        0, 1.57, 1.36,
+        0, 0, 0
+    ).castShadow = true;
+
+    // ברגי חיזוק נוספים לאורך הכתפיים — פרט קטן שנראה גם מרחוק.
+    [-1, 1].forEach(side => {
+        [-0.72, 0, 0.72].forEach(z => {
+            addMk2Mesh(
+                new THREE.CylinderGeometry(0.045, 0.045, 0.045, 10),
+                mk2FastenerMat,
+                side * 2.02, 1.22, z,
+                0, 0, Math.PI / 2
+            );
+        });
+    });
+
     // ---- גשר עליון כבד לקנים ----
-    addMk2Rounded(2.18, 0.34, 1.36, 0.10, 0.05, mk2DarkMat, 0, 1.82, 0);
-    addMk2Rounded(1.92, 0.18, 1.12, 0.06, 0.03, mk2BodyMat, 0, 2.02, 0);
+    addMk2Rounded(2.32, 0.38, 1.42, 0.10, 0.05, mk2DarkMat, 0, 1.82, 0);
+    addMk2Rounded(2.02, 0.20, 1.18, 0.06, 0.03, mk2BodyMat, 0, 2.02, 0);
 
     // ---- ארבעה קנים: נשארים גדולים; רק הבסיסים והשריון סביבם מתחזקים ----
     const advancedBarrelAssembly = new THREE.Group();
