@@ -2049,8 +2049,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const glowMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: 0.32, depthWrite: false, fog: false });
         const smokeMat = new THREE.MeshBasicMaterial({ color: 0x3b302b, transparent: true, opacity: 0.4, depthWrite: false });
 
-        // אותם מיקומים של הפירמידות: [x, z, רדיוס בסיס, גובה]
-        [[-11.6, -29, 8.6, 15.5], [12.0, -32, 9.0, 16.5], [0, -47, 12.5, 14.5]].forEach(([x, z, R, H], vi) => {
+        // הר געש מרכזי גדול אחד: [x, z, רדיוס בסיס, גובה]
+        [[0, -50, 20, 26]].forEach(([x, z, R, H], vi) => {
             const r = R * 0.2;
             addMesh(new THREE.CylinderGeometry(r, R, H, 24, 5), rockMat, x, H / 2, z);
             addMesh(new THREE.CylinderGeometry(r * 0.9, r * 0.9, 0.1, 24), lavaMat, x, H + 0.02, z, false, false);
@@ -2081,9 +2081,9 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         // אובך לבה בבסיס ההרים + שלוליות לבה בצדי המסלול.
-        const haze = addMesh(new THREE.PlaneGeometry(40, 2.4),
+        const haze = addMesh(new THREE.PlaneGeometry(44, 2.4),
             new THREE.MeshBasicMaterial({ color: 0xff5a1a, transparent: true, opacity: 0.12, depthWrite: false, fog: false }),
-            0, 1.2, -26, false, false);
+            0, 1.2, -38, false, false);
         haze.renderOrder = -5;
         [[-9, -14, 1.5], [10, -18, 1.9]].forEach(([x, z, rad]) => {
             addMesh(new THREE.CylinderGeometry(rad, rad, 0.03, 20), lavaMat, x, 0.04, z, false, false);
