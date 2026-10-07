@@ -3307,8 +3307,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP;
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
-    const MK2_BARREL_X = [-0.58, -0.32, 0.32, 0.58];
-    const MK2_MUZZLE_Y = 2.2;
+    const MK2_BARREL_X = [-0.95, -0.46, 0.46, 0.95];
+    const MK2_MUZZLE_Y = 2.85;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -3433,14 +3433,14 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // מסגרת נשיאה לארבעת הקנים — ארבעה בתי בסיס נפרדים בתוך הגוף.
-    [-0.58, -0.32, 0.32, 0.58].forEach(bx => {
+    MK2_BARREL_X.map(w => w / MK2_SCALE).forEach(bx => {
         addMk2Rounded(0.34, 0.30, 0.62, 0.07, 0.03, mk2DetailMat, bx, 1.92, 0);
         addMk2Rounded(0.26, 0.12, 0.48, 0.035, 0.018, mk2EdgeMat, bx, 2.08, 0);
     });
 
     // קורת חיבור קדמית/אחורית מתחת לבסיסי הקנים.
-    addMk2Rounded(2.54, 0.20, 0.30, 0.055, 0.025, mk2DarkMat, 0, 1.94, 0.64);
-    addMk2Rounded(2.54, 0.16, 0.26, 0.045, 0.02, mk2DetailMat, 0, 1.91, -0.64);
+    addMk2Rounded(3.20, 0.20, 0.30, 0.055, 0.025, mk2DarkMat, 0, 1.94, 0.64);
+    addMk2Rounded(3.20, 0.16, 0.26, 0.045, 0.02, mk2DetailMat, 0, 1.91, -0.64);
 
     // מסגרות צד סביב הגלגלים — חיבור ויזואלי בין הגוף לשלדה.
     [-1, 1].forEach(side => {
@@ -3477,8 +3477,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ---- גשר עליון כבד לקנים ----
-    addMk2Rounded(2.32, 0.38, 1.42, 0.10, 0.05, mk2DarkMat, 0, 1.82, 0);
-    addMk2Rounded(2.02, 0.20, 1.18, 0.06, 0.03, mk2BodyMat, 0, 2.02, 0);
+    addMk2Rounded(3.30, 0.38, 1.42, 0.10, 0.05, mk2DarkMat, 0, 1.82, 0);
+    addMk2Rounded(3.00, 0.20, 1.18, 0.06, 0.03, mk2BodyMat, 0, 2.02, 0);
 
     // ---- ארבעה קנים: נשארים גדולים; רק הבסיסים והשריון סביבם מתחזקים ----
     const advancedBarrelAssembly = new THREE.Group();
@@ -3486,33 +3486,39 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(advancedBarrelAssembly);
     const BG = advancedBarrelAssembly;
 
-    addMk2Rounded(2.10, 0.24, 1.30, 0.06, 0.03, mk2BlackMat, 0, 2.12, 0, 0, 0, 0, BG);
+    addMk2Rounded(3.50, 0.24, 1.20, 0.06, 0.03, mk2BlackMat, 0, 2.12, 0, 0, 0, 0, BG);
 
-    const mk2BarrelGeo = new THREE.CylinderGeometry(0.12, 0.125, 1.30, 14);
-    const mk2RingGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.06, 14);
-    const mk2BandGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.04, 14);
-    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.165, 0.15, 0.11, 14);
-    const mk2BoreGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.01, 12);
-    const mk2BaseCollarGeo = new THREE.CylinderGeometry(0.23, 0.20, 0.18, 16);
-    const mk2BaseRingGeo = new THREE.TorusGeometry(0.21, 0.035, 8, 20);
+    const mk2BarrelGeo = new THREE.CylinderGeometry(0.20, 0.21, 1.95, 16);
+    const mk2RingGeo = new THREE.CylinderGeometry(0.255, 0.255, 0.07, 16);
+    const mk2BandGeo = new THREE.CylinderGeometry(0.215, 0.215, 0.05, 16);
+    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.27, 0.24, 0.13, 16);
+    const mk2BoreGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.01, 14);
+    const mk2BaseCollarGeo = new THREE.CylinderGeometry(0.36, 0.32, 0.20, 18);
+    const mk2BaseRingGeo = new THREE.TorusGeometry(0.33, 0.045, 8, 22);
 
     MK2_BARREL_X.forEach(wx => {
         const bx = wx / MK2_SCALE;
         const bz = 0;
         addMk2Mesh(mk2BaseCollarGeo, mk2BodyMat, bx, 2.20, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2BaseRingGeo, mk2EdgeMat, bx, 2.30, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2BarrelGeo, mk2HullMat, bx, 2.50, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 2.20, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 2.80, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2BandGeo, mk2GlowCyanMat, bx, 2.50, bz, 0, 0, 0, BG).castShadow = false;
-        addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 3.20, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 3.26, bz, 0, 0, 0, BG);
+        addMk2Mesh(mk2BaseRingGeo, mk2EdgeMat, bx, 2.31, bz, 0, 0, 0, BG);
+        addMk2Mesh(mk2BarrelGeo, mk2HullMat, bx, 3.15, bz, 0, 0, 0, BG);
+        [2.50, 2.98, 3.46, 3.94].forEach(ry => {
+            addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, ry, bz, 0, 0, 0, BG);
+        });
+        [2.74, 3.70].forEach(gy => {
+            addMk2Mesh(mk2BandGeo, mk2GlowCyanMat, bx, gy, bz, 0, 0, 0, BG).castShadow = false;
+        });
+        addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 4.15, bz, 0, 0, 0, BG);
+        addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 4.215, bz, 0, 0, 0, BG);
     });
 
     // ---- ליבה זוהרת קדמית — חלק מהתותח עצמו, לא שדה האנרגיה ----
     const mk2CoreGroup = new THREE.Group();
-    mk2CoreGroup.position.set(0, 1.43, 1.16);
+    mk2CoreGroup.position.set(0, 2.45, 0.72);
+    mk2CoreGroup.scale.setScalar(1.15);
     advancedCannonGroup.add(mk2CoreGroup);
+    addMk2Mesh(new THREE.CylinderGeometry(0.74, 0.88, 0.34, 22), mk2DarkMat, 0, 2.17, 0.66);
+    addMk2Mesh(new THREE.TorusGeometry(0.80, 0.05, 8, 26), mk2EdgeMat, 0, 2.34, 0.66, Math.PI / 2, 0, 0);
 
     const mk2SocketGeo = new THREE.CylinderGeometry(0.66, 0.72, 0.22, 18);
     mk2SocketGeo.rotateX(Math.PI / 2);
@@ -3526,13 +3532,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2CoreShell = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 0), mk2CoreShellMat);
     mk2CoreGroup.add(mk2CoreShell);
     const mk2CoreInner = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(0.25, 1),
-        new THREE.MeshBasicMaterial({ color: 0x78d8ff, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false })
+        new THREE.IcosahedronGeometry(0.32, 1),
+        new THREE.MeshBasicMaterial({ color: 0x9fe6ff, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false })
     );
     mk2CoreGroup.add(mk2CoreInner);
     const mk2CoreWire = new THREE.Mesh(
         new THREE.DodecahedronGeometry(0.66, 0),
-        new THREE.MeshBasicMaterial({ color: 0x4aa8ff, wireframe: true, transparent: true, opacity: 0.9 })
+        new THREE.MeshBasicMaterial({ color: 0x7fd8ff, wireframe: true, transparent: true, opacity: 0.9 })
     );
     mk2CoreGroup.add(mk2CoreWire);
     const mk2CoreLight = new THREE.PointLight(0xa040ff, 1.5, 7.5, 1.6);
