@@ -3314,15 +3314,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ארבעה קנים: המיקום של כל קנה לרוחב (בעולם, לפני CANNON_SCALE) וגובה הלוע.
     // רוצה קנים קרובים או רחוקים יותר? משנים רק את המספרים כאן — גם הירי וגם העיצוב יתעדכנו.
-    const MK2_BARREL_X = [-0.62, -0.30, 0.30, 0.62];
-    const MK2_MUZZLE_Y = 3.55;
+    const MK2_BARREL_X = [-0.78, -0.40, 0.40, 0.78];
+    const MK2_MUZZLE_Y = 3.95;
 
     // ---- חומרים זוהרים (לא מושפעים מתאורה, תמיד בוהקים) ----
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
+    const mk2HullMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1d24, roughness: 0.38, metalness: 0.65,
+        envMap: mk2Env, envMapIntensity: 0.35
+    });
 
     // ---- שלדה כהה ונמוכה ----
     addMk2Rounded(2.30, 0.46, 2.10, 0.14, 0.07, mk2DarkMat, 0, 0.92, 0);
-    addMk2Rounded(2.00, 0.08, 1.80, 0.04, 0.02, mk2BodyMat, 0, 1.18, 0);
+    addMk2Rounded(2.00, 0.08, 1.80, 0.04, 0.02, mk2HullMat, 0, 1.18, 0);
     // פס אור כחול בחזית השלדה (מול המצלמה) ובצדדים
     addMk2Mesh(new THREE.BoxGeometry(1.50, 0.04, 0.03), mk2GlowCyanMat, 0, 0.92, 1.065);
     [-1, 1].forEach(s => addMk2Mesh(new THREE.BoxGeometry(0.03, 0.04, 1.50), mk2GlowCyanMat, s * 1.165, 0.92, 0));
@@ -3330,10 +3334,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- גוף עליון עגול עם טבעת אור ----
     const mk2HullGeo = new THREE.CylinderGeometry(0.85, 1.05, 0.62, 14);
     mk2HullGeo.scale(1, 1, 0.92);
-    addMk2Mesh(mk2HullGeo, mk2BodyMat, 0, 1.50, 0);
+    addMk2Mesh(mk2HullGeo, mk2HullMat, 0, 1.50, 0);
     const mk2HullTopGeo = new THREE.CylinderGeometry(0.62, 0.78, 0.12, 14);
     mk2HullTopGeo.scale(1, 1, 0.92);
-    addMk2Mesh(mk2HullTopGeo, mk2EdgeMat, 0, 1.87, 0);
+    addMk2Mesh(mk2HullTopGeo, mk2HullMat, 0, 1.87, 0);
     const mk2HullRingGeo = new THREE.TorusGeometry(1.05, 0.03, 6, 40);
     mk2HullRingGeo.rotateX(Math.PI / 2);
     mk2HullRingGeo.scale(1, 1, 0.92);
@@ -3346,22 +3350,22 @@ window.addEventListener('DOMContentLoaded', () => {
     const BG = advancedBarrelAssembly;
 
     // גשר כהה שמחזיק את הקנים
-    addMk2Rounded(1.50, 0.22, 0.46, 0.06, 0.03, mk2DarkMat, 0, 1.78, -0.05, 0, 0, 0, BG);
+    addMk2Rounded(1.90, 0.22, 0.46, 0.06, 0.03, mk2DarkMat, 0, 1.78, -0.05, 0, 0, 0, BG);
 
-    const mk2BarrelGeo = new THREE.CylinderGeometry(0.095, 0.10, 1.05, 14);
-    const mk2RingGeo = new THREE.CylinderGeometry(0.118, 0.118, 0.05, 14);
-    const mk2BandGeo = new THREE.CylinderGeometry(0.103, 0.103, 0.04, 14);
-    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.125, 0.115, 0.10, 14);
-    const mk2BoreGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.01, 12);
+    const mk2BarrelGeo = new THREE.CylinderGeometry(0.105, 0.11, 1.45, 14);
+    const mk2RingGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.05, 14);
+    const mk2BandGeo = new THREE.CylinderGeometry(0.114, 0.114, 0.04, 14);
+    const mk2MuzzleGeo = new THREE.CylinderGeometry(0.14, 0.13, 0.10, 14);
+    const mk2BoreGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.01, 12);
     MK2_BARREL_X.forEach(wx => {
         const bx = wx / MK2_SCALE;
         const bz = -0.05;
-        addMk2Mesh(mk2BarrelGeo, mk2BodyMat, bx, 2.08, bz, 0, 0, 0, BG);       // גוף הקנה
-        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 1.98, bz, 0, 0, 0, BG);         // טבעת תחתונה
-        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 2.40, bz, 0, 0, 0, BG);         // טבעת עליונה
-        addMk2Mesh(mk2BandGeo, mk2GlowCyanMat, bx, 2.19, bz, 0, 0, 0, BG).castShadow = false; // פס אור
-        addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 2.58, bz, 0, 0, 0, BG);       // בלם לוע
-        addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 2.635, bz, 0, 0, 0, BG);       // פתח הלוע
+        addMk2Mesh(mk2BarrelGeo, mk2HullMat, bx, 2.22, bz, 0, 0, 0, BG);       // גוף הקנה
+        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 2.05, bz, 0, 0, 0, BG);         // טבעת תחתונה
+        addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, 2.62, bz, 0, 0, 0, BG);         // טבעת עליונה
+        addMk2Mesh(mk2BandGeo, mk2GlowCyanMat, bx, 2.34, bz, 0, 0, 0, BG).castShadow = false; // פס אור
+        addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 2.99, bz, 0, 0, 0, BG);       // בלם לוע
+        addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 3.045, bz, 0, 0, 0, BG);       // פתח הלוע
     });
 
     // ---- ליבה זוהרת בחזית (סגול + כחול), עם מסגרת ----
@@ -3375,36 +3379,27 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Mesh(new THREE.TorusGeometry(0.45, 0.07, 8, 20), mk2EdgeMat, 0, 0, 0, 0, 0, 0, mk2CoreGroup);
 
     const mk2CoreShellMat = new THREE.MeshStandardMaterial({
-        color: 0x24104a, emissive: 0x9b4dff, emissiveIntensity: 1.0,
+        color: 0x4a12a8, emissive: 0xa23cff, emissiveIntensity: 1.6,
         roughness: 0.35, metalness: 0.2, flatShading: true
     });
-    const mk2CoreShell = new THREE.Mesh(new THREE.DodecahedronGeometry(0.34, 0), mk2CoreShellMat);
+    const mk2CoreShell = new THREE.Mesh(new THREE.DodecahedronGeometry(0.38, 0), mk2CoreShellMat);
     mk2CoreGroup.add(mk2CoreShell);
 
     const mk2CoreInner = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(0.20, 1),
-        new THREE.MeshBasicMaterial({ color: 0x9ff0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })
+        new THREE.IcosahedronGeometry(0.17, 1),
+        new THREE.MeshBasicMaterial({ color: 0x6fd0ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })
     );
     mk2CoreGroup.add(mk2CoreInner);
 
     const mk2CoreWire = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(0.41, 0),
-        new THREE.MeshBasicMaterial({ color: 0x6fdcff, wireframe: true, transparent: true, opacity: 0.85 })
+        new THREE.DodecahedronGeometry(0.45, 0),
+        new THREE.MeshBasicMaterial({ color: 0x4aa8ff, wireframe: true, transparent: true, opacity: 0.9 })
     );
     mk2CoreGroup.add(mk2CoreWire);
 
-    const mk2CoreLight = new THREE.PointLight(0xa070ff, 1.1, 7, 1.6);
+    const mk2CoreLight = new THREE.PointLight(0xa040ff, 1.4, 7, 1.6);
     mk2CoreLight.position.set(0, 0.1, 0.7);
     mk2CoreGroup.add(mk2CoreLight);
-
-    // ---- מגן שקוף סביב הגוף העליון (קישוט בלבד, לא משפיע על המשחק) ----
-    const mk2ShieldMat = new THREE.MeshBasicMaterial({
-        color: 0x8fd8ff, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide
-    });
-    const mk2Shield = new THREE.Mesh(new THREE.SphereGeometry(1.5, 28, 18), mk2ShieldMat);
-    mk2Shield.position.set(0, 1.7, 0.1);
-    mk2Shield.renderOrder = 5;
-    advancedCannonGroup.add(mk2Shield);
 
     // ---- מתלים וארבעה גלגלים עם טבעות אור כחולות ----
     [-1, 1].forEach(side => {
@@ -3450,13 +3445,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateMk2Glow(time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
         const kick = Math.min(1, Math.max(0, cannonRecoil) * 5);
-        mk2CoreShellMat.emissiveIntensity = 0.8 + pulse * 0.5 + kick * 1.2;
+        mk2CoreShellMat.emissiveIntensity = 1.3 + pulse * 0.5 + kick * 1.2;
         mk2CoreInner.scale.setScalar(0.9 + pulse * 0.2 + kick * 0.35);
         mk2CoreWire.rotation.y = time * 0.0006;
         mk2CoreWire.rotation.x = time * 0.0004;
         mk2CoreShell.rotation.y = -time * 0.0005;
         mk2CoreLight.intensity = 0.9 + pulse * 0.4 + kick * 1.2;
-        mk2ShieldMat.opacity = 0.10 + pulse * 0.04 + kick * 0.06;
     }
 
     // נקודת רתיעה מקומית לתותח MK-II.
@@ -3809,20 +3803,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(0.15, 12, 12),
-            new THREE.MeshBasicMaterial({ color: blue ? 0xcff4ff : 0xffd24a })
+            new THREE.MeshBasicMaterial({ color: blue ? 0x9fe3ff : 0xffd24a })
         );
         const shell = new THREE.Mesh(
             new THREE.SphereGeometry(0.24, 12, 12),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x4fc3ff : 0xff9a1a, opacity: 0.35, ...glow })
+            new THREE.MeshBasicMaterial({ color: blue ? 0x2f8cff : 0xff9a1a, opacity: 0.32, ...glow })
         );
         const halo = new THREE.Mesh(
             new THREE.SphereGeometry(0.36, 10, 10),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x2a7bff : 0xff6a10, opacity: 0.07, ...glow })
+            new THREE.MeshBasicMaterial({ color: blue ? 0x1a50ff : 0xff6a10, opacity: 0.06, ...glow })
         );
         // זנב להבה: חרוט מחודד שיורד מהכדור.
         const trail = new THREE.Mesh(
             new THREE.ConeGeometry(0.11, 0.75, 8, 1, true),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x4fc3ff : 0xff6a10, opacity: 0.32, side: THREE.DoubleSide, transparent: true, depthWrite: false })
+            new THREE.MeshBasicMaterial({ color: blue ? 0x2f8cff : 0xff6a10, opacity: 0.38, side: THREE.DoubleSide, transparent: true, depthWrite: false })
         );
         trail.rotation.x = Math.PI;
         trail.position.y = -0.45;
@@ -4198,7 +4192,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const flash = new THREE.Mesh(
             new THREE.SphereGeometry(0.24, 8, 8),
             new THREE.MeshBasicMaterial({
-                color: 0xfff1a8,
+                color: activeCannon === 'mk2' ? 0x8fdcff : 0xfff1a8,
                 transparent: true,
                 opacity: 0.95
             })
