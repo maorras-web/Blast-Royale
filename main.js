@@ -3338,6 +3338,78 @@ window.addEventListener('DOMContentLoaded', () => {
         addMk2Mesh(new THREE.BoxGeometry(0.035, 0.045, 1.60), mk2GlowCyanMat, side * 1.92, 1.04, 0).castShadow = false;
     });
 
+    // ---- שכבת פירוט מכנית: מוסיפה עומק לגוף בלי לשנות את הקנים ----
+    const mk2DetailMat = new THREE.MeshStandardMaterial({
+        color: 0x222831, roughness: 0.28, metalness: 0.82,
+        envMap: mk2Env, envMapIntensity: 0.52
+    });
+    const mk2FastenerMat = new THREE.MeshStandardMaterial({
+        color: 0x9da8b5, roughness: 0.18, metalness: 0.92,
+        envMap: mk2Env, envMapIntensity: 0.75
+    });
+
+    // מסגרת קדמית מדורגת סביב הליבה — לא מכסה את הליבה ולא משנה את שדה האנרגיה.
+    addMk2Rounded(2.42, 0.18, 0.16, 0.045, 0.02, mk2DetailMat, 0, 1.04, 1.31);
+    addMk2Rounded(2.42, 0.16, 0.16, 0.04, 0.02, mk2BodyMat, 0, 1.72, 1.28);
+
+    // ארבעה עמודי חיזוק שממסגרים את הליבה.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.20, 0.52, 0.18, 0.045, 0.02, mk2DetailMat, side * 1.05, 1.39, 1.30);
+        addMk2Rounded(0.16, 0.24, 0.20, 0.035, 0.015, mk2EdgeMat, side * 1.27, 1.20, 1.29);
+        addMk2Rounded(0.16, 0.24, 0.20, 0.035, 0.015, mk2EdgeMat, side * 1.27, 1.58, 1.29);
+    });
+
+    // פאנלים מדורגים על מכסה הגוף — נותנים לו תחושת מכונה ולא קופסה חלקה.
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.72, 0.12, 1.32, 0.035, 0.018, mk2DetailMat, side * 0.92, 1.62, 0.02);
+        addMk2Rounded(0.48, 0.08, 1.05, 0.025, 0.012, mk2EdgeMat, side * 0.92, 1.72, 0.02);
+    });
+
+    // צלעות חיזוק אלכסוניות בצידי הגוף.
+    [-1, 1].forEach(side => {
+        addMk2Link(
+            [side * 1.46, 1.52, -0.82],
+            [side * 1.82, 1.08, -0.30],
+            0.13, 0.12, mk2DetailMat
+        );
+        addMk2Link(
+            [side * 1.46, 1.52, 0.82],
+            [side * 1.82, 1.08, 0.30],
+            0.13, 0.12, mk2DetailMat
+        );
+    });
+
+    // מחברי מתכת קטנים בחזית — ארבעה ברגים/פיני חיבור בולטים.
+    [-1, 1].forEach(side => {
+        [-1, 1].forEach(v => {
+            addMk2Mesh(
+                new THREE.CylinderGeometry(0.055, 0.055, 0.035, 10),
+                mk2FastenerMat,
+                side * 1.18, 1.18 + v * 0.30, 1.40,
+                Math.PI / 2, 0, 0
+            );
+        });
+    });
+
+    // בתי צד קטנים מעל הגלגלים — מחברים בין השריון לשלדת הגלגל.
+    [-1, 1].forEach(side => {
+        [0.72, -0.72].forEach(z => {
+            addMk2Rounded(0.46, 0.18, 0.48, 0.04, 0.02, mk2DetailMat, side * 1.72, 1.12, z);
+            addMk2Rounded(0.30, 0.10, 0.34, 0.025, 0.012, mk2EdgeMat, side * 1.78, 1.25, z);
+        });
+    });
+
+    // ארבעה חיזוקים קצרים סביב בסיס הגשר העליון — תומכים ויזואלית בארבעת הקנים.
+    [-1, 1].forEach(side => {
+        [-1, 1].forEach(zSide => {
+            addMk2Rounded(
+                0.22, 0.28, 0.34, 0.045, 0.02,
+                mk2DetailMat,
+                side * 0.92, 1.88, zSide * 0.46
+            );
+        });
+    });
+
     // ---- גשר עליון כבד לקנים ----
     addMk2Rounded(2.18, 0.34, 1.36, 0.10, 0.05, mk2DarkMat, 0, 1.82, 0);
     addMk2Rounded(1.92, 0.18, 1.12, 0.06, 0.03, mk2BodyMat, 0, 2.02, 0);
