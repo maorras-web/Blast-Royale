@@ -309,10 +309,10 @@ window.addEventListener('DOMContentLoaded', () => {
             horizon = '#d8eff5';
             glow = 'rgba(236, 251, 255, 0.64)';
         } else if (mapId === 'volcano') {
-            top = '#160f18';
-            middle = '#3e1b24';
-            horizon = '#8e3b2d';
-            glow = 'rgba(255, 126, 62, 0.36)';
+            top = '#150b2b';
+            middle = '#2e1759';
+            horizon = '#6b2a75';
+            glow = 'rgba(255, 100, 140, 0.30)';
         }
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 512);
@@ -628,15 +628,15 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function addEnvironmentalDepth(mapId) {
-        addSkyDome(mapId);
+    function addEnvironmentalDepth(mapId, volcanoSky) {
+        addSkyDome(volcanoSky ? 'volcano' : mapId);
         if (mapId === 'desert') {
-            addSkyBackdrop();   // שמיים דרמטיים + שמש מאחורי הפירמידה (במקום כדור השמש הלבן)
+            if (!volcanoSky) addSkyBackdrop();   // שמיים דרמטיים + שמש מאחורי הפירמידה (במקום כדור השמש הלבן)
         } else {
             addSunGlow(mapId);
         }
 
-        if (mapId === 'desert') {
+        if (mapId === 'desert' && !volcanoSky) {
             // שכבת אובך חמה באופק — מחברת את הפירמידות לשמיים.
             const hazeMat = new THREE.MeshBasicMaterial({
                 color: 0xffc27a,
@@ -2050,7 +2050,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const smokeMat = new THREE.MeshBasicMaterial({ color: 0x3b302b, transparent: true, opacity: 0.4, depthWrite: false });
 
         // הר געש מרכזי גדול אחד: [x, z, רדיוס בסיס, גובה]
-        [[0, -50, 20, 26]].forEach(([x, z, R, H], vi) => {
+        [[0, -70, 23, 30]].forEach(([x, z, R, H], vi) => {
             const r = R * 0.2;
             addMesh(new THREE.CylinderGeometry(r, R, H, 24, 5), rockMat, x, H / 2, z);
             addMesh(new THREE.CylinderGeometry(r * 0.9, r * 0.9, 0.1, 24), lavaMat, x, H + 0.02, z, false, false);
@@ -2083,7 +2083,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // אובך לבה בבסיס ההרים + שלוליות לבה בצדי המסלול.
         const haze = addMesh(new THREE.PlaneGeometry(44, 2.4),
             new THREE.MeshBasicMaterial({ color: 0xff5a1a, transparent: true, opacity: 0.12, depthWrite: false, fog: false }),
-            0, 1.2, -38, false, false);
+            0, 1.2, -56, false, false);
         haze.renderOrder = -5;
         [[-9, -14, 1.5], [10, -18, 1.9]].forEach(([x, z, rad]) => {
             addMesh(new THREE.CylinderGeometry(rad, rad, 0.03, 20), lavaMat, x, 0.04, z, false, false);
@@ -2098,7 +2098,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
-        addEnvironmentalDepth(theme);
+        addEnvironmentalDepth(theme, isVolcano);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
         const groundColor = isVolcano ? 0x2a211d : GRASS_GREEN;
@@ -2160,6 +2160,10 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.fog.color.set(FOG_COLOR);
             scene.fog.near = FOG_NEAR;
             scene.fog.far = FOG_FAR;
+            if (isVolcano) {
+                scene.background.set(0x3a1f5c);
+                scene.fog.color.set(0x3a1f5c);
+            }
 
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
