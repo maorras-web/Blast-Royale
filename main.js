@@ -3305,17 +3305,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- קבועים (MK2_SCALE ו-MK2_WS משמשים גם את לולאת האנימציה) ----
-    const MK2_SCALE = 1.50;
+    const MK2_SCALE = 0.70;
     advancedCannonGroup.scale.setScalar(MK2_SCALE);
-    const MK2_WS = 1.30;                                     // קנה מידה לגלגל
-    const MK2_WX = 1.95;                                     // מרחק הגלגלים מהמרכז
+    const MK2_WS = 1 / MK2_SCALE;                            // הגלגל באותו גודל אמיתי כמו בקלאסי
+    const MK2_WX = 2.05;                                     // מרחק הגלגלים מהמרכז
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP; // מרכז הגלגל (התחתית על הקרקע)
     const mk2Lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 
     // ארבעה קנים: המיקום של כל קנה לרוחב (בעולם, לפני CANNON_SCALE) וגובה הלוע.
     // רוצה קנים קרובים או רחוקים יותר? משנים רק את המספרים כאן — גם הירי וגם העיצוב יתעדכנו.
-    const MK2_BARREL_X = [-0.95, -0.52, 0.52, 0.95];
-    const MK2_MUZZLE_Y = 5.1;
+    const MK2_BARREL_X = [-0.58, -0.32, 0.32, 0.58];
+    const MK2_MUZZLE_Y = 2.2;
 
     // ---- חומרים זוהרים (לא מושפעים מתאורה, תמיד בוהקים) ----
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
@@ -3350,7 +3350,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const BG = advancedBarrelAssembly;
 
     // גשר כהה שמחזיק את הקנים
-    addMk2Rounded(1.90, 0.22, 0.46, 0.06, 0.03, mk2DarkMat, 0, 2.00, -0.05, 0, 0, 0, BG);
+    addMk2Rounded(2.05, 0.22, 0.46, 0.06, 0.03, mk2DarkMat, 0, 2.00, -0.05, 0, 0, 0, BG);
 
     const mk2BarrelGeo = new THREE.CylinderGeometry(0.12, 0.125, 1.30, 14);
     const mk2RingGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.06, 14);
@@ -3379,7 +3379,7 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Mesh(new THREE.TorusGeometry(0.58, 0.08, 8, 20), mk2EdgeMat, 0, 0, 0, 0, 0, 0, mk2CoreGroup);
 
     const mk2CoreShellMat = new THREE.MeshStandardMaterial({
-        color: 0x5a14c8, emissive: 0xb040ff, emissiveIntensity: 2.2,
+        color: 0x3a0d80, emissive: 0x8a2be2, emissiveIntensity: 0.9,
         roughness: 0.35, metalness: 0.2, flatShading: true
     });
     const mk2CoreShell = new THREE.Mesh(new THREE.DodecahedronGeometry(0.50, 0), mk2CoreShellMat);
@@ -3387,7 +3387,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const mk2CoreInner = new THREE.Mesh(
         new THREE.IcosahedronGeometry(0.22, 1),
-        new THREE.MeshBasicMaterial({ color: 0x6fd0ff, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0x6fd0ff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false })
     );
     mk2CoreGroup.add(mk2CoreInner);
 
@@ -3445,7 +3445,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateMk2Glow(time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
         const kick = Math.min(1, Math.max(0, cannonRecoil) * 5);
-        mk2CoreShellMat.emissiveIntensity = 1.8 + pulse * 0.6 + kick * 1.2;
+        mk2CoreShellMat.emissiveIntensity = 0.8 + pulse * 0.3 + kick * 0.6;
         mk2CoreInner.scale.setScalar(0.9 + pulse * 0.2 + kick * 0.35);
         mk2CoreWire.rotation.y = time * 0.0006;
         mk2CoreWire.rotation.x = time * 0.0004;
