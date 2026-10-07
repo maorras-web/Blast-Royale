@@ -169,6 +169,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // חלקיקי אווירה לכל מפה — מעט אובייקטים, הרבה יותר תחושת עולם חי.
     let weatherParticles = null;
+    let volcanoFx = null;   // אפקטים חיים של מפת הר הגעש (זוהר, גחלים, כוכבים)
 
     // בשלב הזה המשחק מתמקד במפה אחת בלבד: יער.
     // שומרים את ההגדרה פשוטה כדי שכל השיפור הגרפי יושקע בעולם אחד.
@@ -702,7 +703,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const group = new THREE.Group();
         mapGroup.add(group);
 
-        const count = mapId === 'ice' ? 52 : mapId === 'volcano' ? 42 : mapId === 'forest' ? 34 : 22;
+        const count = mapId === 'ice' ? 52 : mapId === 'volcano' ? 70 : mapId === 'forest' ? 34 : 22;
         const positions = new Float32Array(count * 3);
         const velocity = new Float32Array(count * 3);
 
@@ -724,8 +725,8 @@ window.addEventListener('DOMContentLoaded', () => {
             opacity = 0.52;
         } else if (mapId === 'volcano') {
             color = 0xff8b45;
-            size = 0.060;
-            opacity = 0.36;
+            size = 0.14;
+            opacity = 0.62;
         }
 
         for (let i = 0; i < count; i++) {
@@ -781,6 +782,27 @@ window.addEventListener('DOMContentLoaded', () => {
                 mapGroup.add(glow);
             });
         }
+    }
+
+    function updateVolcanoFx(time) {
+        const f = volcanoFx;
+        if (!f) return;
+        const t = time * 0.001;
+        const flick = 0.85 + 0.10 * Math.sin(t * 3.1) + 0.05 * Math.sin(t * 7.7);
+        f.craterGlow.material.opacity = flick;
+        f.plume.material.opacity = 0.5 * flick;
+        f.starsSmall.material.opacity = 0.7 + 0.25 * Math.sin(t * 1.6);
+        f.starsBig.material.opacity = 0.75 + 0.25 * Math.sin(t * 2.3 + 1.2);
+
+        const { ePos, eVel, EMBERS, respawn, CH } = f;
+        for (let i = 0; i < EMBERS; i++) {
+            const i3 = i * 3;
+            ePos[i3] += eVel[i3] + Math.sin(t * 2 + i) * 0.01;
+            ePos[i3 + 1] += eVel[i3 + 1];
+            ePos[i3 + 2] += eVel[i3 + 2];
+            if (ePos[i3 + 1] > CH + 34 + (i % 7)) respawn(i, false);
+        }
+        f.embers.geometry.attributes.position.needsUpdate = true;
     }
 
     function updateWeatherParticles() {
@@ -2041,13 +2063,56 @@ window.addEventListener('DOMContentLoaded', () => {
         return texture;
     }
 
+    // טקסטורת זוהר רך (עיגול שדועך) — משמשת לפתח הבוער ולירח.
+    function makeGlowTexture(inner, outer) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const g = c.getContext('2d');
+        const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+        grad.addColorStop(0, inner);
+        grad.addColorStop(0.35, inner.replace(/[0-9.]+\)$/, '0.45)'));
+        grad.addColorStop(1, outer);
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 128, 128);
+        const tex = new THREE.CanvasTexture(c);
+        tex.encoding = THREE.sRGBEncoding;
+        return tex;
+    }
+
+    function makeMoonTexture() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 256;
+        const g = c.getContext('2d');
+        const halo = g.createRadialGradient(128, 128, 40, 128, 128, 128);
+        halo.addColorStop(0, 'rgba(225,195,255,0.40)');
+        halo.addColorStop(1, 'rgba(225,195,255,0)');
+        g.fillStyle = halo;
+        g.fillRect(0, 0, 256, 256);
+        const disc = g.createRadialGradient(112, 108, 8, 128, 128, 66);
+        disc.addColorStop(0, '#fbf3ff');
+        disc.addColorStop(1, '#c9b2ee');
+        g.fillStyle = disc;
+        g.beginPath();
+        g.arc(128, 128, 62, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = 'rgba(140,110,190,0.30)';
+        [[104, 112, 12], [146, 100, 8], [138, 148, 14], [108, 154, 7], [158, 128, 6]].forEach(([x, y, r]) => {
+            g.beginPath();
+            g.arc(x, y, r, 0, Math.PI * 2);
+            g.fill();
+        });
+        const tex = new THREE.CanvasTexture(c);
+        tex.encoding = THREE.sRGBEncoding;
+        return tex;
+    }
+
     function addVolcanoes(rockTexture) {
         const rockMat = new THREE.MeshStandardMaterial({
-            color: 0x3a2c25, map: rockTexture.map, bumpMap: rockTexture.bumpMap, bumpScale: 0.9, roughness: 0.95, metalness: 0
+            color: 0x3a2c25, emissive: 0x3a1408, emissiveIntensity: 0.7, map: rockTexture.map, bumpMap: rockTexture.bumpMap, bumpScale: 0.9, roughness: 0.95, metalness: 0
         });
         const lavaMat = new THREE.MeshBasicMaterial({ color: 0xff6a1f, fog: false });
         const glowMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a, transparent: true, opacity: 0.32, depthWrite: false, fog: false });
-        const smokeMat = new THREE.MeshBasicMaterial({ color: 0x3b302b, transparent: true, opacity: 0.4, depthWrite: false });
+        const smokeMat = new THREE.MeshBasicMaterial({ color: 0x4a2a42, transparent: true, opacity: 0.4, depthWrite: false });
 
         // הר געש מרכזי גדול אחד: [x, z, רדיוס בסיס, גובה]
         [[0, -70, 23, 30]].forEach(([x, z, R, H], vi) => {
@@ -2063,14 +2128,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // זרמי לבה לאורך המדרון, פונים למצלמה.
             const slope = Math.atan((R - r) / H);
-            for (let i = 0; i < 4; i++) {
-                const len = 0.45 + ((i + vi) % 3) * 0.1;
+            for (let i = 0; i < 6; i++) {
+                const len = 0.6 + ((i + vi) % 3) * 0.12;
                 const tc = len / 2;
                 const holder = new THREE.Group();
                 holder.position.set(x, 0, z);
-                holder.rotation.y = -Math.PI * (0.25 + 0.17 * i);
+                holder.rotation.y = -Math.PI * (0.24 + 0.11 * i);
                 const streak = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.07, (H * len) / Math.cos(slope), 0.22 + (i % 2) * 0.12),
+                    new THREE.BoxGeometry(0.16, (H * len) / Math.cos(slope), 0.9 + (i % 2) * 0.5),
                     lavaMat
                 );
                 streak.position.set(r + (R - r) * tc + 0.1, H * (1 - tc), 0);
@@ -2079,6 +2144,78 @@ window.addEventListener('DOMContentLoaded', () => {
                 mapGroup.add(holder);
             }
         });
+
+        // ===== תוכן חי: פתח בוער, גחלים עולות, ירח וכוכבים =====
+        const CZ = -70, CH = 30;   // מיקום ההר (z) וגובהו
+        const glowAdd = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false };
+
+        // זוהר גדול מעל הפתח + עמוד אור עולה.
+        const craterGlow = new THREE.Mesh(new THREE.PlaneGeometry(46, 46),
+            new THREE.MeshBasicMaterial({ map: makeGlowTexture('rgba(255,150,60,1)', 'rgba(255,70,20,0)'), ...glowAdd }));
+        craterGlow.position.set(0, CH + 3, CZ + 6);
+        craterGlow.renderOrder = -3;
+        mapGroup.add(craterGlow);
+
+        const plume = new THREE.Mesh(new THREE.PlaneGeometry(30, 44),
+            new THREE.MeshBasicMaterial({ map: makeGlowTexture('rgba(255,110,50,1)', 'rgba(255,60,20,0)'), ...glowAdd }));
+        plume.scale.set(0.42, 1, 1);
+        plume.position.set(0, CH + 16, CZ + 5);
+        plume.renderOrder = -3;
+        mapGroup.add(plume);
+
+        // גחלים שעולות מהפתח.
+        const EMBERS = 110;
+        const ePos = new Float32Array(EMBERS * 3);
+        const eVel = new Float32Array(EMBERS * 3);
+        const respawn = (i, anywhere) => {
+            const i3 = i * 3;
+            ePos[i3] = (Math.random() - 0.5) * 7;
+            ePos[i3 + 1] = CH + (anywhere ? Math.random() * 34 : 0.5);
+            ePos[i3 + 2] = CZ + 2 + (Math.random() - 0.5) * 6;
+            eVel[i3] = (Math.random() - 0.5) * 0.07;
+            eVel[i3 + 1] = 0.08 + Math.random() * 0.14;
+            eVel[i3 + 2] = (Math.random() - 0.3) * 0.02;
+        };
+        for (let i = 0; i < EMBERS; i++) respawn(i, true);
+        const eGeo = new THREE.BufferGeometry();
+        eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
+        const embers = new THREE.Points(eGeo, new THREE.PointsMaterial({
+            color: 0xffa04a, size: 0.9, transparent: true, opacity: 0.95,
+            depthWrite: false, blending: THREE.AdditiveBlending, fog: false
+        }));
+        embers.frustumCulled = false;
+        embers.renderOrder = -2;
+        mapGroup.add(embers);
+
+        // כוכבים בשמיים מאחורי ההר.
+        const makeStars = (n, size, color) => {
+            const sp = new Float32Array(n * 3);
+            for (let i = 0; i < n; i++) {
+                sp[i * 3] = (Math.random() - 0.5) * 190;
+                sp[i * 3 + 1] = 20 + Math.random() * 80;
+                sp[i * 3 + 2] = -150 - Math.random() * 6;
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+            const pts = new THREE.Points(geo, new THREE.PointsMaterial({
+                color, size, transparent: true, opacity: 0.9, depthWrite: false, fog: false, toneMapped: false
+            }));
+            pts.frustumCulled = false;
+            pts.renderOrder = -85;
+            mapGroup.add(pts);
+            return pts;
+        };
+        const starsSmall = makeStars(170, 0.55, 0xf1e6ff);
+        const starsBig = makeStars(40, 1.05, 0xffffff);
+
+        // ירח גדול ורך.
+        const moon = new THREE.Mesh(new THREE.PlaneGeometry(32, 32),
+            new THREE.MeshBasicMaterial({ map: makeMoonTexture(), transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+        moon.position.set(-17, 62, -148);
+        moon.renderOrder = -84;
+        mapGroup.add(moon);
+
+        volcanoFx = { craterGlow, plume, embers, ePos, eVel, EMBERS, respawn, CH, starsSmall, starsBig };
 
         // אובך לבה בבסיס ההרים + שלוליות לבה בצדי המסלול.
         const haze = addMesh(new THREE.PlaneGeometry(44, 2.4),
@@ -2098,6 +2235,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
+        volcanoFx = null;
         addEnvironmentalDepth(theme, isVolcano);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
@@ -2152,7 +2290,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addDeepPerspectiveCorridor(theme);
         if (!isVolcano) addDesertDepthTransition(theme);   // קבוצות עשב וצלליות ירוקות
         add3DGrass(mapId);   // מחזיר מיד אם המפה אינה 'forest'
-        addWeatherParticles(theme);
+        addWeatherParticles(isVolcano ? 'volcano' : theme);
 
         if (theme === 'desert') {
             // שקיעה זהובה: רקע, ערפל ותאורה חמים.
@@ -2163,6 +2301,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (isVolcano) {
                 scene.background.set(0x3a1f5c);
                 scene.fog.color.set(0x3a1f5c);
+                scene.fog.near = 26;
+                scene.fog.far = 125;
             }
 
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
@@ -5216,6 +5356,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         updateWeatherParticles();
+        updateVolcanoFx(time);
 
         // ======================================
         // תנועת התותח + רתיעה קטנה בירי
