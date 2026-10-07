@@ -3392,32 +3392,45 @@ window.addEventListener('DOMContentLoaded', () => {
     scarabHalo.castShadow = false;
     addMk2Mesh(new THREE.TorusGeometry(0.27, 0.03, 8, 24), scarabGoldMat, 0, 1.30, 1.0);
 
-    // כנפיים קצרות משני הצדדים (נפתחות מעט בעת ירי)
-    function scarabWingShape(sign) {
-        const pts = [[0, 0.55], [0.95, 0.25], [1.15, -0.35], [0.75, -0.85], [0, -0.75]];
-        const shape = new THREE.Shape();
-        pts.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x * sign, y) : shape.lineTo(x * sign, y)));
-        shape.closePath();
-        return shape;
+    // כנפיים: מניפת נוצות מחודדות לכל צד (נפתחות בעת ירי)
+    function scarabFeatherGeo(len, wid) {
+        const sh = new THREE.Shape();
+        sh.moveTo(0, -wid / 2);
+        sh.lineTo(len * 0.84, -wid / 2);
+        sh.lineTo(len, 0);
+        sh.lineTo(len * 0.84, wid / 2);
+        sh.lineTo(0, wid / 2);
+        sh.closePath();
+        const g = new THREE.ExtrudeGeometry(sh, { depth: 0.05, bevelEnabled: false });
+        g.rotateX(-Math.PI / 2);
+        return g;
     }
+    const scarabFeathers = [
+        { len: 1.50, wid: 0.34, yaw: 0.30, tilt: 0.24 },
+        { len: 1.58, wid: 0.34, yaw: 0.03, tilt: 0.20 },
+        { len: 1.42, wid: 0.32, yaw: -0.24, tilt: 0.16 },
+        { len: 1.16, wid: 0.28, yaw: -0.52, tilt: 0.12 }
+    ];
     const scarabWings = [];
     [-1, 1].forEach(sign => {
         const pivot = new THREE.Group();
         pivot.position.set(sign * 1.25, 1.0, 0.2);
         advancedCannonGroup.add(pivot);
-        const geo = new THREE.ExtrudeGeometry(scarabWingShape(sign), { depth: 0.10, bevelEnabled: false });
-        geo.rotateX(-Math.PI / 2);
-        const wing = new THREE.Mesh(geo, scarabWingMat);
-        wing.castShadow = true;
-        wing.receiveShadow = true;
-        pivot.add(wing);
-        // צלעות זהב על הכנף
-        [[0.05, 0.20, 0.95, 0.12], [0.05, 0.00, 1.10, -0.18], [0.05, -0.30, 0.80, -0.60]].forEach(([x1, z1, x2, z2]) => {
-            const dx = (x2 - x1) * sign, dz = z2 - z1;
-            const rib = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(dx, dz), 0.03, 0.045), scarabGoldMat);
-            rib.position.set((x1 * sign + x2 * sign) / 2, 0.115, (z1 + z2) / 2);
-            rib.rotation.y = -Math.atan2(dz, dx);
-            pivot.add(rib);
+        scarabFeathers.forEach(f => {
+            const g = new THREE.Group();
+            g.rotation.set(0, sign > 0 ? f.yaw : Math.PI - f.yaw, f.tilt);
+            const blade = new THREE.Mesh(scarabFeatherGeo(f.len, f.wid), scarabWingMat);
+            blade.castShadow = true;
+            blade.receiveShadow = true;
+            g.add(blade);
+            const shaft = new THREE.Mesh(new THREE.BoxGeometry(f.len * 0.86, 0.014, 0.03), scarabGoldMat);
+            shaft.position.set(f.len * 0.43, 0.058, 0);
+            g.add(shaft);
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 4), scarabGoldMat);
+            tip.rotation.z = -Math.PI / 2;
+            tip.position.set(f.len * 0.99, 0.03, 0);
+            g.add(tip);
+            pivot.add(g);
         });
         pivot.userData.sign = sign;
         pivot.rotation.z = sign * -0.10;
@@ -3433,17 +3446,32 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(advancedBarrelAssembly);
     const BG = advancedBarrelAssembly;
     const BZ = 0.15;
-    addMk2Rounded(1.30, 0.22, 0.90, 0.07, 0.03, scarabBlackMat, 0, 1.42, BZ, 0, 0, 0, BG);       // צווארון בבסיס
-    addMk2Rounded(1.38, 0.05, 0.96, 0.02, 0.01, scarabGoldMat, 0, 1.54, BZ, 0, 0, 0, BG);
-    addMk2Rounded(0.96, 1.00, 0.52, 0.08, 0.03, scarabBlackMat, 0, 2.00, BZ, 0, 0, 0, BG);       // גוף הקנה
-    [1.72, 2.02, 2.32].forEach(y => addMk2Rounded(1.06, 0.07, 0.62, 0.03, 0.01, scarabGoldMat, 0, y, BZ, 0, 0, 0, BG)); // טבעות זהב
-    addMk2Rounded(0.05, 0.86, 0.04, 0.02, 0.01, scarabGoldMat, 0, 2.02, BZ + 0.27, 0, 0, 0, BG); // פס זהב אנכי בגב
-    addMk2Rounded(1.08, 0.16, 0.64, 0.04, 0.02, scarabBlackMat, 0, 2.58, BZ, 0, 0, 0, BG);       // בלם לוע
-    addMk2Rounded(1.12, 0.04, 0.68, 0.02, 0.01, scarabGoldMat, 0, 2.68, BZ, 0, 0, 0, BG);
+    // גזרת פירמידה קטומה מרובעת: חצי-רוחב תחתון/עליון, גובה, ויחס עומק לרוחב.
+    function scarabFrustum(hwBottom, hwTop, h, depthRatio, mat, y) {
+        const g = new THREE.CylinderGeometry(hwTop * Math.SQRT2, hwBottom * Math.SQRT2, h, 4, 1);
+        g.rotateY(Math.PI / 4);
+        g.scale(1, 1, depthRatio);
+        return addMk2Mesh(g, mat, 0, y, BZ, 0, 0, 0, BG);
+    }
+    // שרוול רחב שנשפך אל הכיפה, כדי שהקנה ייראה חלק מהגוף
+    scarabFrustum(0.95, 0.66, 0.32, 0.58, scarabBlackMat, 1.46);
+    addMk2Rounded(1.40, 0.05, 0.84, 0.02, 0.01, scarabGoldMat, 0, 1.62, BZ, 0, 0, 0, BG);
+    // תמיכות זהב משופעות משני הצדדים (כמו כתפיים)
+    [-1, 1].forEach(sd => {
+        addMk2Rounded(0.11, 0.48, 0.34, 0.04, 0.02, scarabGoldMat, sd * 0.74, 1.60, BZ, 0, 0, sd * -0.50, BG);
+    });
+    // גוף הקנה: מתחדד כלפי מעלה
+    scarabFrustum(0.60, 0.50, 0.80, 0.58, scarabBlackMat, 1.95);
+    addMk2Rounded(1.20, 0.06, 0.72, 0.03, 0.01, scarabGoldMat, 0, 1.78, BZ, 0, 0, 0, BG);
+    addMk2Rounded(1.10, 0.06, 0.66, 0.03, 0.01, scarabGoldMat, 0, 2.20, BZ, 0, 0, 0, BG);
+    addMk2Rounded(0.05, 0.50, 0.04, 0.02, 0.01, scarabGoldMat, 0, 1.97, BZ + 0.33, 0, 0, 0, BG);
+    // לוע מתרחב עם שפת זהב
+    scarabFrustum(0.50, 0.57, 0.16, 0.58, scarabBlackMat, 2.43);
+    addMk2Rounded(1.20, 0.04, 0.72, 0.02, 0.01, scarabGoldMat, 0, 2.52, BZ, 0, 0, 0, BG);
     [-1, 1].forEach(side => {
         const bx = side * 0.37 / MK2_SCALE;
-        addMk2Mesh(new THREE.BoxGeometry(0.30, 0.012, 0.30), mk2BlackMat, bx, 2.692, BZ, 0, 0, 0, BG);
-        const glow = addMk2Mesh(new THREE.SphereGeometry(0.13, 14, 10), scarabGlowMat, bx, 2.74, BZ, 0, 0, 0, BG);
+        addMk2Mesh(new THREE.BoxGeometry(0.30, 0.012, 0.30), mk2BlackMat, bx, 2.535, BZ, 0, 0, 0, BG);
+        const glow = addMk2Mesh(new THREE.SphereGeometry(0.12, 14, 10), scarabGlowMat, bx, 2.58, BZ, 0, 0, 0, BG);
         glow.castShadow = false;
     });
 
