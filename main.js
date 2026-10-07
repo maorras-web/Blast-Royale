@@ -3488,6 +3488,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     addMk2Rounded(3.50, 0.24, 1.20, 0.06, 0.03, mk2BlackMat, 0, 2.12, 0, 0, 0, 0, BG);
 
+    const mk2SteelMat = new THREE.MeshStandardMaterial({
+        color: 0xb4bec9, roughness: 0.28, metalness: 0.80,
+        envMap: mk2Env, envMapIntensity: 0.85
+    });
     const mk2BarrelGeo = new THREE.CylinderGeometry(0.20, 0.21, 1.95, 16);
     const mk2RingGeo = new THREE.CylinderGeometry(0.255, 0.255, 0.07, 16);
     const mk2BandGeo = new THREE.CylinderGeometry(0.215, 0.215, 0.05, 16);
@@ -3501,9 +3505,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const bz = 0;
         addMk2Mesh(mk2BaseCollarGeo, mk2BodyMat, bx, 2.20, bz, 0, 0, 0, BG);
         addMk2Mesh(mk2BaseRingGeo, mk2EdgeMat, bx, 2.31, bz, 0, 0, 0, BG);
-        addMk2Mesh(mk2BarrelGeo, mk2HullMat, bx, 3.15, bz, 0, 0, 0, BG);
+        addMk2Mesh(mk2BarrelGeo, mk2SteelMat, bx, 3.15, bz, 0, 0, 0, BG);
         [2.50, 2.98, 3.46, 3.94].forEach(ry => {
-            addMk2Mesh(mk2RingGeo, mk2EdgeMat, bx, ry, bz, 0, 0, 0, BG);
+            addMk2Mesh(mk2RingGeo, mk2DarkMat, bx, ry, bz, 0, 0, 0, BG);
         });
         [2.74, 3.70].forEach(gy => {
             addMk2Mesh(mk2BandGeo, mk2GlowCyanMat, bx, gy, bz, 0, 0, 0, BG).castShadow = false;
@@ -3514,7 +3518,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- ליבה זוהרת קדמית — חלק מהתותח עצמו, לא שדה האנרגיה ----
     const mk2CoreGroup = new THREE.Group();
-    mk2CoreGroup.position.set(0, 2.45, 0.72);
+    mk2CoreGroup.position.set(0, 2.62, 0.72);
     mk2CoreGroup.scale.setScalar(1.15);
     advancedCannonGroup.add(mk2CoreGroup);
     addMk2Mesh(new THREE.CylinderGeometry(0.74, 0.88, 0.34, 22), mk2DarkMat, 0, 2.17, 0.66);
@@ -3526,19 +3530,19 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Mesh(new THREE.TorusGeometry(0.66, 0.09, 8, 20), mk2EdgeMat, 0, 0, 0, 0, 0, 0, mk2CoreGroup);
 
     const mk2CoreShellMat = new THREE.MeshStandardMaterial({
-        color: 0x3a0d80, emissive: 0x8a2be2, emissiveIntensity: 1.0,
+        color: 0x24085c, emissive: 0x7a2cff, emissiveIntensity: 1.0,
         roughness: 0.32, metalness: 0.20, flatShading: true
     });
     const mk2CoreShell = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 0), mk2CoreShellMat);
     mk2CoreGroup.add(mk2CoreShell);
     const mk2CoreInner = new THREE.Mesh(
         new THREE.IcosahedronGeometry(0.32, 1),
-        new THREE.MeshBasicMaterial({ color: 0x9fe6ff, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0x9fe6ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })
     );
     mk2CoreGroup.add(mk2CoreInner);
     const mk2CoreWire = new THREE.Mesh(
         new THREE.DodecahedronGeometry(0.66, 0),
-        new THREE.MeshBasicMaterial({ color: 0x7fd8ff, wireframe: true, transparent: true, opacity: 0.9 })
+        new THREE.MeshBasicMaterial({ color: 0x7fd8ff, wireframe: true, transparent: true, opacity: 0.55 })
     );
     mk2CoreGroup.add(mk2CoreWire);
     const mk2CoreLight = new THREE.PointLight(0xa040ff, 1.5, 7.5, 1.6);
@@ -3585,7 +3589,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateMk2Glow(time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
         const kick = Math.min(1, Math.max(0, cannonRecoil) * 5);
-        mk2CoreShellMat.emissiveIntensity = 0.9 + pulse * 0.35 + kick * 0.7;
+        mk2CoreShellMat.emissiveIntensity = 1.3 + pulse * 0.4 + kick * 0.7;
         mk2CoreInner.scale.setScalar(0.92 + pulse * 0.22 + kick * 0.38);
         mk2CoreWire.rotation.y = time * 0.0006;
         mk2CoreWire.rotation.x = time * 0.0004;
