@@ -3329,13 +3329,27 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     const scarabGlowMat = new THREE.MeshBasicMaterial({ color: 0xffd36a });
     const scarabHaloMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.35, depthWrite: false });
-    const scarabCushionMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.30, depthWrite: false });
-    const scarabCushionCoreMat = new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.55, depthWrite: false });
+    const scarabCushionMat = new THREE.MeshBasicMaterial({ color: 0xff9a2e, transparent: true, opacity: 0.30, depthWrite: false, blending: THREE.AdditiveBlending });
+    const scarabCushionMidMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.38, depthWrite: false, blending: THREE.AdditiveBlending });
+    const scarabCushionRingMat = new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+    const scarabCushionCoreMat = new THREE.MeshBasicMaterial({ color: 0xffc15a, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
 
     // כרית אנרגיה על הקרקע
-    addMk2Mesh(new THREE.CylinderGeometry(1.55, 1.55, 0.03, 40), scarabCushionMat, 0, 0.05, 0.05).castShadow = false;
-    addMk2Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.03, 36), scarabCushionCoreMat, 0, 0.07, 0.05).castShadow = false;
-    const scarabLight = new THREE.PointLight(0xffb347, 1.1, 5, 1.6);
+    const scarabCushion = new THREE.Group();
+    scarabCushion.position.set(0, 0, 0.05);
+    advancedCannonGroup.add(scarabCushion);
+    [
+        [new THREE.CylinderGeometry(2.05, 2.05, 0.03, 44), scarabCushionMat, 0.04],
+        [new THREE.CylinderGeometry(1.70, 1.70, 0.03, 44), scarabCushionMidMat, 0.06],
+        [new THREE.CylinderGeometry(1.15, 1.15, 0.03, 40), scarabCushionCoreMat, 0.08]
+    ].forEach(([geo, mat, y]) => {
+        const disc = addMk2Mesh(geo, mat, 0, y, 0, 0, 0, 0, scarabCushion);
+        disc.castShadow = false;
+        disc.receiveShadow = false;
+    });
+    const scarabCushionRing = addMk2Mesh(new THREE.TorusGeometry(1.72, 0.045, 8, 56), scarabCushionRingMat, 0, 0.10, 0, Math.PI / 2, 0, 0, scarabCushion);
+    scarabCushionRing.castShadow = false;
+    const scarabLight = new THREE.PointLight(0xffb347, 2.0, 6, 1.5);
     scarabLight.position.set(0, 0.5, 0.4);
     advancedCannonGroup.add(scarabLight);
 
@@ -3353,7 +3367,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // כיפת הקונכייה (שני כנפי-שריון) — חצי אליפסואיד
-    const SC_A = 1.5, SC_B = 0.75, SC_C = 1.6, SC_Y = 0.75;
+    const SC_A = 1.5, SC_B = 0.88, SC_C = 1.6, SC_Y = 0.75;
     const scarabDome = addMk2Mesh(
         new THREE.SphereGeometry(1, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2),
         scarabBlackMat, 0, SC_Y, SC_Z
@@ -3385,12 +3399,42 @@ window.addEventListener('DOMContentLoaded', () => {
     addMk2Rounded(0.50, 0.24, 0.16, 0.05, 0.02, scarabBlackMat, 0, 0.78, 1.66);
     addMk2Mesh(new THREE.ConeGeometry(0.17, 0.26, 4), scarabGoldMat, 0, 0.80, 1.76, Math.PI / 2, Math.PI / 4, 0);
 
+    // ראש: לוח חזית עם קרניים מעוקלות (פינצטה) שבולטות מעל הכיפה
+    addMk2Rounded(1.10, 0.20, 0.50, 0.06, 0.03, scarabBlackMat, 0, 0.80, -1.72);
+    addMk2Rounded(1.16, 0.04, 0.54, 0.02, 0.01, scarabGoldMat, 0, 0.92, -1.72);
+    [-1, 1].forEach(sd => {
+        const hornPts = [[0.55, 0.86, -1.50], [0.95, 1.02, -1.90], [0.95, 1.38, -2.25], [0.55, 1.62, -2.30]]
+            .map(([x, y, z]) => new THREE.Vector3(sd * x, y, z));
+        const horn = new THREE.Mesh(
+            new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hornPts), 24, 0.07, 8, false),
+            scarabGoldMat
+        );
+        horn.castShadow = true;
+        advancedCannonGroup.add(horn);
+        addMk2Mesh(new THREE.SphereGeometry(0.075, 10, 8), scarabGoldMat, hornPts[3].x, hornPts[3].y, hornPts[3].z);
+    });
+
+    // ארבע רגליים זהובות מכופפות (שתיים בכל צד: קדמית ואחורית)
+    [-1, 1].forEach(sd => [-1, 1].forEach(fz => {
+        const phi = fz * 0.96;
+        const rx = SC_A * 1.02 * Math.cos(phi);
+        const rz = SC_Z + SC_C * 1.02 * Math.sin(phi);
+        const root = [sd * rx, 0.80, rz];
+        const knee = [sd * (rx + 0.62), 1.02, rz + fz * 0.18];
+        const foot = [sd * (rx + 1.00), 0.32, rz + fz * 0.34];
+        addMk2Link(root, knee, 0.13, 0.13, scarabGoldMat);
+        addMk2Link(knee, foot, 0.10, 0.10, scarabGoldMat);
+        addMk2Mesh(new THREE.SphereGeometry(0.11, 10, 8), scarabGoldMat, root[0], root[1], root[2]);
+        addMk2Mesh(new THREE.SphereGeometry(0.10, 10, 8), scarabGoldMat, knee[0], knee[1], knee[2]);
+        addMk2Mesh(new THREE.SphereGeometry(0.08, 10, 8), scarabBlackMat, foot[0], foot[1], foot[2]);
+    }));
+
     // ליבת אנרגיה זוהרת על גב הכיפה
-    const scarabCore = addMk2Mesh(new THREE.SphereGeometry(0.20, 20, 14), scarabGlowMat, 0, 1.30, 0.98);
+    const scarabCore = addMk2Mesh(new THREE.SphereGeometry(0.20, 20, 14), scarabGlowMat, 0, 1.50, 1.00);
     scarabCore.castShadow = false;
-    const scarabHalo = addMk2Mesh(new THREE.SphereGeometry(0.34, 20, 14), scarabHaloMat, 0, 1.30, 0.98);
+    const scarabHalo = addMk2Mesh(new THREE.SphereGeometry(0.34, 20, 14), scarabHaloMat, 0, 1.50, 1.00);
     scarabHalo.castShadow = false;
-    addMk2Mesh(new THREE.TorusGeometry(0.27, 0.03, 8, 24), scarabGoldMat, 0, 1.30, 1.0);
+    addMk2Mesh(new THREE.TorusGeometry(0.27, 0.03, 8, 24), scarabGoldMat, 0, 1.50, 1.03);
 
     // כנפיים: מניפת נוצות מחודדות לכל צד (נפתחות בעת ירי)
     function scarabFeatherGeo(len, wid) {
@@ -3436,7 +3480,7 @@ window.addEventListener('DOMContentLoaded', () => {
         pivot.rotation.z = sign * -0.10;
         scarabWings.push(pivot);
     });
-    advancedCannonGroup.userData.scarab = { core: scarabCore, halo: scarabHalo, wings: scarabWings };
+    advancedCannonGroup.userData.scarab = { core: scarabCore, halo: scarabHalo, wings: scarabWings, cushion: scarabCushion };
 
     // ==========================================
     // קנה עבה אחד עם שני פתחי ירי (קבוצת הרתיעה)
@@ -4979,6 +5023,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 const pulse = 1 + Math.sin(time * 0.006) * 0.10 + kick * 0.35;
                 sc.core.scale.setScalar(pulse);
                 sc.halo.scale.setScalar(pulse * 1.05);
+                const cp = 1 + Math.sin(time * 0.004) * 0.04;
+                sc.cushion.scale.set(cp, 1, cp);
                 sc.wings.forEach(w => { w.rotation.z = w.userData.sign * (-0.10 + kick * 0.35); });
             }
             advancedBarrelAssembly.position.y +=
