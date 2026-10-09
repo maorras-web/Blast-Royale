@@ -2433,12 +2433,15 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         // קרקע עם טקסטורת מדשאה צפופה (במקום צבע אחיד).
-        const terrainMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            map: isVolcano ? createBasaltTexture(10, 22) : createLawnTexture(10, 22),
-            roughness: groundRoughness,
-            metalness: 0.0
-        });
+        // במפת הטירה הקרקע בלי ברק: אור הירח יצר עליה כתמים בהירים ומבריקים.
+        const terrainMat = isVolcano
+            ? new THREE.MeshLambertMaterial({ color: 0xffffff, map: createBasaltTexture(10, 22) })
+            : new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                map: createLawnTexture(10, 22),
+                roughness: groundRoughness,
+                metalness: 0.0
+            });
 
         const terrain = addMesh(
             createTerrainGeometry(mapId),
