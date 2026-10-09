@@ -539,7 +539,7 @@ canvas {
 #splash-screen.modal-overlay {
     background:
         linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(15,10,6,0.55) 100%),
-        url('splash-bg.jpg') center top / cover no-repeat #1e1b18;
+        url('blast-royale-splash.jpg') center top / cover no-repeat #1e1b18;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     align-items: flex-end;
