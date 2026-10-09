@@ -734,3 +734,18 @@ canvas {
 #splash-screen .splash-sheet {
     max-height: min(calc(var(--app-h, 100svh) * 0.54), 480px);
 }
+
+
+/* ==========================================
+   פתיח: תמונת הפתיחה לבדה, ואז הכרטיס נכנס בהדרגה
+   (המחלקה intro-only מוסרת מ-main.js אחרי ~2 שניות)
+   ========================================== */
+#splash-screen .splash-sheet {
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+#splash-screen.intro-only .splash-sheet {
+    opacity: 0;
+    transform: translateY(28px);
+    pointer-events: none;
+}

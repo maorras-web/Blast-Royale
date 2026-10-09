@@ -4143,6 +4143,22 @@ window.addEventListener('DOMContentLoaded', () => {
     const levelTextEl = document.getElementById('level-text');
 
     const splashScreen = document.getElementById('splash-screen');
+
+    // פתיח: תמונת הפתיחה מוצגת לבדה INTRO_ONLY_MS, ואז נכנס כרטיס התפריט.
+    // הספירה מתחילה אחרי שהתמונה נטענה (עם גיבוי למקרה של טעינה איטית).
+    const INTRO_ONLY_MS = 2000;
+    if (splashScreen) {
+        let introTimerStarted = false;
+        const startIntroTimer = () => {
+            if (introTimerStarted) return;
+            introTimerStarted = true;
+            setTimeout(() => splashScreen.classList.remove('intro-only'), INTRO_ONLY_MS);
+        };
+        const introImg = new Image();
+        introImg.onload = introImg.onerror = startIntroTimer;
+        introImg.src = 'blast-royale-splash.jpg';
+        setTimeout(startIntroTimer, 1500);
+    }
     const startBtn = document.getElementById('start-btn');
     const startCoinsEl = document.getElementById('start-coins');
     const startBestScoreEl = document.getElementById('start-best-score');
