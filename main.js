@@ -2354,11 +2354,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // (השביל הוסר: הוא נראה בדיוק כמו הקרקע ויצר רק קו תפר אלכסוני.)
 
-        addGroundDetail(theme);   // 'volcano' = חלוקים כהים בלי עשבונים
-        addForegroundScenery(theme);
-        addPerspectiveDepthDetails(theme);
-        addDeepPerspectiveCorridor(theme);
-        if (!isVolcano) addDesertDepthTransition(theme);   // קבוצות עשב וצלליות ירוקות
+        // במפת הים הדשא נקי: בלי אבנים, חלוקים וקישוטים.
+        if (!isVolcano) {
+            addGroundDetail(theme);
+            addForegroundScenery(theme);
+            addPerspectiveDepthDetails(theme);
+            addDeepPerspectiveCorridor(theme);
+            addDesertDepthTransition(theme);   // קבוצות עשב וצלליות ירוקות
+        }
         add3DGrass(isVolcano ? 'forest' : mapId);   // מחזיר מיד אם המפה אינה 'forest'
         addWeatherParticles(isVolcano ? 'volcano' : theme);
 
