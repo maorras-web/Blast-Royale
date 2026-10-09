@@ -175,7 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // שומרים את ההגדרה פשוטה כדי שכל השיפור הגרפי יושקע בעולם אחד.
     const MAPS = {
         forest: { name: 'PYRAMIDS', label: 'פירמידות', price: 0 },
-        volcano: { name: 'CASTLE', label: 'טירה', price: 0 }   // לשנות price כדי להפוך את המפה לנעולה/בתשלום
+        volcano: { name: 'SEA', label: 'ים בלילה', price: 0 }   // לשנות price כדי להפוך את המפה לנעולה/בתשלום
     };
 
     let selectedMap = localStorage.getItem('bb3d_map');
@@ -310,10 +310,10 @@ window.addEventListener('DOMContentLoaded', () => {
             horizon = '#d8eff5';
             glow = 'rgba(236, 251, 255, 0.64)';
         } else if (mapId === 'volcano') {
-            top = '#150b2b';
-            middle = '#2e1759';
-            horizon = '#6b2a75';
-            glow = 'rgba(255, 100, 140, 0.30)';
+            top = '#050a22';
+            middle = '#101c4a';
+            horizon = '#34408a';
+            glow = 'rgba(150, 175, 255, 0.28)';
         }
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 512);
@@ -724,7 +724,7 @@ window.addEventListener('DOMContentLoaded', () => {
             size = 0.075;
             opacity = 0.52;
         } else if (mapId === 'volcano') {
-            color = 0xcfc4ff;
+            color = 0xd9ff8f;
             size = 0.12;
             opacity = 0.50;
         }
@@ -777,7 +777,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // תאורת אווירה מקומית בלבד במפת הר הגעש — ללא צללים כדי לשמור על מובייל חלק.
         if (mapId === 'volcano') {
             [[-7, 1.1, -8], [7, 1.0, -10], [0, 1.4, -15]].forEach(([x, y, z]) => {
-                const glow = new THREE.PointLight(0x7a5cff, 0.65, 11, 2);
+                const glow = new THREE.PointLight(0xc5ff80, 0.5, 11, 2);
                 glow.position.set(x, y, z);
                 mapGroup.add(glow);
             });
@@ -791,19 +791,19 @@ window.addEventListener('DOMContentLoaded', () => {
         f.starsSmall.material.opacity = 0.7 + 0.25 * Math.sin(t * 1.6);
         f.starsBig.material.opacity = 0.75 + 0.25 * Math.sin(t * 2.3 + 1.2);
 
-        // חלונות ולפידים מהבהבים כמו אש.
-        f.winA.opacity = Math.min(1, 0.88 + 0.08 * Math.sin(t * 2.3) + 0.05 * Math.sin(t * 9.1));
-        f.winB.opacity = Math.min(1, 0.85 + 0.10 * Math.sin(t * 1.7 + 2) + 0.05 * Math.sin(t * 7.3));
-        f.torchMat.opacity = 0.8 + 0.15 * Math.sin(t * 11) + 0.05 * Math.sin(t * 23);
-        f.gateGlow.material.opacity = 0.55 + 0.12 * Math.sin(t * 5.3) + 0.06 * Math.sin(t * 11.7);
+        // גלים שזזים לאט, שביל ירח מנצנץ וקצף שמתחלף.
+        f.seaTex.offset.set((t * 0.004) % 1, (t * 0.018) % 1);
+        f.glitter.material.opacity = 0.6 + 0.2 * Math.sin(t * 1.9) + 0.08 * Math.sin(t * 5.3);
+        f.foam.material.opacity = 0.22 + 0.14 * Math.sin(t * 1.1);
 
-        // עטלפים: תנועה לרוחב + מעט עלייה וירידה + נפנוף כנפיים.
-        f.bats.forEach(b => {
-            b.mesh.position.x += b.vx;
-            if (b.mesh.position.x > 50) b.mesh.position.x = -50;
-            if (b.mesh.position.x < -50) b.mesh.position.x = 50;
-            b.mesh.position.y = b.baseY + Math.sin(t * 1.3 + b.phase) * 2;
-            b.mesh.scale.y = b.sc * (0.55 + 0.45 * Math.abs(Math.sin(t * 7 + b.phase)));
+        // המגדלור מהבהב.
+        const flash = Math.max(0, Math.sin(t * 1.3));
+        f.lhGlow.material.opacity = 0.2 + 0.8 * flash * flash * flash;
+
+        // סירות מתנדנדות.
+        f.boats.forEach(b => {
+            b.boat.position.y = b.baseY + Math.sin(t * 1.1 + b.phase) * 0.12;
+            b.boat.rotation.z = Math.sin(t * 0.9 + b.phase) * 0.04;
         });
     }
 
@@ -859,7 +859,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (mapId === 'ice') {
                 height *= 0.55;
             } else if (mapId === 'volcano') {
-                height += Math.sin(x * 0.23 - z * 0.31) * 0.018;
+                height *= 0.25;   // קרקע כמעט שטוחה במפת הטירה
+                height += Math.sin(x * 0.23 - z * 0.31) * 0.012;
             }
 
             position.setZ(i, height);
@@ -1099,8 +1100,8 @@ window.addEventListener('DOMContentLoaded', () => {
             keyColor = 0xbcefff;
             rimColor = 0xe7fbff;
         } else if (mapId === 'volcano') {
-            keyColor = 0xff7042;
-            rimColor = 0x6db5ff;
+            keyColor = 0x6fa8ff;
+            rimColor = 0xb8d4ff;
         }
 
         const key = new THREE.PointLight(keyColor, mapId === 'volcano' ? 0.45 : 0.22, 6.5, 2);
@@ -2108,241 +2109,170 @@ window.addEventListener('DOMContentLoaded', () => {
         return tex;
     }
 
-    // כיוון אריחי המרקם לפי גודל הקיר, כדי שהלבנים לא יימתחו.
-    function scaleUV(geo, su, sv) {
-        const uv = geo.attributes.uv;
-        for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
-        return geo;
-    }
-
-    // מרקם לבני אבן כהות לקירות הטירה.
-    function createCastleStoneTexture() {
+    // מרקם ים: כחול כהה עם פסי גלים בהירים (נגלל לאט כדי ליצור תנועה).
+    function createSeaTexture() {
         const size = 256;
         const c = document.createElement('canvas');
         c.width = c.height = size;
         const g = c.getContext('2d');
-        g.fillStyle = '#17132a';
+        g.fillStyle = '#0a1a45';
         g.fillRect(0, 0, size, size);
-        const rows = 8, cols = 4;
-        const rowH = size / rows, bw = size / cols;
-        for (let r = 0; r < rows; r++) {
-            const off = (r % 2) * bw / 2;
-            for (let k = -1; k < cols; k++) {
-                g.fillStyle = `hsl(${250 + Math.random() * 14}, ${14 + Math.random() * 10}%, ${25 + Math.random() * 11}%)`;
-                g.fillRect(k * bw + off + 2, r * rowH + 2, bw - 4, rowH - 4);
-            }
+        for (let i = 0; i < 28; i++) {
+            const x = Math.random() * size, y = Math.random() * size, r = 30 + Math.random() * 60;
+            const col = Math.random() < 0.5 ? '40,70,150' : '4,10,30';
+            [-size, 0, size].forEach(dx => [-size, 0, size].forEach(dy => {
+                const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+                gr.addColorStop(0, `rgba(${col},0.22)`);
+                gr.addColorStop(1, `rgba(${col},0)`);
+                g.fillStyle = gr;
+                g.fillRect(x + dx - r, y + dy - r, r * 2, r * 2);
+            }));
         }
-        for (let i = 0; i < 700; i++) {
-            g.fillStyle = 'rgba(8,6,18,0.25)';
-            g.fillRect(Math.random() * size, Math.random() * size, 2, 2);
+        g.lineCap = 'round';
+        for (let i = 0; i < 70; i++) {
+            const x = Math.random() * size, y = Math.random() * size, len = 14 + Math.random() * 34;
+            g.lineWidth = 1 + Math.random() * 1.2;
+            g.strokeStyle = `rgba(${130 + (Math.random() * 60) | 0},${165 + (Math.random() * 50) | 0},255,0.22)`;
+            [-size, 0, size].forEach(dx => [-size, 0, size].forEach(dy => {
+                g.beginPath();
+                g.moveTo(x + dx, y + dy);
+                g.quadraticCurveTo(x + dx + len / 2, y + dy - 3, x + dx + len, y + dy);
+                g.stroke();
+            }));
         }
         const tex = new THREE.CanvasTexture(c);
         tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        tex.repeat.set(60, 40);
+        tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         tex.encoding = THREE.sRGBEncoding;
         return tex;
     }
 
-    function addCastle(rockTexture) {
-        const CX = 0, CZ = -66, BY = 6;   // מרכז הטירה, מרחק (z), וגובה הגבעה שעליה היא עומדת
-
-        // ---- חומרים
-        const stoneTex = createCastleStoneTexture();
-        const stoneMat = new THREE.MeshStandardMaterial({
-            map: stoneTex, color: 0xffffff, emissive: 0x1a1430, emissiveIntensity: 0.55,
-            roughness: 0.95, metalness: 0, flatShading: true
-        });
-        const roadMat = new THREE.MeshStandardMaterial({
-            map: stoneTex, color: 0xb9b0e0, emissive: 0x1a1430, emissiveIntensity: 0.5,
-            roughness: 0.95, metalness: 0, flatShading: true
-        });
-        const roofMat = new THREE.MeshStandardMaterial({
-            color: 0x2c1d52, emissive: 0x150d2c, emissiveIntensity: 0.8,
-            roughness: 0.9, metalness: 0, flatShading: true
-        });
-        const hillMat = new THREE.MeshStandardMaterial({
-            map: createBasaltTexture(5, 5), color: 0x8f8ab8, emissive: 0x120d22, emissiveIntensity: 0.5,
-            roughness: 0.97, metalness: 0, flatShading: true
-        });
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x3a2434, roughness: 0.95, flatShading: true });
-        const treeMat = new THREE.MeshStandardMaterial({ color: 0x1d1628, roughness: 1, flatShading: true });
-        const farRockMat = new THREE.MeshStandardMaterial({ color: 0x1d1830, emissive: 0x0c0818, roughness: 1, flatShading: true });
-        const darkMat = new THREE.MeshBasicMaterial({ color: 0x08060f });
-        const flagMat = new THREE.MeshBasicMaterial({ color: 0x8a3a8a });
-        const waterMat = new THREE.MeshBasicMaterial({ color: 0x151b4a });
-        const groundMat = new THREE.MeshBasicMaterial({ color: 0x1c1830 });
-        const winA = new THREE.MeshBasicMaterial({ color: 0xffc15a, transparent: true, fog: false, toneMapped: false });
-        const winB = new THREE.MeshBasicMaterial({ color: 0xff9a3a, transparent: true, fog: false, toneMapped: false });
-        const torchMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, fog: false, toneMapped: false });
+    // מפת הים: דשא כמו במפה הראשונה, חוף חול, ים באופק עם ירח, מגדלור וסירות.
+    function addSea() {
+        const SEA_Y = -0.3;
         const glowAdd = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false };
+        const std = (color, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 1, flatShading: true }, extra || {}));
 
-        // ---- כל חלקי הטירה נאספים לפי חומר ומאוחדים לגוף אחד לכל חומר (קל לטלפון).
-        const bakes = new Map();
-        const bake = (geo, mat, x, y, z, rx, ry, rz) => {
-            if (rx) geo.rotateX(rx);
-            if (ry) geo.rotateY(ry);
-            if (rz) geo.rotateZ(rz);
-            geo.translate(x, y, z);
-            if (!bakes.has(mat)) bakes.set(mat, []);
-            bakes.get(mat).push(geo);
-        };
-        const lb = (geo, mat, x, y, z, rx, ry, rz) => bake(geo, mat, CX + x, BY + y, CZ + z, rx, ry, rz);
-        const box = (w, h, d, x, y, z, mat) =>
-            lb(scaleUV(new THREE.BoxGeometry(w, h, d), w / 4, h / 4), mat || stoneMat, x, y, z);
-        const cyl = (rt, rb, h, seg, x, y, z, mat) =>
-            lb(scaleUV(new THREE.CylinderGeometry(rt, rb, h, seg), Math.PI * (rt + rb) / 4, h / 4), mat || stoneMat, x, y, z);
+        // קרקע כהה רחבה מתחת לכל, שמכסה כל חור בצדדים.
+        const under = new THREE.Mesh(new THREE.PlaneGeometry(400, 140), std(0x14301c));
+        under.rotation.x = -Math.PI / 2;
+        under.position.set(0, -0.4, -15);
+        mapGroup.add(under);
 
-        // ---- גבעה סלעית, סלעים על המדרון ושביל אבן עולה אל הטירה.
-        bake(new THREE.CylinderGeometry(19, 30, BY, 16), hillMat, CX, BY / 2, CZ);
-        for (let i = 0; i < 12; i++) {
-            const ang = (i / 12) * Math.PI * 2 + 0.3;
-            const rr = 21 + (i % 4) * 2.2;
-            const rx0 = CX + Math.sin(ang) * rr, rz0 = CZ + Math.cos(ang) * rr;
-            if (Math.cos(ang) > 0.6 && Math.abs(rx0) < 6) continue;   // משאירים את השביל פנוי
-            const rad = 1.8 + (i % 3) * 0.8;
-            const g = new THREE.DodecahedronGeometry(rad, 0);
-            g.scale(1, 0.8, 1);
-            bake(g, hillMat, rx0, Math.max(0, BY * (30 - rr) / 11) + rad * 0.3, rz0, 0, ang * 2);
-        }
-        bake(scaleUV(new THREE.BoxGeometry(4.2, 0.3, 12.8), 1.05, 3.2), roadMat, CX, 3.15, -41.5, 0.4994);
+        // חוף חול בקצה הדשא.
+        const sand = new THREE.Mesh(new THREE.PlaneGeometry(260, 13), std(0xcbbd98));
+        sand.rotation.x = -Math.PI / 2;
+        sand.position.set(0, -0.22, -50.5);
+        mapGroup.add(sand);
 
-        // ---- תעלה (חפיר) וגשר מעץ מול השער.
-        lb(new THREE.PlaneGeometry(34, 4.8), waterMat, 0, 0.1, 15, -Math.PI / 2);
-        box(34.4, 0.5, 0.7, 0, 0.25, 12.3);
-        box(34.4, 0.5, 0.7, 0, 0.25, 17.7);
-        box(3.6, 0.3, 7.4, 0, 0.25, 14.9, woodMat);
-        [-1.7, 1.7].forEach(x => box(0.2, 0.6, 7.4, x, 0.65, 14.9, woodMat));
+        // הים עצמו.
+        const seaTex = createSeaTexture();
+        const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 400), new THREE.MeshBasicMaterial({ map: seaTex }));
+        sea.rotation.x = -Math.PI / 2;
+        sea.position.set(0, SEA_Y, -257);
+        mapGroup.add(sea);
 
-        // ---- חומות: קדמית וצדדיות, עם שיניים וחרכי ירי.
-        box(30, 7, 2.4, 0, 3.5, 9);
-        for (let i = 0; i < 10; i++) {
-            const x = -13.5 + i * 3;
-            if (Math.abs(x) >= 5) box(1.7, 1.3, 2.6, x, 7.65, 9);
-        }
-        [-15, 15].forEach(x => {
-            box(2.4, 7, 18, x, 3.5, 0);
-            for (let j = 0; j < 6; j++) box(2.6, 1.3, 1.7, x, 7.65, -7.5 + j * 3);
-        });
-        [-12, -9, -6.5, 6.5, 9, 12].forEach(x => box(0.35, 1.6, 0.2, x, 4.2, 10.25, darkMat));
+        // קצף גלים על קו החוף.
+        const foam = new THREE.Mesh(new THREE.PlaneGeometry(260, 1.4),
+            new THREE.MeshBasicMaterial({ color: 0xdfe8ff, transparent: true, opacity: 0.3, depthWrite: false }));
+        foam.rotation.x = -Math.PI / 2;
+        foam.position.set(0, -0.2, -57.4);
+        mapGroup.add(foam);
 
-        // ---- בית שער מוגבה.
-        box(8, 10, 4, 0, 5, 9.8);
-        [-3.2, -1.1, 1.1, 3.2].forEach(x => box(1.4, 1.2, 1.4, x, 10.6, 11.1));
-
-        // ---- מגדלים: גוף + שולי גג + גג חרוטי + צריח או דגל.
-        const tower = (x, z, r, h, roofH, roofR, flag) => {
-            cyl(r, r * 1.08, h, 12, x, h / 2, z);
-            cyl(r * 1.25, r * 1.2, 0.8, 12, x, h + 0.4, z);
-            lb(new THREE.ConeGeometry(roofR || r * 1.4, roofH, 12), roofMat, x, h + 0.8 + roofH / 2, z);
-            const top = h + 0.8 + roofH;
-            if (flag) {
-                cyl(0.07, 0.07, 2.4, 6, x, top + 1.0, z, darkMat);
-                lb(new THREE.BoxGeometry(1.5, 0.8, 0.05), flagMat, x + 0.8, top + 1.9, z);
-            } else {
-                lb(new THREE.ConeGeometry(0.14, 1.3, 6), darkMat, x, top + 0.55, z);
-            }
-        };
-        tower(-15, 9, 3, 13, 6, 4, false);
-        tower(15, 9, 3, 13, 6, 4, false);
-
-        // הטירה הראשית: מבנה מרכזי עם גג, פסי קישוט, מגדלונים, מגדל גבוה ושני מגדלים אחוריים.
-        box(13, 14, 9, 0, 7, -1);
-        lb(new THREE.BoxGeometry(13.5, 0.5, 9.5), roofMat, 0, 6.8, -1);
-        lb(new THREE.BoxGeometry(13.5, 0.5, 9.5), roofMat, 0, 13.8, -1);
-        lb(new THREE.ConeGeometry(9.5, 5, 4), roofMat, 0, 16.5, -1, 0, Math.PI / 4);
-        tower(-6.5, 3.5, 1.5, 15, 5.5, 2.2, true);
-        tower(6.5, 3.5, 1.5, 15, 5.5, 2.2, true);
-        tower(-6.5, -5.5, 1.5, 15, 5.5, 2.2, false);
-        tower(6.5, -5.5, 1.5, 15, 5.5, 2.2, false);
-        tower(0, -2, 3.6, 18, 7, 5, true);
-        tower(-10, -6, 2.2, 15, 6, 3, false);
-        tower(10, -6, 2.2, 15, 6, 3, false);
-
-        // ---- חלונות מקושתים זוהרים.
-        const win = (x, y, z, w, h, m) => {
-            lb(new THREE.BoxGeometry(w, h, 0.25), m, x, y, z);
-            lb(new THREE.CylinderGeometry(w / 2, w / 2, 0.25, 10), m, x, y + h / 2, z, Math.PI / 2);
-        };
-        [[-5.2, 10.8, winA], [-2.4, 10.8, winB], [2.4, 10.8, winA], [5.2, 10.8, winB],
-         [-5.2, 12.6, winB], [-2.4, 12.6, winA], [2.4, 12.6, winB], [5.2, 12.6, winA]]
-            .forEach(([x, y, m]) => win(x, y, 3.6, 0.8, 1.1, m));
-        win(0, 15.4, 1.7, 0.8, 1.6, winA);
-        win(-15, 10, 12.1, 0.7, 1.4, winB);
-        win(15, 10, 12.1, 0.7, 1.4, winA);
-        win(-6.5, 12.6, 5.1, 0.5, 1.0, winA);
-        win(6.5, 12.6, 5.1, 0.5, 1.0, winB);
-        win(0, 8.0, 11.9, 1.0, 1.4, winA);
-
-        // ---- שער זוהר עם סורג, לפידים ושני דגלי בד.
-        box(4.6, 6.2, 0.4, 0, 3.1, 11.95, darkMat);
-        lb(new THREE.BoxGeometry(3.4, 4.0, 0.15), winB, 0, 2.2, 12.15);
-        lb(new THREE.CylinderGeometry(1.7, 1.7, 0.15, 16), winB, 0, 4.2, 12.15, Math.PI / 2);
-        [-1.2, -0.6, 0, 0.6, 1.2].forEach(x => box(0.1, 5.4, 0.1, x, 3, 12.3, darkMat));
-        [-3.2, 3.2].forEach(x => {
-            box(0.15, 0.9, 0.15, x, 3.9, 12.1, darkMat);
-            lb(new THREE.SphereGeometry(0.35, 8, 6), torchMat, x, 4.6, 12.2);
-        });
-        [-2.9, 2.9].forEach(x => lb(new THREE.BoxGeometry(1.0, 3.0, 0.08), flagMat, x, 6.6, 11.9));
-
-        // ---- פסגות חשוכות מאחור שמרחיבות את קו הרקיע.
-        [[-30, -92, 9, 26], [32, -90, 10, 30], [-44, -80, 8, 18], [46, -78, 8, 20], [-18, -100, 10, 24], [20, -102, 10, 26]]
-            .forEach(([x, z, r, h]) => bake(new THREE.ConeGeometry(r, h, 7), farRockMat, x, h / 2, z));
-
-        // ---- עצים יבשים ומצבות עקומות בצידי המסלול.
-        [[-9.5, -14], [10.5, -19], [-12.5, -25], [13, -30], [-10, -34], [11.5, -38]].forEach(([x, z], i) => {
-            const h = 3.2 + (i % 2) * 0.8;
-            bake(new THREE.CylinderGeometry(0.12, 0.28, h, 6), treeMat, x, h / 2, z, 0, 0, (i % 3 - 1) * 0.06);
-            [-1, 1].forEach(sd => {
-                bake(new THREE.CylinderGeometry(0.04, 0.09, 1.7, 5), treeMat, x + sd * 0.62, h * 0.72, z, 0, 0, -sd * 0.95);
-                bake(new THREE.CylinderGeometry(0.03, 0.06, 0.9, 5), treeMat, x - sd * 0.4, h * 0.92, z, 0, 0, sd * 0.8);
-            });
-        });
-        [[-8, -12, 0.15], [9, -16, -0.2], [-11, -22, -0.12], [10.5, -27, 0.18], [-8.5, -31, 0.1], [12, -35, -0.15]]
-            .forEach(([x, z, tilt], i) => {
-                const h = 1.5 + (i % 2) * 0.4;
-                bake(scaleUV(new THREE.BoxGeometry(0.9, h, 0.3), 0.25, h / 4), stoneMat, x, 0.7, z, 0, (i % 3 - 1) * 0.35, tilt);
-            });
-
-        // ---- קרקע רחוקה כהה שמכסה כל חור בצדדים ובאופק.
-        bake(new THREE.PlaneGeometry(500, 500), groundMat, 0, -0.06, -100, -Math.PI / 2);
-
-        // ---- איחוד כל החלקים לגופים בודדים לפי חומר.
-        bakes.forEach((geos, mat) => {
-            const parts = geos.map(g => (g.index ? g.toNonIndexed() : g));
-            let total = 0;
-            parts.forEach(g => { total += g.attributes.position.count; });
-            const pos = new Float32Array(total * 3);
-            const nor = new Float32Array(total * 3);
-            const uvs = new Float32Array(total * 2);
-            let o = 0;
-            parts.forEach(g => {
-                pos.set(g.attributes.position.array, o * 3);
-                nor.set(g.attributes.normal.array, o * 3);
-                uvs.set(g.attributes.uv.array, o * 2);
-                o += g.attributes.position.count;
-            });
-            const merged = new THREE.BufferGeometry();
-            merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-            merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-            merged.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-            const mesh = new THREE.Mesh(merged, mat);
-            mesh.frustumCulled = false;
-            mapGroup.add(mesh);
+        // סלעים כהים לאורך החוף.
+        [[-11, -52.5, 1.1], [-5, -55, 0.8], [4, -53.5, 1.3], [10, -56, 0.9], [-16, -54, 1.2], [15, -52, 1.0]].forEach(([x, z, r]) => {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), std(0x1b2036));
+            rock.scale.y = 0.7;
+            rock.position.set(x, -0.05 + r * 0.3, z);
+            mapGroup.add(rock);
         });
 
-        // ---- זוהר חם מהשער.
-        const gateGlow = new THREE.Mesh(new THREE.PlaneGeometry(18, 18),
-            new THREE.MeshBasicMaterial({ map: makeGlowTexture('rgba(255,150,60,0.9)', 'rgba(255,90,20,0)'), ...glowAdd }));
-        gateGlow.position.set(CX, BY + 3.5, CZ + 14.5);
-        gateGlow.renderOrder = -3;
-        mapGroup.add(gateGlow);
+        // שביל זוהר של הירח על המים.
+        const glitterGroup = new THREE.Group();
+        glitterGroup.rotation.y = 0.114;
+        glitterGroup.position.y = -0.25;
+        mapGroup.add(glitterGroup);
+        const glitter = new THREE.Mesh(new THREE.PlaneGeometry(11, 170),
+            new THREE.MeshBasicMaterial({ map: makeGlowTexture('rgba(190,205,255,0.9)', 'rgba(160,180,255,0)'), ...glowAdd }));
+        glitter.rotation.x = -Math.PI / 2;
+        glitter.position.set(0, 0, -150);
+        glitter.renderOrder = -3;
+        glitterGroup.add(glitter);
 
-        // ---- כוכבים בשמיים מאחורי הטירה.
+        // איים כהים רחוקים על קו האופק.
+        const farMat = new THREE.MeshBasicMaterial({ color: 0x0a1030, fog: false });
+        [[-62, -300, 48, 14], [30, -330, 34, 10], [-5, -380, 50, 8]].forEach(([x, z, r, h]) => {
+            const isle = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), farMat);
+            isle.position.set(x, h / 2 + SEA_Y, z);
+            mapGroup.add(isle);
+        });
+
+        // מגדלור על אי קטן.
+        const islet = new THREE.Mesh(new THREE.ConeGeometry(6, 3.4, 7), std(0x161b2e));
+        islet.position.set(16, SEA_Y + 1.4, -105);
+        mapGroup.add(islet);
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 8, 10), std(0xd5d8e6, { emissive: 0x1a2040, emissiveIntensity: 0.5 }));
+        tower.position.set(16, 6.8, -105);
+        mapGroup.add(tower);
+        const gallery = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.35, 10), std(0x10142a));
+        gallery.position.set(16, 10.95, -105);
+        mapGroup.add(gallery);
+        const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.2, 10), new THREE.MeshBasicMaterial({ color: 0xfff0a0, fog: false }));
+        lantern.position.set(16, 11.7, -105);
+        mapGroup.add(lantern);
+        const lhRoof = new THREE.Mesh(new THREE.ConeGeometry(1.1, 1.3, 10), std(0x8a2a3a));
+        lhRoof.position.set(16, 12.95, -105);
+        mapGroup.add(lhRoof);
+        const lhGlow = new THREE.Mesh(new THREE.PlaneGeometry(16, 16),
+            new THREE.MeshBasicMaterial({ map: makeGlowTexture('rgba(255,240,170,0.9)', 'rgba(255,220,120,0)'), ...glowAdd }));
+        lhGlow.position.set(16, 11.7, -104);
+        lhGlow.renderOrder = -3;
+        mapGroup.add(lhGlow);
+
+        // סירות מפרש קטנות שמתנדנדות על המים.
+        const sailShape = new THREE.Shape();
+        sailShape.moveTo(0, 0);
+        sailShape.lineTo(0, 2.6);
+        sailShape.lineTo(1.5, 0.2);
+        sailShape.lineTo(0, 0);
+        const sailGeo = new THREE.ShapeGeometry(sailShape);
+        const boats = [];
+        [[-9, -86, 0, 1.0], [21, -132, 2.1, 1.3]].forEach(([x, z, phase, sc]) => {
+            const boat = new THREE.Group();
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.7, 1.2), std(0x2b1f1c));
+            hull.position.y = 0.35;
+            boat.add(hull);
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 6), std(0x1a1520));
+            mast.position.y = 2.0;
+            boat.add(mast);
+            const sail = new THREE.Mesh(sailGeo, new THREE.MeshBasicMaterial({ color: 0x9a9fc8, side: THREE.DoubleSide }));
+            sail.position.set(0.1, 0.8, 0);
+            boat.add(sail);
+            const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffd27a, fog: false }));
+            lamp.position.y = 3.65;
+            boat.add(lamp);
+            boat.scale.set(sc, sc, sc);
+            boat.position.set(x, SEA_Y + 0.1, z);
+            mapGroup.add(boat);
+            boats.push({ boat, baseY: SEA_Y + 0.1, phase });
+        });
+
+        // אובך דק מעל המים בקו האופק ובחוף.
+        [[-150, 2, 400, 6, 0x6a78d0, 0.12], [-60, 1.2, 80, 2.4, 0x8fa0ff, 0.08]].forEach(([z, y, w, h, color, op]) => {
+            const haze = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+                new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, fog: false }));
+            haze.position.set(0, y, z);
+            haze.renderOrder = -5;
+            mapGroup.add(haze);
+        });
+
+        // כוכבים וירח גדול בשמיים.
         const makeStars = (n, size, color) => {
             const sp = new Float32Array(n * 3);
             for (let i = 0; i < n; i++) {
                 sp[i * 3] = (Math.random() - 0.5) * 190;
-                sp[i * 3 + 1] = 20 + Math.random() * 80;
+                sp[i * 3 + 1] = 12 + Math.random() * 88;
                 sp[i * 3 + 2] = -150 - Math.random() * 6;
             }
             const geo = new THREE.BufferGeometry();
@@ -2355,47 +2285,16 @@ window.addEventListener('DOMContentLoaded', () => {
             mapGroup.add(pts);
             return pts;
         };
-        const starsSmall = makeStars(170, 0.55, 0xf1e6ff);
-        const starsBig = makeStars(40, 1.05, 0xffffff);
+        const starsSmall = makeStars(190, 0.55, 0xf1e6ff);
+        const starsBig = makeStars(45, 1.05, 0xffffff);
 
-        // ---- ירח גדול ורך.
         const moon = new THREE.Mesh(new THREE.PlaneGeometry(32, 32),
             new THREE.MeshBasicMaterial({ map: makeMoonTexture(), transparent: true, depthWrite: false, fog: false, toneMapped: false }));
         moon.position.set(-17, 62, -148);
         moon.renderOrder = -84;
         mapGroup.add(moon);
 
-        // ---- עטלפים שחולפים בשמיים.
-        const batShape = new THREE.Shape();
-        const wing = [[0.5, 0.9], [1.6, 1.2], [2.8, 0.5], [2.1, 0.55], [1.7, -0.1], [1.2, 0.3], [0.55, -0.5]];
-        batShape.moveTo(0, 0.6);
-        wing.forEach(([x, y]) => batShape.lineTo(x, y));
-        batShape.lineTo(0, -0.3);
-        wing.slice().reverse().forEach(([x, y]) => batShape.lineTo(-x, y));
-        batShape.lineTo(0, 0.6);
-        const batGeo = new THREE.ShapeGeometry(batShape);
-        const batMat = new THREE.MeshBasicMaterial({ color: 0x0c0816, side: THREE.DoubleSide, fog: false });
-        const bats = [];
-        for (let i = 0; i < 5; i++) {
-            const mesh = new THREE.Mesh(batGeo, batMat);
-            const sc = 1.1 + (i % 3) * 0.35;
-            mesh.scale.set(sc, sc, sc);
-            const baseY = 42 + i * 3.2;
-            mesh.position.set(-45 + i * 19, baseY, -140);
-            mesh.frustumCulled = false;
-            mapGroup.add(mesh);
-            bats.push({ mesh, baseY, sc, vx: (i % 2 ? -1 : 1) * (0.05 + i * 0.012), phase: i * 1.7 });
-        }
-
-        // ---- ערפל סגול בבסיס הגבעה.
-        [[-44, 0.13], [-37, 0.09]].forEach(([z, op]) => {
-            const haze = addMesh(new THREE.PlaneGeometry(48, 3),
-                new THREE.MeshBasicMaterial({ color: 0x9a6bff, transparent: true, opacity: op, depthWrite: false, fog: false }),
-                0, 1.5, z, false, false);
-            haze.renderOrder = -5;
-        });
-
-        volcanoFx = { starsSmall, starsBig, winA, winB, torchMat, gateGlow, bats };
+        volcanoFx = { starsSmall, starsBig, seaTex, glitter, foam, lhGlow, boats };
     }
 
     function buildMap(mapId) {
@@ -2410,7 +2309,7 @@ window.addEventListener('DOMContentLoaded', () => {
         addEnvironmentalDepth(theme, isVolcano);
 
         // הקרקע הראשית היא דשא בהיר; השביל הכהה נבנה מעליה.
-        const groundColor = isVolcano ? 0x2a2638 : GRASS_GREEN;
+        const groundColor = GRASS_GREEN;
         const groundRoughness = 0.92;
 
         // בסיס שקוע שנותן לקרקע עובי בלי להיראות כפלטפורמה.
@@ -2433,18 +2332,15 @@ window.addEventListener('DOMContentLoaded', () => {
         );
 
         // קרקע עם טקסטורת מדשאה צפופה (במקום צבע אחיד).
-        // במפת הטירה הקרקע בלי ברק: אור הירח יצר עליה כתמים בהירים ומבריקים.
-        const terrainMat = isVolcano
-            ? new THREE.MeshLambertMaterial({ color: 0xffffff, map: createBasaltTexture(10, 22) })
-            : new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                map: createLawnTexture(10, 22),
-                roughness: groundRoughness,
-                metalness: 0.0
-            });
+        const terrainMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            map: createLawnTexture(10, 22),
+            roughness: groundRoughness,
+            metalness: 0.0
+        });
 
         const terrain = addMesh(
-            createTerrainGeometry(mapId),
+            createTerrainGeometry(isVolcano ? 'forest' : mapId),
             terrainMat,
             0,
             0.018,
@@ -2458,12 +2354,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // (השביל הוסר: הוא נראה בדיוק כמו הקרקע ויצר רק קו תפר אלכסוני.)
 
-        addGroundDetail(isVolcano ? 'volcano' : theme);   // 'volcano' = חלוקים כהים בלי עשבונים
+        addGroundDetail(theme);   // 'volcano' = חלוקים כהים בלי עשבונים
         addForegroundScenery(theme);
         addPerspectiveDepthDetails(theme);
         addDeepPerspectiveCorridor(theme);
         if (!isVolcano) addDesertDepthTransition(theme);   // קבוצות עשב וצלליות ירוקות
-        add3DGrass(mapId);   // מחזיר מיד אם המפה אינה 'forest'
+        add3DGrass(isVolcano ? 'forest' : mapId);   // מחזיר מיד אם המפה אינה 'forest'
         addWeatherParticles(isVolcano ? 'volcano' : theme);
 
         if (theme === 'desert') {
@@ -2473,15 +2369,15 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.fog.near = FOG_NEAR;
             scene.fog.far = FOG_FAR;
             if (isVolcano) {
-                scene.background.set(0x3a1f5c);
-                scene.fog.color.set(0x3a1f5c);
+                scene.background.set(0x1f2a66);
+                scene.fog.color.set(0x1f2a66);
                 scene.fog.near = 26;
-                scene.fog.far = 150;
-                sunLight.color.set(0x8f8cff);
-                sunLight.intensity = 1.15;
-                hemiLight.color.set(0x6a5acd);
-                hemiLight.groundColor.set(0x1a1030);
-                hemiLight.intensity = 0.5;
+                scene.fog.far = 175;
+                sunLight.color.set(0xa9b9ff);
+                sunLight.intensity = 1.0;
+                hemiLight.color.set(0x6f80e0);
+                hemiLight.groundColor.set(0x1b2a1f);
+                hemiLight.intensity = 0.6;
             } else {
                 sunLight.color.set(0xffbd78);
                 sunLight.intensity = 1.75;
@@ -2511,7 +2407,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             // הגובה והמרחק חושבו מול זווית המצלמה, כך שקצות הפירמידות נשארים
             // נמוכים מספיק והשמיים הזהובים נראים מעליהן; הבסיסים מחוץ לשביל (רוחב ~3.7).
-            if (isVolcano) addCastle(rockTexture); else {
+            if (isVolcano) addSea(); else {
             const p1 = addMesh(createPyramidGeometry(7.4, 17.5, 12), pyramidMatA, -11.6, 8.75, -29);
             p1.rotation.y = Math.PI / 4;
             const p2 = addMesh(createPyramidGeometry(7.8, 18.5, 12), pyramidMatA, 12.0, 9.25, -32);
@@ -5538,6 +5434,7 @@ window.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         if (grassWind) grassWind.uTime.value = time * 0.001;
         if (!isPaused) updateSkyTraffic(time);
+        updateVolcanoFx(time);
 
         if (!isGameStarted || isPaused || isGameOver) {
             renderer.render(scene, camera);
@@ -5545,7 +5442,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         updateWeatherParticles();
-        updateVolcanoFx(time);
 
         // ======================================
         // תנועת התותח + רתיעה קטנה בירי
