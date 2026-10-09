@@ -792,7 +792,7 @@ window.addEventListener('DOMContentLoaded', () => {
         f.starsBig.material.opacity = 0.75 + 0.25 * Math.sin(t * 2.3 + 1.2);
 
         // גלים שזזים לאט, שביל ירח מנצנץ וקצף שמתחלף.
-        f.seaTex.offset.set((t * 0.004) % 1, (t * 0.018) % 1);
+        f.seaMat.uniforms.uTime.value = t;
         f.glitter.material.opacity = 0.6 + 0.2 * Math.sin(t * 1.9) + 0.08 * Math.sin(t * 5.3);
         f.foam.material.opacity = 0.22 + 0.14 * Math.sin(t * 1.1);
 
@@ -2167,8 +2167,58 @@ window.addEventListener('DOMContentLoaded', () => {
         mapGroup.add(sand);
 
         // הים עצמו.
-        const seaTex = createSeaTexture();
-        const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 400), new THREE.MeshBasicMaterial({ map: seaTex }));
+        const seaMat = new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 } },
+            vertexShader: [
+                'varying vec3 vWorld;',
+                'void main() {',
+                '  vec4 w = modelMatrix * vec4(position, 1.0);',
+                '  vWorld = w.xyz;',
+                '  gl_Position = projectionMatrix * viewMatrix * w;',
+                '}'
+            ].join('\n'),
+            fragmentShader: [
+                'uniform float uTime;',
+                'varying vec3 vWorld;',
+                'vec2 waveGrad(vec2 p, float t) {',
+                '  vec2 g = vec2(0.0);',
+                '  vec2 k1 = vec2(0.32, 0.20);   g += k1 * (0.55 * cos(dot(k1, p) + t * 0.9));',
+                '  vec2 k2 = vec2(-0.21, 0.37);  g += k2 * (0.45 * cos(dot(k2, p) - t * 0.7));',
+                '  vec2 k3 = vec2(0.80, -0.35);  g += k3 * (0.22 * cos(dot(k3, p) + t * 1.6));',
+                '  vec2 k4 = vec2(-0.55, -0.95); g += k4 * (0.14 * cos(dot(k4, p) - t * 1.9));',
+                '  return g;',
+                '}',
+                'void main() {',
+                '  vec3 V = cameraPosition - vWorld;',
+                '  float dist = length(V);',
+                '  V /= dist;',
+                '  float fade = 1.0 / (1.0 + dist * 0.018);',
+                '  vec2 g = waveGrad(vWorld.xz, uTime) * fade * 0.55;',
+                '  vec3 N = normalize(vec3(-g.x, 1.0, -g.y));',
+                '  float ndv = max(dot(N, V), 0.0);',
+                '  float fres = clamp(0.06 + 0.94 * pow(1.0 - ndv, 3.0), 0.0, 1.0);',
+                '  float d = max(-57.0 - vWorld.z, 0.0);',
+                '  float shallow = exp(-d * 0.09);',
+                '  vec3 deep = vec3(0.025, 0.07, 0.20);',
+                '  vec3 body = mix(deep, vec3(0.05, 0.30, 0.40), shallow * 0.6);',
+                '  vec3 skyCol = vec3(0.20, 0.27, 0.58);',
+                '  vec3 col = mix(body, skyCol, fres * 0.85);',
+                '  vec3 L = normalize(vec3(-0.114, 0.075, -1.0));',
+                '  vec3 R = reflect(-V, N);',
+                '  float rl = max(dot(R, L), 0.0);',
+                '  col += vec3(0.75, 0.82, 1.0) * (pow(rl, 90.0) * 0.25 + pow(rl, 700.0) * 1.5);',
+                '  float edge = 1.6 + 0.9 * sin(uTime * 0.8 + vWorld.x * 0.15);',
+                '  float foamBase = 1.0 - smoothstep(0.0, edge, d);',
+                '  float streak = 0.5 + 0.5 * sin(vWorld.x * 1.7 + sin(vWorld.z * 2.3 + uTime * 1.2) * 2.0);',
+                '  float foam = foamBase * smoothstep(0.35, 0.9, streak);',
+                '  col = mix(col, vec3(0.78, 0.86, 1.0), foam * 0.5);',
+                '  float hf = smoothstep(90.0, 330.0, dist);',
+                '  col = mix(col, vec3(0.14, 0.19, 0.43), hf * 0.85);',
+                '  gl_FragColor = vec4(col, 1.0);',
+                '}'
+            ].join('\n')
+        });
+        const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 400), seaMat);
         sea.rotation.x = -Math.PI / 2;
         sea.position.set(0, SEA_Y, -257);
         mapGroup.add(sea);
@@ -2294,7 +2344,7 @@ window.addEventListener('DOMContentLoaded', () => {
         moon.renderOrder = -84;
         mapGroup.add(moon);
 
-        volcanoFx = { starsSmall, starsBig, seaTex, glitter, foam, lhGlow, boats };
+        volcanoFx = { starsSmall, starsBig, seaMat, glitter, foam, lhGlow, boats };
     }
 
     function buildMap(mapId) {
@@ -2421,8 +2471,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // (הוסרה שכבת הזוהר התוספתית שישבה כמעטפת כמעט חופפת על הפירמידות: היא יצרה
             // כיפה מוארת מרצדת בקצוות. הקצוות נשארים נקיים וחדים.)
-            addRockDecoration(-6, -5, 1.2, 0x6b5d52);
-            addRockDecoration(7, -7, 0.85, 0x7d6d60);
+            if (!isVolcano) {   // במפת הים הדשא נקי מאבנים
+                addRockDecoration(-6, -5, 1.2, 0x6b5d52);
+                addRockDecoration(7, -7, 0.85, 0x7d6d60);
+            }
 
             // פס אדמה עמוק בחזית, בהשראת החלק התחתון של תמונת הפתיחה.
             const soilMat = new THREE.MeshStandardMaterial({
