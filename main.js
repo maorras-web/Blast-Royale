@@ -1,3 +1,13 @@
+// באנר שגיאות זמני: אם משהו נשבר, תופיע הודעה אדומה בראש המסך (אפשר למחוק את הבלוק הזה בהמשך).
+window.addEventListener('error', function (e) {
+    try {
+        var d = document.getElementById('dbg-err');
+        if (!d) { d = document.createElement('div'); d.id = 'dbg-err'; document.body.appendChild(d); }
+        d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#b00020;color:#fff;font:12px monospace;padding:6px;direction:ltr;white-space:pre-wrap;max-height:45vh;overflow:auto';
+        d.textContent = (e.message || 'error') + ' | line ' + e.lineno + ':' + e.colno;
+    } catch (x) {}
+});
+
 window.addEventListener('DOMContentLoaded', () => {
 
     if (typeof THREE === 'undefined') {
