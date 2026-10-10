@@ -3604,8 +3604,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // בלבד, בלי לשנות את התותח הראשון ובלי לגעת בשדה האנרגיה החיצוני.
     // ==========================================
     const ADVANCED_CANNON_PRICE = 250;
-    let advancedCannonOwned = localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
-    let activeCannon = localStorage.getItem('bb3d_active_cannon') || 'classic';
+    // מצב תצוגה לבדיקה: פותחים את המשחק עם ?mk2view=1 בסוף הכתובת.
+    // התותח האפור פעיל בלי לקנות אותו, המצלמה קרובה אליו, ושום דבר לא נשמר.
+    const MK2_PREVIEW = /[?&]mk2view=1/.test(window.location.search) || /cannon\.html$/.test(window.location.pathname);
+    let advancedCannonOwned = MK2_PREVIEW || localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
+    let activeCannon = MK2_PREVIEW ? 'mk2' : (localStorage.getItem('bb3d_active_cannon') || 'classic');
 
     const advancedCannonGroup = new THREE.Group();
     advancedCannonGroup.visible = activeCannon === 'mk2';
@@ -3997,6 +4000,28 @@ window.addEventListener('DOMContentLoaded', () => {
         wheel.userData.spinGroup = spin;
     });
 
+    // ==========================================================
+    // בנייה חדשה של התותח האפור — שלב אחר שלב, מהשלדה ומעלה
+    // שלב 1 (עכשיו): שלדת הגוף בלבד. הגלגלים נשארים מהגרסה הקודמת.
+    // שאר החלקים הישנים (קנים, ליבה, שריון) מוסתרים, והם יוחלפו בשלבים הבאים.
+    // כל המידות כאן הן במידות המשחק (בלי קנה המידה הפנימי של התותח).
+    // ==========================================================
+    const mk2Rig = new THREE.Group();
+    mk2Rig.scale.setScalar(MK2_WS);
+    advancedCannonGroup.add(mk2Rig);
+
+    // גוף תחתון רחב ונמוך, בגובה ציר הגלגלים
+    addMk2Rounded(3.50, 0.62, 1.75, 0.14, 0.07, mk2DarkMat, 0, 0.86, 0, 0, 0, 0, mk2Rig);
+    // משטח עליון מדורג
+    addMk2Rounded(3.10, 0.34, 1.55, 0.12, 0.06, mk2BodyMat, 0, 1.34, 0, 0, 0, 0, mk2Rig);
+    // בסיס מרכזי לצריח ולקנים
+    addMk2Rounded(1.90, 0.45, 1.25, 0.10, 0.05, mk2HullMat, 0, 1.73, 0, 0, 0, 0, mk2Rig);
+
+    const mk2KeepVisible = new Set([mk2Rig].concat(advancedCannonWheels));
+    advancedCannonGroup.children.forEach(child => {
+        if (!child.isLight && !mk2KeepVisible.has(child)) child.visible = false;
+    });
+
     function updateMk2Glow(time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
         const kick = Math.min(1, Math.max(0, cannonRecoil) * 5);
@@ -4024,7 +4049,7 @@ window.addEventListener('DOMContentLoaded', () => {
         classicCannonParts.forEach(child => {
             if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
         });
-        localStorage.setItem('bb3d_active_cannon', activeCannon);
+        if (!MK2_PREVIEW) localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
 
     setActiveCannon(activeCannon);
@@ -5836,7 +5861,12 @@ window.addEventListener('DOMContentLoaded', () => {
         const lookY = 2.45 + cannonRecoil * 0.15;
         const lookZ = -8.1;
 
-        camera.lookAt(lookX, lookY, lookZ);
+        if (MK2_PREVIEW) {
+            camera.position.set(cannonX, 5.4, 12.5);
+            camera.lookAt(cannonX, 1.8, 0);
+        } else {
+            camera.lookAt(lookX, lookY, lookZ);
+        }
 
         renderer.render(scene, camera);
     }
