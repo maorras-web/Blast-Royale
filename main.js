@@ -3925,6 +3925,10 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 4.15, bz, 0, 0, 0, BG);
         addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 4.215, bz, 0, 0, 0, BG);
+        if (Math.abs(wx) > 0.7) {
+            addMk2Rounded(0.70, 0.90, 0.66, 0.16, 0.08, mk2DarkMat, bx, 2.62, bz, 0, 0, 0, BG);
+            addMk2Mesh(new THREE.BoxGeometry(0.07, 0.55, 0.03), mk2GlowCyanMat, bx, 2.62, bz + 0.34, 0, 0, 0, BG).castShadow = false;
+        }
     });
 
     // ---- ליבה זוהרת קדמית — חלק מהתותח עצמו, לא שדה האנרגיה ----
@@ -3934,6 +3938,13 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(mk2CoreGroup);
     addMk2Mesh(new THREE.CylinderGeometry(0.74, 0.88, 0.34, 22), mk2DarkMat, 0, 2.17, 0.66);
     addMk2Mesh(new THREE.TorusGeometry(0.80, 0.05, 8, 26), mk2EdgeMat, 0, 2.34, 0.66, Math.PI / 2, 0, 0);
+    addMk2Mesh(new THREE.TorusGeometry(0.86, 0.032, 8, 30), mk2GlowCyanMat, 0, 2.37, 0.70, Math.PI / 2, 0, 0).castShadow = false;
+    const mk2Egg = addMk2Mesh(new THREE.SphereGeometry(0.95, 22, 14), mk2DarkMat, 0, 2.50, 0.20);
+    mk2Egg.scale.set(1.25, 1.0, 0.85);
+    [-1, 1].forEach(side => {
+        addMk2Rounded(0.42, 0.50, 0.14, 0.04, 0.02, mk2DarkMat, side * 0.42, 2.22, 1.28, -0.45, 0, side * 0.25);
+        addMk2Mesh(new THREE.BoxGeometry(0.045, 0.46, 0.04), mk2GlowCyanMat, side * 0.64, 2.24, 1.33, -0.45, 0, side * 0.25).castShadow = false;
+    });
 
     const mk2SocketGeo = new THREE.CylinderGeometry(0.66, 0.72, 0.22, 18);
     mk2SocketGeo.rotateX(Math.PI / 2);
@@ -3974,7 +3985,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2RimCoreGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.82, 20);
     const mk2HubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.90, 14);
     const mk2LipGeo = new THREE.TorusGeometry(0.31, 0.035, 8, 32);
-    const mk2WheelGlowGeo = new THREE.TorusGeometry(0.20, 0.03, 8, 28);
+    const mk2WheelGlowGeo = new THREE.TorusGeometry(0.26, 0.028, 8, 32);
+    const mk2WheelGlowGeo2 = new THREE.TorusGeometry(0.13, 0.022, 8, 24);
     const advancedCannonWheels = [];
 
     [[-MK2_WX, 0.72], [MK2_WX, 0.72], [-MK2_WX, -0.72], [MK2_WX, -0.72]].forEach(([x, z]) => {
@@ -3989,8 +4001,9 @@ window.addEventListener('DOMContentLoaded', () => {
         addMk2Mesh(mk2RimCoreGeo, mk2BlackMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2HubGeo, mk2EdgeMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         [-1, 1].forEach(sd => {
-            addMk2Mesh(mk2LipGeo, mk2EdgeMat, 0, 0, sd * 0.405, 0, 0, 0, spin);
+            addMk2Mesh(mk2LipGeo, mk2DarkMat, 0, 0, sd * 0.405, 0, 0, 0, spin);
             addMk2Mesh(mk2WheelGlowGeo, mk2GlowCyanMat, 0, 0, sd * 0.44, 0, 0, 0, spin).castShadow = false;
+            addMk2Mesh(mk2WheelGlowGeo2, mk2GlowCyanMat, 0, 0, sd * 0.44, 0, 0, 0, spin).castShadow = false;
         });
         advancedCannonGroup.add(wheel);
         advancedCannonWheels.push(wheel);
