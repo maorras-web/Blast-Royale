@@ -3721,8 +3721,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP;
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
-    const MK2_BARREL_X = [-0.95, -0.46, 0.46, 0.95];
-    const MK2_MUZZLE_Y = 3.1;
+    const MK2_BARREL_X = [-0.42, 0.42];
+    const MK2_MUZZLE_Y = 3.4;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4020,22 +4020,35 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================================
     // התותח האפור (NOVA) = שכפול של התותח הקלאסי, עם מראה אחר:
-    // צבעים אפורים וארבעה קנים ארוכים עם טבעות אור כחולות.
+    // צבע שחור, גוף גבוה יותר, ושני קנים ארוכים עם טבעות אור כחולות.
     // התותח הקלאסי עצמו לא משתנה: כשבוחרים אותו, הכול חוזר כמו שהיה.
     // ==========================================================
     const MK2_LOOK_MATERIALS = [
-        { mat: darkMetalMat,     c0: 0x18232d, c1: 0x1a1b20 },
-        { mat: bodyMetalMat,     c0: 0x2d3e49, c1: 0x3a3d44 },
-        { mat: edgeMetalMat,     c0: 0x526572, c1: 0x6a6f78 },
-        { mat: barrelMat,        c0: 0x3d4e5a, c1: 0x4a4e57 },
-        { mat: muzzleMat,        c0: 0x11191f, c1: 0x0e0f12 },
-        { mat: turretCollarMat,  c0: 0x1f7fc4, c1: 0x2f3238, e0: 0x06304f, e1: 0x063a55 },
-        { mat: dome.material,    c0: 0x1f7fc4, c1: 0x23262e, e0: 0x06304f, e1: 0x4b24b8 }
+        { mat: darkMetalMat,     c0: 0x18232d, c1: 0x0b0c0f },
+        { mat: bodyMetalMat,     c0: 0x2d3e49, c1: 0x17181c },
+        { mat: edgeMetalMat,     c0: 0x526572, c1: 0x2c2e35 },
+        { mat: barrelMat,        c0: 0x3d4e5a, c1: 0x202228 },
+        { mat: muzzleMat,        c0: 0x11191f, c1: 0x07080a },
+        { mat: turretCollarMat,  c0: 0x1f7fc4, c1: 0x14151a, e0: 0x06304f, e1: 0x042a40 },
+        { mat: dome.material,    c0: 0x1f7fc4, c1: 0x0c0d11, e0: 0x06304f, e1: 0x0b2f4a }
     ];
 
-    // ארבעת הקנים של התותח האפור. המיקומים תואמים ל-MK2_BARREL_X (מחולק ב-CANNON_SCALE).
-    const MK2_BARREL_LOCAL_X = [-0.83, -0.40, 0.40, 0.83];
-    const MK2_BARREL_LENGTH = 1.50;
+    // ---- גוף גבוה: מגביהים את הצריח, הכיפה והקנים, ומוסיפים מתחתיהם בסיס שחור ----
+    const MK2_TURRET_LIFT = 0.5;
+    const mk2TurretParts = [turretRing, dome, turretCollar, rearHousing, accentPlate, frontPlate, barrelAssembly];
+    const mk2Pedestal = new THREE.Mesh(
+        createRoundedBoxGeometry(1.90, MK2_TURRET_LIFT + 0.15, 1.70, 0.20, 0.08, 3),
+        bodyMetalMat
+    );
+    mk2Pedestal.position.set(0, dome.position.y + (MK2_TURRET_LIFT - 0.05) / 2, 0);
+    mk2Pedestal.castShadow = true;
+    mk2Pedestal.receiveShadow = true;
+    dome.parent.add(mk2Pedestal);
+    let mk2LiftApplied = false;
+
+    // שני הקנים של התותח האפור. המיקומים תואמים ל-MK2_BARREL_X (מחולק ב-CANNON_SCALE).
+    const MK2_BARREL_LOCAL_X = [-0.37, 0.37];
+    const MK2_BARREL_LENGTH = 1.30;
 
     const classicBarrelParts = barrelAssembly.children.filter(part => part !== barrelBase);
     const mk2Barrels = new THREE.Group();
@@ -4075,7 +4088,12 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         classicBarrelParts.forEach(part => { part.visible = !isMk2; });
         mk2Barrels.visible = isMk2;
-        barrelBase.scale.x = isMk2 ? 2.1 : 1;
+        if (isMk2 !== mk2LiftApplied) {
+            const dy = isMk2 ? MK2_TURRET_LIFT : -MK2_TURRET_LIFT;
+            mk2TurretParts.forEach(part => { part.position.y += dy; });
+            mk2LiftApplied = isMk2;
+        }
+        mk2Pedestal.visible = isMk2;
     }
 
     function setActiveCannon(type) {
