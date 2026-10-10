@@ -3611,7 +3611,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let activeCannon = MK2_PREVIEW ? 'mk2' : (localStorage.getItem('bb3d_active_cannon') || 'classic');
 
     const advancedCannonGroup = new THREE.Group();
-    advancedCannonGroup.visible = activeCannon === 'mk2';
+    advancedCannonGroup.visible = false;   // ה-MK-II הישן כבוי; התותח האפור הוא עכשיו שכפול של הקלאסי
     advancedCannonGroup.position.set(0, 0, 0);
     cannonGroup.add(advancedCannonGroup);
 
@@ -3722,7 +3722,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.95, -0.46, 0.46, 0.95];
-    const MK2_MUZZLE_Y = 2.85;
+    const MK2_MUZZLE_Y = 3.1;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4000,28 +4000,6 @@ window.addEventListener('DOMContentLoaded', () => {
         wheel.userData.spinGroup = spin;
     });
 
-    // ==========================================================
-    // בנייה חדשה של התותח האפור — שלב אחר שלב, מהשלדה ומעלה
-    // שלב 1 (עכשיו): שלדת הגוף בלבד. הגלגלים נשארים מהגרסה הקודמת.
-    // שאר החלקים הישנים (קנים, ליבה, שריון) מוסתרים, והם יוחלפו בשלבים הבאים.
-    // כל המידות כאן הן במידות המשחק (בלי קנה המידה הפנימי של התותח).
-    // ==========================================================
-    const mk2Rig = new THREE.Group();
-    mk2Rig.scale.setScalar(MK2_WS);
-    advancedCannonGroup.add(mk2Rig);
-
-    // גוף תחתון רחב ונמוך, בגובה ציר הגלגלים
-    addMk2Rounded(3.50, 0.62, 1.75, 0.14, 0.07, mk2DarkMat, 0, 0.86, 0, 0, 0, 0, mk2Rig);
-    // משטח עליון מדורג
-    addMk2Rounded(3.10, 0.34, 1.55, 0.12, 0.06, mk2BodyMat, 0, 1.34, 0, 0, 0, 0, mk2Rig);
-    // בסיס מרכזי לצריח ולקנים
-    addMk2Rounded(1.90, 0.45, 1.25, 0.10, 0.05, mk2HullMat, 0, 1.73, 0, 0, 0, 0, mk2Rig);
-
-    const mk2KeepVisible = new Set([mk2Rig].concat(advancedCannonWheels));
-    advancedCannonGroup.children.forEach(child => {
-        if (!child.isLight && !mk2KeepVisible.has(child)) child.visible = false;
-    });
-
     function updateMk2Glow(time) {
         const pulse = 0.5 + 0.5 * Math.sin(time * 0.004);
         const kick = Math.min(1, Math.max(0, cannonRecoil) * 5);
@@ -4039,16 +4017,74 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
-    classicCannonParts.forEach(child => {
-        if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
-    });
+
+    // ==========================================================
+    // התותח האפור (NOVA) = שכפול של התותח הקלאסי, עם מראה אחר:
+    // צבעים אפורים וארבעה קנים ארוכים עם טבעות אור כחולות.
+    // התותח הקלאסי עצמו לא משתנה: כשבוחרים אותו, הכול חוזר כמו שהיה.
+    // ==========================================================
+    const MK2_LOOK_MATERIALS = [
+        { mat: darkMetalMat,     c0: 0x18232d, c1: 0x1a1b20 },
+        { mat: bodyMetalMat,     c0: 0x2d3e49, c1: 0x3a3d44 },
+        { mat: edgeMetalMat,     c0: 0x526572, c1: 0x6a6f78 },
+        { mat: barrelMat,        c0: 0x3d4e5a, c1: 0x4a4e57 },
+        { mat: muzzleMat,        c0: 0x11191f, c1: 0x0e0f12 },
+        { mat: turretCollarMat,  c0: 0x1f7fc4, c1: 0x2f3238, e0: 0x06304f, e1: 0x063a55 },
+        { mat: dome.material,    c0: 0x1f7fc4, c1: 0x23262e, e0: 0x06304f, e1: 0x4b24b8 }
+    ];
+
+    // ארבעת הקנים של התותח האפור. המיקומים תואמים ל-MK2_BARREL_X (מחולק ב-CANNON_SCALE).
+    const MK2_BARREL_LOCAL_X = [-0.83, -0.40, 0.40, 0.83];
+    const MK2_BARREL_LENGTH = 1.50;
+
+    const classicBarrelParts = barrelAssembly.children.filter(part => part !== barrelBase);
+    const mk2Barrels = new THREE.Group();
+    barrelAssembly.add(mk2Barrels);
+
+    {
+        const geo = new THREE.CylinderGeometry(0.13, 0.15, MK2_BARREL_LENGTH, 18);
+        const ringGeo = new THREE.CylinderGeometry(0.175, 0.175, 0.05, 18);
+        const bandGeo = new THREE.CylinderGeometry(0.162, 0.162, 0.035, 18);
+        const baseY = 0.12;                               // תחתית הקנה, כמו בקלאסי
+        const centerY = baseY + MK2_BARREL_LENGTH / 2;
+        const topY = baseY + MK2_BARREL_LENGTH;
+
+        MK2_BARREL_LOCAL_X.forEach(x => {
+            const addPart = (geometry, material, y, castShadow = true) => {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(x, y, 0);
+                mesh.castShadow = castShadow;
+                mk2Barrels.add(mesh);
+                return mesh;
+            };
+            addPart(geo, barrelMat, centerY);
+            // טבעות כהות
+            [0.30, 0.75, 1.20].forEach(rel => addPart(ringGeo, darkMetalMat, baseY + rel));
+            // שתי טבעות אור כחולות
+            [0.52, 1.00].forEach(rel => addPart(bandGeo, mk2GlowCyanMat, baseY + rel, false));
+            // פתח הקנה
+            addPart(muzzleGeo, muzzleMat, topY + 0.02);
+            addPart(muzzleBoreGeo, new THREE.MeshBasicMaterial({ color: 0x020507 }), topY + 0.025, false);
+        });
+    }
+
+    function applyCannonLook(isMk2) {
+        MK2_LOOK_MATERIALS.forEach(entry => {
+            entry.mat.color.setHex(isMk2 ? entry.c1 : entry.c0);
+            if (entry.e0 !== undefined) entry.mat.emissive.setHex(isMk2 ? entry.e1 : entry.e0);
+        });
+        classicBarrelParts.forEach(part => { part.visible = !isMk2; });
+        mk2Barrels.visible = isMk2;
+        barrelBase.scale.x = isMk2 ? 2.1 : 1;
+    }
 
     function setActiveCannon(type) {
         activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : 'classic';
-        advancedCannonGroup.visible = activeCannon === 'mk2';
+        advancedCannonGroup.visible = false;
         classicCannonParts.forEach(child => {
-            if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
+            if (child !== advancedCannonGroup) child.visible = true;
         });
+        applyCannonLook(activeCannon === 'mk2');
         if (!MK2_PREVIEW) localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
 
