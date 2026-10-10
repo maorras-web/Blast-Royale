@@ -3719,7 +3719,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.95, -0.46, 0.46, 0.95];
-    let MK2_MUZZLE_Y = 2.85;
+    const MK2_MUZZLE_Y = 2.85;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -3925,10 +3925,6 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         addMk2Mesh(mk2MuzzleGeo, mk2DarkMat, bx, 4.15, bz, 0, 0, 0, BG);
         addMk2Mesh(mk2BoreGeo, mk2BlackMat, bx, 4.215, bz, 0, 0, 0, BG);
-        if (Math.abs(wx) > 0.7) {
-            addMk2Rounded(0.70, 0.90, 0.66, 0.16, 0.08, mk2DarkMat, bx, 2.62, bz, 0, 0, 0, BG);
-            addMk2Mesh(new THREE.BoxGeometry(0.07, 0.55, 0.03), mk2GlowCyanMat, bx, 2.62, bz + 0.34, 0, 0, 0, BG).castShadow = false;
-        }
     });
 
     // ---- ליבה זוהרת קדמית — חלק מהתותח עצמו, לא שדה האנרגיה ----
@@ -3938,13 +3934,6 @@ window.addEventListener('DOMContentLoaded', () => {
     advancedCannonGroup.add(mk2CoreGroup);
     addMk2Mesh(new THREE.CylinderGeometry(0.74, 0.88, 0.34, 22), mk2DarkMat, 0, 2.17, 0.66);
     addMk2Mesh(new THREE.TorusGeometry(0.80, 0.05, 8, 26), mk2EdgeMat, 0, 2.34, 0.66, Math.PI / 2, 0, 0);
-    addMk2Mesh(new THREE.TorusGeometry(0.86, 0.032, 8, 30), mk2GlowCyanMat, 0, 2.37, 0.70, Math.PI / 2, 0, 0).castShadow = false;
-    const mk2Egg = addMk2Mesh(new THREE.SphereGeometry(0.95, 22, 14), mk2DarkMat, 0, 2.50, 0.20);
-    mk2Egg.scale.set(1.25, 1.0, 0.85);
-    [-1, 1].forEach(side => {
-        addMk2Rounded(0.42, 0.50, 0.14, 0.04, 0.02, mk2DarkMat, side * 0.42, 2.22, 1.28, -0.45, 0, side * 0.25);
-        addMk2Mesh(new THREE.BoxGeometry(0.045, 0.46, 0.04), mk2GlowCyanMat, side * 0.64, 2.24, 1.33, -0.45, 0, side * 0.25).castShadow = false;
-    });
 
     const mk2SocketGeo = new THREE.CylinderGeometry(0.66, 0.72, 0.22, 18);
     mk2SocketGeo.rotateX(Math.PI / 2);
@@ -3985,8 +3974,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2RimCoreGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.82, 20);
     const mk2HubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.90, 14);
     const mk2LipGeo = new THREE.TorusGeometry(0.31, 0.035, 8, 32);
-    const mk2WheelGlowGeo = new THREE.TorusGeometry(0.26, 0.028, 8, 32);
-    const mk2WheelGlowGeo2 = new THREE.TorusGeometry(0.13, 0.022, 8, 24);
+    const mk2WheelGlowGeo = new THREE.TorusGeometry(0.20, 0.03, 8, 28);
     const advancedCannonWheels = [];
 
     [[-MK2_WX, 0.72], [MK2_WX, 0.72], [-MK2_WX, -0.72], [MK2_WX, -0.72]].forEach(([x, z]) => {
@@ -4001,9 +3989,8 @@ window.addEventListener('DOMContentLoaded', () => {
         addMk2Mesh(mk2RimCoreGeo, mk2BlackMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         addMk2Mesh(mk2HubGeo, mk2EdgeMat, 0, 0, 0, Math.PI / 2, 0, 0, spin);
         [-1, 1].forEach(sd => {
-            addMk2Mesh(mk2LipGeo, mk2DarkMat, 0, 0, sd * 0.405, 0, 0, 0, spin);
+            addMk2Mesh(mk2LipGeo, mk2EdgeMat, 0, 0, sd * 0.405, 0, 0, 0, spin);
             addMk2Mesh(mk2WheelGlowGeo, mk2GlowCyanMat, 0, 0, sd * 0.44, 0, 0, 0, spin).castShadow = false;
-            addMk2Mesh(mk2WheelGlowGeo2, mk2GlowCyanMat, 0, 0, sd * 0.44, 0, 0, 0, spin).castShadow = false;
         });
         advancedCannonGroup.add(wheel);
         advancedCannonWheels.push(wheel);
@@ -4023,80 +4010,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     advancedBarrelAssembly.userData.baseY = advancedBarrelAssembly.position.y;
 
-    // ==========================================
-    // דגם תלת־ממד אמיתי (GLB) לתותח השני
-    // אם הקובץ לא נטען מסיבה כלשהי, התותח הישן ממשיך להופיע כרגיל.
-    // ארבעת המספרים הבאים הם כל מה שצריך לשנות כדי לכוונן את המראה:
-    // ==========================================
-    const MK2_MODEL_URL = 'mk2-cannon.glb?v=1';
-    const MK2_MODEL_WIDTH = 2.8;   // רוחב התותח. גדול יותר = תותח רחב יותר (והכדורים יוצאים מהקנים שלו)
-    const MK2_MODEL_YAW = 180;       // סיבוב במעלות. 0 = הקנים פונים למצלמה, 180 = לכיוון ההפוך
-    const MK2_MODEL_LIFT = 0;      // גובה. מספר חיובי מרים את התותח, שלילי מוריד אותו
-    const MK2_MODEL_DEPTH = 0.6;   // עומק. קטן יותר = תותח "שטוח" יותר לכיוון המצלמה
-
-    let mk2ModelRequested = false;
-    function loadMk2Model() {
-        if (mk2ModelRequested) return;
-        mk2ModelRequested = true;
-        if (typeof THREE.GLTFLoader !== 'function') {
-            console.warn('MK2: GLTFLoader לא נטען, נשאר התותח הישן.');
-            return;
-        }
-        const proceduralParts = advancedCannonGroup.children.filter(c => !c.isLight);
-        new THREE.GLTFLoader().load(MK2_MODEL_URL, gltf => {
-            try {
-                const model = gltf.scene;
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                if (!(size.x > 0 && size.y > 0 && size.z > 0)) throw new Error('empty model');
-
-                // הקובץ כבר ממורכז: X באמצע, הקרקע ב-Y=0, קצה הקנים ב-Z=0.
-                const k = MK2_MODEL_WIDTH / size.x;
-                const holder = new THREE.Group();
-                holder.add(model);
-                holder.rotation.y = THREE.MathUtils.degToRad(MK2_MODEL_YAW);
-                const outer = new THREE.Group();
-                outer.add(holder);
-                outer.scale.set(k / MK2_SCALE, k / MK2_SCALE, (k * MK2_MODEL_DEPTH) / MK2_SCALE);
-                outer.position.y = MK2_MODEL_LIFT / MK2_SCALE;
-
-                model.traverse(o => {
-                    if (!o.isMesh) return;
-                    o.castShadow = true;
-                    o.receiveShadow = true;
-                    const m = o.material;
-                    if (!m) return;
-                    m.metalness = 0.25;
-                    m.roughness = 0.55;
-                    if (mk2Env) { m.envMap = mk2Env; m.envMapIntensity = 0.6; }
-                    if (m.map) {
-                        // זוהר עדין, כדי שהחלקים הכהים לא ייעלמו בלילה
-                        m.emissive = new THREE.Color(0xffffff);
-                        m.emissiveMap = m.map;
-                        m.emissiveIntensity = 0.28;
-                    }
-                    m.needsUpdate = true;
-                });
-
-                // הכדורים יוצאים בדיוק מארבעת הקנים של הדגם.
-                const hw = MK2_MODEL_WIDTH / 2;
-                MK2_BARREL_X[0] = -0.675 * hw;
-                MK2_BARREL_X[1] = -0.303 * hw;
-                MK2_BARREL_X[2] = 0.303 * hw;
-                MK2_BARREL_X[3] = 0.675 * hw;
-                MK2_MUZZLE_Y = size.y * k * 0.97 + MK2_MODEL_LIFT;
-
-                advancedCannonGroup.add(outer);
-                proceduralParts.forEach(p => { p.visible = false; });
-            } catch (err) {
-                console.warn('MK2: בעיה בדגם, נשאר התותח הישן.', err);
-            }
-        }, undefined, err => {
-            console.warn('MK2: קובץ הדגם לא נטען, נשאר התותח הישן.', err);
-        });
-    }
-    if (activeCannon === 'mk2' || advancedCannonOwned) loadMk2Model();
-
     // סיום התותח השני. שדה האנרגיה שמסביב למשחק אינו חלק מהמודל הזה.
 
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
@@ -4111,7 +4024,6 @@ window.addEventListener('DOMContentLoaded', () => {
         classicCannonParts.forEach(child => {
             if (child !== advancedCannonGroup) child.visible = activeCannon !== 'mk2';
         });
-        if (activeCannon === 'mk2') loadMk2Model();
         localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
 
