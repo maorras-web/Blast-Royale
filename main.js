@@ -4032,12 +4032,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
+    const MK2_STRIP_W = 1.50;       // אורך פס האור הכחול (היה 1.80)
     const MK2_WHEEL_SHIFT = 0.35;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
     // נקודות חיבור פנימיות של הזרועות לגוף: [x, y] מקורי -> [x, y] חדש
     const MK2_PIVOT_REMAP = [
-        { x: 0.70, y: 0.40, nx: 1.24, ny: 0.72 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
-        { x: 0.83, y: 0.82, nx: 1.40, ny: 1.02 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
-        { x: 1.17, y: 1.03, nx: 1.30, ny: 1.30 }    // ראש הקפיץ (coil-over)
+        { x: 0.70, y: 0.40, nx: 0.80, ny: 0.74 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
+        { x: 0.83, y: 0.82, nx: 0.98, ny: 1.10 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
+        { x: 1.17, y: 1.03, nx: 1.15, ny: 1.45 }    // ראש הקפיץ (coil-over)
     ];
 
     const mk2Head = new THREE.Group();
@@ -4066,16 +4067,35 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- גוף עגול וגבוה ----
-    nvBox(mk2Head, MK2_BODY_W, 1.15, 1.75, 0.42, 0.12, nvBlack, 0, 1.46, 0);
+    // חלק עליון רחב
+    nvBox(mk2Head, MK2_BODY_W, 0.70, 1.75, 0.30, 0.12, nvBlack, 0, 1.685, 0);
+    // חלק תחתון צר בצורת V (נחתך לאורך הקווים האדומים שסימנת) - כך הזרועות מתחילות קרוב למרכז ויוצאות ארוכות וברורות
+    (function () {
+        const hullShape = new THREE.Shape();
+        hullShape.moveTo(-0.22, 0.965);
+        hullShape.lineTo(0.22, 0.965);
+        hullShape.lineTo(0.88, 1.55);
+        hullShape.lineTo(-0.88, 1.55);
+        hullShape.lineTo(-0.22, 0.965);
+        const hullGeo = new THREE.ExtrudeGeometry(hullShape, {
+            depth: 1.59, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.08, bevelThickness: 0.08
+        });
+        hullGeo.translate(0, 0, -0.795);
+        hullGeo.computeVertexNormals();
+        const hull = new THREE.Mesh(hullGeo, nvBlack);
+        hull.castShadow = true;
+        hull.receiveShadow = true;
+        mk2Head.add(hull);
+    })();
     // מצחייה כהה עם פס אור כחול
-    nvBox(mk2Head, MK2_BODY_W - 0.75, 0.24, 0.10, 0.06, 0.02, nvDark, 0, 1.58, 0.90);
-    nvAdd(mk2Head, new THREE.BoxGeometry(MK2_BODY_W - 1.05, 0.045, 0.04), mk2GlowCyanMat, 0, 1.58, 0.955, 0, 0, 0, false);
+    nvBox(mk2Head, MK2_STRIP_W + 0.25, 0.24, 0.10, 0.06, 0.02, nvDark, 0, 1.58, 0.90);
+    nvAdd(mk2Head, new THREE.BoxGeometry(MK2_STRIP_W, 0.045, 0.04), mk2GlowCyanMat, 0, 1.58, 0.955, 0, 0, 0, false);
     // תושבות מוברגות בצדי הגוף - אליהן מחוברות זרועות ההשעיה (כמו בתמונת המטרה)
     [-1, 1].forEach(side => {
         [0.72, -0.72].forEach(z => {
-            nvBox(mk2Head, 0.30, 0.52, 0.64, 0.08, 0.03, nvDark, side * 1.26, 1.13, z);   // תושבת עליונה
-            nvBox(mk2Head, 0.36, 0.40, 0.64, 0.08, 0.03, nvDark, side * 1.12, 0.84, z);   // תושבת תחתונה
-            [[1.24, 1.27], [1.10, 0.78]].forEach(bp => {
+            nvBox(mk2Head, 0.34, 0.50, 0.64, 0.08, 0.03, nvDark, side * 0.80, 1.18, z);   // תושבת עליונה
+            nvBox(mk2Head, 0.34, 0.40, 0.64, 0.08, 0.03, nvDark, side * 0.62, 0.84, z);   // תושבת תחתונה
+            [[0.80, 1.32], [0.62, 0.76]].forEach(bp => {
                 nvAdd(mk2Head, new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6), nvSteel, side * bp[0], bp[1], z + 0.33, Math.PI / 2, 0, 0);
             });
         });
