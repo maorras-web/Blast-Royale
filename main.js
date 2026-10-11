@@ -4032,11 +4032,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.22;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
+    const MK2_WHEEL_SHIFT = 0.45;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
     // נקודות חיבור פנימיות של הזרועות לגוף: [x, y] מקורי -> [x, y] חדש
     const MK2_PIVOT_REMAP = [
-        { x: 0.70, y: 0.40, nx: 0.95, ny: 0.60 },   // זרועות תחתונות
-        { x: 0.83, y: 0.82, nx: 1.10, ny: 0.93 }    // זרועות עליונות
+        { x: 0.70, y: 0.40, nx: 0.90, ny: 0.60 },   // זרועות תחתונות: נצמדות לשלדה מתחת לגוף
+        { x: 0.83, y: 0.82, nx: 1.15, ny: 1.00 },   // זרועות עליונות: יוצאות מתוך הגוף ויורדות אל הגלגל
+        { x: 1.17, y: 1.03, nx: 1.28, ny: 1.12 }    // ראש הקפיץ (coil-over): יוצא מצד הגוף
     ];
 
     const mk2Head = new THREE.Group();
@@ -4141,8 +4142,8 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionMetalMat.envMapIntensity = 0.9;
         suspensionMetalMat.needsUpdate = true;
         suspensionLinks.forEach(link => {
-            link.mesh.scale.x = isMk2 ? 1.6 : 1;
-            link.mesh.scale.z = isMk2 ? 1.6 : 1;
+            link.mesh.scale.x = isMk2 ? 1.8 : 1;
+            link.mesh.scale.z = isMk2 ? 1.8 : 1;
         });
         layoutSuspensionForLook(isMk2);
     }
