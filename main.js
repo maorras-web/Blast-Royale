@@ -3611,7 +3611,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let activeCannon = MK2_PREVIEW ? 'mk2' : (localStorage.getItem('bb3d_active_cannon') || 'classic');
 
     const advancedCannonGroup = new THREE.Group();
-    advancedCannonGroup.visible = false;   // ה-MK-II הישן כבוי; התותח האפור הוא עכשיו שכפול של הקלאסי
+    advancedCannonGroup.visible = false;   // ה-MK-II הישן כבוי; התותח האפור בנוי על הקלאסי
     advancedCannonGroup.position.set(0, 0, 0);
     cannonGroup.add(advancedCannonGroup);
 
@@ -3721,8 +3721,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WY = TIRE_OUTER_R * MK2_WS - TIRE_GROUND_DROP;
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
-    const MK2_BARREL_X = [-0.42, 0.42];
-    const MK2_MUZZLE_Y = 3.4;
+    const MK2_BARREL_X = [-0.37, 0.37];
+    let MK2_MUZZLE_Y = 3.15;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4017,94 +4017,66 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // שומרים את התותח המקורי כ"קלאסי" ומסתירים אותו רק כש-MK-II פעיל.
     const classicCannonParts = cannonGroup.children.slice();
+    const classicBodyParts = bodyRig.children.slice();
 
     // ==========================================================
-    // התותח האפור (NOVA) = שכפול של התותח הקלאסי, עם מראה אחר:
-    // צבע שחור, גוף גבוה יותר, ושני קנים ארוכים עם טבעות אור כחולות.
-    // התותח הקלאסי עצמו לא משתנה: כשבוחרים אותו, הכול חוזר כמו שהיה.
+    // התותח האפור (NOVA): "ראש" חדש על ההשעיה והגלגלים של הקלאסי
+    // הגלגלים, זרועות ההשעיה והקפיצים נשארים כמו בתמונת המטרה (הם כבר עובדים).
+    // מוחלפים רק הגוף, הכיפה והקנים: גוף עגול וגבוה בשחור עם מצחייה זוהרת,
+    // כיפה קטנה, ושני קנים עבים. התותח הקלאסי לא משתנה בכלל.
+    // המידות כאן זהות למידות של התותח הקלאסי.
     // ==========================================================
-    const MK2_LOOK_MATERIALS = [
-        { mat: darkMetalMat,     c0: 0x18232d, c1: 0x0b0c0f },
-        { mat: bodyMetalMat,     c0: 0x2d3e49, c1: 0x17181c },
-        { mat: edgeMetalMat,     c0: 0x526572, c1: 0x2c2e35 },
-        { mat: barrelMat,        c0: 0x3d4e5a, c1: 0x5d636c },
-        { mat: muzzleMat,        c0: 0x11191f, c1: 0x07080a },
-        { mat: turretCollarMat,  c0: 0x1f7fc4, c1: 0x14151a, e0: 0x06304f, e1: 0x042a40 },
-        { mat: dome.material,    c0: 0x1f7fc4, c1: 0x08090c, e0: 0x06304f, e1: 0x050b12 }
-    ];
+    const mk2Head = new THREE.Group();
+    mk2Head.position.y = -BODY_PIVOT_Y;
+    bodyRig.add(mk2Head);
 
-    // ---- גוף גבוה: מגביהים את הצריח, הכיפה והקנים, ומוסיפים מתחתיהם בסיס שחור ----
-    const MK2_TURRET_LIFT = 0.5;
-    const mk2TurretParts = [turretRing, dome, turretCollar, rearHousing, accentPlate, frontPlate, barrelAssembly];
-    const mk2Pedestal = new THREE.Mesh(
-        createRoundedBoxGeometry(1.90, MK2_TURRET_LIFT + 0.15, 1.70, 0.20, 0.08, 3),
-        bodyMetalMat
-    );
-    mk2Pedestal.position.set(0, dome.position.y + (MK2_TURRET_LIFT - 0.05) / 2, 0);
-    mk2Pedestal.castShadow = true;
-    mk2Pedestal.receiveShadow = true;
-    dome.parent.add(mk2Pedestal);
-    const mk2Visor = new THREE.Mesh(
-        new THREE.BoxGeometry(1.35, 0.08, 0.04),
-        new THREE.MeshBasicMaterial({ color: 0x35cfff })
-    );
-    mk2Visor.position.set(0, dome.position.y + 0.20, 0.87);
-    dome.parent.add(mk2Visor);
-    let mk2LiftApplied = false;
+    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x121317, roughness: 0.28, metalness: 0.55, clearcoat: 0.7, clearcoatRoughness: 0.15, envMap: mk2Env, envMapIntensity: 0.9 });
+    const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
+    const nvSteel = new THREE.MeshStandardMaterial({ color: 0x737a84, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
+    const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
 
-    // שני הקנים של התותח האפור. המיקומים תואמים ל-MK2_BARREL_X (מחולק ב-CANNON_SCALE).
-    const MK2_BARREL_LOCAL_X = [-0.37, 0.37];
-    const MK2_BARREL_LENGTH = 1.30;
-
-    const classicBarrelParts = barrelAssembly.children.filter(part => part !== barrelBase);
-    const mk2Barrels = new THREE.Group();
-    barrelAssembly.add(mk2Barrels);
-
-    {
-        const geo = new THREE.CylinderGeometry(0.19, 0.22, MK2_BARREL_LENGTH, 20);
-        const ringGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.05, 20);
-        const bandGeo = new THREE.CylinderGeometry(0.235, 0.235, 0.035, 20);
-        const capGeo = new THREE.CylinderGeometry(0.25, 0.22, 0.14, 20);
-        const boreGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.01, 16);
-        const baseY = 0.12;                               // תחתית הקנה, כמו בקלאסי
-        const centerY = baseY + MK2_BARREL_LENGTH / 2;
-        const topY = baseY + MK2_BARREL_LENGTH;
-
-        MK2_BARREL_LOCAL_X.forEach(x => {
-            const addPart = (geometry, material, y, castShadow = true) => {
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(x, y, 0);
-                mesh.castShadow = castShadow;
-                mk2Barrels.add(mesh);
-                return mesh;
-            };
-            addPart(geo, barrelMat, centerY);
-            // טבעות כהות
-            [0.30, 0.75, 1.20].forEach(rel => addPart(ringGeo, darkMetalMat, baseY + rel));
-            // שתי טבעות אור כחולות
-            [0.52, 1.00].forEach(rel => addPart(bandGeo, mk2GlowCyanMat, baseY + rel, false));
-            // פתח הקנה
-            addPart(capGeo, muzzleMat, topY + 0.02);
-            addPart(boreGeo, new THREE.MeshBasicMaterial({ color: 0x020507 }), topY + 0.095, false);
-        });
+    function nvAdd(parent, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, cast = true) {
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.rotation.set(rx, ry, rz);
+        mesh.castShadow = cast;
+        mesh.receiveShadow = true;
+        parent.add(mesh);
+        return mesh;
+    }
+    function nvBox(parent, w, h, d, r, b, material, x, y, z) {
+        return nvAdd(parent, createRoundedBoxGeometry(w - b * 2, h - b * 2, d - b * 2, r, b, 3), material, x, y, z);
+    }
+    function nvCyl(parent, rTop, rBottom, h, material, x, y, z, cast = true) {
+        return nvAdd(parent, new THREE.CylinderGeometry(rTop, rBottom, h, 24), material, x, y, z, 0, 0, 0, cast);
     }
 
+    // ---- גוף עגול וגבוה ----
+    nvBox(mk2Head, 2.30, 1.15, 1.75, 0.42, 0.12, nvBlack, 0, 1.46, 0);
+    // מצחייה כהה עם פס אור כחול
+    nvBox(mk2Head, 1.55, 0.24, 0.10, 0.06, 0.02, nvDark, 0, 1.58, 0.90);
+    nvAdd(mk2Head, new THREE.BoxGeometry(1.25, 0.045, 0.04), mk2GlowCyanMat, 0, 1.58, 0.955, 0, 0, 0, false);
+    // כיפה קטנה על הגוף
+    const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.55, 28, 18), nvBlack, 0, 2.03, 0.10);
+    nvDome.scale.y = 0.80;
+
+    // ---- שני קנים עבים מאחורי הכיפה, בתוך קבוצה שזזה אחורה בכל ירייה ----
+    const mk2BarrelsRig = new THREE.Group();
+    mk2Head.add(mk2BarrelsRig);
+    MK2_BARREL_X.forEach(bx => {
+        nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
+        nvCyl(mk2BarrelsRig, 0.20, 0.22, 1.40, nvSteel, bx, 2.75, -0.15);
+        [2.35, 2.85].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), mk2GlowCyanMat, bx, 3.10, -0.15, 0, 0, 0, false);
+        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.53, -0.15);
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.615, -0.15, 0, 0, 0, false);
+    });
+
     function applyCannonLook(isMk2) {
-        MK2_LOOK_MATERIALS.forEach(entry => {
-            entry.mat.color.setHex(isMk2 ? entry.c1 : entry.c0);
-            if (entry.e0 !== undefined) entry.mat.emissive.setHex(isMk2 ? entry.e1 : entry.e0);
-        });
-        classicBarrelParts.forEach(part => { part.visible = !isMk2; });
-        mk2Barrels.visible = isMk2;
-        if (isMk2 !== mk2LiftApplied) {
-            const dy = isMk2 ? MK2_TURRET_LIFT : -MK2_TURRET_LIFT;
-            mk2TurretParts.forEach(part => { part.position.y += dy; });
-            mk2LiftApplied = isMk2;
-        }
-        mk2Pedestal.visible = isMk2;
-        mk2Visor.visible = isMk2;
-        barrelBase.scale.x = isMk2 ? 1.25 : 1;
-        // זרועות ההשעיה נראות כסופות (ולא כהות) כשיש להן השתקפות
+        // הגוף הקלאסי (גוף, כיפה, קנים) מוסתר כשהתותח האפור פעיל; ההשעיה והגלגלים נשארים
+        classicBodyParts.forEach(part => { part.visible = !isMk2; });
+        mk2Head.visible = isMk2;
+        // זרועות ההשעיה נראות כסופות ומבריקות (בלי השתקפות הן נראות כהות)
         suspensionMetalMat.envMap = isMk2 ? wheelEnvMap : null;
         suspensionMetalMat.envMapIntensity = 1.1;
         suspensionMetalMat.needsUpdate = true;
@@ -4113,9 +4085,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function setActiveCannon(type) {
         activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : 'classic';
         advancedCannonGroup.visible = false;
-        classicCannonParts.forEach(child => {
-            if (child !== advancedCannonGroup) child.visible = true;
-        });
         applyCannonLook(activeCannon === 'mk2');
         if (!MK2_PREVIEW) localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
@@ -5618,6 +5587,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // רתיעה מכנית של מכלול הקנים - בנוסף לתנועת הגוף.
         barrelAssembly.position.z +=
             ((-cannonRecoil * 0.65) - barrelAssembly.position.z) * 0.35;
+        mk2BarrelsRig.position.z = barrelAssembly.position.z - 0.05;
         if (advancedCannonGroup.visible) {
             advancedBarrelAssembly.position.y +=
                 ((advancedBarrelAssembly.userData.baseY - cannonRecoil * 0.35) - advancedBarrelAssembly.position.y) * 0.35;
