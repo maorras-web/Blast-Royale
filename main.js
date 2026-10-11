@@ -3595,7 +3595,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // מסגרת מרכזית מתחת לגוף — מחברת ויזואלית את שני צדדי המתלה.
+    const _centralFrameStart = cannonGroup.children.length;
     addCentralSuspensionFrame();
+    const centralFrameParts = cannonGroup.children.slice(_centralFrameStart);
 
     // ארבע יחידות מתלה — עכשיו Coil-over + Double Wishbone, ללא כריות אוויר.
     [-1, 1].forEach(side => {
@@ -4032,14 +4034,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
-    const MK2_STRIP_W = 1.50;       // רוחב הלוח הכהה בחזית (פס האור הכחול נמחק)
-    const MK2_WHEEL_SHIFT = 0.35;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
-    // נקודות חיבור פנימיות של הזרועות לגוף: [x, y] מקורי -> [x, y] חדש
-    const MK2_PIVOT_REMAP = [
-        { x: 0.70, y: 0.40, nx: 0.90, ny: 1.22 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
-        { x: 0.83, y: 0.82, nx: 0.80, ny: 1.58 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
-        { x: 1.17, y: 1.03, nx: 1.20, ny: 1.30 }    // ראש הקפיץ (coil-over)
-    ];
+    const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
 
     const mk2Head = new THREE.Group();
     mk2Head.position.y = -BODY_PIVOT_Y;
@@ -4068,15 +4063,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- גוף עגול וגבוה ----
     nvBox(mk2Head, MK2_BODY_W, 1.15, 1.75, 0.42, 0.12, nvBlack, 0, 1.46, 0);
-    // מצחייה כהה עם פס אור כחול
-    nvBox(mk2Head, MK2_STRIP_W + 0.25, 0.24, 0.10, 0.06, 0.02, nvDark, 0, 1.58, 0.90);
-    // תושבות מוברגות על חזית הגוף (במקום שבו היה פס האור) - משם מתחילות זרועות ההשעיה
-    [-1, 1].forEach(side => {
-        [0.94, -0.94].forEach(zz => {
-            nvBox(mk2Head, 0.38, 0.40, 0.14, 0.08, 0.03, nvDark, side * 0.80, 1.58, zz);   // תושבת עליונה
-            nvBox(mk2Head, 0.38, 0.40, 0.14, 0.08, 0.03, nvDark, side * 0.90, 1.22, zz);   // תושבת תחתונה
-        });
-    });
     // כיפה קטנה על הגוף
     const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.55, 28, 18), nvBlack, 0, 2.03, 0.10);
     nvDome.scale.y = 0.80;
@@ -4093,86 +4079,106 @@ window.addEventListener('DOMContentLoaded', () => {
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.615, -0.15, 0, 0, 0, false);
     });
 
-    // ממפה נקודה של ההשעיה ממקומה הקלאסי למקומה בתותח האפור (ובחזרה).
-    function mk2MapSuspensionPoint(orig, out, isMk2) {
-        out.copy(orig);
-        if (!isMk2) return out;
-        const ax = Math.abs(orig.x);
-        const sign = Math.sign(orig.x) || 1;
-        if (ax > 1.2) {
-            out.x = orig.x + sign * MK2_WHEEL_SHIFT;      // צד הגלגל זז החוצה
-        } else {
-            for (let i = 0; i < MK2_PIVOT_REMAP.length; i++) {
-                const r = MK2_PIVOT_REMAP[i];
-                if (Math.abs(ax - r.x) < 0.002 && Math.abs(orig.y - r.y) < 0.002) {
-                    out.x = sign * r.nx;                  // נקודת החיבור לגוף זזה החוצה ולמעלה
-                    out.y = r.ny;
-                    break;
-                }
-            }
-        }
-        return out;
+    // ==========================================================
+    // השעיה חדשה לתותח האפור - מועתקת מתמונת המטרה:
+    // שתי זרועות שטוחות ועבות במקביל (עליונה ותחתונה), לוחית רכזת אנכית ליד הגלגל
+    // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
+    // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
+    // ==========================================================
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x8e949a, roughness: 0.34, metalness: 0.85, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x5f666d, roughness: 0.30, metalness: 0.90, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
+    const MK2_PLANE_Z = 1.03;                      // מישור הזרועות, מול פני הצמיג
+    const mk2OnlyParts = [];                       // חלקים שנראים רק בתותח האפור
+
+    function mk2Link(a, b, w, d, material, aSprung, bSprung) {
+        addSuspensionArmBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), w, d, material, aSprung, bSprung);
+        const L = suspensionLinks[suspensionLinks.length - 1];
+        L.mk2Only = true;
+        return L;
+    }
+    function mk2Rod(a, b, radius, material, aSprung, bSprung) {
+        addSuspensionCylinderBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), radius, material, 12, aSprung, bSprung);
+        const L = suspensionLinks[suspensionLinks.length - 1];
+        L.mk2Only = true;
+        return L;
+    }
+    // דיסק עגול עם ראש בורג משושה - פונה למצלמה
+    function mk2Boss(x, y, z, r, sprung) {
+        const g = new THREE.Group();
+        const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.07, 20), mk2BossMat);
+        disc.rotation.x = Math.PI / 2;
+        g.add(disc);
+        const bolt = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.42, 0.11, 6), mk2ArmMat);
+        bolt.rotation.x = Math.PI / 2;
+        g.add(bolt);
+        g.position.set(x, y, z);
+        g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+        cannonGroup.add(g);
+        mk2OnlyParts.push(g);
+        if (sprung) suspensionJoints.push({ mesh: g, rest: new THREE.Vector3(x, y, z), mk2Only: true });
+        return g;
     }
 
+    [-1, 1].forEach(side => {
+        [1, -1].forEach(sgn => {
+            const zp = sgn * MK2_PLANE_Z;   // מישור הזרועות
+            const zb = sgn * 0.875;         // פני הגוף
+            const hx = side * MK2_HUB_X;
+            const upperBody = [side * 0.86, 1.58, zp];
+            const lowerBody = [side * 0.55, 1.00, zp];
+            const upperHub  = [hx - side * 0.02, WHEEL_Y + 0.50, zp];
+            const lowerHub  = [hx, WHEEL_Y, zp];
+
+            // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
+            [upperBody, lowerBody].forEach(P => {
+                const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.14, 0.14, Math.abs(zp - zb) + 0.06, 16), nvSteel,
+                    P[0], P[1], (zp + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
+                post.castShadow = true;
+            });
+
+            // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
+            mk2Link(upperBody, upperHub, 0.24, 0.09, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, 0.24, 0.09, mk2ArmMat, true, false);
+            mk2Link([upperHub[0], upperHub[1], zp - sgn * 0.035], [lowerHub[0], lowerHub[1], zp - sgn * 0.035], 0.32, 0.10, mk2ArmMat, false, false);
+
+            // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
+            const dBody = [side * 0.90, 1.20, zp - sgn * 0.06];
+            const dHub  = [side * 1.78, 0.68, zp - sgn * 0.06];
+            const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
+            mk2Rod(dBody, dMid, 0.07, suspensionDarkMetalMat, true, false);
+            mk2Rod(dMid, dHub, 0.04, mk2ArmMat, false, false);
+
+            // דיסקים עם ברגים בקצות הזרועות
+            const zf = zp + sgn * 0.045;
+            mk2Boss(upperBody[0], upperBody[1], zf, 0.16, true);
+            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.16, true);
+            mk2Boss(upperHub[0], upperHub[1], zf, 0.16, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.22, false);
+        });
+    });
+
     function layoutSuspensionForLook(isMk2) {
-        const tmp = new THREE.Vector3();
-        const remapInPlace = (vec, key, holder) => {
-            if (!holder[key]) holder[key] = vec.clone();
-            mk2MapSuspensionPoint(holder[key], tmp, isMk2);
-            vec.copy(tmp);
-        };
-        suspensionLinks.forEach(L => {
-            remapInPlace(L.a, 'aOrig', L);
-            remapInPlace(L.b, 'bOrig', L);
-            // המוטות הכהים שחיברו את הזרועות לשלדה מתחת לגוף - בתותח האפור התושבות מחוברות ישר לגוף
-            if (L.aSprung && L.bSprung && L.mesh.material === suspensionDarkMetalMat) L.mesh.visible = !isMk2;
-        });
-        suspensionSprings.forEach(K => { remapInPlace(K.a, 'aOrig', K); remapInPlace(K.b, 'bOrig', K); });
-        suspensionJoints.forEach(J => remapInPlace(J.rest, 'restOrig', J));
-        suspensionOuterParts.forEach(P => {
-            remapInPlace(P.rest, 'restOrig', P);
-            P.mesh.position.copy(P.rest);
-        });
-        // מפרקים עגולים וגדולים עם ראש בורג שפונה למצלמה (רק בתותח האפור)
-        suspensionJoints.concat(suspensionOuterParts).forEach(P => {
-            const m = P.mesh;
-            if (!m.geometry || m.geometry.type !== 'SphereGeometry') return;
-            m.scale.setScalar(isMk2 ? 2.2 : 1);
-            if (!m.userData.boltCap) {
-                const r = m.geometry.parameters.radius;
-                const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, r * 0.4, 6), suspensionMetalMat);
-                cap.rotation.x = Math.PI / 2;
-                cap.position.z = r * 0.92;
-                cap.castShadow = true;
-                m.add(cap);
-                m.userData.boltCap = cap;
-            }
-            m.userData.boltCap.visible = isMk2;
-        });
-        // הגלגלים עצמם
+        // ההשעיה הקלאסית (זרועות, קפיצים, מפרקים, מסגרת מרכזית) מוסתרת כשהתותח האפור פעיל
+        suspensionLinks.forEach(L => { L.mesh.visible = L.mk2Only ? isMk2 : !isMk2; });
+        suspensionSprings.forEach(K => { K.group.visible = !isMk2; });
+        suspensionJoints.forEach(J => { if (!J.mk2Only) J.mesh.visible = !isMk2; });
+        suspensionOuterParts.forEach(P => { P.mesh.visible = !isMk2; });
+        centralFrameParts.forEach(m => { m.visible = !isMk2; });
+        mk2OnlyParts.forEach(m => { m.visible = isMk2; });
+        // הגלגלים: בתותח האפור הם רחוקים יותר מהגוף
         cannonWheels.forEach((wheelOuter, i) => {
             const baseX = wheelPositions[i][0];
             wheelOuter.position.x = baseX + (isMk2 ? Math.sign(baseX) * MK2_WHEEL_SHIFT : 0);
         });
-        // מכריחים עדכון אחד של הזרועות והקפיצים גם אם התותח במנוחה
+        // מכריחים עדכון אחד של הזרועות גם אם התותח במנוחה
         suspensionMotion.rest = false;
     }
 
     function applyCannonLook(isMk2) {
-        // הגוף הקלאסי (גוף, כיפה, קנים) מוסתר כשהתותח האפור פעיל; ההשעיה והגלגלים נשארים
+        // הגוף הקלאסי (גוף, כיפה, קנים) מוסתר כשהתותח האפור פעיל; הגלגלים נשארים
         classicBodyParts.forEach(part => { part.visible = !isMk2; });
         mk2Head.visible = isMk2;
-        // זרועות ההשעיה: כסופות ובהירות (כמו בתמונת המטרה) ועבות יותר. הקלאסי חוזר לצורתו המקורית.
-        suspensionMetalMat.color.setHex(isMk2 ? 0xdfe3e6 : 0xb8bec1);
-        suspensionMetalMat.metalness = isMk2 ? 0.55 : 0.94;
-        suspensionMetalMat.roughness = isMk2 ? 0.30 : 0.20;
-        suspensionMetalMat.envMap = isMk2 ? wheelEnvMap : null;
-        suspensionMetalMat.envMapIntensity = 0.9;
-        suspensionMetalMat.needsUpdate = true;
-        suspensionLinks.forEach(link => {
-            link.mesh.scale.x = isMk2 ? 2.3 : 1;
-            link.mesh.scale.z = isMk2 ? 2.3 : 1;
-        });
         layoutSuspensionForLook(isMk2);
     }
 
