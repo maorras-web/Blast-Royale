@@ -4076,10 +4076,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // הגוף הקלאסי (גוף, כיפה, קנים) מוסתר כשהתותח האפור פעיל; ההשעיה והגלגלים נשארים
         classicBodyParts.forEach(part => { part.visible = !isMk2; });
         mk2Head.visible = isMk2;
-        // זרועות ההשעיה נראות כסופות ומבריקות (בלי השתקפות הן נראות כהות)
+        // זרועות ההשעיה: כסופות ובהירות (כמו בתמונת המטרה) ועבות יותר. הקלאסי חוזר לצורתו המקורית.
+        suspensionMetalMat.color.setHex(isMk2 ? 0xdfe3e6 : 0xb8bec1);
+        suspensionMetalMat.metalness = isMk2 ? 0.55 : 0.94;
+        suspensionMetalMat.roughness = isMk2 ? 0.30 : 0.20;
         suspensionMetalMat.envMap = isMk2 ? wheelEnvMap : null;
-        suspensionMetalMat.envMapIntensity = 1.1;
+        suspensionMetalMat.envMapIntensity = 0.9;
         suspensionMetalMat.needsUpdate = true;
+        suspensionLinks.forEach(link => {
+            link.mesh.scale.x = isMk2 ? 1.6 : 1;
+            link.mesh.scale.z = isMk2 ? 1.6 : 1;
+        });
     }
 
     function setActiveCannon(type) {
