@@ -31,8 +31,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מרחק המצלמה מהתותח — להגדלת "המקום" במסך: הגדל את שני הערכים (אחורה וגם למעלה קצת).
     // לקרב את המצלמה: להקטין. (ערכים קודמים: Y=8.4–8.6, Z=18.0–18.2)
-    const CAM_BASE_Y = 10.0;
-    const CAM_BASE_Z = 23.0;
+    const CAM_BASE_Y = 6.6;
+    const CAM_BASE_Z = 18.5;
     // הורדת התותח במסך: 0 = כמו קודם, 0.17 = התותח יורד בערך 17% מגובה המסך.
     // זו הזזה ויזואלית בלבד של התמונה — לא משנה מיקומים, התנגשויות או ירי.
     const CAM_SHIFT_DOWN = 0.17;
@@ -3728,7 +3728,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.37, 0.37];
-    let MK2_MUZZLE_Y = 3.15;
+    let MK2_MUZZLE_Y = 2.85;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4035,7 +4035,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
     const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
-    const MK2_WHEEL_SCALE = 1.20;   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
+    const MK2_WHEEL_SCALE = 1.28;   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE;
 
@@ -4044,12 +4044,12 @@ window.addEventListener('DOMContentLoaded', () => {
     bodyRig.add(mk2Head);
 
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
-    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x2b8fd8, emissive: 0x08385c, roughness: 0.22, metalness: 0.15, clearcoat: 1.0, clearcoatRoughness: 0.10, envMap: mk2Env, envMapIntensity: 0.75 });
+    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x0f62b4, emissive: 0x020f1e, roughness: 0.34, metalness: 0.10, clearcoat: 0.55, clearcoatRoughness: 0.20, envMap: mk2Env, envMapIntensity: 0.28 });
     const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
-    const nvFin = new THREE.MeshStandardMaterial({ color: 0xaeb4ba, roughness: 0.30, metalness: 0.85, envMap: mk2Env, envMapIntensity: 0.9 });
+    const nvFin = new THREE.MeshStandardMaterial({ color: 0xb9bfc5, roughness: 0.38, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.5 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
-    const nvSteel = new THREE.MeshStandardMaterial({ color: 0x737a84, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
+    const nvSteel = new THREE.MeshStandardMaterial({ color: 0x9aa1a9, roughness: 0.36, metalness: 0.50, envMap: mk2Env, envMapIntensity: 0.55 });
     const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
 
     function nvAdd(parent, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, cast = true) {
@@ -4081,13 +4081,13 @@ window.addEventListener('DOMContentLoaded', () => {
     mk2Head.add(mk2BarrelsRig);
     MK2_BARREL_X.forEach(bx => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
-        nvCyl(mk2BarrelsRig, 0.20, 0.22, 1.40, nvSteel, bx, 2.75, -0.15);
-        [2.35, 2.85].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.10, -0.15, 0, 0, 0, false);
+        nvCyl(mk2BarrelsRig, 0.21, 0.23, 0.95, nvSteel, bx, 2.65, -0.15);
+        [2.35, 2.90].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.00, -0.15, 0, 0, 0, false);
         // לוחית "אוזן" בהירה מאחורי כל קנה
-        nvBox(mk2BarrelsRig, 0.34, 1.05, 0.10, 0.05, 0.02, nvFin, bx, 2.55, -0.43);
-        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.53, -0.15);
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.615, -0.15, 0, 0, 0, false);
+        nvBox(mk2BarrelsRig, 0.36, 0.85, 0.10, 0.05, 0.02, nvFin, bx, 2.50, -0.43);
+        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.20, -0.15);
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.285, -0.15, 0, 0, 0, false);
     });
 
     // ==========================================================
@@ -4096,8 +4096,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0xc4c9ce, roughness: 0.24, metalness: 0.92, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
-    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x7d858c, roughness: 0.26, metalness: 0.92, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0xdde1e4, roughness: 0.30, metalness: 0.55, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x9ba2a8, roughness: 0.32, metalness: 0.60, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.10;                      // מישור הזרועות, מול פני הצמיג
     const mk2OnlyParts = [];                       // חלקים שנראים רק בתותח האפור
@@ -4215,7 +4215,7 @@ window.addEventListener('DOMContentLoaded', () => {
             wheelOuter.scale.setScalar(isMk2 ? MK2_WHEEL_SCALE : 1);
         });
         // צמיגים עם גוון אבק חום-אפור כמו בתמונת המטרה (רק בתותח האפור)
-        wheelRubberMat.emissive.setHex(isMk2 ? 0x2a2118 : 0x000000);
+        wheelRubberMat.emissive.setHex(isMk2 ? 0x0e0904 : 0x000000);
         // מכריחים עדכון אחד של הזרועות גם אם התותח במנוחה
         suspensionMotion.rest = false;
     }
