@@ -4035,12 +4035,19 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
     const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    const MK2_WHEEL_SCALE = 1.20;   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
+    // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
+    const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE;
 
     const mk2Head = new THREE.Group();
     mk2Head.position.y = -BODY_PIVOT_Y;
     bodyRig.add(mk2Head);
 
-    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x121317, roughness: 0.28, metalness: 0.55, clearcoat: 0.7, clearcoatRoughness: 0.15, envMap: mk2Env, envMapIntensity: 0.9 });
+    // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
+    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x2b8fd8, emissive: 0x08385c, roughness: 0.22, metalness: 0.15, clearcoat: 1.0, clearcoatRoughness: 0.10, envMap: mk2Env, envMapIntensity: 0.75 });
+    const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
+    const nvFin = new THREE.MeshStandardMaterial({ color: 0xaeb4ba, roughness: 0.30, metalness: 0.85, envMap: mk2Env, envMapIntensity: 0.9 });
+    const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
     const nvSteel = new THREE.MeshStandardMaterial({ color: 0x737a84, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
     const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
@@ -4063,9 +4070,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- גוף עגול וגבוה ----
     nvBox(mk2Head, MK2_BODY_W, 1.15, 1.75, 0.42, 0.12, nvBlack, 0, 1.46, 0);
-    // כיפה קטנה על הגוף
-    const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.55, 28, 18), nvBlack, 0, 2.03, 0.10);
-    nvDome.scale.y = 0.80;
+    // מצחייה כהה לרוחב חזית הגוף (כמו הפס השחור בתמונת המטרה)
+    nvBox(mk2Head, MK2_BODY_W * 0.74, 0.20, 0.42, 0.06, 0.03, nvVisor, 0, 2.07, 0.70);
+    // כיפה כחולה גדולה ומעוגלת
+    const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.68, 32, 20), nvBlack, 0, 2.00, 0.20);
+    nvDome.scale.y = 0.82;
 
     // ---- שני קנים עבים מאחורי הכיפה, בתוך קבוצה שזזה אחורה בכל ירייה ----
     const mk2BarrelsRig = new THREE.Group();
@@ -4074,7 +4083,9 @@ window.addEventListener('DOMContentLoaded', () => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
         nvCyl(mk2BarrelsRig, 0.20, 0.22, 1.40, nvSteel, bx, 2.75, -0.15);
         [2.35, 2.85].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), mk2GlowCyanMat, bx, 3.10, -0.15, 0, 0, 0, false);
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.10, -0.15, 0, 0, 0, false);
+        // לוחית "אוזן" בהירה מאחורי כל קנה
+        nvBox(mk2BarrelsRig, 0.34, 1.05, 0.10, 0.05, 0.02, nvFin, bx, 2.55, -0.43);
         nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.53, -0.15);
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.615, -0.15, 0, 0, 0, false);
     });
@@ -4085,10 +4096,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x8e949a, roughness: 0.34, metalness: 0.85, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
-    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x5f666d, roughness: 0.30, metalness: 0.90, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0xc4c9ce, roughness: 0.24, metalness: 0.92, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x7d858c, roughness: 0.26, metalness: 0.92, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
-    const MK2_PLANE_Z = 1.03;                      // מישור הזרועות, מול פני הצמיג
+    const MK2_PLANE_Z = 1.10;                      // מישור הזרועות, מול פני הצמיג
     const mk2OnlyParts = [];                       // חלקים שנראים רק בתותח האפור
 
     function mk2Link(a, b, w, d, material, aSprung, bSprung) {
@@ -4120,6 +4131,33 @@ window.addEventListener('DOMContentLoaded', () => {
         return g;
     }
 
+    function addMk2Spring(side, sgn) {
+        const z = sgn * 0.78;
+        const top = new THREE.Vector3(side * 1.22, 1.45, z);
+        const bottom = new THREE.Vector3(side * 1.62, MK2_WHEEL_Y + 0.70, z);
+        const dir = new THREE.Vector3().subVectors(bottom, top);
+        const length = dir.length();
+
+        const group = new THREE.Group();
+        group.position.copy(top).add(bottom).multiplyScalar(0.5);
+        group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        cannonGroup.add(group);
+
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, length, 12), suspensionMetalMat);
+        rod.castShadow = true;
+        group.add(rod);
+
+        for (let i = 0; i < 7; i++) {
+            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.036, 8, 22), suspensionRubberMat);
+            coil.rotation.x = Math.PI / 2;
+            coil.position.y = (i - 3) * (length * 0.13);
+            coil.castShadow = true;
+            group.add(coil);
+        }
+
+        suspensionSprings.push({ group, a: top, b: bottom, aSprung: true, bSprung: false, len0: Math.max(length, 1e-6), mk2Only: true });
+    }
+
     [-1, 1].forEach(side => {
         [1, -1].forEach(sgn => {
             const zp = sgn * MK2_PLANE_Z;   // מישור הזרועות
@@ -4127,8 +4165,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const hx = side * MK2_HUB_X;
             const upperBody = [side * 0.86, 1.58, zp];
             const lowerBody = [side * 0.55, 1.00, zp];
-            const upperHub  = [hx - side * 0.02, WHEEL_Y + 0.50, zp];
-            const lowerHub  = [hx, WHEEL_Y, zp];
+            const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zp];
+            const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
@@ -4138,30 +4176,33 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
-            mk2Link(upperBody, upperHub, 0.24, 0.09, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, 0.24, 0.09, mk2ArmMat, true, false);
-            mk2Link([upperHub[0], upperHub[1], zp - sgn * 0.035], [lowerHub[0], lowerHub[1], zp - sgn * 0.035], 0.32, 0.10, mk2ArmMat, false, false);
+            mk2Link(upperBody, upperHub, 0.34, 0.15, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, 0.34, 0.15, mk2ArmMat, true, false);
+            mk2Link([upperHub[0], upperHub[1], zp - sgn * 0.035], [lowerHub[0], lowerHub[1], zp - sgn * 0.035], 0.44, 0.16, mk2ArmMat, false, false);
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
             const dBody = [side * 0.90, 1.20, zp - sgn * 0.06];
-            const dHub  = [side * 1.78, 0.68, zp - sgn * 0.06];
+            const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp - sgn * 0.06];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
-            mk2Rod(dBody, dMid, 0.07, suspensionDarkMetalMat, true, false);
-            mk2Rod(dMid, dHub, 0.04, mk2ArmMat, false, false);
+            mk2Rod(dBody, dMid, 0.10, suspensionDarkMetalMat, true, false);
+            mk2Rod(dMid, dHub, 0.055, mk2ArmMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.045;
-            mk2Boss(upperBody[0], upperBody[1], zf, 0.16, true);
-            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.16, true);
-            mk2Boss(upperHub[0], upperHub[1], zf, 0.16, false);
-            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.22, false);
+            mk2Boss(upperBody[0], upperBody[1], zf, 0.20, true);
+            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.20, true);
+            mk2Boss(upperHub[0], upperHub[1], zf, 0.20, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.28, false);
+
+            // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
+            addMk2Spring(side, sgn);
         });
     });
 
     function layoutSuspensionForLook(isMk2) {
         // ההשעיה הקלאסית (זרועות, קפיצים, מפרקים, מסגרת מרכזית) מוסתרת כשהתותח האפור פעיל
         suspensionLinks.forEach(L => { L.mesh.visible = L.mk2Only ? isMk2 : !isMk2; });
-        suspensionSprings.forEach(K => { K.group.visible = !isMk2; });
+        suspensionSprings.forEach(K => { K.group.visible = K.mk2Only ? isMk2 : !isMk2; });
         suspensionJoints.forEach(J => { if (!J.mk2Only) J.mesh.visible = !isMk2; });
         suspensionOuterParts.forEach(P => { P.mesh.visible = !isMk2; });
         centralFrameParts.forEach(m => { m.visible = !isMk2; });
@@ -4170,7 +4211,11 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonWheels.forEach((wheelOuter, i) => {
             const baseX = wheelPositions[i][0];
             wheelOuter.position.x = baseX + (isMk2 ? Math.sign(baseX) * MK2_WHEEL_SHIFT : 0);
+            wheelOuter.position.y = isMk2 ? MK2_WHEEL_Y : wheelPositions[i][1];
+            wheelOuter.scale.setScalar(isMk2 ? MK2_WHEEL_SCALE : 1);
         });
+        // צמיגים עם גוון אבק חום-אפור כמו בתמונת המטרה (רק בתותח האפור)
+        wheelRubberMat.emissive.setHex(isMk2 ? 0x2a2118 : 0x000000);
         // מכריחים עדכון אחד של הזרועות גם אם התותח במנוחה
         suspensionMotion.rest = false;
     }
@@ -4530,7 +4575,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function spawnBullet(x, y, z) {
         const bullet = new THREE.Group();
-        const blue = activeCannon === 'mk2';
+        const blue = false;   // קליעים זהובים כמו בתמונת המטרה
         const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
 
         const core = new THREE.Mesh(
@@ -4924,7 +4969,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const flash = new THREE.Mesh(
             new THREE.SphereGeometry(0.24, 8, 8),
             new THREE.MeshBasicMaterial({
-                color: activeCannon === 'mk2' ? 0x8fdcff : 0xfff1a8,
+                color: 0xfff1a8,
                 transparent: true,
                 opacity: 0.95
             })
