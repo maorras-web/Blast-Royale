@@ -31,8 +31,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מרחק המצלמה מהתותח — להגדלת "המקום" במסך: הגדל את שני הערכים (אחורה וגם למעלה קצת).
     // לקרב את המצלמה: להקטין. (ערכים קודמים: Y=8.4–8.6, Z=18.0–18.2)
-    const CAM_BASE_Y = 6.6;
-    const CAM_BASE_Z = 18.5;
+    const CAM_BASE_Y = 10.0;
+    const CAM_BASE_Z = 23.0;
     // הורדת התותח במסך: 0 = כמו קודם, 0.17 = התותח יורד בערך 17% מגובה המסך.
     // זו הזזה ויזואלית בלבד של התמונה — לא משנה מיקומים, התנגשויות או ירי.
     const CAM_SHIFT_DOWN = 0.17;
@@ -4044,7 +4044,7 @@ window.addEventListener('DOMContentLoaded', () => {
     bodyRig.add(mk2Head);
 
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
-    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x0f62b4, emissive: 0x020f1e, roughness: 0.34, metalness: 0.10, clearcoat: 0.55, clearcoatRoughness: 0.20, envMap: mk2Env, envMapIntensity: 0.28 });
+    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x0b5aa8, emissive: 0x010a14, roughness: 0.26, metalness: 0.22, clearcoat: 0.9, clearcoatRoughness: 0.14, envMap: mk2Env, envMapIntensity: 0.55 });
     const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
     const nvFin = new THREE.MeshStandardMaterial({ color: 0xb9bfc5, roughness: 0.38, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.5 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
@@ -4076,6 +4076,28 @@ window.addEventListener('DOMContentLoaded', () => {
     const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.68, 32, 20), nvBlack, 0, 2.00, 0.20);
     nvDome.scale.y = 0.82;
 
+    // ---- עומק: שכבות, פלטות, ברגים ---------------------------------
+    // טבעת מתכת בבסיס הכיפה
+    const nvDomeRing = nvAdd(mk2Head, new THREE.TorusGeometry(0.68, 0.055, 10, 36), nvFin, 0, 2.03, 0.20, Math.PI / 2, 0, 0);
+    // שכבה עליונה מורמת על הגוף
+    nvBox(mk2Head, MK2_BODY_W * 0.80, 0.14, 1.30, 0.07, 0.03, nvBlack, 0, 2.06, -0.10);
+    // לוח קדמי מורם עם מסגרת מתכת מאחוריו
+    nvBox(mk2Head, MK2_BODY_W * 0.84, 0.56, 0.08, 0.08, 0.03, nvFin, 0, 1.40, 0.90);
+    nvBox(mk2Head, MK2_BODY_W * 0.76, 0.46, 0.12, 0.10, 0.04, nvBlack, 0, 1.40, 0.95);
+    // חגורת מתכת סביב מותניים הגוף
+    nvBox(mk2Head, MK2_BODY_W + 0.08, 0.10, 1.83, 0.05, 0.02, nvFin, 0, 1.00, 0);
+    // לוחית תחתית כהה - נותנת צל ומשקל מתחת לגוף
+    nvBox(mk2Head, MK2_BODY_W * 0.90, 0.20, 1.50, 0.08, 0.03, nvDark, 0, 0.86, 0);
+    // לוחות צד משוריינים
+    [-1, 1].forEach(sd => {
+        nvBox(mk2Head, 0.10, 0.50, 1.15, 0.05, 0.02, nvFin, sd * (MK2_BODY_W / 2 + 0.02), 1.46, -0.05);
+        [-0.38, 0.30].forEach(bz => nvAdd(mk2Head, new THREE.SphereGeometry(0.075, 12, 10), nvFin, sd * (MK2_BODY_W / 2 + 0.09), 1.46, bz));
+    });
+    // ברגים בפינות הלוח הקדמי
+    [-1, 1].forEach(sd => [1.24, 1.56].forEach(by => {
+        nvAdd(mk2Head, new THREE.SphereGeometry(0.07, 12, 10), nvFin, sd * MK2_BODY_W * 0.35, by, 1.02);
+    }));
+
     // ---- שני קנים עבים מאחורי הכיפה, בתוך קבוצה שזזה אחורה בכל ירייה ----
     const mk2BarrelsRig = new THREE.Group();
     mk2Head.add(mk2BarrelsRig);
@@ -4096,7 +4118,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0xdde1e4, roughness: 0.30, metalness: 0.55, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0xe6eaed, roughness: 0.26, metalness: 0.72, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x9ba2a8, roughness: 0.32, metalness: 0.60, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.10;                      // מישור הזרועות, מול פני הצמיג
@@ -4176,8 +4198,15 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
-            mk2Link(upperBody, upperHub, 0.34, 0.15, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, 0.34, 0.15, mk2ArmMat, true, false);
+            // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
+            [[upperBody, upperHub], [lowerBody, lowerHub]].forEach(([A, B]) => {
+                const L = mk2Link(A, B, 0.34, 0.15, mk2ArmMat, true, false);
+                const rib = new THREE.Mesh(new THREE.BoxGeometry(0.15, L.len0 * 0.58, 0.17), mk2BossMat);
+                rib.position.set(0, 0, sgn * 0.045);
+                rib.castShadow = true;
+                rib.receiveShadow = true;
+                L.mesh.add(rib);
+            });
             mk2Link([upperHub[0], upperHub[1], zp - sgn * 0.035], [lowerHub[0], lowerHub[1], zp - sgn * 0.035], 0.44, 0.16, mk2ArmMat, false, false);
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
