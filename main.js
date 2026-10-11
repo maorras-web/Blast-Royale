@@ -4035,9 +4035,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WHEEL_SHIFT = 0.45;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
     // נקודות חיבור פנימיות של הזרועות לגוף: [x, y] מקורי -> [x, y] חדש
     const MK2_PIVOT_REMAP = [
-        { x: 0.70, y: 0.40, nx: 0.90, ny: 0.60 },   // זרועות תחתונות: נצמדות לשלדה מתחת לגוף
-        { x: 0.83, y: 0.82, nx: 1.15, ny: 1.00 },   // זרועות עליונות: יוצאות מתוך הגוף ויורדות אל הגלגל
-        { x: 1.17, y: 1.03, nx: 1.28, ny: 1.12 }    // ראש הקפיץ (coil-over): יוצא מצד הגוף
+        { x: 0.70, y: 0.40, nx: 1.36, ny: 0.78 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
+        { x: 0.83, y: 0.82, nx: 1.52, ny: 1.16 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
+        { x: 1.17, y: 1.03, nx: 1.30, ny: 1.30 }    // ראש הקפיץ (coil-over)
     ];
 
     const mk2Head = new THREE.Group();
@@ -4070,6 +4070,16 @@ window.addEventListener('DOMContentLoaded', () => {
     // מצחייה כהה עם פס אור כחול
     nvBox(mk2Head, MK2_BODY_W - 0.75, 0.24, 0.10, 0.06, 0.02, nvDark, 0, 1.58, 0.90);
     nvAdd(mk2Head, new THREE.BoxGeometry(MK2_BODY_W - 1.05, 0.045, 0.04), mk2GlowCyanMat, 0, 1.58, 0.955, 0, 0, 0, false);
+    // תושבות מוברגות בצדי הגוף - אליהן מחוברות זרועות ההשעיה (כמו בתמונת המטרה)
+    [-1, 1].forEach(side => {
+        [0.72, -0.72].forEach(z => {
+            nvBox(mk2Head, 0.32, 0.52, 0.64, 0.08, 0.03, nvDark, side * 1.36, 1.13, z);   // תושבת עליונה
+            nvBox(mk2Head, 0.36, 0.40, 0.64, 0.08, 0.03, nvDark, side * 1.20, 0.90, z);   // תושבת תחתונה
+            [1.28, 0.98].forEach(by => {
+                nvAdd(mk2Head, new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6), nvSteel, side * 1.30, by, z + 0.33, Math.PI / 2, 0, 0);
+            });
+        });
+    });
     // כיפה קטנה על הגוף
     const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.55, 28, 18), nvBlack, 0, 2.03, 0.10);
     nvDome.scale.y = 0.80;
@@ -4120,6 +4130,22 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionOuterParts.forEach(P => {
             remapInPlace(P.rest, 'restOrig', P);
             P.mesh.position.copy(P.rest);
+        });
+        // מפרקים עגולים וגדולים עם ראש בורג שפונה למצלמה (רק בתותח האפור)
+        suspensionJoints.concat(suspensionOuterParts).forEach(P => {
+            const m = P.mesh;
+            if (!m.geometry || m.geometry.type !== 'SphereGeometry') return;
+            m.scale.setScalar(isMk2 ? 1.9 : 1);
+            if (!m.userData.boltCap) {
+                const r = m.geometry.parameters.radius;
+                const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, r * 0.4, 6), suspensionMetalMat);
+                cap.rotation.x = Math.PI / 2;
+                cap.position.z = r * 0.92;
+                cap.castShadow = true;
+                m.add(cap);
+                m.userData.boltCap = cap;
+            }
+            m.userData.boltCap.visible = isMk2;
         });
         // הגלגלים עצמם
         cannonWheels.forEach((wheelOuter, i) => {
