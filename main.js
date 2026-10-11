@@ -4032,11 +4032,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.85;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.45;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
+    const MK2_WHEEL_SHIFT = 0.35;   // כמה הגלגלים (והחלק החיצוני של הזרועות) זזים החוצה
     // נקודות חיבור פנימיות של הזרועות לגוף: [x, y] מקורי -> [x, y] חדש
     const MK2_PIVOT_REMAP = [
-        { x: 0.70, y: 0.40, nx: 1.36, ny: 0.78 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
-        { x: 0.83, y: 0.82, nx: 1.52, ny: 1.16 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
+        { x: 0.70, y: 0.40, nx: 1.24, ny: 0.72 },   // זרועות תחתונות: מוברגות לתושבת התחתונה בפינת הגוף
+        { x: 0.83, y: 0.82, nx: 1.40, ny: 1.02 },   // זרועות עליונות: מוברגות לתושבת בצד הגוף
         { x: 1.17, y: 1.03, nx: 1.30, ny: 1.30 }    // ראש הקפיץ (coil-over)
     ];
 
@@ -4073,10 +4073,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // תושבות מוברגות בצדי הגוף - אליהן מחוברות זרועות ההשעיה (כמו בתמונת המטרה)
     [-1, 1].forEach(side => {
         [0.72, -0.72].forEach(z => {
-            nvBox(mk2Head, 0.32, 0.52, 0.64, 0.08, 0.03, nvDark, side * 1.36, 1.13, z);   // תושבת עליונה
-            nvBox(mk2Head, 0.36, 0.40, 0.64, 0.08, 0.03, nvDark, side * 1.20, 0.90, z);   // תושבת תחתונה
-            [1.28, 0.98].forEach(by => {
-                nvAdd(mk2Head, new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6), nvSteel, side * 1.30, by, z + 0.33, Math.PI / 2, 0, 0);
+            nvBox(mk2Head, 0.30, 0.52, 0.64, 0.08, 0.03, nvDark, side * 1.26, 1.13, z);   // תושבת עליונה
+            nvBox(mk2Head, 0.36, 0.40, 0.64, 0.08, 0.03, nvDark, side * 1.12, 0.84, z);   // תושבת תחתונה
+            [[1.24, 1.27], [1.10, 0.78]].forEach(bp => {
+                nvAdd(mk2Head, new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6), nvSteel, side * bp[0], bp[1], z + 0.33, Math.PI / 2, 0, 0);
             });
         });
     });
@@ -4124,7 +4124,12 @@ window.addEventListener('DOMContentLoaded', () => {
             mk2MapSuspensionPoint(holder[key], tmp, isMk2);
             vec.copy(tmp);
         };
-        suspensionLinks.forEach(L => { remapInPlace(L.a, 'aOrig', L); remapInPlace(L.b, 'bOrig', L); });
+        suspensionLinks.forEach(L => {
+            remapInPlace(L.a, 'aOrig', L);
+            remapInPlace(L.b, 'bOrig', L);
+            // המוטות הכהים שחיברו את הזרועות לשלדה מתחת לגוף - בתותח האפור התושבות מחוברות ישר לגוף
+            if (L.aSprung && L.bSprung && L.mesh.material === suspensionDarkMetalMat) L.mesh.visible = !isMk2;
+        });
         suspensionSprings.forEach(K => { remapInPlace(K.a, 'aOrig', K); remapInPlace(K.b, 'bOrig', K); });
         suspensionJoints.forEach(J => remapInPlace(J.rest, 'restOrig', J));
         suspensionOuterParts.forEach(P => {
@@ -4135,7 +4140,7 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionJoints.concat(suspensionOuterParts).forEach(P => {
             const m = P.mesh;
             if (!m.geometry || m.geometry.type !== 'SphereGeometry') return;
-            m.scale.setScalar(isMk2 ? 1.9 : 1);
+            m.scale.setScalar(isMk2 ? 2.2 : 1);
             if (!m.userData.boltCap) {
                 const r = m.geometry.parameters.radius;
                 const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, r * 0.4, 6), suspensionMetalMat);
@@ -4168,8 +4173,8 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionMetalMat.envMapIntensity = 0.9;
         suspensionMetalMat.needsUpdate = true;
         suspensionLinks.forEach(link => {
-            link.mesh.scale.x = isMk2 ? 1.8 : 1;
-            link.mesh.scale.z = isMk2 ? 1.8 : 1;
+            link.mesh.scale.x = isMk2 ? 2.3 : 1;
+            link.mesh.scale.z = isMk2 ? 2.3 : 1;
         });
         layoutSuspensionForLook(isMk2);
     }
