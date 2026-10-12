@@ -3250,9 +3250,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x0a0705, roughness: 0.95, metalness: 0.0 });
+    const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x3c4147, roughness: 0.35, metalness: 0.7 });
+    const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
+    const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1a120c, roughness: 0.95, metalness: 0.0 });
     const MK2_TREAD_N = 30;
-    const mk2TreadGeo = new THREE.BoxGeometry(0.13, 0.085, TIRE_MINOR_R * 2.6);
+    const mk2TreadGeo = new THREE.BoxGeometry(0.13, 0.085, TIRE_MINOR_R * 2.0);
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3272,7 +3275,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const smoothTire = new THREE.Group();
         smoothTire.visible = false;
         const smoothTorus = new THREE.Mesh(new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 48), nvTireMat);
-        smoothTorus.scale.z = 1.5;
+        smoothTorus.scale.z = 1.2;
         smoothTorus.castShadow = true;
         smoothTorus.receiveShadow = true;
         smoothTire.add(smoothTorus);
@@ -3287,6 +3290,25 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         treadMesh.castShadow = true;
         smoothTire.add(treadMesh);
+        // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
+        [-1, 1].forEach(hs => {
+            const hz = hs * (TIRE_MINOR_R * 1.2 + 0.012);
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.05, 28), hubSteelMat);
+            disc.rotation.x = Math.PI / 2;
+            disc.position.z = hz;
+            smoothTire.add(disc);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 20), hubDarkMat);
+            cap.rotation.x = Math.PI / 2;
+            cap.position.z = hz + hs * 0.012;
+            smoothTire.add(cap);
+            for (let hb = 0; hb < 5; hb++) {
+                const ha = hb * (Math.PI * 2 / 5);
+                const bolt = new THREE.Mesh(hubBoltGeo, hubSteelMat);
+                bolt.rotation.x = Math.PI / 2;
+                bolt.position.set(Math.cos(ha) * 0.20, Math.sin(ha) * 0.20, hz + hs * 0.03);
+                smoothTire.add(bolt);
+            }
+        });
         wheel.add(smoothTire);
         wheelOuter_smooth.push({ tire: tireMesh, smooth: smoothTire });
 
@@ -4064,7 +4086,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
     const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
     const MK2_WHEEL_SCALE = 1.28;
-    const MK2_WHEEL_Z = 0.90;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
+    const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE;
 
@@ -4135,7 +4157,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x34383c, roughness: 0.34, metalness: 0.66, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.36, metalness: 0.68, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
-    const MK2_PLANE_Z = 1.42;                      // מישור הזרועות, מול פני הצמיג
+    const MK2_PLANE_Z = 1.36;                      // מישור הזרועות, מול פני הצמיג
     let mk2GroundShadowRef = null;
     const mk2BoltGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.05, 6);
     {
@@ -4193,9 +4215,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function addMk2Spring(side, sgn) {
-        const z = sgn * 0.62;
-        const top = new THREE.Vector3(side * 1.22, 1.85, z);
-        const bottom = new THREE.Vector3(side * 1.72, MK2_WHEEL_Y + 0.86, z);
+        const z = sgn * 0.78;
+        const top = new THREE.Vector3(side * 1.12, 1.50, z);
+        const bottom = new THREE.Vector3(side * 1.70, MK2_WHEEL_Y + 0.74, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4208,10 +4230,10 @@ window.addEventListener('DOMContentLoaded', () => {
         rod.castShadow = true;
         group.add(rod);
 
-        for (let i = 0; i < 8; i++) {
-            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.06, 8, 22), suspensionRubberMat);
+        for (let i = 0; i < 7; i++) {
+            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.05, 8, 22), suspensionRubberMat);
             coil.rotation.x = Math.PI / 2;
-            coil.position.y = (i - 3.5) * (length * 0.115);
+            coil.position.y = (i - 3) * (length * 0.14);
             coil.castShadow = true;
             group.add(coil);
         }
@@ -4224,8 +4246,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const zp = sgn * MK2_PLANE_Z;   // מישור הזרועות
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
-            const upperBody = [side * 1.00, 1.82, zp];
-            const lowerBody = [side * 0.70, 1.12, zp];
+            const upperBody = [side * 0.86, 1.58, zp];
+            const lowerBody = [side * 0.55, 1.00, zp];
             const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zp];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
@@ -4257,7 +4279,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה)
             const gShape = new THREE.Shape();
-            [[0.08, -0.02], [-0.36, 0.08], [-0.74, 0.52], [-0.64, 0.88], [-0.02, 0.88], [0.24, 0.64], [0.20, 0.22]].forEach((p, i) => {
+            [[0.02, 0.02], [-0.58, 0.22], [-0.62, 0.66], [-0.10, 0.80], [0.20, 0.68], [0.12, 0.30]].forEach((p, i) => {
                 if (i === 0) gShape.moveTo(side * p[0], p[1]); else gShape.lineTo(side * p[0], p[1]);
             });
             gShape.closePath();
@@ -4269,7 +4291,7 @@ window.addEventListener('DOMContentLoaded', () => {
             gusset.receiveShadow = true;
             cannonGroup.add(gusset);
             mk2OnlyParts.push(gusset);
-            [[-0.50, 0.52], [-0.16, 0.70], [-0.06, 0.28]].forEach(bp => {
+            [[-0.40, 0.42], [-0.15, 0.62], [-0.05, 0.26]].forEach(bp => {
                 const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                 bolt.rotation.x = Math.PI / 2;
                 bolt.position.set(side * bp[0], bp[1], sgn * 0.10);
@@ -4278,7 +4300,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
-            const dBody = [side * 0.95, 1.36, zp - sgn * 0.06];
+            const dBody = [side * 0.90, 1.20, zp - sgn * 0.06];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp - sgn * 0.06];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
             mk2Rod(dBody, dMid, 0.10, suspensionDarkMetalMat, true, false);
