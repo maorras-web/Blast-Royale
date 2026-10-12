@@ -3254,8 +3254,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x2b2520, roughness: 0.95, metalness: 0.0 });
-    const MK2_TREAD_N = 30;
-    const mk2TreadGeo = new THREE.BoxGeometry(0.14, 0.12, TIRE_MINOR_R * 2.0);
+    const MK2_TREAD_N = 18;
+    const mk2TreadGeo = new THREE.BoxGeometry(0.17, 0.20, TIRE_MINOR_R * 1.9);
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3283,7 +3283,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const treadDummy = new THREE.Object3D();
         for (let ti = 0; ti < MK2_TREAD_N; ti++) {
             const ta = ti * (Math.PI * 2 / MK2_TREAD_N);
-            treadDummy.position.set(Math.cos(ta) * (TIRE_OUTER_R - 0.03), Math.sin(ta) * (TIRE_OUTER_R - 0.03), 0);
+            treadDummy.position.set(Math.cos(ta) * TIRE_OUTER_R, Math.sin(ta) * TIRE_OUTER_R, 0);
             treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
             treadDummy.updateMatrix();
             treadMesh.setMatrixAt(ti, treadDummy.matrix);
@@ -4088,7 +4088,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WHEEL_SCALE = 1.28;
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
-    const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE;
+    const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.08;
 
     const mk2Head = new THREE.Group();
     mk2Head.position.y = -BODY_PIVOT_Y;
