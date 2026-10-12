@@ -3249,13 +3249,29 @@ window.addEventListener('DOMContentLoaded', () => {
         gunmetalMat.color.setHex(0x1a1f23);
     }
 
-    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x090807, roughness: 0.95, metalness: 0.0 });
+    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.58, metalness: 0.0 });
     const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x3c4147, roughness: 0.35, metalness: 0.7 });
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
-    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x2b2520, roughness: 0.95, metalness: 0.0 });
-    const MK2_TREAD_N = 18;
-    const mk2TreadGeo = new THREE.BoxGeometry(0.17, 0.20, TIRE_MINOR_R * 1.9);
+    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x2b2520, roughness: 0.62, metalness: 0.0 });
+    const MK2_TREAD_N = 28;            // פקעות בכל שורה
+    const MK2_TREAD_ROWS = [-0.13, 0.0, 0.13];   // שלוש שורות לרוחב הצמיג, מתחלפות
+    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 48);
+    {
+        const pos = nvTireGeo.attributes.position;
+        const col = new Float32Array(pos.count * 3);
+        for (let ci = 0; ci < pos.count; ci++) {
+            const px = pos.getX(ci), py = pos.getY(ci), pz = pos.getZ(ci);
+            const cosT = (Math.hypot(px, py) - TIRE_MAJOR_R) / TIRE_MINOR_R;   // 1 = כתר (חיצוני), -1 = פנים
+            const crown = Math.min(Math.max((cosT + 0.15) / 1.15, 0), 1);
+            const side = Math.abs(pz) / TIRE_MINOR_R;                           // 1 = דופן
+            const shade = 0.30 + 0.70 * Math.pow(crown, 0.9) - 0.10 * side;
+            const f = Math.max(shade, 0.18);
+            col[ci * 3] = 0.075 * f; col[ci * 3 + 1] = 0.064 * f; col[ci * 3 + 2] = 0.055 * f;
+        }
+        nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    }
+    const mk2TreadGeo = new THREE.CylinderGeometry(0.036, 0.052, 0.085, 6);   // פקעת אחיזה קטנה ומחוספסת (חרוט משושה)
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3274,25 +3290,35 @@ window.addEventListener('DOMContentLoaded', () => {
         // צמיג חלק עם דוגמת אחיזה נמוכה (קו חיצוני חלק כמו בתמונת המטרה) - מוצג רק בתותח האפור
         const smoothTire = new THREE.Group();
         smoothTire.visible = false;
-        const smoothTorus = new THREE.Mesh(new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 48), nvTireMat);
+        const smoothTorus = new THREE.Mesh(nvTireGeo, nvTireMat);
         smoothTorus.scale.z = 1.2;
         smoothTorus.castShadow = true;
         smoothTorus.receiveShadow = true;
         smoothTire.add(smoothTorus);
-        const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTreadMat, MK2_TREAD_N);
+        const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTreadMat, MK2_TREAD_N * MK2_TREAD_ROWS.length);
         const treadDummy = new THREE.Object3D();
-        for (let ti = 0; ti < MK2_TREAD_N; ti++) {
-            const ta = ti * (Math.PI * 2 / MK2_TREAD_N);
-            treadDummy.position.set(Math.cos(ta) * TIRE_OUTER_R, Math.sin(ta) * TIRE_OUTER_R, 0);
-            treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
-            treadDummy.updateMatrix();
-            treadMesh.setMatrixAt(ti, treadDummy.matrix);
-        }
+        let treadIdx = 0;
+        MK2_TREAD_ROWS.forEach((rz, ri) => {
+            // רדיוס פני הצמיג בגובה הזה לרוחב (הצמיג מעוגל, בקצוות הוא קטן יותר)
+            const surfR = TIRE_MAJOR_R + Math.sqrt(Math.max(TIRE_MINOR_R * TIRE_MINOR_R - (rz / 1.2) * (rz / 1.2), 0));
+            for (let ti = 0; ti < MK2_TREAD_N; ti++) {
+                const ta = (ti + (ri % 2 ? 0.5 : 0)) * (Math.PI * 2 / MK2_TREAD_N);
+                treadDummy.position.set(Math.cos(ta) * (surfR + 0.012), Math.sin(ta) * (surfR + 0.012), rz);
+                treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
+                treadDummy.updateMatrix();
+                treadMesh.setMatrixAt(treadIdx++, treadDummy.matrix);
+            }
+        });
         treadMesh.castShadow = true;
         smoothTire.add(treadMesh);
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
             const hz = hs * (TIRE_MINOR_R * 1.2 + 0.012);
+            [[0.30, 0.218], [0.42, 0.214]].forEach(rr => {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(rr[0], 0.016, 8, 40), nvTreadMat);
+                ring.position.z = hs * rr[1];
+                smoothTire.add(ring);
+            });
             const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.05, 28), hubSteelMat);
             disc.rotation.x = Math.PI / 2;
             disc.position.z = hz;
@@ -4088,7 +4114,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WHEEL_SCALE = 1.28;
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
-    const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.08;
+    const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
 
     const mk2Head = new THREE.Group();
     mk2Head.position.y = -BODY_PIVOT_Y;
