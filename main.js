@@ -3249,13 +3249,13 @@ window.addEventListener('DOMContentLoaded', () => {
         gunmetalMat.color.setHex(0x1a1f23);
     }
 
-    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x0a0705, roughness: 0.95, metalness: 0.0 });
+    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x090807, roughness: 0.95, metalness: 0.0 });
     const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x3c4147, roughness: 0.35, metalness: 0.7 });
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
-    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1a120c, roughness: 0.95, metalness: 0.0 });
+    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x2b2520, roughness: 0.95, metalness: 0.0 });
     const MK2_TREAD_N = 30;
-    const mk2TreadGeo = new THREE.BoxGeometry(0.13, 0.085, TIRE_MINOR_R * 2.0);
+    const mk2TreadGeo = new THREE.BoxGeometry(0.14, 0.12, TIRE_MINOR_R * 2.0);
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3283,7 +3283,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const treadDummy = new THREE.Object3D();
         for (let ti = 0; ti < MK2_TREAD_N; ti++) {
             const ta = ti * (Math.PI * 2 / MK2_TREAD_N);
-            treadDummy.position.set(Math.cos(ta) * (TIRE_OUTER_R - 0.012), Math.sin(ta) * (TIRE_OUTER_R - 0.012), 0);
+            treadDummy.position.set(Math.cos(ta) * (TIRE_OUTER_R - 0.03), Math.sin(ta) * (TIRE_OUTER_R - 0.03), 0);
             treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
             treadDummy.updateMatrix();
             treadMesh.setMatrixAt(ti, treadDummy.matrix);
@@ -4097,7 +4097,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
     const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x083a86, emissive: 0x01050c, roughness: 0.28, metalness: 0.20, clearcoat: 0.9, clearcoatRoughness: 0.14, envMap: mk2Env, envMapIntensity: 0.38 });
     const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
-    const nvFin = new THREE.MeshStandardMaterial({ color: 0x3c4046, roughness: 0.42, metalness: 0.50, envMap: mk2Env, envMapIntensity: 0.30 });
+    const nvFin = new THREE.MeshStandardMaterial({ color: 0x555a61, roughness: 0.42, metalness: 0.50, envMap: mk2Env, envMapIntensity: 0.30 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
     const nvSteel = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.40, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.22 });
@@ -4143,7 +4143,7 @@ window.addEventListener('DOMContentLoaded', () => {
         [2.35, 2.90].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.00, -0.15, 0, 0, 0, false);
         // לוחית "אוזן" בהירה מאחורי כל קנה
-        nvBox(mk2BarrelsRig, 0.66, 0.85, 0.10, 0.05, 0.02, nvFin, bx, 2.50, -0.32);
+        nvBox(mk2BarrelsRig, 0.66, 1.15, 0.10, 0.05, 0.02, nvFin, bx, 2.68, -0.32);
         nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.20, -0.15);
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.285, -0.15, 0, 0, 0, false);
     });
@@ -4303,8 +4303,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const dBody = [side * 0.90, 1.20, zp - sgn * 0.06];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp - sgn * 0.06];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
-            mk2Rod(dBody, dMid, 0.10, suspensionDarkMetalMat, true, false);
-            mk2Rod(dMid, dHub, 0.06, suspensionMetalMat, false, false);
+            mk2Rod(dBody, dMid, 0.14, suspensionDarkMetalMat, true, false);
+            mk2Rod(dMid, dHub, 0.09, suspensionMetalMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.045;
