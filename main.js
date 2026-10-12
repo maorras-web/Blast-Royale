@@ -4201,8 +4201,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x34383c, roughness: 0.34, metalness: 0.66, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
-    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.36, metalness: 0.68, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.28, metalness: 0.85, envMap: wheelEnvMap || null, envMapIntensity: 1.25 });
+    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.36;                      // מישור הזרועות, מול פני הצמיג
     let mk2GroundShadowRef = null;
@@ -4307,18 +4308,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            [[upperBody, upperHub, 0.32, 0.14, true], [lowerBody, lowerHub, 0.17, 0.10, false]].forEach(([A, B, aw, ad, ribbed]) => {
-                const L = mk2Link(A, B, aw, ad, ribbed ? mk2ArmMat : mk2BossMat, true, false);
+            [[upperBody, upperHub, 0.32, 0.14, true], [lowerBody, lowerHub, 0.26, 0.12, true]].forEach(([A, B, aw, ad, ribbed]) => {
+                const L = mk2Link(A, B, aw, ad, mk2ArmMat, true, false);
                 if (!ribbed) return;
-                const rib = new THREE.Mesh(new THREE.BoxGeometry(0.13, L.len0 * 0.58, 0.16), mk2BossMat);
-                rib.position.set(0, 0, sgn * 0.045);
+                const rib = new THREE.Mesh(new THREE.BoxGeometry(aw * 0.40, L.len0 * 0.58, ad + 0.02), mk2BossMat);
+                rib.position.set(0, 0, sgn * ad * 0.32);
                 rib.castShadow = true;
                 rib.receiveShadow = true;
                 L.mesh.add(rib);
                 [-0.27, 0.27].forEach(f => {
                     const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                     bolt.rotation.x = Math.PI / 2;
-                    bolt.position.set(0, f * L.len0, sgn * 0.15);
+                    bolt.position.set(0, f * L.len0, sgn * (ad * 0.5 + 0.08));
                     bolt.castShadow = true;
                     L.mesh.add(bolt);
                 });
@@ -4355,10 +4356,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.045;
-            mk2Boss(upperBody[0], upperBody[1], zf, 0.13, true);
-            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.11, true);
-            mk2Boss(upperHub[0], upperHub[1], zf, 0.13, false);
-            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.11, false);
+            mk2Boss(upperBody[0], upperBody[1], zf, 0.17, true);
+            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.15, true);
+            mk2Boss(upperHub[0], upperHub[1], zf, 0.17, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.15, false);
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
