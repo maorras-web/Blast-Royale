@@ -3249,9 +3249,10 @@ window.addEventListener('DOMContentLoaded', () => {
         gunmetalMat.color.setHex(0x1a1f23);
     }
 
-    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x4a3b30, roughness: 0.92, metalness: 0.0 });
+    const nvTireMat = new THREE.MeshStandardMaterial({ color: 0x1c1510, roughness: 0.95, metalness: 0.0 });
+    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x3a2d22, roughness: 0.95, metalness: 0.0 });
     const MK2_TREAD_N = 30;
-    const mk2TreadGeo = new THREE.BoxGeometry(0.12, 0.08, TIRE_MINOR_R * 1.5);
+    const mk2TreadGeo = new THREE.BoxGeometry(0.12, 0.08, TIRE_MINOR_R * 1.7);
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3271,11 +3272,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const smoothTire = new THREE.Group();
         smoothTire.visible = false;
         const smoothTorus = new THREE.Mesh(new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 48), nvTireMat);
-        smoothTorus.scale.z = 1.15;
+        smoothTorus.scale.z = 1.0;
         smoothTorus.castShadow = true;
         smoothTorus.receiveShadow = true;
         smoothTire.add(smoothTorus);
-        const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTireMat, MK2_TREAD_N);
+        const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTreadMat, MK2_TREAD_N);
         const treadDummy = new THREE.Object3D();
         for (let ti = 0; ti < MK2_TREAD_N; ti++) {
             const ta = ti * (Math.PI * 2 / MK2_TREAD_N);
@@ -4062,7 +4063,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
     const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
-    const MK2_WHEEL_SCALE = 1.28;   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
+    const MK2_WHEEL_SCALE = 1.28;
+    const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE;
 
@@ -4073,10 +4075,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
     const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x0a449a, emissive: 0x01060f, roughness: 0.28, metalness: 0.20, clearcoat: 0.9, clearcoatRoughness: 0.14, envMap: mk2Env, envMapIntensity: 0.38 });
     const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
-    const nvFin = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: 0.40, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.45 });
+    const nvFin = new THREE.MeshStandardMaterial({ color: 0x6e747a, roughness: 0.42, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.28 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
-    const nvSteel = new THREE.MeshStandardMaterial({ color: 0x5a6068, roughness: 0.38, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.45 });
+    const nvSteel = new THREE.MeshStandardMaterial({ color: 0x474c53, roughness: 0.40, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.22 });
     const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
 
     function nvAdd(parent, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, cast = true) {
@@ -4130,10 +4132,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // ובולם הידראולי ביניהן. הכל שוכב במישור אחד שמול הגלגל (פונה למצלמה)
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x7e848a, roughness: 0.36, metalness: 0.62, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
-    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4d5359, roughness: 0.36, metalness: 0.65, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x686d72, roughness: 0.36, metalness: 0.62, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
+    const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x3d4247, roughness: 0.36, metalness: 0.65, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
-    const MK2_PLANE_Z = 1.10;                      // מישור הזרועות, מול פני הצמיג
+    const MK2_PLANE_Z = 1.32;                      // מישור הזרועות, מול פני הצמיג
     const mk2OnlyParts = [];                       // חלקים שנראים רק בתותח האפור
 
     function mk2Link(a, b, w, d, material, aSprung, bSprung) {
@@ -4241,7 +4243,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp - sgn * 0.06];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
             mk2Rod(dBody, dMid, 0.10, suspensionDarkMetalMat, true, false);
-            mk2Rod(dMid, dHub, 0.055, mk2ArmMat, false, false);
+            mk2Rod(dMid, dHub, 0.06, suspensionMetalMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.045;
@@ -4268,6 +4270,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const baseX = wheelPositions[i][0];
             wheelOuter.position.x = baseX + (isMk2 ? Math.sign(baseX) * MK2_WHEEL_SHIFT : 0);
             wheelOuter.position.y = isMk2 ? MK2_WHEEL_Y : wheelPositions[i][1];
+            wheelOuter.position.z = isMk2 ? Math.sign(wheelPositions[i][2]) * MK2_WHEEL_Z : wheelPositions[i][2];
             wheelOuter.scale.setScalar(isMk2 ? MK2_WHEEL_SCALE : 1);
             const sw = wheelOuter_smooth[i];
             if (sw) { sw.tire.visible = !isMk2; sw.smooth.visible = isMk2; }
