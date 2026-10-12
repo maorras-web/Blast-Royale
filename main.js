@@ -3250,27 +3250,43 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const nvTireMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.58, metalness: 0.0 });
-    const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x3c4147, roughness: 0.35, metalness: 0.7 });
+    const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x3c4147, roughness: 0.5, metalness: 0.55 });
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1e1915, roughness: 0.62, metalness: 0.0 });
     const MK2_TREAD_N = 40;            // פקעות בכל שורה
     const MK2_TREAD_ROWS = [-0.13, 0.0, 0.13];   // שלוש שורות לרוחב הצמיג, מתחלפות
-    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 48);
+    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 96);
     {
         const pos = nvTireGeo.attributes.position;
         const col = new Float32Array(pos.count * 3);
+        const TREAD_BLOCKS = 26;
         for (let ci = 0; ci < pos.count; ci++) {
-            const px = pos.getX(ci), py = pos.getY(ci), pz = pos.getZ(ci);
-            const cosT = (Math.hypot(px, py) - TIRE_MAJOR_R) / TIRE_MINOR_R;   // 1 = כתר (חיצוני), -1 = פנים
+            let px = pos.getX(ci), py = pos.getY(ci);
+            const pz = pos.getZ(ci);
+            const ringR = Math.hypot(px, py);
+            const cosT = (ringR - TIRE_MAJOR_R) / TIRE_MINOR_R;                 // 1 = כתר (חיצוני), -1 = פנים
             const crown = Math.min(Math.max((cosT + 0.15) / 1.15, 0), 1);
-            const side = Math.abs(pz) / TIRE_MINOR_R;                           // 1 = דופן
-            const shade = 0.30 + 0.70 * Math.pow(crown, 0.9) - 0.10 * side;
-            const f = Math.max(shade, 0.18);
+            const side = Math.abs(pz) / TIRE_MINOR_R;                             // 1 = דופן
+            let shade = Math.max(0.30 + 0.70 * Math.pow(crown, 0.9) - 0.10 * side, 0.18);
+
+            // אזור הדוגמה: רק על הכתר. בלוקים מתחלפים בין שורת מרכז לשורות הצד
+            const treadMask = Math.min(Math.max((cosT - 0.15) / 0.5, 0), 1);
+            const ang = Math.atan2(py, px);
+            const rowOff = side > 0.45 ? 0 : 0.5;
+            const wv = 0.5 + 0.5 * Math.sin(((ang / (Math.PI * 2)) * TREAD_BLOCKS + rowOff) * Math.PI * 2);
+            shade *= 1 + treadMask * 0.30 * (wv - 0.5) * 2;
+
+            // בליטה נמוכה ובלתי אחידה בצללית (לא גלגל שיניים)
+            const irregular = 0.75 + 0.25 * Math.sin(ang * 7.0 + 1.3);
+            const k = 1 + treadMask * 0.020 * wv * irregular;
+            pos.setXYZ(ci, px * k, py * k, pz);
+
             const jit = 0.86 + 0.28 * (0.5 + 0.5 * Math.sin(ci * 12.9898 + (ci % 7) * 4.1414));   // כתמי אבק עדינים
-            col[ci * 3] = 0.105 * f * jit; col[ci * 3 + 1] = 0.090 * f * jit; col[ci * 3 + 2] = 0.078 * f * jit;
+            col[ci * 3] = 0.105 * shade * jit; col[ci * 3 + 1] = 0.090 * shade * jit; col[ci * 3 + 2] = 0.078 * shade * jit;
         }
+        pos.needsUpdate = true;
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
     const mk2TreadGeo = new THREE.CylinderGeometry(0.026, 0.040, 0.045, 6);   // פקעת אחיזה קטנה ומחוספסת (חרוט משושה)
@@ -3312,7 +3328,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
         treadMesh.castShadow = true;
-        smoothTire.add(treadMesh);
+        // (הפקעות הבולטות הוחלפו בדוגמה על הצמיג עצמו)
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
             const hz = hs * (TIRE_MINOR_R * 1.2 + 0.012);
@@ -3321,11 +3337,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 ring.position.z = hs * rr[1];
                 smoothTire.add(ring);
             });
-            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.255, 0.05, 28), hubSteelMat);
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.05, 28), hubSteelMat);
             disc.rotation.x = Math.PI / 2;
             disc.position.z = hz;
             smoothTire.add(disc);
-            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 20), hubDarkMat);
+            const well = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.03, 8, 36), nvRingMat);
+            well.position.z = hz - hs * 0.005;
+            smoothTire.add(well);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.06, 20), hubDarkMat);
             cap.rotation.x = Math.PI / 2;
             cap.position.z = hz + hs * 0.012;
             smoothTire.add(cap);
@@ -3333,7 +3352,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const ha = hb * (Math.PI * 2 / 5);
                 const bolt = new THREE.Mesh(hubBoltGeo, hubSteelMat);
                 bolt.rotation.x = Math.PI / 2;
-                bolt.position.set(Math.cos(ha) * 0.20, Math.sin(ha) * 0.20, hz + hs * 0.03);
+                bolt.position.set(Math.cos(ha) * 0.155, Math.sin(ha) * 0.155, hz + hs * 0.03);
                 smoothTire.add(bolt);
             }
         });
