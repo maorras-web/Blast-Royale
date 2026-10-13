@@ -3825,7 +3825,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.37, 0.37];
-    let MK2_MUZZLE_Y = 2.85;
+    let MK2_MUZZLE_Y = 3.30;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4149,6 +4149,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
     const nvSteel = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.40, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.22 });
     const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
+    // קנים בצבע פלדה אפורה בהירה + "אוזניים" בהירות, כמו בתמונת המטרה
+    const nvBarrelMat = new THREE.MeshStandardMaterial({ color: 0x9aa1a8, roughness: 0.32, metalness: 0.80, envMap: mk2Env, envMapIntensity: 0.9 });
+    const nvEarMat = new THREE.MeshStandardMaterial({ color: 0xb9bfc5, roughness: 0.36, metalness: 0.70, envMap: mk2Env, envMapIntensity: 0.8 });
 
     function nvAdd(parent, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, cast = true) {
         const mesh = new THREE.Mesh(geometry, material);
@@ -4171,8 +4174,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // מצחייה כהה לרוחב חזית הגוף (כמו הפס השחור בתמונת המטרה)
     nvBox(mk2Head, MK2_BODY_W * 0.64, 0.14, 0.62, 0.05, 0.02, nvVisor, 0, 2.04, 0.56);
     // כיפה כחולה גדולה ומעוגלת
-    const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.78, 32, 20), nvBlack, 0, 1.99, 0.10);
-    nvDome.scale.y = 0.90;
+    const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.62, 32, 20), nvBlack, 0, 1.99, 0.10);
+    nvDome.scale.y = 0.85;
     // גומה כחולה קטנה מול הכיפה, מעל המצחייה
     const nvNub = nvAdd(mk2Head, new THREE.SphereGeometry(0.26, 24, 14), nvBlack, 0, 2.06, 0.62);
     nvNub.scale.y = 0.55;
@@ -4186,13 +4189,13 @@ window.addEventListener('DOMContentLoaded', () => {
     mk2Head.add(mk2BarrelsRig);
     MK2_BARREL_X.forEach(bx => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
-        nvCyl(mk2BarrelsRig, 0.21, 0.23, 0.95, nvSteel, bx, 2.65, -0.15);
-        [2.35, 2.90].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.00, -0.15, 0, 0, 0, false);
+        nvCyl(mk2BarrelsRig, 0.21, 0.23, 1.35, nvBarrelMat, bx, 2.90, -0.15);
+        [2.45, 3.15].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.35, -0.15, 0, 0, 0, false);
         // לוחית "אוזן" בהירה מאחורי כל קנה
-        nvBox(mk2BarrelsRig, 0.66, 1.15, 0.10, 0.05, 0.02, nvFin, bx, 2.68, -0.32);
-        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.20, -0.15);
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.285, -0.15, 0, 0, 0, false);
+        nvBox(mk2BarrelsRig, 0.66, 1.50, 0.10, 0.05, 0.02, nvEarMat, bx, 2.95, -0.32);
+        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.62, -0.15);
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.705, -0.15, 0, 0, 0, false);
     });
 
     // ==========================================================
@@ -4315,7 +4318,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            [[upperBody, upperHub, 0.26, 0.14, true], [lowerBody, lowerHub, 0.21, 0.12, true]].forEach(([A, B, aw, ad, ribbed]) => {
+            [[upperBody, upperHub, 0.32, 0.17, true], [lowerBody, lowerHub, 0.26, 0.15, true]].forEach(([A, B, aw, ad, ribbed]) => {
                 const L = mk2Link(A, B, aw, ad, mk2ArmMat, true, false);
                 if (!ribbed) return;
                 const rib = new THREE.Mesh(new THREE.BoxGeometry(aw * 0.40, L.len0 * 0.58, ad + 0.02), mk2BossMat);
