@@ -3254,7 +3254,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
-    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 0.62, metalness: 0.0 });
+    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x3a2e24, roughness: 0.62, metalness: 0.0 });
     const MK2_TREAD_N = 40;            // פקעות בכל שורה
     const MK2_TREAD_ROWS = [-0.13, 0.0, 0.13];   // שלוש שורות לרוחב הצמיג, מתחלפות
     const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 96);
@@ -3284,7 +3284,7 @@ window.addEventListener('DOMContentLoaded', () => {
             pos.setXYZ(ci, px * k, py * k, pz);
 
             const jit = 0.86 + 0.28 * (0.5 + 0.5 * Math.sin(ci * 12.9898 + (ci % 7) * 4.1414));   // כתמי אבק עדינים
-            col[ci * 3] = 0.30 * shade * jit; col[ci * 3 + 1] = 0.235 * shade * jit; col[ci * 3 + 2] = 0.17 * shade * jit;
+            col[ci * 3] = 0.17 * shade * jit; col[ci * 3 + 1] = 0.14 * shade * jit; col[ci * 3 + 2] = 0.11 * shade * jit;
         }
         pos.needsUpdate = true;
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
