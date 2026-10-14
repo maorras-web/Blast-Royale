@@ -4211,7 +4211,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xc9cfd5, roughness: 0.20, metalness: 0.92, clearcoat: 0.55, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x9da4ac, roughness: 0.22, metalness: 0.92, clearcoat: 0.35, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
@@ -4245,20 +4245,20 @@ window.addEventListener('DOMContentLoaded', () => {
     // זרוע מחושלת: צורת "עצם" (קצוות רחבים ועגולים סביב הצירים, מותן צרה באמצע) עם שיפוע בכל הקצוות.
     // הציר הארוך הוא Y והעומק Z, בדיוק כמו הקופסה הישנה, כך שתנועת ההשעיה (scale.y) ממשיכה לעבוד.
     function createMk2LinkGeometry(len, w, d) {
-        // זרוע עגולה: קפסולה בחתך אליפטי (רוחב w, עומק d) עם קצוות כדוריים.
-        // הציר הארוך הוא Y, כך שתנועת ההשעיה (scale.y) ממשיכה לעבוד.
-        const pts = [];
-        const cap = w * 0.5;
-        for (let i = 0; i <= 10; i++) {
-            const an = -Math.PI / 2 + (i / 10) * (Math.PI / 2);
-            pts.push(new THREE.Vector2(Math.max(0.5 * Math.cos(an), 0.0001), -len / 2 + cap * Math.sin(an)));
-        }
-        for (let i = 0; i <= 10; i++) {
-            const an = (i / 10) * (Math.PI / 2);
-            pts.push(new THREE.Vector2(Math.max(0.5 * Math.cos(an), 0.0001), len / 2 + cap * Math.sin(an)));
-        }
-        const g = new THREE.LatheGeometry(pts, 32);
-        g.scale(w, 1, d);
+        // זרוע שטוחה מפלדה (כמו בתמונת המטרה): לוח עם קצוות עגולים ושיפוע בקצוות.
+        // הציר הארוך הוא Y והעומק Z, כך שתנועת ההשעיה (scale.y) ממשיכה לעבוד.
+        const bs = 0.035, bt = 0.035;
+        const hw = w / 2 - bs;
+        const half = len / 2;
+        const sh = new THREE.Shape();
+        sh.moveTo(-hw, -half);
+        sh.absarc(0, -half, hw, Math.PI, 2 * Math.PI, false);
+        sh.lineTo(hw, half);
+        sh.absarc(0, half, hw, 0, Math.PI, false);
+        sh.lineTo(-hw, -half);
+        const depth = Math.max(d - 2 * bt, 0.02);
+        const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelSize: bs, bevelThickness: bt, bevelSegments: 2, curveSegments: 16 });
+        g.translate(0, 0, -depth / 2);
         return g;
     }
     function mk2Link(a, b, w, d, material, aSprung, bSprung) {
@@ -4267,6 +4267,10 @@ window.addEventListener('DOMContentLoaded', () => {
         L.mk2Only = true;
         L.mesh.geometry.dispose();
         L.mesh.geometry = createMk2LinkGeometry(L.len0, w, d);
+        // חריץ כהה לאורך הזרוע, בצד שפונה למצלמה
+        const groove = new THREE.Mesh(new THREE.BoxGeometry(w * 0.34, L.len0 * 0.60, 0.03), mk2BossMat);
+        groove.position.z = (a[2] >= 0 ? 1 : -1) * (d / 2 + 0.012);
+        L.mesh.add(groove);
         return L;
     }
     function mk2Rod(a, b, radius, material, aSprung, bSprung) {
@@ -4297,7 +4301,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // קפיץ אמיתי (סליל דק ממתכת כהה) סביב מוט כרום וגוף בולם כהה, כמו בתמונת המטרה
     const mk2DamperMat = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.30, metalness: 0.85, envMap: mk2Env || null, envMapIntensity: 0.9 });
-    const mk2CoilMat = new THREE.MeshStandardMaterial({ color: 0x30343a, roughness: 0.28, metalness: 0.90, envMap: mk2Env || null, envMapIntensity: 1.1 });
+    const mk2CoilMat = new THREE.MeshStandardMaterial({ color: 0x17191d, roughness: 0.38, metalness: 0.75, envMap: mk2Env || null, envMapIntensity: 1.1 });
     function addMk2Spring(side, sgn) {
         const z = sgn * 1.12;           // בין פני הגוף לבין מישור הזרועות (מאחורי הזרוע העליונה)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
@@ -4323,19 +4327,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
         const coilH = Math.max(length - 0.20, 0.2);
-        const coilTurns = 7, coilR = 0.21;
+        const coilTurns = 8, coilR = 0.27;
         const helix = new THREE.Curve();
         helix.getPoint = function (t, target) {
             const ang = t * coilTurns * Math.PI * 2;
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
-        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.036, 8, false), mk2CoilMat);
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.062, 10, false), mk2CoilMat);
         coil.castShadow = true;
         group.add(coil);
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.09, 24), mk2ArmMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.09, 24), mk2ArmMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
@@ -4369,22 +4373,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            {
-                // זרוע עליונה עם "ברך": שני קטעים שנפגשים בנקודה שבולטת למעלה והחוצה
-                const adx = upperHub[0] - upperBody[0], ady = upperHub[1] - upperBody[1];
-                let knx = -ady, kny = adx;
-                const klen = Math.hypot(knx, kny);
-                knx /= klen; kny /= klen;
-                if (kny < 0) { knx = -knx; kny = -kny; }
-                const KNEE = 0.26;   // כמה הברך בולטת (0 = זרוע ישרה)
-                const kneeP = [(upperBody[0] + upperHub[0]) / 2 + knx * KNEE, (upperBody[1] + upperHub[1]) / 2 + kny * KNEE, zU];
-                mk2Link(upperBody, kneeP, 0.38, 0.28, mk2ArmMat, true, false);
-                mk2Link(kneeP, upperHub, 0.38, 0.28, mk2ArmMat, false, false);
-                mk2Boss(kneeP[0], kneeP[1], zU + sgn * 0.12, 0.13, false);
-            }
-            mk2Link(lowerBody, lowerHub, 0.32, 0.24, mk2ArmMat, true, false);
+            mk2Link(upperBody, upperHub, 0.46, 0.16, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, 0.40, 0.14, mk2ArmMat, true, false);
 
-            // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה)
+            // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
+            if (sgn > 0) {
             const gShape = new THREE.Shape();
             [[0.02, 0.02], [-0.58, 0.22], [-0.62, 0.66], [-0.10, 0.80], [0.20, 0.68], [0.12, 0.30]].forEach((p, i) => {
                 if (i === 0) gShape.moveTo(side * p[0] * 1.25, p[1] * 1.25); else gShape.lineTo(side * p[0] * 1.25, p[1] * 1.25);
@@ -4405,13 +4398,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 bolt.castShadow = true;
                 gusset.add(bolt);
             });
+            }
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
             const dBody = [side * 0.95, 1.46 + MK2_BODY_RAISE, zp + sgn * 0.34];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp + sgn * 0.34];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
-            mk2Rod(dBody, dMid, 0.23, mk2DamperMat, true, false);
-            mk2Rod(dMid, dHub, 0.14, mk2ArmMat, false, false);
+            mk2Rod(dBody, dMid, 0.20, mk2ArmMat, true, false);
+            mk2Rod(dMid, dHub, 0.11, mk2ArmMat, false, false);
             mk2Boss(dBody[0], dBody[1], dBody[2] + sgn * 0.17, 0.12, true);
             mk2Boss(dHub[0], dHub[1], dHub[2] + sgn * 0.17, 0.12, false);
 
