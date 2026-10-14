@@ -4361,8 +4361,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 0.80, 1.95 + MK2_BODY_RAISE, zU];
-            const lowerBody = [side * 0.48, 1.40 + MK2_BODY_RAISE, zp];
+            const upperBody = [side * 0.85, 1.95 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
+            const lowerBody = [side * 0.32, 1.15 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
             const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.95, zU];
             const lowerHub  = [hx - side * 0.22, MK2_WHEEL_Y + 0.10, zp];
 
@@ -4403,7 +4403,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
-            const dBody = [side * 0.66, 1.68 + MK2_BODY_RAISE, zp + sgn * 0.34];
+            const dBody = [side * 0.58, 1.55 + MK2_BODY_RAISE, sgn * 1.30];
             const dHub  = [side * (MK2_HUB_X - 0.40), MK2_WHEEL_Y + 0.55, zp + sgn * 0.34];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
             mk2Rod(dBody, dMid, 0.15, mk2ArmMat, true, false);
@@ -4411,8 +4411,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
-            mk2Boss(upperBody[0], upperBody[1], zfU, 0.085, true);
-            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.085, true);
+            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.10, 0.085, true);
+            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.10, 0.085, true);
             mk2Boss(upperHub[0], upperHub[1], zfU, 0.10, false);
             mk2Boss(lowerHub[0], lowerHub[1], zf, 0.09, false);
             mk2Boss(hx, MK2_WHEEL_Y, zf, 0.15, false);
