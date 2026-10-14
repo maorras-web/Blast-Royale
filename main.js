@@ -4155,7 +4155,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const nvSteel = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.40, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.22 });
     const nvBoreMat = new THREE.MeshBasicMaterial({ color: 0x020507 });
     // קנים בצבע פלדה אפורה בהירה + "אוזניים" בהירות, כמו בתמונת המטרה
-    const nvBarrelMat = new THREE.MeshStandardMaterial({ color: 0x9aa1a8, roughness: 0.32, metalness: 0.80, envMap: mk2Env, envMapIntensity: 0.9 });
+    const nvBarrelMat = new THREE.MeshStandardMaterial({ color: 0x70767d, roughness: 0.34, metalness: 0.80, envMap: mk2Env, envMapIntensity: 0.9 });
     const nvEarMat = new THREE.MeshStandardMaterial({ color: 0xb9bfc5, roughness: 0.36, metalness: 0.70, envMap: mk2Env, envMapIntensity: 0.8 });
 
     function nvAdd(parent, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0, cast = true) {
@@ -4360,9 +4360,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 0.95, 1.90 + MK2_BODY_RAISE, zU];
+            const upperBody = [side * 0.95, 1.80 + MK2_BODY_RAISE, zU];
             const lowerBody = [side * 0.70, 1.15 + MK2_BODY_RAISE, zp];
-            const upperHub  = [hx - side * 0.30, MK2_WHEEL_Y + 0.80, zU];
+            const upperHub  = [hx - side * 0.20, MK2_WHEEL_Y + 0.85, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
