@@ -4296,12 +4296,14 @@ window.addEventListener('DOMContentLoaded', () => {
         return g;
     }
 
+    // קפיץ אמיתי (סליל דק ממתכת כהה) סביב מוט כרום וגוף בולם כהה, כמו בתמונת המטרה
+    const mk2CoilMat = new THREE.MeshStandardMaterial({ color: 0x30343a, roughness: 0.28, metalness: 0.90, envMap: mk2Env || null, envMapIntensity: 1.1 });
     function addMk2Spring(side, sgn) {
-        const z = sgn * 0.78;
+        const z = sgn * 1.12;           // בין פני הגוף לבין מישור הזרועות (מאחורי הזרוע העליונה)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.28, 1.60 + MK2_BODY_RAISE * 0.35, z);
-        const bottom = new THREE.Vector3(side * 1.75, springTopY - 0.01, z);
+        const top = new THREE.Vector3(side * 1.22, 1.72 + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * 1.64, springTopY + 0.08, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4310,24 +4312,39 @@ window.addEventListener('DOMContentLoaded', () => {
         group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
         cannonGroup.add(group);
 
-        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, length, 14), mk2ArmMat);
+        // מוט כרום מרכזי + גוף בולם כהה בחצי התחתון
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, length, 16), mk2ArmMat);
         rod.castShadow = true;
         group.add(rod);
+        const dmp = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, length * 0.50, 20), suspensionDarkMetalMat);
+        dmp.position.y = -length * 0.22;
+        dmp.castShadow = true;
+        group.add(dmp);
 
-        for (let i = 0; i < 8; i++) {
-            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.048, 10, 26), suspensionRubberMat);
-            coil.rotation.x = Math.PI / 2;
-            coil.position.y = (i - 3.5) * (length * 0.115);
-            coil.castShadow = true;
-            group.add(coil);
-        }
+        // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
+        const coilH = Math.max(length - 0.20, 0.2);
+        const coilTurns = 7, coilR = 0.21;
+        const helix = new THREE.Curve();
+        helix.getPoint = function (t, target) {
+            const ang = t * coilTurns * Math.PI * 2;
+            return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
+        };
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.036, 8, false), mk2CoilMat);
+        coil.castShadow = true;
+        group.add(coil);
+
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.08, 22), mk2ArmMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.09, 24), mk2ArmMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
         });
+
+        // עמוד חיבור קצר מפני הגוף אל קצה הקפיץ העליון (נע עם הגוף)
+        const zbBody = sgn * 0.875;
+        nvAdd(mk2Head, new THREE.CylinderGeometry(0.12, 0.12, Math.abs(z - zbBody) + 0.10, 16), nvSteel,
+            top.x, top.y - MK2_BODY_RAISE, (z + zbBody) / 2, Math.PI / 2, 0, 0);
 
         suspensionSprings.push({ group, a: top, b: bottom, aSprung: true, bSprung: false, len0: Math.max(length, 1e-6), mk2Only: true });
     }
