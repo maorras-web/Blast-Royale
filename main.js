@@ -4211,8 +4211,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x9da4ac, roughness: 0.22, metalness: 0.92, clearcoat: 0.35, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
-    const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0xaab1b9, roughness: 0.46, metalness: 0.78, envMap: mk2Env || null, envMapIntensity: 1.1 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x868d95, roughness: 0.24, metalness: 0.92, clearcoat: 0.30, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
+    const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0x8f969e, roughness: 0.44, metalness: 0.80, envMap: mk2Env || null, envMapIntensity: 1.1 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
@@ -4307,8 +4307,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 1.12;           // בין פני הגוף לבין מישור הזרועות (מאחורי הזרוע העליונה)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.38, 1.72 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * 1.92, springTopY + 0.08, z);
+        const top = new THREE.Vector3(side * 1.30, 1.72 + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * 1.80, springTopY + 0.08, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4328,19 +4328,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
         const coilH = Math.max(length - 0.20, 0.2);
-        const coilTurns = 8, coilR = 0.32;
+        const coilTurns = 10, coilR = 0.24;
         const helix = new THREE.Curve();
         helix.getPoint = function (t, target) {
             const ang = t * coilTurns * Math.PI * 2;
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
-        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.078, 10, false), mk2CoilMat);
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.048, 10, false), mk2CoilMat);
         coil.castShadow = true;
         group.add(coil);
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.09, 24), mk2ArmMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 24), mk2DamperMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
