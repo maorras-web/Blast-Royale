@@ -4212,6 +4212,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
     const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x9da4ac, roughness: 0.22, metalness: 0.92, clearcoat: 0.35, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
+    const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0xaab1b9, roughness: 0.46, metalness: 0.78, envMap: mk2Env || null, envMapIntensity: 1.1 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
@@ -4306,8 +4307,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 1.12;           // בין פני הגוף לבין מישור הזרועות (מאחורי הזרוע העליונה)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.22, 1.72 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * 1.64, springTopY + 0.08, z);
+        const top = new THREE.Vector3(side * 1.38, 1.72 + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * 1.92, springTopY + 0.08, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4327,19 +4328,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
         const coilH = Math.max(length - 0.20, 0.2);
-        const coilTurns = 8, coilR = 0.27;
+        const coilTurns = 8, coilR = 0.32;
         const helix = new THREE.Curve();
         helix.getPoint = function (t, target) {
             const ang = t * coilTurns * Math.PI * 2;
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
-        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.062, 10, false), mk2CoilMat);
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.078, 10, false), mk2CoilMat);
         coil.castShadow = true;
         group.add(coil);
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.09, 24), mk2ArmMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.09, 24), mk2ArmMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
@@ -4373,8 +4374,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.40 : 0.26, 0.16, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.36 : 0.24, 0.14, mk2ArmMat, true, false);
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.30 : 0.22, 0.14, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.27 : 0.20, 0.13, mk2ArmMat, true, false);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
@@ -4385,7 +4386,7 @@ window.addEventListener('DOMContentLoaded', () => {
             gShape.closePath();
             const gGeo = new THREE.ExtrudeGeometry(gShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.03, bevelSegments: 2, steps: 1 });
             gGeo.translate(0, 0, -0.05);
-            const gusset = new THREE.Mesh(gGeo, mk2ArmMat);
+            const gusset = new THREE.Mesh(gGeo, mk2PlateMat);
             gusset.position.set(hx, lowerHub[1], zp - sgn * 0.02);
             gusset.castShadow = true;
             gusset.receiveShadow = true;
@@ -4404,8 +4405,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const dBody = [side * 0.95, 1.46 + MK2_BODY_RAISE, zp + sgn * 0.34];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.65, zp + sgn * 0.34];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
-            mk2Rod(dBody, dMid, 0.20, mk2ArmMat, true, false);
-            mk2Rod(dMid, dHub, 0.11, mk2ArmMat, false, false);
+            mk2Rod(dBody, dMid, 0.125, mk2ArmMat, true, false);
+            mk2Rod(dMid, dHub, 0.075, mk2ArmMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
