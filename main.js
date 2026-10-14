@@ -3828,7 +3828,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.37, 0.37];
-    let MK2_MUZZLE_Y = 2.95;
+    // כמה הגוף של הנובה מורם ביחס לגלגלים (0 = כמו קודם). מגדיל את שיפוע הזרועות.
+    const MK2_BODY_RAISE = 0.35;
+    let MK2_MUZZLE_Y = 2.95 + MK2_BODY_RAISE;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4141,7 +4143,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
 
     const mk2Head = new THREE.Group();
-    mk2Head.position.y = -BODY_PIVOT_Y;
+    mk2Head.position.y = -BODY_PIVOT_Y + MK2_BODY_RAISE;
     bodyRig.add(mk2Head);
 
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
@@ -4298,7 +4300,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 0.78;
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.28, 1.60, z);
+        const top = new THREE.Vector3(side * 1.28, 1.60 + MK2_BODY_RAISE * 0.35, z);
         const bottom = new THREE.Vector3(side * 1.75, springTopY - 0.01, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
@@ -4336,15 +4338,15 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 0.88, 1.80, zU];
-            const lowerBody = [side * 0.62, 1.24, zp];
+            const upperBody = [side * 0.88, 1.80 + MK2_BODY_RAISE, zU];
+            const lowerBody = [side * 0.62, 1.24 + MK2_BODY_RAISE, zp];
             const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
                 const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.14, 0.14, Math.abs(P[2] - zb) + 0.06, 16), nvSteel,
-                    P[0], P[1], (P[2] + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
+                    P[0], P[1] - MK2_BODY_RAISE, (P[2] + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
                 post.castShadow = true;
             });
 
@@ -4391,7 +4393,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
-            const dBody = [side * 0.95, 1.46, zp + sgn * 0.20];
+            const dBody = [side * 0.95, 1.46 + MK2_BODY_RAISE, zp + sgn * 0.20];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp + sgn * 0.20];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
             mk2Rod(dBody, dMid, 0.19, suspensionDarkMetalMat, true, false);
