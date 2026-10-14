@@ -4378,11 +4378,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (kny < 0) { knx = -knx; kny = -kny; }
                 const KNEE = 0.26;   // כמה הברך בולטת (0 = זרוע ישרה)
                 const kneeP = [(upperBody[0] + upperHub[0]) / 2 + knx * KNEE, (upperBody[1] + upperHub[1]) / 2 + kny * KNEE, zU];
-                mk2Link(upperBody, kneeP, 0.30, 0.26, mk2ArmMat, true, false);
-                mk2Link(kneeP, upperHub, 0.30, 0.26, mk2ArmMat, false, false);
-                mk2Boss(kneeP[0], kneeP[1], zU + sgn * 0.11, 0.16, false);
+                mk2Link(upperBody, kneeP, 0.38, 0.28, mk2ArmMat, true, false);
+                mk2Link(kneeP, upperHub, 0.38, 0.28, mk2ArmMat, false, false);
+                mk2Boss(kneeP[0], kneeP[1], zU + sgn * 0.12, 0.13, false);
             }
-            mk2Link(lowerBody, lowerHub, 0.25, 0.22, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, 0.32, 0.24, mk2ArmMat, true, false);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה)
             const gShape = new THREE.Shape();
@@ -4416,11 +4416,11 @@ window.addEventListener('DOMContentLoaded', () => {
             mk2Boss(dHub[0], dHub[1], dHub[2] + sgn * 0.17, 0.12, false);
 
             // דיסקים עם ברגים בקצות הזרועות
-            const zf = zp + sgn * 0.09, zfU = zU + sgn * 0.11;
-            mk2Boss(upperBody[0], upperBody[1], zfU, 0.15, true);
-            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.14, true);
-            mk2Boss(upperHub[0], upperHub[1], zfU, 0.16, false);
-            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.15, false);
+            const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
+            mk2Boss(upperBody[0], upperBody[1], zfU, 0.12, true);
+            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.11, true);
+            mk2Boss(upperHub[0], upperHub[1], zfU, 0.13, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.12, false);
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
