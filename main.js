@@ -4361,8 +4361,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 1.02, 1.95 + MK2_BODY_RAISE, zU];
-            const lowerBody = [side * 0.84, 1.40 + MK2_BODY_RAISE, zp];
+            const upperBody = [side * 0.80, 1.95 + MK2_BODY_RAISE, zU];
+            const lowerBody = [side * 0.48, 1.40 + MK2_BODY_RAISE, zp];
             const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.95, zU];
             const lowerHub  = [hx - side * 0.22, MK2_WHEEL_Y + 0.10, zp];
 
@@ -4403,7 +4403,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
-            const dBody = [side * 0.98, 1.68 + MK2_BODY_RAISE, zp + sgn * 0.34];
+            const dBody = [side * 0.66, 1.68 + MK2_BODY_RAISE, zp + sgn * 0.34];
             const dHub  = [side * (MK2_HUB_X - 0.40), MK2_WHEEL_Y + 0.55, zp + sgn * 0.34];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
             mk2Rod(dBody, dMid, 0.15, mk2ArmMat, true, false);
