@@ -2557,7 +2557,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // 4. עיצוב התותח - 3D DETAIL PASS
     // ==========================================
     const cannonGroup = new THREE.Group();
-    const CANNON_SCALE = 1.14;
+    // גודל התותח. הנובה גדול יותר (כמו בתמונת המטרה, שבה התותח תופס את רוב רוחב המסך).
+    const CANNON_BASE_SCALE = 1.14;
+    const NOVA_SIZE_BOOST = 1.40;      // אפשר לשחק: 1.0 = כמו הקלאסי, 1.5 = הכי קרוב לתמונה
+    let CANNON_SCALE = CANNON_BASE_SCALE;
 
     // גוף תלת-ממדי עם קצוות מעוגלים.
     function createRoundedBoxGeometry(width, height, depth, radius, bevelSize = 0.08, bevelSegments = 2) {
@@ -4205,7 +4208,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.28, metalness: 0.85, envMap: wheelEnvMap || null, envMapIntensity: 1.25 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xa9afb5, roughness: 0.22, metalness: 0.90, clearcoat: 0.55, clearcoatRoughness: 0.12, envMap: wheelEnvMap || null, envMapIntensity: 1.5 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.36;                      // מישור הזרועות, מול פני הצמיג
@@ -4236,14 +4239,36 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2OnlyParts = [];
     mk2OnlyParts.push(mk2GroundShadowRef);                       // חלקים שנראים רק בתותח האפור
 
+    // זרוע מחושלת: צורת "עצם" (קצוות רחבים ועגולים סביב הצירים, מותן צרה באמצע) עם שיפוע בכל הקצוות.
+    // הציר הארוך הוא Y והעומק Z, בדיוק כמו הקופסה הישנה, כך שתנועת ההשעיה (scale.y) ממשיכה לעבוד.
+    function createMk2LinkGeometry(len, w, d) {
+        const bev = 0.05;
+        const hw = w * 0.5 - bev * 0.6;                       // חצי רוחב המותן
+        const re = Math.max(w * 0.68, hw + 0.05) - bev * 0.5; // רדיוס הקצה העגול
+        const sq = Math.sqrt(re * re - hw * hw);
+        const al = Math.atan2(sq, hw);
+        const sh = new THREE.Shape();
+        sh.moveTo(hw, -len / 2 + sq);
+        sh.lineTo(hw, len / 2 - sq);
+        sh.absarc(0, len / 2, re, -al, Math.PI + al, false);
+        sh.lineTo(-hw, -len / 2 + sq);
+        sh.absarc(0, -len / 2, re, Math.PI - al, Math.PI * 2 + al, false);
+        const depth = Math.max(d - bev * 2, 0.04);
+        const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 24, steps: 1 });
+        g.translate(0, 0, -depth / 2);
+        g.computeVertexNormals();
+        return g;
+    }
     function mk2Link(a, b, w, d, material, aSprung, bSprung) {
         addSuspensionArmBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), w, d, material, aSprung, bSprung);
         const L = suspensionLinks[suspensionLinks.length - 1];
         L.mk2Only = true;
+        L.mesh.geometry.dispose();
+        L.mesh.geometry = createMk2LinkGeometry(L.len0, w, d);
         return L;
     }
     function mk2Rod(a, b, radius, material, aSprung, bSprung) {
-        addSuspensionCylinderBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), radius, material, 12, aSprung, bSprung);
+        addSuspensionCylinderBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), radius, material, 24, aSprung, bSprung);
         const L = suspensionLinks[suspensionLinks.length - 1];
         L.mk2Only = true;
         return L;
@@ -4251,10 +4276,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // דיסק עגול עם ראש בורג משושה - פונה למצלמה
     function mk2Boss(x, y, z, r, sprung) {
         const g = new THREE.Group();
-        const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.07, 20), mk2BossMat);
+        const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.12, 28), mk2BossMat);
         disc.rotation.x = Math.PI / 2;
         g.add(disc);
-        const bolt = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.42, 0.11, 6), mk2ArmMat);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 0.94, 0.024, 8, 32), mk2ArmMat);
+        ring.position.z = 0.062;
+        g.add(ring);
+        const bolt = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.42, 0.17, 6), mk2ArmMat);
         bolt.rotation.x = Math.PI / 2;
         g.add(bolt);
         g.position.set(x, y, z);
@@ -4304,15 +4332,16 @@ window.addEventListener('DOMContentLoaded', () => {
             const zp = sgn * MK2_PLANE_Z;   // מישור הזרועות
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
-            const upperBody = [side * 0.86, 1.58, zp];
+            const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
+            const upperBody = [side * 0.86, 1.58, zU];
             const lowerBody = [side * 0.55, 1.00, zp];
-            const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zp];
+            const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
-                const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.14, 0.14, Math.abs(zp - zb) + 0.06, 16), nvSteel,
-                    P[0], P[1], (zp + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
+                const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.14, 0.14, Math.abs(P[2] - zb) + 0.06, 16), nvSteel,
+                    P[0], P[1], (P[2] + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
                 post.castShadow = true;
             });
 
@@ -4321,12 +4350,13 @@ window.addEventListener('DOMContentLoaded', () => {
             [[upperBody, upperHub, 0.32, 0.17, true], [lowerBody, lowerHub, 0.26, 0.15, true]].forEach(([A, B, aw, ad, ribbed]) => {
                 const L = mk2Link(A, B, aw, ad, mk2ArmMat, true, false);
                 if (!ribbed) return;
-                const rib = new THREE.Mesh(new THREE.BoxGeometry(aw * 0.40, L.len0 * 0.58, ad + 0.02), mk2BossMat);
-                rib.position.set(0, 0, sgn * ad * 0.32);
+                const ribW = aw * 0.36, ribH = L.len0 * 0.52, ribD = 0.10;
+                const rib = new THREE.Mesh(createRoundedBoxGeometry(ribW - 0.06, ribH - 0.06, ribD - 0.06, 0.06, 0.03, 2), mk2BossMat);
+                rib.position.set(0, 0, sgn * (ad * 0.5 + ribD / 2 - 0.02));
                 rib.castShadow = true;
                 rib.receiveShadow = true;
                 L.mesh.add(rib);
-                [-0.27, 0.27].forEach(f => {
+                [-0.19, 0.19].forEach(f => {
                     const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                     bolt.rotation.x = Math.PI / 2;
                     bolt.position.set(0, f * L.len0, sgn * (ad * 0.5 + 0.08));
@@ -4361,17 +4391,17 @@ window.addEventListener('DOMContentLoaded', () => {
             const dBody = [side * 0.90, 1.20, zp + sgn * 0.20];
             const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp + sgn * 0.20];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.55, dBody[1] + (dHub[1] - dBody[1]) * 0.55, dBody[2]];
-            mk2Rod(dBody, dMid, 0.15, suspensionDarkMetalMat, true, false);
-            mk2Rod(dMid, dHub, 0.10, suspensionMetalMat, false, false);
-            mk2Boss(dBody[0], dBody[1], dBody[2] + sgn * 0.12, 0.11, true);
-            mk2Boss(dHub[0], dHub[1], dHub[2] + sgn * 0.12, 0.11, false);
+            mk2Rod(dBody, dMid, 0.19, suspensionDarkMetalMat, true, false);
+            mk2Rod(dMid, dHub, 0.125, suspensionMetalMat, false, false);
+            mk2Boss(dBody[0], dBody[1], dBody[2] + sgn * 0.14, 0.14, true);
+            mk2Boss(dHub[0], dHub[1], dHub[2] + sgn * 0.14, 0.14, false);
 
             // דיסקים עם ברגים בקצות הזרועות
-            const zf = zp + sgn * 0.045;
-            mk2Boss(upperBody[0], upperBody[1], zf, 0.17, true);
-            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.15, true);
-            mk2Boss(upperHub[0], upperHub[1], zf, 0.17, false);
-            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.15, false);
+            const zf = zp + sgn * 0.07, zfU = zU + sgn * 0.07;
+            mk2Boss(upperBody[0], upperBody[1], zfU, 0.19, true);
+            mk2Boss(lowerBody[0], lowerBody[1], zf, 0.17, true);
+            mk2Boss(upperHub[0], upperHub[1], zfU, 0.19, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.17, false);
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
@@ -4450,6 +4480,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function setActiveCannon(type) {
         activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : 'classic';
         advancedCannonGroup.visible = false;
+        // הנובה גדול יותר; כל החישובים (קליעים, התנגשויות, גלגלים) משתמשים ב-CANNON_SCALE החי
+        CANNON_SCALE = CANNON_BASE_SCALE * (activeCannon === 'mk2' ? NOVA_SIZE_BOOST : 1);
+        cannonGroup.scale.setScalar(CANNON_SCALE);
+        mk2Tracks.children.forEach((strip, i) => { strip.position.z = (i === 0 ? -1 : 1) * MK2_WHEEL_Z * CANNON_SCALE; });
         applyCannonLook(activeCannon === 'mk2');
         if (!MK2_PREVIEW) localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
@@ -5947,6 +5981,11 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.position.x += (targetX - cannonGroup.position.x) * 0.2;
         cannonShadow.position.x += (cannonGroup.position.x - cannonShadow.position.x) * 0.3;
         cannonShadowSoft.position.x += (cannonGroup.position.x - cannonShadowSoft.position.x) * 0.32;
+        {
+            const shK = CANNON_SCALE / CANNON_BASE_SCALE;
+            cannonShadow.scale.set(1.18 * shK, 0.76 * shK, 1);
+            cannonShadowSoft.scale.set(1.10 * shK, 0.58 * shK, 1);
+        }
         cannonRecoil *= 0.78;
 
         // רתיעה מכנית של מכלול הקנים - בנוסף לתנועת הגוף.
