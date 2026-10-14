@@ -3828,7 +3828,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.37, 0.37];
-    let MK2_MUZZLE_Y = 3.30;
+    let MK2_MUZZLE_Y = 2.95;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
     const mk2GlowPurpleMat = new THREE.MeshBasicMaterial({ color: 0xa55cff });
@@ -4193,13 +4193,13 @@ window.addEventListener('DOMContentLoaded', () => {
     mk2Head.add(mk2BarrelsRig);
     MK2_BARREL_X.forEach(bx => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
-        nvCyl(mk2BarrelsRig, 0.21, 0.23, 1.35, nvBarrelMat, bx, 2.90, -0.15);
-        [2.45, 3.15].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.35, -0.15, 0, 0, 0, false);
+        nvCyl(mk2BarrelsRig, 0.21, 0.23, 1.00, nvBarrelMat, bx, 2.70, -0.15);
+        [2.40, 2.95].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.10, -0.15, 0, 0, 0, false);
         // לוחית "אוזן" בהירה מאחורי כל קנה
-        nvBox(mk2BarrelsRig, 0.66, 1.50, 0.10, 0.05, 0.02, nvEarMat, bx, 2.95, -0.32);
-        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.62, -0.15);
-        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.705, -0.15, 0, 0, 0, false);
+        nvBox(mk2BarrelsRig, 0.66, 1.15, 0.10, 0.05, 0.02, nvEarMat, bx, 2.75, -0.32);
+        nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.28, -0.15);
+        nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.365, -0.15, 0, 0, 0, false);
     });
 
     // ==========================================================
@@ -4209,7 +4209,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xa9afb5, roughness: 0.22, metalness: 0.90, clearcoat: 0.55, clearcoatRoughness: 0.12, envMap: wheelEnvMap || null, envMapIntensity: 1.5 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xc9cfd5, roughness: 0.20, metalness: 0.92, clearcoat: 0.55, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
@@ -4245,7 +4245,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function createMk2LinkGeometry(len, w, d) {
         const bev = 0.05;
         const hw = w * 0.5 - bev * 0.6;                       // חצי רוחב המותן
-        const re = Math.max(w * 0.68, hw + 0.05) - bev * 0.5; // רדיוס הקצה העגול
+        const re = Math.max(hw + 0.035, w * 0.5) - bev * 0.5;  // רדיוס הקצה העגול (כמעט ישר)
         const sq = Math.sqrt(re * re - hw * hw);
         const al = Math.atan2(sq, hw);
         const sh = new THREE.Shape();
@@ -4350,7 +4350,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            [[upperBody, upperHub, 0.40, 0.19, true], [lowerBody, lowerHub, 0.34, 0.17, true]].forEach(([A, B, aw, ad, ribbed]) => {
+            [[upperBody, upperHub, 0.34, 0.19, true], [lowerBody, lowerHub, 0.28, 0.17, true]].forEach(([A, B, aw, ad, ribbed]) => {
                 const L = mk2Link(A, B, aw, ad, mk2ArmMat, true, false);
                 if (!ribbed) return;
                 const ribW = aw * 0.36, ribH = L.len0 * 0.52, ribD = 0.10;
