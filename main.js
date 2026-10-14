@@ -4359,9 +4359,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 0.88, 1.80 + MK2_BODY_RAISE, zU];
-            const lowerBody = [side * 0.62, 1.24 + MK2_BODY_RAISE, zp];
-            const upperHub  = [hx - side * 0.02, MK2_WHEEL_Y + 0.62, zU];
+            const upperBody = [side * 0.95, 1.90 + MK2_BODY_RAISE, zU];
+            const lowerBody = [side * 0.70, 1.15 + MK2_BODY_RAISE, zp];
+            const upperHub  = [hx - side * 0.30, MK2_WHEEL_Y + 0.80, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
@@ -4373,14 +4373,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, 0.46, 0.16, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, 0.40, 0.14, mk2ArmMat, true, false);
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.40 : 0.26, 0.16, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.36 : 0.24, 0.14, mk2ArmMat, true, false);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
             const gShape = new THREE.Shape();
-            [[0.02, 0.02], [-0.58, 0.22], [-0.62, 0.66], [-0.10, 0.80], [0.20, 0.68], [0.12, 0.30]].forEach((p, i) => {
-                if (i === 0) gShape.moveTo(side * p[0] * 1.25, p[1] * 1.25); else gShape.lineTo(side * p[0] * 1.25, p[1] * 1.25);
+            [[-0.46, 0.92], [-0.16, 0.96], [0.08, 0.45], [0.34, 0.10], [0.22, -0.30], [-0.18, -0.28], [-0.30, 0.30]].forEach((p, i) => {
+                if (i === 0) gShape.moveTo(side * p[0] * 1.15, p[1] * 1.15); else gShape.lineTo(side * p[0] * 1.15, p[1] * 1.15);
             });
             gShape.closePath();
             const gGeo = new THREE.ExtrudeGeometry(gShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.03, bevelSegments: 2, steps: 1 });
@@ -4391,10 +4391,10 @@ window.addEventListener('DOMContentLoaded', () => {
             gusset.receiveShadow = true;
             cannonGroup.add(gusset);
             mk2OnlyParts.push(gusset);
-            [[-0.40, 0.42], [-0.15, 0.62], [-0.05, 0.26]].forEach(bp => {
+            [[0.02, 0.50], [-0.10, -0.10]].forEach(bp => {
                 const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                 bolt.rotation.x = Math.PI / 2;
-                bolt.position.set(side * bp[0] * 1.25, bp[1] * 1.25, sgn * 0.11);
+                bolt.position.set(side * bp[0] * 1.15, bp[1] * 1.15, sgn * 0.11);
                 bolt.castShadow = true;
                 gusset.add(bolt);
             });
@@ -4402,12 +4402,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
             const dBody = [side * 0.95, 1.46 + MK2_BODY_RAISE, zp + sgn * 0.34];
-            const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.40, zp + sgn * 0.34];
+            const dHub  = [side * 1.85, MK2_WHEEL_Y + 0.65, zp + sgn * 0.34];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
             mk2Rod(dBody, dMid, 0.20, mk2ArmMat, true, false);
             mk2Rod(dMid, dHub, 0.11, mk2ArmMat, false, false);
-            mk2Boss(dBody[0], dBody[1], dBody[2] + sgn * 0.17, 0.12, true);
-            mk2Boss(dHub[0], dHub[1], dHub[2] + sgn * 0.17, 0.12, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
