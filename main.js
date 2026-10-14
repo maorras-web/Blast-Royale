@@ -2559,7 +2559,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const cannonGroup = new THREE.Group();
     // גודל התותח. הנובה גדול יותר (כמו בתמונת המטרה, שבה התותח תופס את רוב רוחב המסך).
     const CANNON_BASE_SCALE = 1.14;
-    const NOVA_SIZE_BOOST = 1.40;      // אפשר לשחק: 1.0 = כמו הקלאסי, 1.5 = הכי קרוב לתמונה
+    const NOVA_SIZE_BOOST = 1.00;      // אפשר לשחק: 1.0 = כמו הקלאסי, 1.5 = הכי קרוב לתמונה
     let CANNON_SCALE = CANNON_BASE_SCALE;
 
     // גוף תלת-ממדי עם קצוות מעוגלים.
@@ -4134,8 +4134,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.50;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
-    const MK2_WHEEL_SCALE = 1.28;
+    const MK2_WHEEL_SHIFT = 0.58;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    const MK2_WHEEL_SCALE = 1.60;   // צמיגים גדולים יותר (היה 1.28)
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
@@ -4211,7 +4211,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xa9afb5, roughness: 0.22, metalness: 0.90, clearcoat: 0.55, clearcoatRoughness: 0.12, envMap: wheelEnvMap || null, envMapIntensity: 1.5 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
-    const MK2_PLANE_Z = 1.36;                      // מישור הזרועות, מול פני הצמיג
+    const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
     let mk2GroundShadowRef = null;
     const mk2BoltGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.05, 6);
     {
@@ -4295,8 +4295,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addMk2Spring(side, sgn) {
         const z = sgn * 0.78;
-        const top = new THREE.Vector3(side * 1.12, 1.50, z);
-        const bottom = new THREE.Vector3(side * 1.70, MK2_WHEEL_Y + 0.74, z);
+        // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
+        const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
+        const top = new THREE.Vector3(side * 1.05, 1.95, z);
+        const bottom = new THREE.Vector3(side * 1.80, springTopY + 0.10, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
