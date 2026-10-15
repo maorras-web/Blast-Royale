@@ -3829,7 +3829,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // מיקומי ארבעת הקנים נשמרים — הם חלק מעוצמת הירי של התותח השני.
     const MK2_BARREL_X = [-0.37, 0.37];
     // כמה הגוף של הנובה מורם ביחס לגלגלים (0 = כמו קודם). מגדיל את שיפוע הזרועות.
-    const MK2_BODY_RAISE = 0.35;
+    const MK2_BODY_RAISE = -0.15;
     let MK2_MUZZLE_Y = 2.95 + MK2_BODY_RAISE;
 
     const mk2GlowCyanMat = new THREE.MeshBasicMaterial({ color: 0x59d8ff });
@@ -4308,8 +4308,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 1.12;           // בין פני הגוף לבין מישור הזרועות (מאחורי הזרוע העליונה)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.15, 1.72 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * (MK2_HUB_X - 0.45), springTopY + 0.08, z);
+        const top = new THREE.Vector3(side * 1.35, 1.95 + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * (MK2_HUB_X - 0.85), springTopY + 0.08, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4319,29 +4319,29 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.add(group);
 
         // מוט כרום מרכזי + גוף בולם כהה בחצי התחתון
-        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, length, 16), mk2ArmMat);
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, length, 16), mk2ArmMat);
         rod.castShadow = true;
         group.add(rod);
-        const dmp = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, length * 0.50, 20), suspensionDarkMetalMat);
+        const dmp = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, length * 0.50, 20), suspensionDarkMetalMat);
         dmp.position.y = -length * 0.22;
         dmp.castShadow = true;
         group.add(dmp);
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
         const coilH = Math.max(length - 0.20, 0.2);
-        const coilTurns = 10, coilR = 0.17;
+        const coilTurns = 8, coilR = 0.20;
         const helix = new THREE.Curve();
         helix.getPoint = function (t, target) {
             const ang = t * coilTurns * Math.PI * 2;
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
-        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.036, 10, false), mk2CoilMat);
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.05, 10, false), mk2CoilMat);
         coil.castShadow = true;
         group.add(coil);
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.07, 24), mk2DamperMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 24), mk2DamperMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
@@ -4363,7 +4363,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
             const upperBody = [side * 0.85, 1.95 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
             const lowerBody = [side * 0.45, 1.15 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
-            const upperHub  = [hx - side * 0.60, MK2_WHEEL_Y + 0.85, zU];
+            const upperHub  = [hx - side * 0.40, MK2_WHEEL_Y + 0.75, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
@@ -4404,7 +4404,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
             const dBody = [side * 0.65, 1.55 + MK2_BODY_RAISE, sgn * 1.25];
-            const dHub  = [side * (MK2_HUB_X - 0.30), MK2_WHEEL_Y + 0.45, zp + sgn * 0.10];
+            const dHub  = [side * (MK2_HUB_X - 0.20), MK2_WHEEL_Y + 0.40, zp + sgn * 0.10];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
             mk2Rod(dBody, dMid, 0.09, mk2ArmMat, true, false);
             mk2Rod(dMid, dHub, 0.055, mk2ArmMat, false, false);
