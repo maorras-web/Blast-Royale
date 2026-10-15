@@ -4361,8 +4361,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const zb = sgn * 0.875;         // פני הגוף
             const hx = side * MK2_HUB_X;
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
-            const upperBody = [side * 0.85, 1.95 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
-            const lowerBody = [side * 0.45, 1.15 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
+            const upperBody = [side * 0.85, 1.86 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
+            const lowerBody = [side * 0.52, 1.58 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
             const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.80, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
