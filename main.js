@@ -4211,7 +4211,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x868d95, roughness: 0.24, metalness: 0.92, clearcoat: 0.30, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.25 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xc2c9d0, emissive: 0x1f2328, roughness: 0.26, metalness: 0.88, clearcoat: 0.30, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.6 });
     const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0x8f969e, roughness: 0.44, metalness: 0.80, envMap: mk2Env || null, envMapIntensity: 1.1 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
@@ -4270,7 +4270,7 @@ window.addEventListener('DOMContentLoaded', () => {
         L.mesh.geometry.dispose();
         L.mesh.geometry = createMk2LinkGeometry(L.len0, w, d, wHub);
         // חריץ כהה לאורך הזרוע, בצד שפונה למצלמה
-        const groove = new THREE.Mesh(new THREE.BoxGeometry(((w + (wHub || w)) / 2) * 0.26, L.len0 * 0.60, 0.03), mk2BossMat);
+        const groove = new THREE.Mesh(new THREE.BoxGeometry(((w + (wHub || w)) / 2) * 0.26, L.len0 * 0.60, 0.03), mk2PlateMat);
         groove.position.z = (a[2] >= 0 ? 1 : -1) * (d / 2 + 0.012);
         L.mesh.add(groove);
         return L;
@@ -4363,7 +4363,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
             const upperBody = [side * 0.85, 1.95 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
             const lowerBody = [side * 0.45, 1.15 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
-            const upperHub  = [hx - side * 0.40, MK2_WHEEL_Y + 0.75, zU];
+            const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.80, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
@@ -4377,6 +4377,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
             mk2Link(upperBody, upperHub, sgn > 0 ? 0.48 : 0.34, 0.10, mk2ArmMat, true, false);
             mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.34 : 0.26, 0.10, mk2ArmMat, true, false, sgn > 0 ? 0.60 : 0.44);
+            mk2Link(upperHub, lowerHub, sgn > 0 ? 0.40 : 0.30, 0.10, mk2ArmMat, false, false, sgn > 0 ? 0.52 : 0.38);   // לוח הברך: מהמפרק אל הרכזת
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
