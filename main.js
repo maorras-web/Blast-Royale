@@ -4136,8 +4136,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.66;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
-    const MK2_WHEEL_SCALE = 1.60;   // צמיגים גדולים יותר (היה 1.28)
+    const MK2_WHEEL_SHIFT = 0.72;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    const MK2_WHEEL_SCALE = 1.75;   // צמיגים גדולים יותר (היה 1.28)
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
@@ -4363,8 +4363,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
             const upperBody = [side * 0.85, 1.95 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
             const lowerBody = [side * 0.32, 1.15 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
-            const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.95, zU];
-            const lowerHub  = [hx - side * 0.22, MK2_WHEEL_Y + 0.10, zp];
+            const upperHub  = [hx - side * 0.75, MK2_WHEEL_Y + 0.95, zU];
+            const lowerHub  = [hx - side * 0.35, MK2_WHEEL_Y - 0.02, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
@@ -4375,8 +4375,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.17 : 0.14, 0.12, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.16 : 0.14, 0.13, mk2ArmMat, true, false, sgn > 0 ? 0.28 : 0.22);
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.34 : 0.26, 0.17, mk2ArmMat, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.32 : 0.24, 0.17, mk2ArmMat, true, false, sgn > 0 ? 0.50 : 0.36);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
@@ -4403,19 +4403,19 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // בולם הידראולי בין הזרועות: גוף כהה + מוט כרום שמחליק
-            const dBody = [side * 0.58, 1.55 + MK2_BODY_RAISE, sgn * 1.30];
-            const dHub  = [side * (MK2_HUB_X - 0.40), MK2_WHEEL_Y + 0.55, zp + sgn * 0.34];
+            const dBody = [side * 0.60, 1.55 + MK2_BODY_RAISE, sgn * 1.45];
+            const dHub  = [side * (MK2_HUB_X - 0.55), MK2_WHEEL_Y + 0.45, zp + sgn * 0.50];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
-            mk2Rod(dBody, dMid, 0.15, mk2ArmMat, true, false);
-            mk2Rod(dMid, dHub, 0.085, mk2ArmMat, false, false);
+            mk2Rod(dBody, dMid, 0.21, mk2ArmMat, true, false);
+            mk2Rod(dMid, dHub, 0.12, mk2ArmMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
-            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.10, 0.085, true);
-            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.10, 0.085, true);
-            mk2Boss(upperHub[0], upperHub[1], zfU, 0.10, false);
-            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.09, false);
-            mk2Boss(hx, MK2_WHEEL_Y, zf, 0.15, false);
+            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.16, true);
+            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.16, true);
+            mk2Boss(upperHub[0], upperHub[1], zfU, 0.17, false);
+            mk2Boss(lowerHub[0], lowerHub[1], zf, 0.19, false);
+            mk2Boss(hx, MK2_WHEEL_Y, zf, 0.22, false);
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
