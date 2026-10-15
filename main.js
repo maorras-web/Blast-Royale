@@ -4136,7 +4136,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 1.05;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    const MK2_WHEEL_SHIFT = 0.76;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
     const MK2_WHEEL_SCALE = 1.40;   // צמיגים גדולים יותר (היה 1.28)
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
@@ -4211,7 +4211,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0xc2c9d0, emissive: 0x1f2328, roughness: 0.26, metalness: 0.88, clearcoat: 0.30, clearcoatRoughness: 0.10, envMap: mk2Env || null, envMapIntensity: 1.6 });
+    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x9aa1a8, emissive: 0x0c0e10, roughness: 0.30, metalness: 0.90, clearcoat: 0.25, clearcoatRoughness: 0.12, envMap: mk2Env || null, envMapIntensity: 1.25 });
     const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0x8f969e, roughness: 0.44, metalness: 0.80, envMap: mk2Env || null, envMapIntensity: 1.1 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.34, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 1.0 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
@@ -4309,7 +4309,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
         const top = new THREE.Vector3(side * 1.35, 1.95 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * (MK2_HUB_X - 0.85), springTopY + 0.08, z);
+        const bottom = new THREE.Vector3(side * (MK2_HUB_X - 0.75), springTopY + 0.08, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4375,9 +4375,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.48 : 0.34, 0.10, mk2ArmMat, true, false);
-            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.34 : 0.26, 0.10, mk2ArmMat, true, false, sgn > 0 ? 0.60 : 0.44);
-            mk2Link(upperHub, lowerHub, sgn > 0 ? 0.40 : 0.30, 0.10, mk2ArmMat, false, false, sgn > 0 ? 0.52 : 0.38);   // לוח הברך: מהמפרק אל הרכזת
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.48 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.34 : 0.26, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.60 : 0.44);
+            mk2Link(upperHub, lowerHub, sgn > 0 ? 0.40 : 0.30, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, false, false, sgn > 0 ? 0.52 : 0.38);   // לוח הברך: מהמפרק אל הרכזת
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
@@ -4407,8 +4407,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const dBody = [side * 0.65, 1.55 + MK2_BODY_RAISE, sgn * 1.25];
             const dHub  = [side * (MK2_HUB_X - 0.20), MK2_WHEEL_Y + 0.40, zp + sgn * 0.10];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
-            mk2Rod(dBody, dMid, 0.09, mk2ArmMat, true, false);
-            mk2Rod(dMid, dHub, 0.055, mk2ArmMat, false, false);
+            mk2Rod(dBody, dMid, 0.115, mk2ArmMat, true, false);
+            mk2Rod(dMid, dHub, 0.07, mk2ArmMat, false, false);
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
