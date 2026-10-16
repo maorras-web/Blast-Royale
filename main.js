@@ -4308,8 +4308,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 0.55;           // לצד הגוף, מאחורי מישור הזרועות
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.18, 1.95 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * 1.70, MK2_WHEEL_Y + 0.26, z);
+        const top = new THREE.Vector3(side * 1.46, 1.95 + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * 1.86, MK2_WHEEL_Y + 0.26, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4329,7 +4329,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
         const coilH = Math.max(length - 0.20, 0.2);
-        const coilTurns = 9, coilR = 0.19;
+        const coilTurns = 9, coilR = 0.16;
         const helix = new THREE.Curve();
         helix.getPoint = function (t, target) {
             const ang = t * coilTurns * Math.PI * 2;
@@ -4341,7 +4341,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
-            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 24), mk2DamperMat);
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.07, 24), mk2DamperMat);
             collar.position.y = end * (length / 2 - 0.045);
             collar.castShadow = true;
             group.add(collar);
@@ -4349,7 +4349,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // עמוד חיבור קצר מפני הגוף אל קצה הקפיץ העליון (נע עם הגוף)
         const zbBody = sgn * 0.875;
-        // (העמוד האופקי הוסר: הקפיץ מתחיל בתוך פינת הגוף)
+        // תושבת ברזל מוברגת לצד הגוף, והקפיץ תלוי עליה בעין עם בורג (כמו במטרה)
+        const yb = top.y - MK2_BODY_RAISE;
+        nvAdd(mk2Head, new THREE.BoxGeometry(0.10, 0.62, 0.62), nvSteel, side * 1.33, yb - 0.14, z, 0, 0, 0).castShadow = true;
+        nvAdd(mk2Head, new THREE.BoxGeometry(0.22, 0.20, 0.34), nvSteel, side * 1.46, yb - 0.02, z, 0, 0, 0).castShadow = true;
+        nvAdd(mk2Head, new THREE.CylinderGeometry(0.075, 0.075, 0.46, 16), mk2ArmMat, side * 1.46, yb - 0.02, z, Math.PI / 2, 0, 0).castShadow = true;
+        [-0.20, 0.10].forEach(dy => {
+            nvAdd(mk2Head, new THREE.CylinderGeometry(0.055, 0.055, 0.05, 6), mk2ArmMat, side * 1.385, yb - 0.14 + dy, z + sgn * 0.20, 0, 0, Math.PI / 2);
+            nvAdd(mk2Head, new THREE.CylinderGeometry(0.055, 0.055, 0.05, 6), mk2ArmMat, side * 1.385, yb - 0.14 + dy, z - sgn * 0.20, 0, 0, Math.PI / 2);
+        });
 
         suspensionSprings.push({ group, a: top, b: bottom, aSprung: true, bSprung: false, len0: Math.max(length, 1e-6), mk2Only: true });
     }
@@ -4385,9 +4393,15 @@ window.addEventListener('DOMContentLoaded', () => {
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
             const gShape = new THREE.Shape();
-            [[-0.46, 0.92], [-0.16, 0.96], [0.08, 0.45], [0.34, 0.10], [0.22, -0.30], [-0.18, -0.28], [-0.30, 0.30]].forEach((p, i) => {
-                if (i === 0) gShape.moveTo(side * p[0] * 0.80, p[1] * 0.80); else gShape.lineTo(side * p[0] * 0.80, p[1] * 0.80);
-            });
+            {
+                const KX = -side * 0.72, KY = 0.60, rH = 0.34, rK = 0.19;
+                const Lk = Math.hypot(KX, KY), ang = Math.atan2(KY, KX), beta = Math.acos((rH - rK) / Lk);
+                gShape.moveTo(rH * Math.cos(ang + beta), rH * Math.sin(ang + beta));
+                gShape.lineTo(KX + rK * Math.cos(ang + beta), KY + rK * Math.sin(ang + beta));
+                gShape.absarc(KX, KY, rK, ang + beta, ang - beta, true);
+                gShape.lineTo(rH * Math.cos(ang - beta), rH * Math.sin(ang - beta));
+                gShape.absarc(0, 0, rH, ang - beta, ang + beta - 2 * Math.PI, true);
+            }
             gShape.closePath();
             const gGeo = new THREE.ExtrudeGeometry(gShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.03, bevelSegments: 2, steps: 1 });
             gGeo.translate(0, 0, -0.05);
@@ -4397,7 +4411,7 @@ window.addEventListener('DOMContentLoaded', () => {
             gusset.receiveShadow = true;
             cannonGroup.add(gusset);
             mk2OnlyParts.push(gusset);
-            [[0.02, 0.50], [-0.10, -0.10]].forEach(bp => {
+            [[-0.72 * 0.5 / 0.8, 0.60 * 0.5 / 0.8], [0.14 / 0.8, -0.20 / 0.8]].forEach(bp => {
                 const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                 bolt.rotation.x = Math.PI / 2;
                 bolt.position.set(side * bp[0] * 0.80, bp[1] * 0.80, sgn * 0.11);
