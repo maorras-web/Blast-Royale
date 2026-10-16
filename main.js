@@ -4363,7 +4363,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const zU = zp + sgn * 0.10;     // הזרוע העליונה בשכבה קדמית - נותן עומק
             const upperBody = [side * 0.85, 1.86 + MK2_BODY_RAISE, sgn * 1.015];   // שורש עליון: פינת הפנים הקדמיות, ליד המצחייה
             const lowerBody = [side * 0.52, 1.58 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
-            const upperHub  = [hx - side * 0.55, MK2_WHEEL_Y + 0.80, zU];
+            const upperHub  = [hx - side * 0.95, MK2_WHEEL_Y + 0.88, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
@@ -4378,6 +4378,10 @@ window.addEventListener('DOMContentLoaded', () => {
             mk2Link(upperBody, upperHub, sgn > 0 ? 0.58 : 0.40, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
             mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.42 : 0.30, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.72 : 0.50);
             mk2Link(upperHub, lowerHub, sgn > 0 ? 0.50 : 0.36, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, false, false, sgn > 0 ? 0.64 : 0.44);   // לוח הברך: מהמפרק אל הרכזת
+
+            // לוחית השורש: ברזל עבה ורחב בין שני הברגים בתחילת הזרוע (כמו במטרה)
+            mk2Link([upperBody[0], upperBody[1], upperBody[2] + sgn * 0.05], [lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.05],
+                sgn > 0 ? 0.52 : 0.38, 0.12, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.62 : 0.44);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
