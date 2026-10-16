@@ -4217,7 +4217,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
     const MK2_PLANE_Z = 1.46;                      // מישור הזרועות, מול פני הצמיג
     let mk2GroundShadowRef = null;
-    const mk2BoltGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.05, 6);
+    const mk2BoltGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.05, 6);
     {
         const gc = document.createElement('canvas');
         gc.width = gc.height = 128;
@@ -4305,10 +4305,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const mk2DamperMat = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.30, metalness: 0.85, envMap: mk2Env || null, envMapIntensity: 0.9 });
     const mk2CoilMat = new THREE.MeshStandardMaterial({ color: 0x17191d, roughness: 0.38, metalness: 0.75, envMap: mk2Env || null, envMapIntensity: 1.1 });
     function addMk2Spring(side, sgn) {
-        const z = sgn * 0.70;           // בפינה הקדמית של הגוף, מאחורי מישור הזרועות
+        const z = sgn * 0.40;           // על החלק השטוח של צד הגוף (הפינות מעוגלות)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.46, 1.95 + MK2_BODY_RAISE, z);
+        const top = new THREE.Vector3(side * 1.46, 1.72 + MK2_BODY_RAISE, z);
         const bottom = new THREE.Vector3(side * 2.00, MK2_WHEEL_Y + 0.26, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
@@ -4349,14 +4349,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // עמוד חיבור קצר מפני הגוף אל קצה הקפיץ העליון (נע עם הגוף)
         const zbBody = sgn * 0.875;
-        // תושבת ברזל מוברגת לצד הגוף, והקפיץ תלוי עליה בעין עם בורג (כמו במטרה)
+        // תושבת ברזל צמודה לחלק השטוח של צד הגוף, והקפיץ תלוי עליה בעין עם בורג
         const yb = top.y - MK2_BODY_RAISE;
-        nvAdd(mk2Head, new THREE.BoxGeometry(0.09, 0.46, 0.36), mk2PlateMat, side * 1.335, yb - 0.10, z, 0, 0, 0).castShadow = true;
-        nvAdd(mk2Head, new THREE.BoxGeometry(0.22, 0.20, 0.34), mk2PlateMat, side * 1.46, yb - 0.02, z, 0, 0, 0).castShadow = true;
-        nvAdd(mk2Head, new THREE.CylinderGeometry(0.075, 0.075, 0.46, 16), mk2ArmMat, side * 1.46, yb - 0.02, z, Math.PI / 2, 0, 0).castShadow = true;
-        [-0.14, 0.14].forEach(dy => {
-            nvAdd(mk2Head, new THREE.CylinderGeometry(0.055, 0.055, 0.05, 6), mk2ArmMat, side * 1.385, yb - 0.10 + dy, z + sgn * 0.09, 0, 0, Math.PI / 2);
-            nvAdd(mk2Head, new THREE.CylinderGeometry(0.055, 0.055, 0.05, 6), mk2ArmMat, side * 1.385, yb - 0.10 + dy, z - sgn * 0.09, 0, 0, Math.PI / 2);
+        nvAdd(mk2Head, new THREE.BoxGeometry(0.07, 0.56, 0.34), mk2PlateMat, side * 1.335, yb - 0.15, z, 0, 0, 0).castShadow = true;
+        nvAdd(mk2Head, new THREE.BoxGeometry(0.12, 0.20, 0.30), mk2PlateMat, side * 1.43, yb, z, 0, 0, 0).castShadow = true;
+        nvAdd(mk2Head, new THREE.CylinderGeometry(0.05, 0.05, 0.40, 14), mk2ArmMat, side * 1.46, yb, z, Math.PI / 2, 0, 0).castShadow = true;
+        [-0.20, 0.0, 0.20].forEach(dy => {
+            nvAdd(mk2Head, new THREE.CylinderGeometry(0.032, 0.032, 0.03, 6), mk2ArmMat, side * 1.375, yb - 0.15 + dy, z + sgn * 0.11, 0, 0, Math.PI / 2);
+            nvAdd(mk2Head, new THREE.CylinderGeometry(0.032, 0.032, 0.03, 6), mk2ArmMat, side * 1.375, yb - 0.15 + dy, z - sgn * 0.11, 0, 0, Math.PI / 2);
         });
 
         suspensionSprings.push({ group, a: top, b: bottom, aSprung: true, bSprung: false, len0: Math.max(length, 1e-6), mk2Only: true });
@@ -4429,10 +4429,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
-            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.21, true);
-            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.21, true);
-            mk2Boss(upperHub[0], upperHub[1], zfU, 0.15, false);
-            mk2Boss(hx, MK2_WHEEL_Y, zf, 0.17, false);
+            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.13, true);
+            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.13, true);
+            mk2Boss(upperHub[0], upperHub[1], zfU, 0.10, false);
+            mk2Boss(hx, MK2_WHEEL_Y, zf, 0.13, false);
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
