@@ -4188,7 +4188,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- עומק: שכבות, פלטות, ברגים ---------------------------------
     // לוחית תחתית כהה - נותנת צל ומשקל מתחת לגוף
-    nvBox(mk2Head, MK2_BODY_W * 0.92, 0.20, 1.52, 0.08, 0.03, nvDark, 0, 1.00, 0);
+    nvBox(mk2Head, MK2_BODY_W * 0.80, 0.10, 1.30, 0.04, 0.015, nvDark, 0, 1.03, 0);
 
     // ---- שני קנים עבים מאחורי הכיפה, בתוך קבוצה שזזה אחורה בכל ירייה ----
     const mk2BarrelsRig = new THREE.Group();
@@ -4309,7 +4309,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
         const top = new THREE.Vector3(side * 1.46, 1.95 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * 1.86, MK2_WHEEL_Y + 0.26, z);
+        const bottom = new THREE.Vector3(side * 2.00, MK2_WHEEL_Y + 0.26, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -4382,13 +4382,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.34 : 0.26, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
-            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.30 : 0.24, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.46 : 0.34);
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.52 : 0.38, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.46 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.56 : 0.40);
             mk2Link(upperHub, lowerHub, sgn > 0 ? 0.50 : 0.36, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, false, false, sgn > 0 ? 0.64 : 0.44);   // לוח הברך: מהמפרק אל הרכזת
 
             // לוחית השורש: ברזל עבה ורחב בין שני הברגים בתחילת הזרוע (כמו במטרה)
             mk2Link([upperBody[0], upperBody[1], upperBody[2] + sgn * 0.05], [lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.05],
-                sgn > 0 ? 0.40 : 0.30, 0.12, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.48 : 0.36);
+                sgn > 0 ? 0.50 : 0.36, 0.12, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.56 : 0.40);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
