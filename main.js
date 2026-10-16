@@ -3257,9 +3257,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
-    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x33281f, roughness: 0.70, metalness: 0.0 });
-    const MK2_TREAD_N = 28;            // בלוקי אחיזה בכל שורה
-    const MK2_TREAD_ROWS = [-0.135, 0.0, 0.135];   // שלוש שורות לרוחב הצמיג, מתחלפות
+    const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.62, metalness: 0.0 });
+    const MK2_TREAD_N = 40;            // פקעות בכל שורה
+    const MK2_TREAD_ROWS = [-0.13, 0.0, 0.13];   // שלוש שורות לרוחב הצמיג, מתחלפות
     const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 96);
     {
         const pos = nvTireGeo.attributes.position;
@@ -3292,7 +3292,7 @@ window.addEventListener('DOMContentLoaded', () => {
         pos.needsUpdate = true;
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
-    const mk2TreadGeo = new THREE.BoxGeometry(0.072, 0.075, 0.105);   // בלוק אחיזה גס (שן) כמו בתותח המטרה
+    const mk2TreadGeo = new THREE.CylinderGeometry(0.036, 0.056, 0.07, 6);   // פקעת אחיזה קטנה ומחוספסת (חרוט משושה)
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3331,7 +3331,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
         treadMesh.castShadow = true;
-        smoothTire.add(treadMesh);   // שיני האחיזה חזרו (רק בתותח האפור)
+        // (הפקעות הבולטות הוחלפו בדוגמה על הצמיג עצמו)
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
             const hz = hs * (TIRE_MINOR_R * 1.2 + 0.012);
@@ -4372,7 +4372,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const lowerBody = [side * 0.66, 1.35 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
             const upperHub  = [hx - side * 0.72, MK2_WHEEL_Y + 0.82, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
-            const lowerEnd  = [hx - side * 0.40, MK2_WHEEL_Y + 0.45, zp];   // הזרוע התחתונה נחה על צד הלוח, לא על מרכז הגלגל
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
@@ -4383,19 +4382,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.44 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
-            mk2Link(lowerBody, sgn > 0 ? lowerEnd : lowerHub, sgn > 0 ? 0.34 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.34 : 0.40);
-            if (sgn < 0) mk2Link(upperHub, lowerHub, 0.36, 0.10, nvSteel, false, false, 0.44);   // לוח הברך (רק בצד האחורי; בקדמי הלוח המשולש מחליף אותו)
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.52 : 0.38, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
+            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.46 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.56 : 0.40);
+            mk2Link(upperHub, lowerHub, sgn > 0 ? 0.50 : 0.36, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, false, false, sgn > 0 ? 0.64 : 0.44);   // לוח הברך: מהמפרק אל הרכזת
 
-            // לוחית השורש: חיבור דק וצר בין שני הברגים בתחילת הזרוע (כמו במטרה)
+            // לוחית השורש: ברזל עבה ורחב בין שני הברגים בתחילת הזרוע (כמו במטרה)
             mk2Link([upperBody[0], upperBody[1], upperBody[2] + sgn * 0.05], [lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.05],
-                sgn > 0 ? 0.24 : 0.20, 0.08, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.26 : 0.22);
+                sgn > 0 ? 0.50 : 0.36, 0.12, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.56 : 0.40);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
             const gShape = new THREE.Shape();
             {
-                const KX = -side * 0.72, KY = 0.82, rH = 0.40, rK = 0.21;
+                const KX = -side * 0.72, KY = 0.82, rH = 0.34, rK = 0.19;
                 const Lk = Math.hypot(KX, KY), ang = Math.atan2(KY, KX), beta = Math.acos((rH - rK) / Lk);
                 gShape.moveTo(rH * Math.cos(ang + beta), rH * Math.sin(ang + beta));
                 gShape.lineTo(KX + rK * Math.cos(ang + beta), KY + rK * Math.sin(ang + beta));
@@ -4430,8 +4429,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
-            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.115, true);
-            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.115, true);
+            mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.13, true);
+            mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.13, true);
             mk2Boss(upperHub[0], upperHub[1], zfU, 0.10, false);
             mk2Boss(hx, MK2_WHEEL_Y, zf, 0.13, false);
 
