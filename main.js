@@ -3258,22 +3258,29 @@ window.addEventListener('DOMContentLoaded', () => {
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.62, metalness: 0.0 });
-    const MK2_TREAD_N = 22;            // פקעות בכל שורה
-    const MK2_TREAD_ROWS = [-0.18, 0.0, 0.18];   // שלוש שורות לרוחב הצמיג, מתחלפות
-    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 96);
+    const MK2_TREAD_N = 18;            // פקעות בכל שורה
+    const MK2_TREAD_ROWS = [-0.20, 0.0, 0.20];   // שלוש שורות לרוחב הצמיג, מתחלפות
+    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 36, 96);
     {
         const pos = nvTireGeo.attributes.position;
         const col = new Float32Array(pos.count * 3);
         const TREAD_BLOCKS = 26;
         for (let ci = 0; ci < pos.count; ci++) {
             let px = pos.getX(ci), py = pos.getY(ci);
-            const pz = pos.getZ(ci);
+            let pz = pos.getZ(ci);
+            {   // חתך סופר-אליפסה: צמיג מנופח ובעל נפח (כתפיים מלאות, כתר רחב ושטוח יותר)
+                const r0 = Math.hypot(px, py);
+                const c0 = (r0 - TIRE_MAJOR_R) / TIRE_MINOR_R, s0 = pz / TIRE_MINOR_R;
+                const kk = 1 / Math.pow(Math.pow(Math.abs(c0), 2.5) + Math.pow(Math.abs(s0), 2.5), 0.4);
+                const r1 = TIRE_MAJOR_R + TIRE_MINOR_R * c0 * kk;
+                px *= r1 / r0; py *= r1 / r0; pz = TIRE_MINOR_R * s0 * kk;
+            }
             const ringR = Math.hypot(px, py);
             const cosT = (ringR - TIRE_MAJOR_R) / TIRE_MINOR_R;                 // 1 = כתר (חיצוני), -1 = פנים
             const crown = Math.min(Math.max((cosT + 0.15) / 1.15, 0), 1);
             const side = Math.abs(pz) / TIRE_MINOR_R;                             // 1 = דופן
             let shade = Math.max(0.38 + 0.70 * Math.pow(crown, 0.9) - 0.10 * side, 0.20);
-            shade += 0.40 * Math.exp(-Math.pow((cosT - 0.05) / 0.30, 2));                       // הכתף המעוגלת תופסת אור
+            shade += 0.55 * Math.exp(-Math.pow((cosT - 0.05) / 0.30, 2));                       // הכתף המעוגלת תופסת אור
             if (cosT < -0.40) shade *= 0.50 + 0.50 * Math.min(Math.max((cosT + 1.0) / 0.6, 0), 1);   // כהה ושקוע ליד החישוק
 
             // אזור הדוגמה: רק על הכתר. בלוקים מתחלפים בין שורת מרכז לשורות הצד
@@ -3292,9 +3299,10 @@ window.addEventListener('DOMContentLoaded', () => {
             col[ci * 3] = 0.095 * shade * jit; col[ci * 3 + 1] = 0.085 * shade * jit; col[ci * 3 + 2] = 0.075 * shade * jit;
         }
         pos.needsUpdate = true;
+        nvTireGeo.computeVertexNormals();
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
-    const mk2TreadGeo = taperedBox(0.17, 0.10, 0.12, 'y', 0.80);   // שן אחיזה בולטת (בלוק מחורץ)
+    const mk2TreadGeo = taperedBox(0.22, 0.14, 0.17, 'y', 0.78);   // שן אחיזה בולטת (בלוק מחורץ)
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3314,20 +3322,25 @@ window.addEventListener('DOMContentLoaded', () => {
         const smoothTire = new THREE.Group();
         smoothTire.visible = false;
         const smoothTorus = new THREE.Mesh(nvTireGeo, nvTireMat);
-        smoothTorus.scale.z = 1.45;
+        smoothTorus.scale.z = 1.6;
         smoothTorus.castShadow = true;
         smoothTorus.receiveShadow = true;
         smoothTire.add(smoothTorus);
+        const TIRE_W = 1.6;
         const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTreadMat, MK2_TREAD_N * MK2_TREAD_ROWS.length);
         const treadDummy = new THREE.Object3D();
+        treadDummy.rotation.order = 'ZXY';
         let treadIdx = 0;
         MK2_TREAD_ROWS.forEach((rz, ri) => {
-            // רדיוס פני הצמיג בגובה הזה לרוחב (הצמיג מעוגל, בקצוות הוא קטן יותר)
-            const surfR = TIRE_MAJOR_R + Math.sqrt(Math.max(TIRE_MINOR_R * TIRE_MINOR_R - (rz / 1.45) * (rz / 1.45), 0));
+            // רדיוס פני הצמיג בגובה הזה לרוחב, ונטיית הפני (שיני הכתף נוטות החוצה ועוטפות את הכתף)
+            const sN = Math.min(Math.abs(rz) / (TIRE_W * TIRE_MINOR_R), 0.97);
+            const cN = Math.pow(1 - Math.pow(sN, 2.5), 0.4);
+            const surfR = TIRE_MAJOR_R + TIRE_MINOR_R * cN;
+            const tilt = Math.atan(Math.pow(sN / Math.max(cN, 0.05), 1.5) / TIRE_W) * Math.sign(rz);
             for (let ti = 0; ti < MK2_TREAD_N; ti++) {
                 const ta = (ti + (ri % 2 ? 0.5 : 0)) * (Math.PI * 2 / MK2_TREAD_N);
-                treadDummy.position.set(Math.cos(ta) * (surfR + 0.002), Math.sin(ta) * (surfR + 0.002), rz);
-                treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
+                treadDummy.position.set(Math.cos(ta) * (surfR + 0.012), Math.sin(ta) * (surfR + 0.012), rz);
+                treadDummy.rotation.set(tilt, 0, ta - Math.PI / 2);
                 treadDummy.updateMatrix();
                 treadMesh.setMatrixAt(treadIdx++, treadDummy.matrix);
             }
@@ -3335,11 +3348,32 @@ window.addEventListener('DOMContentLoaded', () => {
         treadMesh.castShadow = true;
         treadMesh.frustumCulled = false;
         smoothTire.add(treadMesh);
+        // בלוקים מורמים על שתי דפנות הצמיג (מה שרואים מהמצלמה)
+        {
+            const sideGeoP = taperedBox(0.12, 0.13, 0.06, 'z', 0.72), sideGeoN = taperedBox(0.12, 0.13, 0.06, '-z', 0.72);
+            const Rb = 0.44;
+            const cb = (Rb - TIRE_MAJOR_R) / TIRE_MINOR_R;
+            const zFace = Math.pow(1 - Math.pow(Math.abs(cb), 2.5), 0.4) * TIRE_MINOR_R * TIRE_W;
+            [1, -1].forEach(hs => {
+                const sideMesh = new THREE.InstancedMesh(hs > 0 ? sideGeoP : sideGeoN, nvTreadMat, MK2_TREAD_N);
+                const sd = new THREE.Object3D();
+                for (let bi = 0; bi < MK2_TREAD_N; bi++) {
+                    const ba = (bi + 0.25) * (Math.PI * 2 / MK2_TREAD_N);
+                    sd.position.set(Math.cos(ba) * Rb, Math.sin(ba) * Rb, hs * (zFace - 0.012));
+                    sd.rotation.set(0, 0, ba - Math.PI / 2);
+                    sd.updateMatrix();
+                    sideMesh.setMatrixAt(bi, sd.matrix);
+                }
+                sideMesh.castShadow = true;
+                sideMesh.frustumCulled = false;
+                smoothTire.add(sideMesh);
+            });
+        }
         // (הפקעות הבולטות הוחלפו בדוגמה על הצמיג עצמו)
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
             const hz = hs * 0.19;   // החישוק שקוע בתוך הצמיג
-            [[0.30, 0.262], [0.42, 0.258]].forEach(rr => {
+            [[0.30, 0.322], [0.42, 0.318]].forEach(rr => {
                 const ring = new THREE.Mesh(new THREE.TorusGeometry(rr[0], 0.012, 8, 40), nvRingMat);
                 ring.position.z = hs * rr[1];
                 smoothTire.add(ring);
