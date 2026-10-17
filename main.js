@@ -5627,14 +5627,23 @@ window.addEventListener('DOMContentLoaded', () => {
     let dragStartTargetX = 0;
     let lastPointerX = 0;
 
+    // רגישות תנועת התותח (נשמרת בין משחקים). 1.0 = ברירת מחדל. נשלט מתפריט ההגדרות במסך העצירה.
+    const MOVE_SENS_KEY = 'bb3d_move_sens';
+    const MOVE_SENS_MIN = 0.5;
+    const MOVE_SENS_MAX = 2.0;
+    let moveSensMult = (() => {
+        const v = parseFloat(localStorage.getItem(MOVE_SENS_KEY));
+        return Number.isFinite(v) ? Math.min(MOVE_SENS_MAX, Math.max(MOVE_SENS_MIN, v)) : 1;
+    })();
+
     const TOUCH_DEADZONE = 2.5;
     const TOUCH_SENSITIVITY = 0.016;
     const DESKTOP_SENSITIVITY = 0.020;
 
     function getPointerSensitivity() {
-        return window.innerWidth <= 768
+        return (window.innerWidth <= 768
             ? TOUCH_SENSITIVITY
-            : DESKTOP_SENSITIVITY;
+            : DESKTOP_SENSITIVITY) * moveSensMult;
     }
 
     function moveCannonByPointer(clientX) {
@@ -5816,7 +5825,7 @@ window.addEventListener('DOMContentLoaded', () => {
             border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(20,12,22,.55);color:#fff;font-size:18px;
             display:none;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
         .pz-overlay{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(8,4,10,.7);
-            font-family:Rubik,system-ui,Arial,sans-serif;direction:rtl;color:#fff}
+            font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr;color:#fff}
         .pz-overlay.on{display:flex}
         .pz-box{width:min(86vw,340px);background:linear-gradient(#2c1a30,#150c1a);border:2px solid rgba(255,214,140,.5);
             border-radius:22px;padding:22px 18px;text-align:center}
@@ -5825,6 +5834,16 @@ window.addEventListener('DOMContentLoaded', () => {
         .pz-act{display:block;width:100%;margin-top:10px;padding:13px;border:0;border-radius:12px;font:inherit;font-weight:800;font-size:18px;
             color:#3a1d05;background:linear-gradient(#ffe27a,#f0a028)}
         .pz-act.alt{background:rgba(255,255,255,.16);color:#fff}
+        .pz-overlay.pz-settings{z-index:75}
+        .pz-set-row{margin:14px 0 6px;text-align:left}
+        .pz-set-head{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700;margin-bottom:12px}
+        .pz-set-head b{color:#ffd24a;font-size:17px;font-variant-numeric:tabular-nums}
+        .pz-range{-webkit-appearance:none;appearance:none;display:block;width:100%;height:8px;border-radius:999px;outline:none;margin:0;
+            background:linear-gradient(90deg,#f0a028,#ffe27a);touch-action:pan-x}
+        .pz-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:30px;height:30px;border-radius:50%;
+            background:#fff;border:3px solid #f0a028;box-shadow:0 2px 8px rgba(0,0,0,.55)}
+        .pz-range::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #f0a028;box-shadow:0 2px 8px rgba(0,0,0,.55)}
+        .pz-set-ends{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.6);margin-top:8px}
     `;
     document.head.appendChild(pauseStyle);
 
@@ -5841,9 +5860,43 @@ window.addEventListener('DOMContentLoaded', () => {
             <p>Score: <b id="pz-score">0</b></p>
             <button class="pz-act" data-act="resume">▶ Resume</button>
             <button class="pz-act alt" data-act="restart">↻ Restart</button>
+            <button class="pz-act alt" data-act="settings">⚙ Settings</button>
             <button class="pz-act alt" data-act="menu">🏠 Menu</button>
         </div>`;
     document.body.appendChild(pauseOverlay);
+
+    // ---- הגדרות (נפתח ממסך העצירה): רגישות תנועת התותח ----
+    const settingsOverlay = document.createElement('div');
+    settingsOverlay.className = 'pz-overlay pz-settings';
+    settingsOverlay.innerHTML = `
+        <div class="pz-box">
+            <h2>⚙ Settings</h2>
+            <div class="pz-set-row">
+                <div class="pz-set-head"><span>Cannon sensitivity</span><b id="pz-sens-val">1.00x</b></div>
+                <input id="pz-sens" class="pz-range" type="range" min="${MOVE_SENS_MIN}" max="${MOVE_SENS_MAX}" step="0.05" value="1">
+                <div class="pz-set-ends"><span>Slower</span><span>Faster</span></div>
+            </div>
+            <button class="pz-act alt" data-act="sens-reset">Reset</button>
+            <button class="pz-act" data-act="settings-back">← Back</button>
+        </div>`;
+    document.body.appendChild(settingsOverlay);
+
+    const sensSlider = settingsOverlay.querySelector('#pz-sens');
+    const sensValueEl = settingsOverlay.querySelector('#pz-sens-val');
+    function applyMoveSens(v, save) {
+        moveSensMult = Math.min(MOVE_SENS_MAX, Math.max(MOVE_SENS_MIN, v));
+        sensSlider.value = moveSensMult;
+        sensValueEl.textContent = moveSensMult.toFixed(2) + 'x';
+        if (save) localStorage.setItem(MOVE_SENS_KEY, moveSensMult);
+    }
+    applyMoveSens(moveSensMult, false);
+    sensSlider.addEventListener('input', () => applyMoveSens(parseFloat(sensSlider.value), true));
+    settingsOverlay.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        if (b.dataset.act === 'settings-back') settingsOverlay.classList.remove('on');
+        else if (b.dataset.act === 'sens-reset') applyMoveSens(1, true);
+    });
 
     function setPaused(p) {
         if (!isGameStarted || isGameOver) return;
@@ -5932,6 +5985,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (act === 'resume') setPaused(false);
         else if (act === 'restart' || act === 'again') restartRun();
         else if (act === 'menu') returnToMenu();
+        else if (act === 'settings') settingsOverlay.classList.add('on');
     }
 
     pauseOverlay.addEventListener('click', handleOverlayAction);

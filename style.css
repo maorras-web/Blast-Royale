@@ -749,3 +749,190 @@ canvas {
     transform: translateY(28px);
     pointer-events: none;
 }
+
+/* ==========================================
+   מסך פתיחה - מראה מעודן ויוקרתי (LTR)
+   נוסף בסוף הקובץ כדי לגבור על הכללים הקודמים.
+   ========================================== */
+#splash-screen .splash-sheet {
+    text-align: left;
+    border-radius: 26px;
+    background:
+        linear-gradient(180deg, rgba(255, 214, 120, 0.08) 0%, rgba(255, 214, 120, 0) 26%),
+        linear-gradient(180deg, rgba(36, 27, 18, 0.93), rgba(17, 12, 8, 0.95));
+    border: 1px solid rgba(250, 204, 21, 0.30);
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 236, 170, 0.24),
+        inset 0 0 44px rgba(250, 204, 21, 0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+/* ---- Coins / Best ---- */
+#splash-screen .head-stat {
+    height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+#splash-screen .head-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b9c1cd;
+}
+#splash-screen .head-stat strong {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, #fff4b8, #f5b301);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* ---- כותרות אזורים ---- */
+#splash-screen .shop-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 var(--s1);
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ead9a6;
+}
+#splash-screen .shop-section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(250, 204, 21, 0.45), rgba(250, 204, 21, 0));
+}
+
+/* ---- כרטיסי תותח / מפה ---- */
+#splash-screen .map-card {
+    text-align: left;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.28);
+    column-gap: 10px;
+    row-gap: 4px;
+}
+#splash-screen .map-card.owned:not(.selected) {
+    border-color: rgba(250, 204, 21, 0.30);
+}
+#splash-screen .map-card.selected {
+    border-color: rgba(74, 222, 128, 0.70);
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.22), rgba(34, 197, 94, 0.07));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.13),
+        0 0 0 1px rgba(74, 222, 128, 0.16),
+        0 0 20px rgba(34, 197, 94, 0.22);
+}
+#splash-screen .map-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    font-size: 22px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+#splash-screen .map-info strong {
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: #fff7e0;
+}
+#splash-screen .map-info small {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #a3adbb;
+}
+/* תווית פעולה בצורת כמוסה */
+#splash-screen .map-action {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fde047;
+    background: rgba(250, 204, 21, 0.13);
+    border: 1px solid rgba(250, 204, 21, 0.36);
+}
+#splash-screen .map-card.selected .map-action {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.14);
+    border-color: rgba(74, 222, 128, 0.42);
+}
+#splash-screen .maps-grid .map-action {
+    justify-self: end;
+}
+
+/* ---- שדרוגים ---- */
+#splash-screen .upgrade-item {
+    text-align: left;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+#splash-screen .upg-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff7e0;
+}
+#splash-screen .upg-lvl {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.09);
+}
+#splash-screen .btn-upg {
+    border-radius: 12px;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    color: #2b1a02;
+    background: linear-gradient(180deg, #ffd84d, #e0a100);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 4px 12px rgba(224, 161, 0, 0.28);
+}
+
+/* ---- Start ---- */
+#splash-screen #start-btn {
+    min-height: 54px;
+    border-radius: 18px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, #38d871, #16a34a 62%, #118a3d);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        0 8px 24px rgba(34, 197, 94, 0.36);
+}
+
+@media (max-height: 760px) {
+    #splash-screen .head-stat { height: 36px; }
+    #splash-screen .map-icon { width: 36px; height: 36px; font-size: 19px; }
+    #splash-screen #start-btn { min-height: 50px; font-size: 17px; }
+}
