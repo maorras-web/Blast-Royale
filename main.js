@@ -38,6 +38,23 @@ window.addEventListener('DOMContentLoaded', () => {
     // זו הזזה ויזואלית בלבד של התמונה — לא משנה מיקומים, התנגשויות או ירי.
     const CAM_SHIFT_DOWN = 0.17;
 
+    // שדה ראייה: הרוחב הנראה נקבע לפי יחס מסך ייחוס (האייפון בדפדפן, ~0.59).
+    // במסכים צרים יותר מזה ה-FOV האנכי גדל כדי שלא ייחתך הצד של העולם.
+    const REF_ASPECT = 0.59;
+    const BASE_VFOV = 58;
+    const MAX_VFOV = 86;
+    const REF_CSS_WIDTH = 390;
+    // איפה (באחוז מגובה המסך, מלמעלה) נמצא התותח לפני ההזזה, בשדה ראייה נתון.
+    function cannonScreenFrac(vfovDeg) {
+        const tmp = new THREE.PerspectiveCamera(vfovDeg, 0.5, 0.1, 1000);
+        tmp.position.set(0, CAM_BASE_Y, CAM_BASE_Z);
+        tmp.lookAt(0, 2.50, -8.8);
+        tmp.updateMatrixWorld(true);
+        tmp.updateProjectionMatrix();
+        const p = new THREE.Vector3(0, 1.0, 0).project(tmp);
+        return 0.5 - p.y / 2;
+    }
+
     // ==========================================
     // MOBILE ONLY
     // ==========================================
@@ -46,14 +63,28 @@ window.addEventListener('DOMContentLoaded', () => {
         const width = window.innerWidth;
         const height = Math.max(window.innerHeight, 1);
 
-        camera.aspect = width / height;
+        const aspect = width / height;
+        const narrow = aspect < REF_ASPECT;
+
+        // שדה ראייה אופקי קבוע בכל המכשירים: במסך צר ויותר גבוה (אנדרואיד במסך מלא)
+        // מגדילים את שדה הראייה האנכי כך שהרוחב הנראה זהה לזה של האייפון (REF_ASPECT).
+        camera.fov = narrow
+            ? Math.min(MAX_VFOV, 2 * Math.atan(Math.tan(BASE_VFOV * Math.PI / 360) * REF_ASPECT / aspect) * 180 / Math.PI)
+            : BASE_VFOV;
+        camera.aspect = aspect;
         camera.position.set(0, CAM_BASE_Y, CAM_BASE_Z);
         camera.lookAt(0, 2.50, -8.8);
 
-        // שומרים על טווח תנועה מתאים למסך טלפון.
-        screenLimitX = Math.max(4.25, Math.min(4.9, width / 78));
+        // טווח התנועה זהה לזה שבאייפון גם במסך צר.
+        screenLimitX = Math.max(4.25, Math.min(4.9, Math.max(width, narrow ? REF_CSS_WIDTH : 0) / 78));
 
-        camera.setViewOffset(width, height, 0, -height * CAM_SHIFT_DOWN, width, height);
+        // שומרים על אותו מקום של התותח במסך (אותו אחוז גובה) למרות שדה הראייה הגדול יותר.
+        let shiftDown = CAM_SHIFT_DOWN;
+        if (narrow) {
+            shiftDown = (cannonScreenFrac(BASE_VFOV) + CAM_SHIFT_DOWN) - cannonScreenFrac(camera.fov);
+        }
+
+        camera.setViewOffset(width, height, 0, -height * shiftDown, width, height);
         camera.updateProjectionMatrix();
 
         renderer.setSize(
