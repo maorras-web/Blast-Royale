@@ -3258,8 +3258,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.62, metalness: 0.0 });
-    const MK2_TREAD_N = 40;            // פקעות בכל שורה
-    const MK2_TREAD_ROWS = [-0.13, 0.0, 0.13];   // שלוש שורות לרוחב הצמיג, מתחלפות
+    const MK2_TREAD_N = 22;            // פקעות בכל שורה
+    const MK2_TREAD_ROWS = [-0.15, 0.0, 0.15];   // שלוש שורות לרוחב הצמיג, מתחלפות
     const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 96);
     {
         const pos = nvTireGeo.attributes.position;
@@ -3292,7 +3292,7 @@ window.addEventListener('DOMContentLoaded', () => {
         pos.needsUpdate = true;
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
-    const mk2TreadGeo = new THREE.CylinderGeometry(0.036, 0.056, 0.07, 6);   // פקעת אחיזה קטנה ומחוספסת (חרוט משושה)
+    const mk2TreadGeo = taperedBox(0.17, 0.10, 0.12, 'y', 0.80);   // שן אחיזה בולטת (בלוק מחורץ)
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3324,13 +3324,15 @@ window.addEventListener('DOMContentLoaded', () => {
             const surfR = TIRE_MAJOR_R + Math.sqrt(Math.max(TIRE_MINOR_R * TIRE_MINOR_R - (rz / 1.2) * (rz / 1.2), 0));
             for (let ti = 0; ti < MK2_TREAD_N; ti++) {
                 const ta = (ti + (ri % 2 ? 0.5 : 0)) * (Math.PI * 2 / MK2_TREAD_N);
-                treadDummy.position.set(Math.cos(ta) * (surfR + 0.004), Math.sin(ta) * (surfR + 0.004), rz);
+                treadDummy.position.set(Math.cos(ta) * (surfR + 0.002), Math.sin(ta) * (surfR + 0.002), rz);
                 treadDummy.rotation.set(0, 0, ta - Math.PI / 2);
                 treadDummy.updateMatrix();
                 treadMesh.setMatrixAt(treadIdx++, treadDummy.matrix);
             }
         });
         treadMesh.castShadow = true;
+        treadMesh.frustumCulled = false;
+        smoothTire.add(treadMesh);
         // (הפקעות הבולטות הוחלפו בדוגמה על הצמיג עצמו)
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
@@ -4372,6 +4374,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const lowerBody = [side * 0.66, 1.35 + MK2_BODY_RAISE, sgn * 0.985];   // שורש תחתון: תחתית הפנים הקדמיות, קרוב למרכז
             const upperHub  = [hx - side * 0.72, MK2_WHEEL_Y + 0.82, zU];
             const lowerHub  = [hx, MK2_WHEEL_Y, zp];
+            const lowerEnd  = [hx - side * 1.05, MK2_WHEEL_Y + 0.30, zp];   // הזרוע התחתונה נגמרת על הפינה של לוחית הטריז
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
             [upperBody, lowerBody].forEach(P => {
@@ -4382,13 +4385,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
             // צלע מורמת ומעט כהה במרכז כל זרוע - ילד של הזרוע, כך שנמתחת ונעה איתה
-            mk2Link(upperBody, upperHub, sgn > 0 ? 0.52 : 0.38, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false);
-            mk2Link(lowerBody, lowerHub, sgn > 0 ? 0.46 : 0.34, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.56 : 0.40);
-            mk2Link(upperHub, lowerHub, sgn > 0 ? 0.50 : 0.36, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, false, false, sgn > 0 ? 0.64 : 0.44);   // לוח הברך: מהמפרק אל הרכזת
+            mk2Link(upperBody, upperHub, sgn > 0 ? 0.38 : 0.30, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.50 : 0.38);
+            mk2Link(lowerBody, lowerEnd, sgn > 0 ? 0.34 : 0.28, 0.10, sgn > 0 ? mk2ArmMat : nvSteel, true, false, sgn > 0 ? 0.46 : 0.36);
+            // (לוח הברך הוא עכשיו לוחית הטריז למטה)
 
             // לוחית השורש: ברזל עבה ורחב בין שני הברגים בתחילת הזרוע (כמו במטרה)
             mk2Link([upperBody[0], upperBody[1], upperBody[2] + sgn * 0.05], [lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.05],
-                sgn > 0 ? 0.50 : 0.36, 0.12, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.56 : 0.40);
+                sgn > 0 ? 0.30 : 0.24, 0.07, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.34 : 0.26);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
             if (sgn > 0) {
@@ -4411,6 +4414,27 @@ window.addEventListener('DOMContentLoaded', () => {
             gusset.receiveShadow = true;
             cannonGroup.add(gusset);
             mk2OnlyParts.push(gusset);
+            {
+                const pts = [[-0.10 * side, -0.28], [-1.05 * side, 0.22], [-0.60 * side, 0.64]];
+                const wShape = new THREE.Shape();
+                for (let i = 0; i < 3; i++) {
+                    const prev = pts[(i + 2) % 3], cur = pts[i], next = pts[(i + 1) % 3];
+                    const dp = Math.hypot(prev[0] - cur[0], prev[1] - cur[1]), dn = Math.hypot(next[0] - cur[0], next[1] - cur[1]);
+                    const d = 0.16;
+                    const p1 = [cur[0] + (prev[0] - cur[0]) / dp * d, cur[1] + (prev[1] - cur[1]) / dp * d];
+                    const p2 = [cur[0] + (next[0] - cur[0]) / dn * d, cur[1] + (next[1] - cur[1]) / dn * d];
+                    if (i === 0) wShape.moveTo(p1[0], p1[1]); else wShape.lineTo(p1[0], p1[1]);
+                    wShape.quadraticCurveTo(cur[0], cur[1], p2[0], p2[1]);
+                }
+                wShape.closePath();
+                const wGeo = new THREE.ExtrudeGeometry(wShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.03, bevelSegments: 2, steps: 1 });
+                wGeo.translate(0, 0, -0.05);
+                const wedge = new THREE.Mesh(wGeo, mk2PlateMat);
+                wedge.castShadow = true;
+                wedge.receiveShadow = true;
+                gusset.add(wedge);
+                mk2Boss(lowerEnd[0], lowerEnd[1], zp + sgn * 0.12, 0.09, false);
+            }
             [[-0.72 * 0.5 / 0.8, 0.82 * 0.5 / 0.8], [0.14 / 0.8, -0.20 / 0.8]].forEach(bp => {
                 const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                 bolt.rotation.x = Math.PI / 2;
