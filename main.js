@@ -4757,6 +4757,58 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     const forestMapButtons = mapButtons.filter(btn => MAPS[btn.dataset.mapId]);
 
+    // ==========================================
+    // נשקים (נפרד מהתותח): Standard / Rockets / Lightning / Laser
+    // המחירים כאן - אפשר לשנות. הנשק שנבחר נשמר בין משחקים.
+    // ==========================================
+    const WEAPONS = {
+        standard:  { name: 'Standard',  price: 0 },
+        rocket:    { name: 'Rockets',   price: 400 },
+        lightning: { name: 'Lightning', price: 700 },
+        laser:     { name: 'Laser',     price: 1000 }
+    };
+    let ownedWeapons = ['standard'];
+    try {
+        const savedWeapons = JSON.parse(localStorage.getItem('bb3d_weapons_owned') || '[]');
+        if (Array.isArray(savedWeapons)) savedWeapons.forEach(id => { if (WEAPONS[id] && !ownedWeapons.includes(id)) ownedWeapons.push(id); });
+    } catch (e) { /* ignore */ }
+    let activeWeapon = localStorage.getItem('bb3d_active_weapon') || 'standard';
+    if (!WEAPONS[activeWeapon] || !ownedWeapons.includes(activeWeapon)) activeWeapon = 'standard';
+    const weaponButtons = Array.from(document.querySelectorAll('[data-weapon-id]'));
+
+    function updateWeaponTiles() {
+        weaponButtons.forEach(btn => {
+            const id = btn.dataset.weaponId;
+            const w = WEAPONS[id];
+            if (!w) return;
+            const owned = ownedWeapons.includes(id);
+            const selected = activeWeapon === id;
+            btn.classList.toggle('selected', selected);
+            btn.classList.toggle('owned', owned);
+            btn.disabled = !owned && coins < w.price;
+            const action = btn.querySelector('.map-action');
+            if (action) action.innerText = selected ? 'Selected' : owned ? 'Select' : `${w.price} C`;
+        });
+    }
+
+    weaponButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.weaponId;
+            const w = WEAPONS[id];
+            if (!w) return;
+            if (!ownedWeapons.includes(id)) {
+                if (coins < w.price) return;
+                coins -= w.price;
+                ownedWeapons.push(id);
+                localStorage.setItem('bb3d_coins', coins);
+                localStorage.setItem('bb3d_weapons_owned', JSON.stringify(ownedWeapons));
+            }
+            activeWeapon = id;
+            localStorage.setItem('bb3d_active_weapon', activeWeapon);
+            updateUI();
+        });
+    });
+
     // מצב כרטיס תותח: נבחר / בחר / מחיר (נעול אם אין מספיק מטבעות).
     function renderCannonTile(btn, { selected, owned, label, locked }) {
         if (!btn) return;
@@ -4809,6 +4861,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (el) el.innerText = `Lvl ${fireRateLvl}`;
         }
         updateCannonTiles();
+        updateWeaponTiles();
 
         forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
@@ -4948,9 +5001,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 8. יצירת סלעים, כדורים ומטבעות
     // ==========================================
-    function spawnBullet(x, y, z) {
+    function spawnBullet(x, y, z, weapon) {
         const bullet = new THREE.Group();
-        const blue = false;   // קליעים זהובים כמו בתמונת המטרה
+        const blue = weapon === 'lightning';   // קליעים זהובים כמו בתמונת המטרה; ברק = כחול-לבן
         const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
 
         const core = new THREE.Mesh(
@@ -4975,9 +5028,299 @@ window.addEventListener('DOMContentLoaded', () => {
 
         bullet.add(core, shell, halo, trail);
         bullet.position.set(x, y, z);
-        bullet.userData = { core, trail };
+        bullet.userData = { core, trail, weapon: weapon || null };
         scene.add(bullet);
         bullets.push(bullet);
+    }
+
+
+    // ==========================================
+    // נשקים מיוחדים: רקטות / ברק / לייזר
+    // ==========================================
+    const ROCKET_DAMAGE = 2.2;        // x כוח ירי, במרכז הפיצוץ
+    const ROCKET_RADIUS = 2.3;        // רדיוס הפיצוץ
+    const ROCKET_SPEED = 0.30;        // איטית מקליע רגיל (0.42)
+    const ROCKET_RATE = 1.8;          // ירי איטי יותר (רגיל: 4 לשנייה)
+    const LIGHTNING_DAMAGE = 1.2;     // x כוח ירי בפגיעה הראשונה
+    const LIGHTNING_JUMPS = 3;        // כמה קפיצות נוספות בין סלעים
+    const LIGHTNING_RANGE = 4.8;      // מרחק מקסימלי לקפיצה
+    const LIGHTNING_FALLOFF = 0.7;    // כל קפיצה חלשה יותר
+    const LASER_DAMAGE = 0.5;         // x כוח ירי לכל קרן בכל פעימה
+    const LASER_TICKS_PER_SEC = 6;    // פעימות לשנייה (גדל עם קצב האש)
+    const LASER_TOP_Y = 17;
+
+    const weaponFx = [];
+    const pendingWeaponHits = [];
+    const laserBeams = [];
+    let lastLaserTick = 0;
+
+    // פגיעה בסלע שלא דרך לולאת הכדורים (פיצוץ / ברק / לייזר).
+    function damageRock(r, dmg, withBurst) {
+        const idx = rocks.indexOf(r);
+        if (idx < 0) return;
+        const data = r.userData;
+        const amount = Math.max(1, Math.round(dmg));
+        data.hp -= amount;
+        data.flash = 1;
+        score += amount;
+        if (withBurst) spawnImpactBurst(r.position.x, r.position.y, r.position.z);
+
+        if (data.hp <= 0) {
+            if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
+            if (data.size > 0.9) {
+                const childHp = Math.max(1, Math.floor(data.maxHp / 2));
+                spawnRock(r.position.x - 0.35, r.position.y, childHp, data.size * 0.7, -0.05 - Math.random() * 0.03, 0.05 + Math.random() * 0.08);
+                spawnRock(r.position.x + 0.35, r.position.y, childHp, data.size * 0.7, 0.05 + Math.random() * 0.03, 0.05 + Math.random() * 0.08);
+            }
+            removeRock(r, idx);
+            updateUI();
+        } else {
+            updateRockLabel(r);
+        }
+    }
+
+    function spawnRocket(x, y, z) {
+        const g = new THREE.Group();
+        const bodyMat = new THREE.MeshBasicMaterial({ color: 0xdde1e8 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.12, 0.56, 10), bodyMat);
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xff4a2a }));
+        nose.position.y = 0.40;
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.07, 10), new THREE.MeshBasicMaterial({ color: 0xff4a2a }));
+        band.position.y = 0.08;
+        const flame = new THREE.Mesh(
+            new THREE.ConeGeometry(0.13, 0.7, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffa020, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
+        );
+        flame.rotation.x = Math.PI;
+        flame.position.y = -0.58;
+        g.add(body, nose, band, flame);
+        g.position.set(x, y, z);
+        g.userData = { weapon: 'rocket', speed: ROCKET_SPEED, flame };
+        scene.add(g);
+        bullets.push(g);
+    }
+
+    // סרט דק שפונה למצלמה (קו ברק): נקודות [x, y] -> רצועה אחת.
+    function makeRibbon(pts, width, color, opacity) {
+        const n = pts.length;
+        const pos = new Float32Array(n * 2 * 3);
+        const idx = [];
+        for (let i = 0; i < n; i++) {
+            const a = pts[Math.max(0, i - 1)];
+            const b = pts[Math.min(n - 1, i + 1)];
+            let dx = b[0] - a[0], dy = b[1] - a[1];
+            const l = Math.hypot(dx, dy) || 1;
+            dx /= l; dy /= l;
+            const nx = -dy, ny = dx;
+            const hw = width * 0.5 * (0.45 + 0.55 * Math.sin(Math.PI * i / (n - 1)));
+            pos.set([pts[i][0] + nx * hw, pts[i][1] + ny * hw, 0.4, pts[i][0] - nx * hw, pts[i][1] - ny * hw, 0.4], i * 6);
+            if (i < n - 1) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+            color, transparent: true, opacity, depthWrite: false, depthTest: false,
+            blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+        }));
+        mesh.renderOrder = 20;
+        mesh.userData.baseOpacity = opacity;
+        return mesh;
+    }
+
+    function spawnBolt(x1, y1, x2, y2) {
+        const segs = 7;
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const px = -dy / len, py = dx / len;
+        const pts = [];
+        for (let i = 0; i <= segs; i++) {
+            const t = i / segs;
+            const j = (i === 0 || i === segs) ? 0 : (Math.random() - 0.5) * 0.7;
+            pts.push([x1 + dx * t + px * j, y1 + dy * t + py * j]);
+        }
+        const g = new THREE.Group();
+        g.add(makeRibbon(pts, 0.34, 0x4aa8ff, 0.45));
+        g.add(makeRibbon(pts, 0.09, 0xffffff, 1.0));
+        g.userData = { type: 'bolt', life: 9, maxLife: 9 };
+        scene.add(g);
+        weaponFx.push(g);
+    }
+
+    function spawnBlastFx(x, y) {
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.78, 1.0, 32),
+            new THREE.MeshBasicMaterial({ color: 0xffb050, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
+        );
+        ring.position.set(x, y, 0.5);
+        ring.renderOrder = 20;
+        ring.userData = { type: 'blastRing', life: 16, maxLife: 16, baseOpacity: 0.9 };
+        scene.add(ring);
+        weaponFx.push(ring);
+
+        const ball = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 14, 10),
+            new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.7, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })
+        );
+        ball.position.set(x, y, 0.5);
+        ball.renderOrder = 19;
+        ball.userData = { type: 'blastBall', life: 12, maxLife: 12, baseOpacity: 0.7 };
+        scene.add(ball);
+        weaponFx.push(ball);
+
+        spawnImpactBurst(x, y, 0, 0xffa040);
+        spawnImpactBurst(x, y, 0, 0xffe08a);
+    }
+
+    function disposeWeaponFx(fx) {
+        scene.remove(fx);
+        fx.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) c.material.dispose();
+        });
+    }
+
+    function updateWeaponFx() {
+        for (let i = weaponFx.length - 1; i >= 0; i--) {
+            const fx = weaponFx[i];
+            const d = fx.userData;
+            d.life -= 1;
+            const k = Math.max(0, d.life / d.maxLife);
+            if (d.type === 'bolt') {
+                fx.children.forEach(c => { c.material.opacity = c.userData.baseOpacity * k * (0.7 + 0.3 * Math.random()); });
+            } else if (d.type === 'blastRing') {
+                const prog = 1 - k;
+                fx.scale.setScalar(0.4 + prog * ROCKET_RADIUS * 1.05);
+                fx.material.opacity = d.baseOpacity * k;
+            } else if (d.type === 'blastBall') {
+                const prog = 1 - k;
+                fx.scale.setScalar(0.3 + prog * ROCKET_RADIUS * 0.75);
+                fx.material.opacity = d.baseOpacity * k * k;
+            }
+            if (d.life <= 0) {
+                disposeWeaponFx(fx);
+                weaponFx.splice(i, 1);
+            }
+        }
+    }
+
+    function explodeRocket(x, y) {
+        spawnBlastFx(x, y);
+        playSound('hit');
+        rocks.slice().forEach(r => {
+            const d = Math.hypot(r.position.x - x, r.position.y - y);
+            const reach = ROCKET_RADIUS + r.userData.size * 0.6;
+            if (d < reach) {
+                const falloff = 1 - 0.5 * Math.min(1, d / reach);   // 100% במרכז, 50% בקצה
+                damageRock(r, firePower * ROCKET_DAMAGE * falloff, true);
+            }
+        });
+    }
+
+    function chainLightning(startRock, hitX, hitY) {
+        const visited = new Set();
+        let target = startRock;
+        let prevX = hitX, prevY = hitY;
+        for (let jump = 0; jump <= LIGHTNING_JUMPS; jump++) {
+            if (!target || !rocks.includes(target)) break;
+            visited.add(target);
+            const tx = target.position.x, ty = target.position.y;
+            spawnBolt(prevX, prevY, tx, ty);
+
+            // הסלע הקרוב הבא (לפני שהפגיעה הנוכחית עלולה למחוק את הסלע)
+            let best = null, bestD = LIGHTNING_RANGE;
+            rocks.forEach(o => {
+                if (visited.has(o)) return;
+                const d = Math.hypot(o.position.x - tx, o.position.y - ty);
+                if (d < bestD) { bestD = d; best = o; }
+            });
+
+            damageRock(target, firePower * LIGHTNING_DAMAGE * Math.pow(LIGHTNING_FALLOFF, jump), true);
+            prevX = tx; prevY = ty;
+            target = best;
+        }
+    }
+
+    function processWeaponHits() {
+        if (!pendingWeaponHits.length) return;
+        const hits = pendingWeaponHits.splice(0);
+        let blasts = 0;
+        hits.forEach(h => {
+            if (h.type === 'rocket') {
+                explodeRocket(h.x, h.y);
+                blasts++;
+            } else if (h.type === 'lightning') {
+                chainLightning(h.rock, h.x, h.y);
+            }
+        });
+        if (blasts) cannonRecoil = Math.max(cannonRecoil, 0.03);
+    }
+
+    // ---- לייזר: שתי קרני אור רציפות מהקנים, חודרות דרך כל הסלעים שבקו ----
+    function ensureLaserBeams() {
+        if (laserBeams.length) return;
+        for (let i = 0; i < 2; i++) {
+            const g = new THREE.Group();
+            const mk = (rad, color, op) => {
+                const m = new THREE.Mesh(
+                    new THREE.CylinderGeometry(rad, rad, 1, 10),
+                    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })
+                );
+                m.renderOrder = 18;
+                return m;
+            };
+            const outer = mk(0.36, 0x1f9bff, 0.14);
+            const glow = mk(0.20, 0x5fd3ff, 0.35);
+            const core = mk(0.07, 0xffffff, 0.95);
+            g.add(outer, glow, core);
+            g.userData = { outer, glow, core };
+            g.visible = false;
+            scene.add(g);
+            laserBeams.push(g);
+        }
+    }
+
+    function hideLaser() {
+        laserBeams.forEach(g => { g.visible = false; });
+    }
+
+    function updateLaser(time, xs, y0) {
+        ensureLaserBeams();
+        const len = Math.max(1, LASER_TOP_Y - y0);
+        laserBeams.forEach((g, i) => {
+            g.visible = true;
+            g.position.set(xs[i], y0 + len / 2, 0.4);
+            const flick = 1 + 0.12 * Math.sin(time * 0.045 + i * 1.7);
+            g.userData.outer.scale.set(flick * 1.1, len, flick * 1.1);
+            g.userData.glow.scale.set(flick, len, flick);
+            g.userData.core.scale.set(1, len, 1);
+        });
+
+        const tickMs = 1000 / (LASER_TICKS_PER_SEC * fireRate);
+        if (time - lastLaserTick < tickMs) return;
+        lastLaserTick = time;
+        cannonRecoil = Math.max(cannonRecoil, 0.04);
+
+        let hitAny = false;
+        rocks.slice().forEach(r => {
+            if (r.position.y < y0 - r.userData.size * 0.4) return;
+            xs.forEach(bx => {
+                if (!rocks.includes(r)) return;
+                if (Math.abs(r.position.x - bx) < r.userData.size * 0.85 + 0.1) {
+                    damageRock(r, firePower * LASER_DAMAGE, true);
+                    hitAny = true;
+                }
+            });
+        });
+        if (hitAny) playSound('hit');
+    }
+
+    // ניקוי בתחילת/סוף ריצה
+    function clearWeaponState() {
+        pendingWeaponHits.length = 0;
+        weaponFx.forEach(disposeWeaponFx);
+        weaponFx.length = 0;
+        hideLaser();
     }
 
     // ==========================================
@@ -5803,6 +6146,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (fx.material) fx.material.dispose();
         });
         effects.length = 0;
+        clearWeaponState();
 
         isDragging = false;
         dragPointerId = null;
@@ -5962,6 +6306,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function triggerGameOver() {
         isGameOver = true;
+        hideLaser();
         isDragging = false;
         dragPointerId = null;
 
@@ -6217,30 +6562,34 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         // ירי
         // ======================================
-        if (time - lastShotTime > 1000 / (fireRate * 4)) {
+        {
+            // מיקום הקנים של התותח הפעיל
+            let muzzleXs, muzzleY;
             if (activeCannon === 'mk2') {
-                // התותח החדש: ארבעה קנים, ארבעה כדורים כחולים בכל ירייה.
-                const mk2BulletY = cannonGroup.position.y + MK2_MUZZLE_Y * CANNON_SCALE;
-                MK2_BARREL_X.forEach(bxw => {
-                    const bxPos = cannonGroup.position.x + bxw * CANNON_SCALE;
-                    spawnBullet(bxPos, mk2BulletY, 0);
-                    spawnMuzzleFlash(bxPos, mk2BulletY, 0);
-                });
+                muzzleY = cannonGroup.position.y + MK2_MUZZLE_Y * CANNON_SCALE;
+                muzzleXs = MK2_BARREL_X.map(bxw => cannonGroup.position.x + bxw * CANNON_SCALE);
             } else {
-                const bulletY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
-                const leftX = cannonGroup.position.x - 0.35 * CANNON_SCALE;
-                const rightX = cannonGroup.position.x + 0.35 * CANNON_SCALE;
-
-                spawnBullet(leftX, bulletY, 0);
-                spawnBullet(rightX, bulletY, 0);
-                spawnMuzzleFlash(leftX, bulletY, 0);
-                spawnMuzzleFlash(rightX, bulletY, 0);
+                muzzleY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
+                muzzleXs = [cannonGroup.position.x - 0.35 * CANNON_SCALE, cannonGroup.position.x + 0.35 * CANNON_SCALE];
             }
 
-            cannonRecoil = 0.14;
-            suspensionKick(0.016, 0.010);
-            playSound('shoot');
-            lastShotTime = time;
+            if (activeWeapon === 'laser') {
+                updateLaser(time, muzzleXs, muzzleY);
+            } else {
+                hideLaser();
+                const shotInterval = activeWeapon === 'rocket' ? 1000 / (fireRate * ROCKET_RATE) : 1000 / (fireRate * 4);
+                if (time - lastShotTime > shotInterval) {
+                    muzzleXs.forEach(bx => {
+                        if (activeWeapon === 'rocket') spawnRocket(bx, muzzleY, 0);
+                        else spawnBullet(bx, muzzleY, 0, activeWeapon === 'lightning' ? 'lightning' : null);
+                        spawnMuzzleFlash(bx, muzzleY, 0);
+                    });
+                    cannonRecoil = 0.14;
+                    suspensionKick(0.016, 0.010);
+                    playSound('shoot');
+                    lastShotTime = time;
+                }
+            }
         }
 
         // ======================================
@@ -6248,7 +6597,8 @@ window.addEventListener('DOMContentLoaded', () => {
         // ======================================
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
-            b.position.y += 0.42;
+            b.position.y += (b.userData && b.userData.speed) || 0.42;
+            if (b.userData && b.userData.flame) b.userData.flame.scale.set(1, 0.75 + Math.random() * 0.55, 1);
 
             if (b.position.y > 18) {
                 scene.remove(b);
@@ -6351,6 +6701,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
                     bullets.splice(bIdx, 1);
 
+                    // רקטות וברק: הנזק מחושב אחרי הלולאה (פיצוץ באזור / קפיצה בין סלעים)
+                    const wtype = b.userData && b.userData.weapon;
+                    if (wtype === 'rocket' || wtype === 'lightning') {
+                        pendingWeaponHits.push({ type: wtype, rock: r, x: b.position.x, y: b.position.y });
+                        data.flash = 1;
+                        playSound('hit');
+                        continue;
+                    }
+
                     data.hp -= firePower;
                     data.flash = 1;
                     score += firePower;
@@ -6395,6 +6754,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        processWeaponHits();
 
         // ==========================================
         // מטבעות - שאיבה אוטומטית כברירת מחדל
@@ -6456,6 +6817,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         updateEffects();
+        updateWeaponFx();
         startNextWave();
 
         // מצלמת 3D דינמית: זום אאוט (יותר חלל נסיעה) + מעקב אחרי התותח
