@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -26,16 +26,16 @@
         <div class="device-blocker-card">
             <div class="device-blocker-icon">📱</div>
             <h2>Mobile Only</h2>
-            <p>המשחק מיועד לטלפונים במסך אנכי.</p>
-            <small>פתח את המשחק בטלפון כדי לשחק.</small>
+            <p>This game is designed for phones in portrait mode.</p>
+            <small>Open the game on your phone to play.</small>
         </div>
     </div>
 
     <div id="landscape-blocker" class="device-blocker">
         <div class="device-blocker-card">
             <div class="device-blocker-icon">↕️</div>
-            <h2>סובב את הטלפון</h2>
-            <p>העבר את הטלפון למצב אנכי כדי לשחק.</p>
+            <h2>Rotate your phone</h2>
+            <p>Switch your phone to portrait mode to play.</p>
         </div>
     </div>
 
@@ -59,7 +59,7 @@
         <div class="ui-card" id="hp-container">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #a1a1aa;">
                 <span>HP</span>
-                <span id="hp-text">1000 / 1000</span>
+                <span id="hp-text">100 / 100</span>
             </div>
             <div class="hp-bar-bg">
                 <div id="hp-bar"></div>
@@ -75,11 +75,11 @@
             <!-- שורת נתונים קבועה: מטבעות ושיא -->
             <div class="splash-head">
                 <div class="head-stat">
-                    <span class="head-label">🪙 מטבעות</span>
+                    <span class="head-label">🪙 Coins</span>
                     <strong id="start-coins">0</strong>
                 </div>
                 <div class="head-stat">
-                    <span class="head-label">🏆 שיא</span>
+                    <span class="head-label">🏆 Best</span>
                     <strong id="start-best-score">0</strong>
                 </div>
             </div>
@@ -87,27 +87,27 @@
             <!-- אזור הגלילה: תותח, שדרוגים, מפה -->
             <div class="splash-scroll">
                 <section class="splash-section">
-                    <div class="shop-section-title">תותח</div>
+                    <div class="shop-section-title">Cannon</div>
                     <div class="cannon-grid">
                         <button id="cannon-classic" class="map-card cannon-card owned selected" type="button">
                             <span class="map-icon">⚙️</span>
-                            <span class="map-info"><strong>קלאסי</strong><small>מאוזן</small></span>
-                            <span class="map-action">נבחר</span>
+                            <span class="map-info"><strong>Classic</strong><small>Balanced</small></span>
+                            <span class="map-action">Selected</span>
                         </button>
                         <button id="cannon-mk2" class="map-card cannon-card" type="button">
                             <span class="map-icon">🛡️</span>
-                            <span class="map-info"><strong>NOVA</strong><small>4 קנים וליבה זוהרת</small></span>
+                            <span class="map-info"><strong>Nova Cannon</strong></span>
                             <span class="map-action">250 C</span>
                         </button>
                     </div>
                 </section>
 
                 <section class="splash-section">
-                    <div class="shop-section-title">שדרוגים</div>
+                    <div class="shop-section-title">Upgrades</div>
                     <div class="upgrades-list">
                         <div class="upgrade-item">
                             <div>
-                                <div class="upg-name">עוצמת ירייה</div>
+                                <div class="upg-name">Fire Power</div>
                                 <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
                             </div>
                             <button id="buy-power-btn" class="btn-upg">50 C</button>
@@ -115,7 +115,7 @@
 
                         <div class="upgrade-item">
                             <div>
-                                <div class="upg-name">קצב אש</div>
+                                <div class="upg-name">Fire Rate</div>
                                 <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
                             </div>
                             <button id="buy-rate-btn" class="btn-upg">60 C</button>
@@ -124,27 +124,27 @@
                 </section>
 
                 <section class="splash-section">
-                    <div class="shop-section-title">מפה</div>
+                    <div class="shop-section-title">Map</div>
                     <div class="maps-grid">
                         <button class="map-card selected owned" data-map-id="forest" type="button">
                             <span class="map-icon">🔺</span>
-                            <span class="map-info"><strong>PYRAMIDS</strong><small>פרמידות</small></span>
-                            <span class="map-action">נבחרה</span>
+                            <span class="map-info"><strong>PYRAMIDS</strong><small>Pyramids</small></span>
+                            <span class="map-action">Selected</span>
                         </button>
                         <button class="map-card owned" data-map-id="volcano" type="button">
                             <span class="map-icon">🌊</span>
-                            <span class="map-info"><strong>SEA</strong><small>ים בלילה</small></span>
-                            <span class="map-action">בחר</span>
+                            <span class="map-info"><strong>SEA</strong><small>Night sea</small></span>
+                            <span class="map-action">Select</span>
                         </button>
                     </div>
                 </section>
             </div>
 
-            <button id="start-btn" class="btn-primary" type="button">התחל משחק</button>
+            <button id="start-btn" class="btn-primary" type="button">Start Game</button>
         </div>
     </div>
 
     <!-- קובץ המשחק הראשי -->
-    <script src="main.js?v=97"></script>
+    <script src="main.js?v=98"></script>
 </body>
 </html>

@@ -174,8 +174,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // בשלב הזה המשחק מתמקד במפה אחת בלבד: יער.
     // שומרים את ההגדרה פשוטה כדי שכל השיפור הגרפי יושקע בעולם אחד.
     const MAPS = {
-        forest: { name: 'PYRAMIDS', label: 'פירמידות', price: 0 },
-        volcano: { name: 'SEA', label: 'ים בלילה', price: 0 }   // לשנות price כדי להפוך את המפה לנעולה/בתשלום
+        forest: { name: 'PYRAMIDS', label: 'Pyramids', price: 0 },
+        volcano: { name: 'SEA', label: 'Night sea', price: 0 }   // לשנות price כדי להפוך את המפה לנעולה/בתשלום
     };
 
     let selectedMap = localStorage.getItem('bb3d_map');
@@ -4665,8 +4665,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let coins = parseInt(localStorage.getItem('bb3d_coins')) || 0;
     let bestScore = parseInt(localStorage.getItem('bb3d_best')) || 0;
     let level = 1;
-    let playerHp = 1000;
-    let maxHp = 1000;
+    let playerHp = 100;
+    let maxHp = 100;
 
     let firePowerLvl = parseInt(localStorage.getItem('bb3d_upg_power')) || 1;
     let fireRateLvl = parseInt(localStorage.getItem('bb3d_upg_rate')) || 1;
@@ -4745,13 +4745,13 @@ window.addEventListener('DOMContentLoaded', () => {
         renderCannonTile(cannonClassicBtn, {
             selected: !mk2Active,
             owned: true,
-            label: !mk2Active ? 'נבחר' : 'בחר',
+            label: !mk2Active ? 'Selected' : 'Select',
             locked: false
         });
         renderCannonTile(cannonMk2Btn, {
             selected: mk2Active,
             owned: advancedCannonOwned,
-            label: !advancedCannonOwned ? `${ADVANCED_CANNON_PRICE} C` : (mk2Active ? 'נבחר' : 'בחר'),
+            label: !advancedCannonOwned ? `${ADVANCED_CANNON_PRICE} C` : (mk2Active ? 'Selected' : 'Select'),
             locked: !advancedCannonOwned && coins < ADVANCED_CANNON_PRICE
         });
     }
@@ -4791,7 +4791,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const selected = selectedMap === mapId;
             const action = btn.querySelector('.map-action');
             const state = btn.querySelector('.map-state');
-            if (action) action.innerText = selected ? 'נבחרה' : owned ? 'בחר' : `${map.price} C`;
+            if (action) action.innerText = selected ? 'Selected' : owned ? 'Select' : `${map.price} C`;
             if (state) state.innerText = selected ? 'ACTIVE' : owned ? 'OWNED' : 'LOCKED';
             btn.classList.toggle('selected', selected);
             btn.classList.toggle('owned', owned);
@@ -5837,11 +5837,11 @@ window.addEventListener('DOMContentLoaded', () => {
     pauseOverlay.className = 'pz-overlay';
     pauseOverlay.innerHTML = `
         <div class="pz-box">
-            <h2>⏸ מושהה</h2>
-            <p>ניקוד: <b id="pz-score">0</b></p>
-            <button class="pz-act" data-act="resume">▶ המשך</button>
-            <button class="pz-act alt" data-act="restart">↻ התחל מחדש</button>
-            <button class="pz-act alt" data-act="menu">🏠 לתפריט</button>
+            <h2>⏸ Paused</h2>
+            <p>Score: <b id="pz-score">0</b></p>
+            <button class="pz-act" data-act="resume">▶ Resume</button>
+            <button class="pz-act alt" data-act="restart">↻ Restart</button>
+            <button class="pz-act alt" data-act="menu">🏠 Menu</button>
         </div>`;
     document.body.appendChild(pauseOverlay);
 
@@ -5867,12 +5867,12 @@ window.addEventListener('DOMContentLoaded', () => {
     gameOverOverlay.className = 'pz-overlay';
     gameOverOverlay.innerHTML = `
         <div class="pz-box">
-            <h2>💥 המשחק נגמר</h2>
-            <p>ניקוד: <b data-go="score">0</b></p>
-            <p>שיא: <b data-go="best">0</b></p>
-            <p data-go="record" style="display:none;color:#ffd24a;font-weight:800">🏆 שיא חדש!</p>
-            <button class="pz-act" data-act="again">↻ שחק שוב</button>
-            <button class="pz-act alt" data-act="menu">🏠 לתפריט</button>
+            <h2>💥 Game Over</h2>
+            <p>Score: <b data-go="score">0</b></p>
+            <p>Best: <b data-go="best">0</b></p>
+            <p data-go="record" style="display:none;color:#ffd24a;font-weight:800">🏆 New best!</p>
+            <button class="pz-act" data-act="again">↻ Play again</button>
+            <button class="pz-act alt" data-act="menu">🏠 Menu</button>
         </div>`;
     document.body.appendChild(gameOverOverlay);
 
