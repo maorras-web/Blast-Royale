@@ -4699,34 +4699,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const splashScreen = document.getElementById('splash-screen');
 
-    // פתיח: תמונת הפתיחה (עם הלוגו) מוצגת לבדה עד נגיעה במסך. הנגיעה מבקשת מסך מלא בדפדפן,
-    // והתמונה נעלמת רק אחרי שהמסך כבר מלא; אז התפריט (מטבעות, תותח, שדרוגים ומפה) תופס את כל המסך.
+    // פתיח: תמונת הפתיחה מוצגת לבדה INTRO_ONLY_MS, ואז נכנס כרטיס התפריט.
+    // הספירה מתחילה אחרי שהתמונה נטענה (עם גיבוי למקרה של טעינה איטית).
+    const INTRO_ONLY_MS = 2000;
     if (splashScreen) {
-        const introImg = new Image();               // טעינה מוקדמת של תמונת הפתיחה
+        let introTimerStarted = false;
+        const startIntroTimer = () => {
+            if (introTimerStarted) return;
+            introTimerStarted = true;
+            setTimeout(() => splashScreen.classList.remove('intro-only'), INTRO_ONLY_MS);
+        };
+        const introImg = new Image();
+        introImg.onload = introImg.onerror = startIntroTimer;
         introImg.src = 'blast-royale-splash.jpg';
-        let introLeaving = false;
-        splashScreen.addEventListener('click', () => {
-            if (introLeaving || !splashScreen.classList.contains('intro-only')) return;
-            introLeaving = true;
-            // השהיה קצרה אחרי שהמסך התמלא, כדי שהגודל יסתנכרן לפני שהתמונה נעלמת
-            const leaveIntro = () => setTimeout(() => splashScreen.classList.remove('intro-only'), 300);
-            if (document.fullscreenElement || !document.documentElement.requestFullscreen) {
-                leaveIntro();                        // כבר במסך מלא, או שהדפדפן לא תומך (למשל iPhone)
-                return;
-            }
-            let finished = false;
-            const finish = () => {
-                if (finished) return;
-                finished = true;
-                document.removeEventListener('fullscreenchange', onFullscreen);
-                leaveIntro();
-            };
-            const onFullscreen = () => { if (document.fullscreenElement) finish(); };
-            document.addEventListener('fullscreenchange', onFullscreen);
-            const req = requestFullscreenOnce();
-            if (req && req.catch) req.catch(finish); // סירוב: לא מחכים
-            setTimeout(finish, 1500);                // גיבוי: לא נתקעים על התמונה
-        });
+        setTimeout(startIntroTimer, 1500);
     }
     const startBtn = document.getElementById('start-btn');
     const startCoinsEl = document.getElementById('start-coins');
@@ -6489,19 +6475,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // בקשת מסך מלא פעם אחת בלבד, ולא בכל לחיצה
     let fullscreenTried = false;
-    function requestFullscreenOnce() {
-        if (fullscreenTried) return null;
+    document.addEventListener('click', () => {
+        if (fullscreenTried) return;
         fullscreenTried = true;
         const el = document.documentElement;
         if (!document.fullscreenElement && el.requestFullscreen) {
-            const req = el.requestFullscreen({ navigationUI: 'hide' });
-            req.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait'))
+            el.requestFullscreen({ navigationUI: 'hide' })
+                .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait'))
                 .catch(() => {});
-            return req;
         }
-        return null;
-    }
-    document.addEventListener('click', requestFullscreenOnce);
+    });
 
     // סנכרון גודל ה-canvas והמצלמה לגודל המסך האמיתי
     function syncViewport() {
