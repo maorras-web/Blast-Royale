@@ -24,6 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const FOG_COLOR = 0xc9956b;
     const FOG_NEAR = 24;
     const FOG_FAR = 92;
+    const SHOW_GRASS_ROCKS = false;   // true = מחזיר את האבנים והסלעים הקטנים שעל הדשא במפת הפירמידות
 
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -887,7 +888,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     : [0x6d572f, 0x806842, 0x5c4727];
 
         // מעט מאוד פרטים כדי לתת קנה מידה ועומק בלי להעמיס על מובייל.
-        for (let i = 0; i < 26; i++) {
+        for (let i = 0; i < (SHOW_GRASS_ROCKS ? 26 : 0); i++) {
             const side = i % 2 === 0 ? -1 : 1;
             const x = side * (8.3 + Math.random() * 5.2);
             const z = -5.5 - Math.random() * 10.5;
@@ -975,7 +976,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     ? [0x3c522f, 0x51683f, 0x2c4024]
                     : [0x6b5d52, 0x7d6d60, 0x594d45];
 
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < (SHOW_GRASS_ROCKS ? 20 : 0); i++) {
             const side = i % 2 === 0 ? -1 : 1;
             const stoneSize = 0.16 + Math.random() * 0.26;
             const stone = new THREE.Mesh(
@@ -1517,7 +1518,7 @@ window.addEventListener('DOMContentLoaded', () => {
             { z: -45.0, scale: 1.72 }
         ];
 
-        depthLayers.forEach((layer, layerIndex) => {
+        (SHOW_GRASS_ROCKS ? depthLayers : []).forEach((layer, layerIndex) => {
             [-1, 1].forEach(side => {
                 const scale = layer.scale * (0.88 + Math.random() * 0.22);
                 const mat = new THREE.MeshStandardMaterial({
@@ -1869,7 +1870,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // אבני מסגרת בגדלים שונים לאורך הציר.
         const markerDistances = [-3, -8, -15, -24, -35, -48];
-        markerDistances.forEach((z, index) => {
+        (SHOW_GRASS_ROCKS ? markerDistances : []).forEach((z, index) => {
             const depth = Math.abs(z);
             const scale = Math.max(0.22, 0.82 - depth * 0.0105);
 
@@ -1896,7 +1897,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const farGroup = new THREE.Group();
         group.add(farGroup);
 
-        for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < (SHOW_GRASS_ROCKS ? 18 : 0); i++) {
             const side = i % 2 === 0 ? -1 : 1;
             const z = -18 - Math.random() * 34;
             const x = side * (8.0 + Math.random() * 5.0);
@@ -2180,12 +2181,13 @@ window.addEventListener('DOMContentLoaded', () => {
             fragmentShader: [
                 'uniform float uTime;',
                 'varying vec3 vWorld;',
-                'vec2 waveGrad(vec2 p, float t) {',
+                'vec2 waveGrad(vec2 p, float t, float dist) {',
+                '  float hiFade = 1.0 / (1.0 + dist * 0.045);   // הגלים הקטנים נעלמים בהדרגה עם המרחק (מונע ריצוד)',
                 '  vec2 g = vec2(0.0);',
-                '  vec2 k1 = vec2(0.32, 0.20);   g += k1 * (0.55 * cos(dot(k1, p) + t * 0.9));',
-                '  vec2 k2 = vec2(-0.21, 0.37);  g += k2 * (0.45 * cos(dot(k2, p) - t * 0.7));',
-                '  vec2 k3 = vec2(0.80, -0.35);  g += k3 * (0.22 * cos(dot(k3, p) + t * 1.6));',
-                '  vec2 k4 = vec2(-0.55, -0.95); g += k4 * (0.14 * cos(dot(k4, p) - t * 1.9));',
+                '  vec2 k1 = vec2(0.32, 0.20);   g += k1 * (0.55 * cos(dot(k1, p) + t * 0.55));',
+                '  vec2 k2 = vec2(-0.21, 0.37);  g += k2 * (0.45 * cos(dot(k2, p) - t * 0.45));',
+                '  vec2 k3 = vec2(0.80, -0.35);  g += k3 * (0.12 * hiFade * cos(dot(k3, p) + t * 1.0));',
+                '  vec2 k4 = vec2(-0.55, -0.95); g += k4 * (0.07 * hiFade * cos(dot(k4, p) - t * 1.2));',
                 '  return g;',
                 '}',
                 'void main() {',
@@ -2193,7 +2195,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 '  float dist = length(V);',
                 '  V /= dist;',
                 '  float fade = 1.0 / (1.0 + dist * 0.018);',
-                '  vec2 g = waveGrad(vWorld.xz, uTime) * fade * 0.55;',
+                '  vec2 g = waveGrad(vWorld.xz, uTime, dist) * fade * 0.50;',
                 '  vec3 N = normalize(vec3(-g.x, 1.0, -g.y));',
                 '  float ndv = max(dot(N, V), 0.0);',
                 '  float fres = clamp(0.06 + 0.94 * pow(1.0 - ndv, 3.0), 0.0, 1.0);',
@@ -2206,14 +2208,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 '  vec3 L = normalize(vec3(-0.114, 0.075, -1.0));',
                 '  vec3 R = reflect(-V, N);',
                 '  float rl = max(dot(R, L), 0.0);',
-                '  col += vec3(0.75, 0.82, 1.0) * (pow(rl, 90.0) * 0.25 + pow(rl, 700.0) * 1.5);',
+                '  col += vec3(0.75, 0.82, 1.0) * (pow(rl, 60.0) * 0.22 + pow(rl, 260.0) * 0.55);',
                 '  float edge = 1.6 + 0.9 * sin(uTime * 0.8 + vWorld.x * 0.15);',
                 '  float foamBase = 1.0 - smoothstep(0.0, edge, d);',
-                '  float streak = 0.5 + 0.5 * sin(vWorld.x * 1.7 + sin(vWorld.z * 2.3 + uTime * 1.2) * 2.0);',
+                '  float streak = 0.5 + 0.5 * sin(vWorld.x * 0.9 + sin(vWorld.z * 1.4 + uTime * 0.8) * 1.4);',
                 '  float foam = foamBase * smoothstep(0.35, 0.9, streak);',
                 '  col = mix(col, vec3(0.78, 0.86, 1.0), foam * 0.5);',
-                '  float hf = smoothstep(90.0, 330.0, dist);',
-                '  col = mix(col, vec3(0.14, 0.19, 0.43), hf * 0.85);',
+                '  float hf = smoothstep(70.0, 430.0, dist);',
+                '  vec3 horizonCol = vec3(0.21, 0.27, 0.57);   // אותו צבע כמו אופק השמיים',
+                '  col = mix(col, horizonCol, pow(hf, 1.4));',
                 '  gl_FragColor = vec4(col, 1.0);',
                 '}'
             ].join('\n')
@@ -2222,6 +2225,30 @@ window.addEventListener('DOMContentLoaded', () => {
         sea.rotation.x = -Math.PI / 2;
         sea.position.set(0, SEA_Y, -257);
         mapGroup.add(sea);
+
+        // ערפל ים רך: שני סרטי אובך עם דעיכה חלקה למעלה ולמטה (במקום קו אופק חד ושטוח).
+        const mistTex = (() => {
+            const c = document.createElement('canvas');
+            c.width = 8;
+            c.height = 128;
+            const mx = c.getContext('2d');
+            const gr = mx.createLinearGradient(0, 0, 0, 128);
+            gr.addColorStop(0, 'rgba(95,110,195,0)');
+            gr.addColorStop(0.55, 'rgba(95,110,195,0.55)');
+            gr.addColorStop(1, 'rgba(95,110,195,0)');
+            mx.fillStyle = gr;
+            mx.fillRect(0, 0, 8, 128);
+            const t = new THREE.CanvasTexture(c);
+            t.encoding = THREE.sRGBEncoding;
+            return t;
+        })();
+        [[-58, 2.4, 240, 7, 0.5], [-150, 4.5, 420, 12, 0.55]].forEach(([mz, my, mw, mh, mo]) => {
+            const mist = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh),
+                new THREE.MeshBasicMaterial({ map: mistTex, transparent: true, opacity: mo, depthWrite: false, fog: false }));
+            mist.position.set(0, my, mz);
+            mist.renderOrder = -2;
+            mapGroup.add(mist);
+        });
 
         // קצף גלים על קו החוף.
         const foam = new THREE.Mesh(new THREE.PlaneGeometry(260, 1.4),
@@ -2471,7 +2498,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // (הוסרה שכבת הזוהר התוספתית שישבה כמעטפת כמעט חופפת על הפירמידות: היא יצרה
             // כיפה מוארת מרצדת בקצוות. הקצוות נשארים נקיים וחדים.)
-            if (!isVolcano) {   // במפת הים הדשא נקי מאבנים
+            if (!isVolcano && SHOW_GRASS_ROCKS) {   // הסלעים שעל הדשא הוסרו
                 addRockDecoration(-6, -5, 1.2, 0x6b5d52);
                 addRockDecoration(7, -7, 0.85, 0x7d6d60);
             }
