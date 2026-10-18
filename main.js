@@ -4813,6 +4813,40 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ==========================================
+    // כפתור "Level Up" הירוק בזמן המשחק: רמה אחת משדרגת גם עוצמת ירייה וגם קצב אש
+    // מחיר = מה שהיו עולים שני השדרוגים הרגילים יחד.
+    // ==========================================
+    let levelUpUI = null;   // נבנה בהמשך (ליד כפתור העצירה)
+    let levelUpActive = false;   // true בזמן ההמתנה לפני תחילת הריצה (שם הכפתור יכול להופיע)
+    let awaitingStart = false;   // תחילת ריצה: המשחק מחכה ללחיצה על המסך או על כפתור השדרוג
+    let startHintEl = null;
+    function beginRun() {
+        if (!awaitingStart) return;
+        awaitingStart = false;
+        setLevelUpVisible(false);
+        lastShotTime = 0;
+        startNextWave();
+    }
+    function cannonLevelCost() { return firePowerLvl * 50 + fireRateLvl * 60; }
+    function cannonLevelNumber() { return Math.floor((firePowerLvl + fireRateLvl) / 2); }
+    function refreshLevelUpBtn() {
+        if (!levelUpUI) return;
+        const cost = cannonLevelCost();
+        levelUpUI.lvl.textContent = `LVL ${cannonLevelNumber()}`;
+        levelUpUI.cost.textContent = cost;
+        const can = coins >= cost;
+        levelUpUI.btn.classList.toggle('can', can);
+        levelUpUI.btn.disabled = !can;
+        // הכפתור מופיע רק כשהמשחק רץ וגם יש מספיק מטבעות לשדרוג (נעלם כשאין).
+        levelUpUI.wrap.style.display = (levelUpActive && can) ? 'flex' : 'none';
+    }
+    function setLevelUpVisible(on) {
+        levelUpActive = on;
+        refreshLevelUpBtn();
+        if (startHintEl) startHintEl.style.display = on ? 'block' : 'none';
+    }
+
     // מצב כרטיס תותח: נבחר / בחר / מחיר (נעול אם אין מספיק מטבעות).
     function renderCannonTile(btn, { selected, owned, label, locked }) {
         if (!btn) return;
@@ -4866,6 +4900,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         updateCannonTiles();
         updateWeaponTiles();
+        refreshLevelUpBtn();
 
         forestMapButtons.forEach(btn => {
             const mapId = btn.dataset.mapId;
@@ -6502,6 +6537,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     controlSurface.addEventListener('pointerdown', (e) => {
         if (!isGameStarted || isPaused || isGameOver) return;
+        if (awaitingStart) beginRun();
 
         // רק אצבע אחת / מצביע אחד שולט בתותח.
         if (dragPointerId !== null) return;
@@ -6628,6 +6664,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isGameStarted = true;
         isGameOver = false;
         pauseBtn.style.display = 'flex';
+        setLevelUpVisible(true);
 
         if (splashScreen) splashScreen.classList.add('hidden');
 
@@ -6641,7 +6678,9 @@ window.addEventListener('DOMContentLoaded', () => {
         buildMap(selectedMap);
         updateUI();
 
-        startNextWave();
+        // לפני שהסלעים נכנסים: השחקן יכול לשדרג (אם יש לו מטבעות) או פשוט ללחוץ על המסך כדי להתחיל.
+        awaitingStart = true;
+        setLevelUpVisible(true);
     }
 
     if (startBtn) startBtn.addEventListener('click', startGame);
@@ -6683,6 +6722,70 @@ window.addEventListener('DOMContentLoaded', () => {
     pauseBtn.className = 'pz-btn';
     pauseBtn.textContent = '⏸';
     document.body.appendChild(pauseBtn);
+
+    // ---- כפתור Level Up ירוק: על הדשא, קרוב למצלמה, מול התותח ----
+    const levelStyle = document.createElement('style');
+    levelStyle.textContent = `
+        .lv-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 46px);z-index:54;
+            display:none;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-radius:22px;
+            background:linear-gradient(#27394e,#16212e);border:3px solid #0d141d;box-shadow:0 6px 0 rgba(0,0,0,.35);
+            font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+        .lv-lvl{color:#fff;font-weight:900;font-size:22px;font-style:italic;letter-spacing:.5px;text-shadow:0 2px 0 rgba(0,0,0,.5);white-space:nowrap}
+        .lv-btn{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 12px;border-radius:16px;border:3px solid #1f6a0a;
+            background:linear-gradient(#9cf03a,#4fb512);box-shadow:inset 0 -5px 0 rgba(0,0,0,.22),0 3px 0 #164d06;color:#fff;
+            font:inherit;font-weight:900;font-size:22px;font-style:italic;text-shadow:0 2px 0 rgba(0,0,0,.45);touch-action:manipulation}
+        .lv-btn:active:not(:disabled){transform:translateY(2px)}
+        .lv-btn:disabled{background:linear-gradient(#9aa4ad,#6d767e);border-color:#4a525a;
+            box-shadow:inset 0 -5px 0 rgba(0,0,0,.22),0 3px 0 #3a4046;color:#e4e8ec}
+        .lv-btn.can{animation:lvPulse 1.5s ease-in-out infinite}
+        .lv-arrow{color:#1d5a05;font-size:20px;line-height:1;text-shadow:none}
+        .lv-coin{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+            background:radial-gradient(circle at 35% 30%,#fff1a0,#f2b21c 60%,#b9780a);border:2px solid #8a5a06;
+            color:#8a5a06;font-size:14px;font-style:normal;text-shadow:none}
+        .lv-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 150px);z-index:54;
+            display:none;pointer-events:none;color:#fff;font-family:Rubik,system-ui,Arial,sans-serif;font-weight:900;font-size:26px;
+            font-style:italic;letter-spacing:1.5px;text-shadow:0 3px 0 rgba(0,0,0,.55);white-space:nowrap;animation:lvHint 1.2s ease-in-out infinite}
+        @keyframes lvPulse{50%{transform:scale(1.05)}}
+        @keyframes lvHint{50%{opacity:.45}}`;
+    document.head.appendChild(levelStyle);
+
+    const levelWrap = document.createElement('div');
+    levelWrap.className = 'lv-wrap';
+    levelWrap.innerHTML = `
+        <span class="lv-lvl">LVL 1</span>
+        <button class="lv-btn" type="button">
+            <span class="lv-arrow">▲</span><span class="lv-coin">$</span><span class="lv-cost">0</span>
+        </button>`;
+    document.body.appendChild(levelWrap);
+    levelUpUI = {
+        wrap: levelWrap,
+        lvl: levelWrap.querySelector('.lv-lvl'),
+        btn: levelWrap.querySelector('.lv-btn'),
+        cost: levelWrap.querySelector('.lv-cost')
+    };
+    startHintEl = document.createElement('div');
+    startHintEl.className = 'lv-hint';
+    startHintEl.textContent = 'TAP TO START';
+    document.body.appendChild(startHintEl);
+    levelWrap.addEventListener('pointerdown', (e) => e.stopPropagation());
+    levelUpUI.btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cost = cannonLevelCost();
+        if (coins < cost) return;
+        coins -= cost;
+        firePowerLvl++;
+        fireRateLvl++;
+        firePower = firePowerLvl;
+        fireRate = 1 + (fireRateLvl - 1) * 0.25;
+        localStorage.setItem('bb3d_coins', coins);
+        localStorage.setItem('bb3d_upg_power', firePowerLvl);
+        localStorage.setItem('bb3d_upg_rate', fireRateLvl);
+        updateUI();
+        playSound('coin');
+        spawnImpactBurst(cannonGroup.position.x, 1.6, 0.5, 0x7ee22a);
+        beginRun();   // שדרוג = התחלת הריצה
+    });
+    refreshLevelUpBtn();
 
     const pauseOverlay = document.createElement('div');
     pauseOverlay.className = 'pz-overlay';
@@ -6779,6 +6882,7 @@ window.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('bb3d_coins', coins);
 
         pauseBtn.style.display = 'none';
+        setLevelUpVisible(false);
         goScoreEl.textContent = score;
         goBestEl.textContent = bestScore;
         goRecordEl.style.display = isNewBest ? 'block' : 'none';
@@ -6805,6 +6909,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isGameStarted = false;
         isGameOver = false;
         pauseBtn.style.display = 'none';
+        setLevelUpVisible(false);
         resetRunState();
         localStorage.setItem('bb3d_coins', coins);
         if (splashScreen) splashScreen.classList.remove('hidden');
@@ -6949,7 +7054,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!isPaused) updateSkyTraffic(time);
         updateVolcanoFx(time);
 
-        if (!isGameStarted || isPaused || isGameOver) {
+        if (!isGameStarted || isPaused || isGameOver || awaitingStart) {
             renderer.render(scene, camera);
             return;
         }
