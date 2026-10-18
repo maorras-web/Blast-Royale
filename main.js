@@ -4698,8 +4698,11 @@ window.addEventListener('DOMContentLoaded', () => {
     let firePowerLvl = parseInt(localStorage.getItem('bb3d_upg_power')) || 1;
     let fireRateLvl = parseInt(localStorage.getItem('bb3d_upg_rate')) || 1;
 
-    let firePower = firePowerLvl;
-    let fireRate = 1 + (fireRateLvl - 1) * 0.25;
+    // מצב בדיקה: כוח אש וקצב אש קבועים על 1, כדי לראות את התנהגות היריות בלי השפעת השדרוגים.
+    // רמות השדרוגים נשמרות ולא נפגעות (רק אין להן השפעה על היריות). כדי לחזור לרגיל: false.
+    const FIXED_FIRE_STATS = true;
+    let firePower = FIXED_FIRE_STATS ? 1 : firePowerLvl;
+    let fireRate = FIXED_FIRE_STATS ? 1 : 1 + (fireRateLvl - 1) * 0.25;
 
     let bullets = [];
     let rocks = [];
@@ -4931,7 +4934,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (coins >= cost) {
                 coins -= cost;
                 firePowerLvl++;
-                firePower = firePowerLvl;
+                firePower = FIXED_FIRE_STATS ? 1 : firePowerLvl;
                 localStorage.setItem('bb3d_coins', coins);
                 localStorage.setItem('bb3d_upg_power', firePowerLvl);
                 updateUI();
@@ -4945,7 +4948,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (coins >= cost) {
                 coins -= cost;
                 fireRateLvl++;
-                fireRate = 1 + (fireRateLvl - 1) * 0.25;
+                fireRate = FIXED_FIRE_STATS ? 1 : 1 + (fireRateLvl - 1) * 0.25;
                 localStorage.setItem('bb3d_coins', coins);
                 localStorage.setItem('bb3d_upg_rate', fireRateLvl);
                 updateUI();
