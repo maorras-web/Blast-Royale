@@ -4969,7 +4969,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(type) {
-        if (type === 'shoot') return;   // צליל ירייה בוטל לגמרי
+        return;   // כל צלילי האפקטים (ירייה / פגיעה / מטבע) בוטלו לגמרי. נשארה רק מוזיקת הרקע.
         const ctx = getAudioCtx();
         if (!ctx) return;
         if (ctx.state === 'suspended') ctx.resume();
