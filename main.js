@@ -4833,8 +4833,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function refreshLevelUpBtn() {
         if (!levelUpUI) return;
         const cost = cannonLevelCost();
-        levelUpUI.lvl.textContent = `LVL ${cannonLevelNumber()}`;
-        levelUpUI.cost.textContent = cost;
+        levelUpUI.lvl.textContent = cannonLevelNumber();
+        levelUpUI.cost.textContent = cost.toLocaleString('en-US');
         const can = coins >= cost;
         levelUpUI.btn.classList.toggle('can', can);
         levelUpUI.btn.disabled = !can;
@@ -6726,40 +6726,76 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- כפתור Level Up ירוק: על הדשא, קרוב למצלמה, מול התותח ----
     const levelStyle = document.createElement('style');
     levelStyle.textContent = `
-        .lv-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 46px);z-index:54;
-            display:none;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-radius:22px;
-            background:linear-gradient(#27394e,#16212e);border:3px solid #0d141d;box-shadow:0 6px 0 rgba(0,0,0,.35);
-            font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-        .lv-lvl{color:#fff;font-weight:900;font-size:22px;font-style:italic;letter-spacing:.5px;text-shadow:0 2px 0 rgba(0,0,0,.5);white-space:nowrap}
-        .lv-btn{display:flex;align-items:center;gap:8px;padding:8px 14px 8px 12px;border-radius:16px;border:3px solid #1f6a0a;
-            background:linear-gradient(#9cf03a,#4fb512);box-shadow:inset 0 -5px 0 rgba(0,0,0,.22),0 3px 0 #164d06;color:#fff;
-            font:inherit;font-weight:900;font-size:22px;font-style:italic;text-shadow:0 2px 0 rgba(0,0,0,.45);touch-action:manipulation}
-        .lv-btn:active:not(:disabled){transform:translateY(2px)}
-        .lv-btn:disabled{background:linear-gradient(#9aa4ad,#6d767e);border-color:#4a525a;
-            box-shadow:inset 0 -5px 0 rgba(0,0,0,.22),0 3px 0 #3a4046;color:#e4e8ec}
-        .lv-btn.can{animation:lvPulse 1.5s ease-in-out infinite}
-        .lv-arrow{color:#1d5a05;font-size:20px;line-height:1;text-shadow:none}
-        .lv-coin{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-            background:radial-gradient(circle at 35% 30%,#fff1a0,#f2b21c 60%,#b9780a);border:2px solid #8a5a06;
-            color:#8a5a06;font-size:14px;font-style:normal;text-shadow:none}
-        .lv-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 150px);z-index:54;
-            display:none;pointer-events:none;color:#fff;font-family:Rubik,system-ui,Arial,sans-serif;font-weight:900;font-size:26px;
-            font-style:italic;letter-spacing:1.5px;text-shadow:0 3px 0 rgba(0,0,0,.55);white-space:nowrap;animation:lvHint 1.2s ease-in-out infinite}
-        @keyframes lvPulse{50%{transform:scale(1.05)}}
-        @keyframes lvHint{50%{opacity:.45}}`;
+        .lv-wrap{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);transform:translateX(-50%);z-index:54;
+            display:none;align-items:center;gap:10px;padding:7px 8px 7px 8px;border-radius:26px;
+            background:linear-gradient(180deg,rgba(52,72,102,.97) 0%,rgba(20,30,46,.98) 100%);
+            border:2px solid rgba(170,210,255,.38);
+            box-shadow:0 7px 0 rgba(0,0,0,.35),0 14px 26px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.20),inset 0 -3px 0 rgba(0,0,0,.35);
+            font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+            animation:lvIn .5s cubic-bezier(.2,1.35,.4,1) both}
+        .lv-wrap::after{content:'';position:absolute;inset:-5px;border-radius:31px;pointer-events:none;
+            box-shadow:0 0 22px 3px rgba(130,255,70,.38);animation:lvGlow 1.8s ease-in-out infinite}
+        .lv-badge{position:relative;width:58px;height:58px;border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+            background:linear-gradient(180deg,#ffe27a 0%,#ffb82e 55%,#e8860f 100%);border:2px solid #fff1b8;
+            box-shadow:0 3px 0 #8f520a,inset 0 2px 0 rgba(255,255,255,.7),inset 0 -4px 0 rgba(150,80,0,.25)}
+        .lv-cap{font-size:9px;font-weight:900;letter-spacing:1.6px;color:#7a4300;line-height:1;margin-top:1px}
+        .lv-num{font-size:27px;font-weight:900;line-height:1;color:#fff;text-shadow:0 2px 0 #9a5a06,0 0 8px rgba(120,60,0,.35)}
+        .lv-btn{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+            min-width:158px;padding:6px 18px 9px;border-radius:19px;border:3px solid #1b6b08;cursor:pointer;
+            background:linear-gradient(180deg,#b9ff50 0%,#67d81e 46%,#3fae0e 100%);
+            box-shadow:0 5px 0 #14500a,0 9px 14px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.7),inset 0 -6px 0 rgba(0,0,0,.18);
+            color:#fff;font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+        .lv-btn::before{content:'';position:absolute;left:0;right:0;top:0;height:46%;pointer-events:none;
+            background:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.04));border-radius:16px 16px 60% 60%/16px 16px 14px 14px}
+        .lv-btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #14500a,0 5px 10px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.7),inset 0 -6px 0 rgba(0,0,0,.18)}
+        .lv-btn.can{animation:lvPulse 1.6s ease-in-out infinite}
+        .lv-btn:disabled{filter:grayscale(.85) brightness(.85)}
+        .lv-shine{position:absolute;top:-25%;left:-60%;width:38%;height:150%;pointer-events:none;transform:skewX(-20deg);
+            background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);animation:lvShine 2.7s ease-in-out infinite}
+        .lv-top{position:relative;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:1.8px;
+            color:#0f4a06;text-shadow:0 1px 0 rgba(255,255,255,.55)}
+        .lv-top svg{animation:lvBob 1s ease-in-out infinite}
+        .lv-price{position:relative;display:flex;align-items:center;gap:7px;font-size:25px;font-weight:900;line-height:1.05;
+            text-shadow:0 2px 0 #1b6b08,0 0 7px rgba(0,60,0,.35)}
+        .lv-hint{position:fixed;left:50%;top:60%;transform:translate(-50%,-50%);z-index:54;display:none;pointer-events:none;
+            color:#fff;font-family:Rubik,system-ui,Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:4px;white-space:nowrap;
+            text-shadow:0 0 16px rgba(255,255,255,.6),0 3px 0 rgba(0,0,0,.6);animation:lvHint 1.3s ease-in-out infinite}
+        .lv-burst{position:fixed;z-index:56;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;pointer-events:none;
+            border:4px solid #b9ff50;box-shadow:0 0 18px 4px rgba(130,255,70,.7);animation:lvBurst .55s ease-out forwards}
+        @keyframes lvIn{0%{opacity:0;transform:translateX(-50%) translateY(46px) scale(.8)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+        @keyframes lvPulse{50%{transform:scale(1.045)}}
+        @keyframes lvGlow{50%{opacity:.35}}
+        @keyframes lvShine{0%,55%{left:-60%}100%{left:130%}}
+        @keyframes lvBob{50%{transform:translateY(-2px)}}
+        @keyframes lvHint{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.5;transform:translate(-50%,-50%) scale(1.05)}}
+        @keyframes lvBurst{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(11)}}`;
     document.head.appendChild(levelStyle);
 
     const levelWrap = document.createElement('div');
     levelWrap.className = 'lv-wrap';
     levelWrap.innerHTML = `
-        <span class="lv-lvl">LVL 1</span>
+        <div class="lv-badge"><span class="lv-cap">LEVEL</span><span class="lv-num">1</span></div>
         <button class="lv-btn" type="button">
-            <span class="lv-arrow">▲</span><span class="lv-coin">$</span><span class="lv-cost">0</span>
+            <span class="lv-shine"></span>
+            <span class="lv-top">
+                <svg viewBox="0 0 16 18" width="13" height="15" aria-hidden="true">
+                    <path d="M2 8.5l6-6 6 6" fill="none" stroke="#0f4a06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 15l6-6 6 6" fill="none" stroke="#0f4a06" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>LEVEL UP
+            </span>
+            <span class="lv-price">
+                <svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true">
+                    <circle cx="12" cy="12" r="11" fill="#b9780a"/>
+                    <circle cx="12" cy="12" r="9.2" fill="#ffd84a"/>
+                    <path d="M5.2 9.5A7.4 7.4 0 0 1 12 4.6" fill="none" stroke="#fff6c2" stroke-width="1.6" stroke-linecap="round"/>
+                    <text x="12" y="16.6" text-anchor="middle" font-size="12.5" font-weight="900" fill="#a06a00" font-family="Rubik,Arial,sans-serif">$</text>
+                </svg><span class="lv-cost">0</span>
+            </span>
         </button>`;
     document.body.appendChild(levelWrap);
     levelUpUI = {
         wrap: levelWrap,
-        lvl: levelWrap.querySelector('.lv-lvl'),
+        lvl: levelWrap.querySelector('.lv-num'),
         btn: levelWrap.querySelector('.lv-btn'),
         cost: levelWrap.querySelector('.lv-cost')
     };
@@ -6783,6 +6819,14 @@ window.addEventListener('DOMContentLoaded', () => {
         updateUI();
         playSound('coin');
         spawnImpactBurst(cannonGroup.position.x, 1.6, 0.5, 0x7ee22a);
+        // טבעת ירוקה שמתפשטת ממקום הכפתור
+        const br = levelUpUI.btn.getBoundingClientRect();
+        const burst = document.createElement('div');
+        burst.className = 'lv-burst';
+        burst.style.left = (br.left + br.width / 2) + 'px';
+        burst.style.top = (br.top + br.height / 2) + 'px';
+        document.body.appendChild(burst);
+        setTimeout(() => burst.remove(), 600);
         beginRun();   // שדרוג = התחלת הריצה
     });
     refreshLevelUpBtn();
