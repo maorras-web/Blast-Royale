@@ -5317,6 +5317,82 @@ window.addEventListener('DOMContentLoaded', () => {
         if (hitAny) playSound('hit');
     }
 
+    // ---- לייזר: יריות בלסטר קצרות כמו במלחמת הכוכבים (במקום קרניים רציפות) ----
+    // כל ירייה היא "גלולה" זוהרת שטסה למעלה ועוברת דרך כל הסלעים (פעם אחת לכל סלע).
+    const LASER_BOLT_COLOR = 0xff2a2a;   // אדום. לירוק: 0x2bff5a
+    const LASER_BOLT_CORE = 0xffe6e0;    // ליבה לבנה-חמה
+    const LASER_BOLT_SPEED = 0.95;       // מהירה בהרבה מקליע רגיל (0.42)
+    const LASER_BOLT_DAMAGE = 0.75;      // x כוח ירי לכל סלע שהירייה חודרת
+    const laserBolts = [];
+    let laserBoltShared = null;
+    let lastLaserHitSnd = 0;
+
+    function getLaserBoltShared() {
+        if (laserBoltShared) return laserBoltShared;
+        const mat = (color, op) => new THREE.MeshBasicMaterial({
+            color, transparent: true, opacity: op, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending
+        });
+        laserBoltShared = {
+            geo: new THREE.SphereGeometry(1, 14, 10),
+            outer: mat(LASER_BOLT_COLOR, 0.16),
+            mid: mat(LASER_BOLT_COLOR, 0.6),
+            core: mat(LASER_BOLT_CORE, 1.0)
+        };
+        return laserBoltShared;
+    }
+
+    function spawnLaserBolt(x, y) {
+        const sh = getLaserBoltShared();
+        const g = new THREE.Group();
+        const layer = (material, sx, sy) => {
+            const m = new THREE.Mesh(sh.geo, material);
+            m.scale.set(sx, sy, sx);
+            m.renderOrder = 19;
+            g.add(m);
+        };
+        layer(sh.outer, 0.34, 1.10);   // זוהר רחב
+        layer(sh.mid, 0.19, 0.86);     // גוף אדום
+        layer(sh.core, 0.08, 0.70);    // ליבה לבנה
+        g.position.set(x, y + 0.5, 0.4);
+        g.userData = { hit: new Set() };
+        scene.add(g);
+        laserBolts.push(g);
+    }
+
+    function updateLaserBolts(time) {
+        for (let i = laserBolts.length - 1; i >= 0; i--) {
+            const b = laserBolts[i];
+            const y0 = b.position.y;
+            b.position.y += LASER_BOLT_SPEED;
+            const y1 = b.position.y;
+            const hit = b.userData.hit;
+            let hitSomething = false;
+            for (let k = rocks.length - 1; k >= 0; k--) {
+                const r = rocks[k];
+                if (!r || hit.has(r)) continue;
+                const sz = r.userData.size;
+                if (Math.abs(r.position.x - b.position.x) > sz * 0.85 + 0.08) continue;
+                if (r.position.y < y0 - sz * 0.6 || r.position.y > y1 + sz * 0.6) continue;
+                hit.add(r);
+                damageRock(r, firePower * LASER_BOLT_DAMAGE, true);
+                hitSomething = true;
+            }
+            if (hitSomething && time - lastLaserHitSnd > 70) {
+                lastLaserHitSnd = time;
+                playSound('hit');
+            }
+            if (b.position.y > LASER_TOP_Y + 1) {
+                scene.remove(b);
+                laserBolts.splice(i, 1);
+            }
+        }
+    }
+
+    function clearLaserBolts() {
+        laserBolts.forEach(g => scene.remove(g));
+        laserBolts.length = 0;
+    }
+
     // ---- ברק: זרמי חשמל כחולים שיוצאים מהקנים (במקום כדורים) ----
     // כל קנה מצייר פס חשמל מחוספס שעובר דרך הקליעים שלו, ולכן הוא נשבר ונעקם יחד עם תנועת התותח
     // ונעצר בסלע שנפגע. מרכז לבן, זוהר כחול סביבו, והבהוב מחדש בכל פריים.
@@ -5483,6 +5559,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ניקוי בתחילת/סוף ריצה
     function clearWeaponState() {
         hideLightningStreams();
+        clearLaserBolts();
         pendingWeaponHits.length = 0;
         weaponFx.forEach(disposeWeaponFx);
         weaponFx.length = 0;
@@ -6742,14 +6819,13 @@ window.addEventListener('DOMContentLoaded', () => {
             streamMuzzleXs = muzzleXs;
             streamMuzzleY = muzzleY;
 
-            if (activeWeapon === 'laser') {
-                updateLaser(time, muzzleXs, muzzleY);
-            } else {
+            {
                 hideLaser();
                 const shotInterval = activeWeapon === 'rocket' ? 1000 / (fireRate * ROCKET_RATE) : 1000 / (fireRate * 4);
                 if (time - lastShotTime > shotInterval) {
                     muzzleXs.forEach((bx, bi) => {
                         if (activeWeapon === 'rocket') spawnRocket(bx, muzzleY, 0);
+                        else if (activeWeapon === 'laser') spawnLaserBolt(bx, muzzleY);
                         else spawnBullet(bx, muzzleY, 0, activeWeapon === 'lightning' ? 'lightning' : null, bi);
                         spawnMuzzleFlash(bx, muzzleY, 0);
                     });
@@ -6780,6 +6856,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         updateLightningStreams();
+        updateLaserBolts(time);
 
         // ======================================
         // סלעים
