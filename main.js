@@ -4763,11 +4763,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const WEAPONS = {
         standard:  { name: 'Standard',  price: 0 },
-        rocket:    { name: 'Rockets',   price: 400 },
-        lightning: { name: 'Lightning', price: 700 },
-        laser:     { name: 'Laser',     price: 1000 }
+        rocket:    { name: 'Rockets',   price: 0 },
+        lightning: { name: 'Lightning', price: 0 },
+        laser:     { name: 'Laser',     price: 0 }
     };
-    let ownedWeapons = ['standard'];
+    // כל הנשקים בחינם: כולם בבעלות מההתחלה
+    let ownedWeapons = Object.keys(WEAPONS);
     try {
         const savedWeapons = JSON.parse(localStorage.getItem('bb3d_weapons_owned') || '[]');
         if (Array.isArray(savedWeapons)) savedWeapons.forEach(id => { if (WEAPONS[id] && !ownedWeapons.includes(id)) ownedWeapons.push(id); });
@@ -4968,6 +4969,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(type) {
+        if (type === 'shoot') return;   // צליל ירייה בוטל לגמרי
         const ctx = getAudioCtx();
         if (!ctx) return;
         if (ctx.state === 'suspended') ctx.resume();
@@ -4997,6 +4999,179 @@ window.addEventListener('DOMContentLoaded', () => {
             osc.start(); osc.stop(ctx.currentTime + 0.12);
         }
     }
+
+    // ==========================================
+    // מוזיקת רקע - נוצרת בקוד (בלי קבצים), מתנגנת רק בזמן משחק פעיל:
+    // לא בתפריט, לא בעצירה ולא במסך סוף המשחק.
+    // ==========================================
+    const MUSIC_VOLUME = 0.13;      // עוצמה כללית (0-1)
+    const MUSIC_BPM = 128;
+    const MUSIC_CHORDS = [
+        { root: 45, tones: [57, 60, 64] },   // Am
+        { root: 41, tones: [53, 57, 60] },   // F
+        { root: 48, tones: [55, 60, 64] },   // C
+        { root: 43, tones: [55, 59, 62] }    // G
+    ];
+    const MUSIC_BASS_STEPS = [0, 2, 3, 6, 8, 10, 11, 14];
+    const MUSIC_ARP = [0, 1, 2, 1, 2, 1, 0, 1, 0, 1, 2, 1, 2, 1, 2, 1];
+    let musicMaster = null, musicNoise = null, musicTimer = null;
+    let musicStep = 0, musicNextTime = 0, musicPlaying = false;
+
+    const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+    function musicTone(ctx, type, freq, t, dur, vol, cutoff, detune) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t);
+        if (detune) osc.detune.setValueAtTime(detune, t);
+        let node = osc;
+        if (cutoff) {
+            const f = ctx.createBiquadFilter();
+            f.type = 'lowpass';
+            f.frequency.setValueAtTime(cutoff, t);
+            f.frequency.exponentialRampToValueAtTime(Math.max(150, cutoff * 0.3), t + dur);
+            osc.connect(f);
+            node = f;
+        }
+        node.connect(g);
+        g.connect(musicMaster);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.start(t);
+        osc.stop(t + dur + 0.03);
+    }
+
+    function musicNoiseHit(ctx, t, dur, vol, filterType, freq) {
+        const src = ctx.createBufferSource();
+        src.buffer = musicNoise;
+        const f = ctx.createBiquadFilter();
+        f.type = filterType;
+        f.frequency.setValueAtTime(freq, t);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(f); f.connect(g); g.connect(musicMaster);
+        src.start(t);
+        src.stop(t + dur + 0.02);
+    }
+
+    function musicPlayStep(ctx, step, t, stepDur) {
+        const s = step % 16;
+        const bar = Math.floor(step / 16) % 8;
+        const chord = MUSIC_CHORDS[Math.floor(bar / 2) % 4];
+
+        // תוף בס: ארבע על הרצפה
+        if (s % 4 === 0) {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+            g.gain.setValueAtTime(0.9, t);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+            osc.connect(g); g.connect(musicMaster);
+            osc.start(t); osc.stop(t + 0.26);
+        }
+        // סנר / מחיאה
+        if (s === 4 || s === 12) musicNoiseHit(ctx, t, 0.13, 0.42, 'bandpass', 1900);
+        // האט
+        if (s % 2 === 0) musicNoiseHit(ctx, t, s % 4 === 2 ? 0.09 : 0.035, s % 4 === 2 ? 0.2 : 0.09, 'highpass', 7000);
+        // בס פועם
+        if (MUSIC_BASS_STEPS.includes(s)) {
+            const note = chord.root + (s === 6 || s === 14 ? 12 : 0);
+            musicTone(ctx, 'sawtooth', midiHz(note), t, stepDur * 1.9, 0.38, 520);
+        }
+        // ארפג'יו מעל האקורד (חזק יותר אחרי שני התיבות הראשונות)
+        const arpNote = chord.tones[MUSIC_ARP[s]] + 12;
+        musicTone(ctx, 'triangle', midiHz(arpNote), t, stepDur * 1.5, bar < 2 ? 0.06 : 0.095, 3000);
+        if (bar >= 4 && s % 4 === 0) musicTone(ctx, 'square', midiHz(chord.tones[2] + 24), t, stepDur * 2.2, 0.035, 2400);
+        // פאד רך שמחזיק את האקורד כל תיבה
+        if (s === 0) {
+            const barDur = stepDur * 16;
+            chord.tones.forEach((n, i) => {
+                const pad = ctx.createOscillator();
+                const f = ctx.createBiquadFilter();
+                const g = ctx.createGain();
+                pad.type = 'sawtooth';
+                pad.frequency.setValueAtTime(midiHz(n), t);
+                pad.detune.setValueAtTime((i - 1) * 9, t);
+                f.type = 'lowpass';
+                f.frequency.setValueAtTime(900, t);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(0.03, t + 0.35);
+                g.gain.linearRampToValueAtTime(0.0001, t + barDur);
+                pad.connect(f); f.connect(g); g.connect(musicMaster);
+                pad.start(t); pad.stop(t + barDur + 0.05);
+            });
+        }
+    }
+
+    function musicSchedule() {
+        const ctx = audioCtx;
+        if (!ctx || !musicPlaying) return;
+        const stepDur = 60 / MUSIC_BPM / 4;
+        if (musicNextTime < ctx.currentTime - 0.5) musicNextTime = ctx.currentTime + 0.05;
+        while (musicNextTime < ctx.currentTime + 0.15) {
+            musicPlayStep(ctx, musicStep, musicNextTime, stepDur);
+            musicNextTime += stepDur;
+            musicStep = (musicStep + 1) % 128;
+        }
+    }
+
+    function startMusic() {
+        const ctx = getAudioCtx();
+        if (!ctx || musicPlaying) return;
+        if (ctx.state === 'suspended') ctx.resume();
+        if (!musicMaster) {
+            musicMaster = ctx.createGain();
+            musicMaster.connect(ctx.destination);
+            musicNoise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+            const d = musicNoise.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        }
+        const now = ctx.currentTime;
+        musicMaster.gain.cancelScheduledValues(now);
+        musicMaster.gain.setValueAtTime(0.0001, now);
+        musicMaster.gain.linearRampToValueAtTime(MUSIC_VOLUME, now + 0.6);
+        musicNextTime = now + 0.08;
+        musicPlaying = true;
+        musicTimer = setInterval(musicSchedule, 30);
+    }
+
+    function stopMusic() {
+        if (!musicPlaying) return;
+        musicPlaying = false;
+        clearInterval(musicTimer);
+        musicTimer = null;
+        if (musicMaster && audioCtx) {
+            const now = audioCtx.currentTime;
+            musicMaster.gain.cancelScheduledValues(now);
+            musicMaster.gain.setValueAtTime(Math.max(0.0001, musicMaster.gain.value), now);
+            musicMaster.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+        }
+    }
+
+    // מנגן רק כשיש משחק פעיל (התחיל, לא בעצירה, לא נגמר) והעמוד גלוי.
+    function syncMusic() {
+        const shouldPlay = isGameStarted && !isPaused && !isGameOver && !document.hidden;
+        if (shouldPlay) {
+            startMusic();
+        } else {
+            stopMusic();
+            if (!isGameStarted || isGameOver) musicStep = 0;   // ריצה חדשה מתחילה את המוזיקה מההתחלה
+        }
+    }
+    setInterval(syncMusic, 250);
+
+    // דפדפנים מאפשרים סאונד רק אחרי נגיעה: פותחים את האודיו בנגיעה הראשונה.
+    ['pointerdown', 'touchstart', 'click'].forEach(ev => {
+        window.addEventListener(ev, () => {
+            const c = getAudioCtx();
+            if (c && c.state === 'suspended') c.resume();
+        }, { passive: true });
+    });
 
     // ==========================================
     // 8. יצירת סלעים, כדורים ומטבעות
@@ -6831,7 +7006,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
                     cannonRecoil = 0.14;
                     suspensionKick(0.016, 0.010);
-                    playSound('shoot');
                     lastShotTime = time;
                 }
             }
