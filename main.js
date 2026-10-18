@@ -5214,35 +5214,48 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 8. יצירת סלעים, כדורים ומטבעות
     // ==========================================
+    // משאבים משותפים לקליעים: אותה גאומטריה/חומר משמשים את כל היריות.
+    // כך אפשר לחדד את המראה בלי ליצור ולשחרר עשרות גאומטריות וחומרים בזמן המשחק.
+    const PROJECTILE_GEO = {
+        core: new THREE.SphereGeometry(1, 12, 10),
+        shell: new THREE.SphereGeometry(1, 12, 10),
+        halo: new THREE.SphereGeometry(1, 10, 8),
+        trail: new THREE.ConeGeometry(1, 1, 8, 1, true)
+    };
+    const PROJECTILE_MAT = {
+        goldCore: new THREE.MeshBasicMaterial({ color: 0xfff2b0, toneMapped: false }),
+        goldShell: new THREE.MeshBasicMaterial({ color: 0xffa21c, opacity: 0.38, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        goldHalo: new THREE.MeshBasicMaterial({ color: 0xff5d0a, opacity: 0.075, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        goldTrail: new THREE.MeshBasicMaterial({ color: 0xff6a10, opacity: 0.42, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        blueCore: new THREE.MeshBasicMaterial({ color: 0xdaf6ff, toneMapped: false }),
+        blueShell: new THREE.MeshBasicMaterial({ color: 0x2f8cff, opacity: 0.38, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        blueHalo: new THREE.MeshBasicMaterial({ color: 0x1a50ff, opacity: 0.09, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        blueTrail: new THREE.MeshBasicMaterial({ color: 0x39aaff, opacity: 0.48, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })
+    };
+
     function spawnBullet(x, y, z, weapon, streamIdx) {
         const bullet = new THREE.Group();
-        const blue = weapon === 'lightning';   // קליעים זהובים כמו בתמונת המטרה; ברק = כחול-לבן
-        const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
+        const blue = weapon === 'lightning';
+        const mats = blue
+            ? [PROJECTILE_MAT.blueCore, PROJECTILE_MAT.blueShell, PROJECTILE_MAT.blueHalo, PROJECTILE_MAT.blueTrail]
+            : [PROJECTILE_MAT.goldCore, PROJECTILE_MAT.goldShell, PROJECTILE_MAT.goldHalo, PROJECTILE_MAT.goldTrail];
 
-        const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.15, 12, 12),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x9fe3ff : 0xffd24a })
-        );
-        const shell = new THREE.Mesh(
-            new THREE.SphereGeometry(0.24, 12, 12),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x2f8cff : 0xff9a1a, opacity: 0.32, ...glow })
-        );
-        const halo = new THREE.Mesh(
-            new THREE.SphereGeometry(0.36, 10, 10),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x1a50ff : 0xff6a10, opacity: 0.06, ...glow })
-        );
-        // זנב להבה: חרוט מחודד שיורד מהכדור.
-        const trail = new THREE.Mesh(
-            new THREE.ConeGeometry(0.11, 0.75, 8, 1, true),
-            new THREE.MeshBasicMaterial({ color: blue ? 0x2f8cff : 0xff6a10, opacity: 0.38, side: THREE.DoubleSide, transparent: true, depthWrite: false })
-        );
+        const core = new THREE.Mesh(PROJECTILE_GEO.core, mats[0]);
+        core.scale.set(0.15, 0.22, 0.15);
+        const shell = new THREE.Mesh(PROJECTILE_GEO.shell, mats[1]);
+        shell.scale.set(0.24, 0.34, 0.24);
+        const halo = new THREE.Mesh(PROJECTILE_GEO.halo, mats[2]);
+        halo.scale.set(0.34, 0.50, 0.34);
+        // זנב אנרגיה מחודד מאחורי הקליע, ללא חלקיקים נוספים.
+        const trail = new THREE.Mesh(PROJECTILE_GEO.trail, mats[3]);
+        trail.scale.set(0.11, 0.75, 0.11);
         trail.rotation.x = Math.PI;
         trail.position.y = -0.45;
 
-        bullet.add(core, shell, halo, trail);
+        bullet.add(halo, shell, core, trail);
         bullet.position.set(x, y, z);
         bullet.userData = { core, trail, weapon: weapon || null, stream: streamIdx || 0 };
-        // ברק: אין כדור נראה. הקליעים עדיין קיימים לחישוב פגיעות, והזרם החשמלי נצבע דרכם (ראו updateLightningStreams).
+        // ברק: הקליע נשאר בלתי נראה לצורך חישוב הפגיעה; הזרם החשמלי מוצג בנפרד.
         if (blue) bullet.visible = false;
         scene.add(bullet);
         bullets.push(bullet);
@@ -5290,21 +5303,49 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // רקטה מפורטת עם חומרים וגאומטריות משותפים — אין יצירה/שחרור של משאבים בכל ירייה.
+    const ROCKET_GEO = {
+        body: new THREE.CylinderGeometry(0.10, 0.12, 0.56, 10),
+        nose: new THREE.ConeGeometry(0.10, 0.26, 10),
+        band: new THREE.CylinderGeometry(0.126, 0.126, 0.055, 10),
+        fin: new THREE.BoxGeometry(0.22, 0.17, 0.035),
+        flame: new THREE.ConeGeometry(0.13, 0.7, 8),
+        nozzle: new THREE.TorusGeometry(0.105, 0.025, 5, 10)
+    };
+    const ROCKET_MAT = {
+        body: new THREE.MeshStandardMaterial({ color: 0xbfc7d0, metalness: 0.78, roughness: 0.30, flatShading: true }),
+        nose: new THREE.MeshStandardMaterial({ color: 0xd9432f, metalness: 0.32, roughness: 0.36, flatShading: true }),
+        band: new THREE.MeshStandardMaterial({ color: 0xf06a35, metalness: 0.48, roughness: 0.32 }),
+        fin: new THREE.MeshStandardMaterial({ color: 0x343b45, metalness: 0.72, roughness: 0.38, flatShading: true }),
+        flame: new THREE.MeshBasicMaterial({ color: 0xffa020, transparent: true, opacity: 0.88, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+        nozzle: new THREE.MeshBasicMaterial({ color: 0xff8b32, toneMapped: false })
+    };
+
     function spawnRocket(x, y, z) {
         const g = new THREE.Group();
-        const bodyMat = new THREE.MeshBasicMaterial({ color: 0xdde1e8 });
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.12, 0.56, 10), bodyMat);
-        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.26, 10), new THREE.MeshBasicMaterial({ color: 0xff4a2a }));
+        const body = new THREE.Mesh(ROCKET_GEO.body, ROCKET_MAT.body);
+        const nose = new THREE.Mesh(ROCKET_GEO.nose, ROCKET_MAT.nose);
         nose.position.y = 0.40;
-        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.07, 10), new THREE.MeshBasicMaterial({ color: 0xff4a2a }));
-        band.position.y = 0.08;
-        const flame = new THREE.Mesh(
-            new THREE.ConeGeometry(0.13, 0.7, 8),
-            new THREE.MeshBasicMaterial({ color: 0xffa020, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
-        );
+        const band = new THREE.Mesh(ROCKET_GEO.band, ROCKET_MAT.band);
+        band.position.y = 0.12;
+        const rearBand = new THREE.Mesh(ROCKET_GEO.band, ROCKET_MAT.body);
+        rearBand.position.y = -0.22;
+        const flame = new THREE.Mesh(ROCKET_GEO.flame, ROCKET_MAT.flame);
         flame.rotation.x = Math.PI;
         flame.position.y = -0.58;
-        g.add(body, nose, band, flame);
+        flame.scale.set(0.82, 0.9, 0.82);
+        const nozzle = new THREE.Mesh(ROCKET_GEO.nozzle, ROCKET_MAT.nozzle);
+        nozzle.rotation.x = Math.PI / 2;
+        nozzle.position.y = -0.285;
+        const fins = [];
+        for (let i = 0; i < 3; i++) {
+            const fin = new THREE.Mesh(ROCKET_GEO.fin, ROCKET_MAT.fin);
+            const angle = i * (Math.PI * 2 / 3);
+            fin.position.set(Math.sin(angle) * 0.105, -0.18, Math.cos(angle) * 0.105);
+            fin.rotation.y = angle;
+            fins.push(fin);
+        }
+        g.add(body, nose, band, rearBand, flame, nozzle, ...fins);
         g.position.set(x, y, z);
         g.userData = { weapon: 'rocket', speed: ROCKET_SPEED, flame };
         scene.add(g);
@@ -5528,8 +5569,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- לייזר: יריות בלסטר קצרות כמו במלחמת הכוכבים (במקום קרניים רציפות) ----
     // כל ירייה היא "גלולה" זוהרת שטסה למעלה ועוברת דרך כל הסלעים (פעם אחת לכל סלע).
-    const LASER_BOLT_COLOR = 0xff2a2a;   // אדום. לירוק: 0x2bff5a
-    const LASER_BOLT_CORE = 0xffe6e0;    // ליבה לבנה-חמה
+    const LASER_BOLT_COLOR = 0xff3428;   // אדום-לוהט, עם מעטפת אנרגיה בולטת
+    const LASER_BOLT_CORE = 0xfff4dc;    // ליבה לבנה-חמה
     const LASER_BOLT_SPEED = 0.95;       // מהירה בהרבה מקליע רגיל (0.42)
     const LASER_BOLT_DAMAGE = 0.75;      // x כוח ירי לכל סלע שהירייה חודרת
     const laserBolts = [];
@@ -5543,8 +5584,8 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         laserBoltShared = {
             geo: new THREE.SphereGeometry(1, 14, 10),
-            outer: mat(LASER_BOLT_COLOR, 0.16),
-            mid: mat(LASER_BOLT_COLOR, 0.6),
+            outer: mat(0xff4a24, 0.20),
+            mid: mat(LASER_BOLT_COLOR, 0.68),
             core: mat(LASER_BOLT_CORE, 1.0)
         };
         return laserBoltShared;
@@ -5559,9 +5600,9 @@ window.addEventListener('DOMContentLoaded', () => {
             m.renderOrder = 19;
             g.add(m);
         };
-        layer(sh.outer, 0.34, 1.10);   // זוהר רחב
-        layer(sh.mid, 0.19, 0.86);     // גוף אדום
-        layer(sh.core, 0.08, 0.70);    // ליבה לבנה
+        layer(sh.outer, 0.36, 1.24);   // הילה רחבה ומוארכת
+        layer(sh.mid, 0.19, 1.02);     // גוף אדום צפוף
+        layer(sh.core, 0.075, 0.78);   // ליבה לבנה חמה
         g.position.set(x, y + 0.5, 0.4);
         g.userData = { hit: new Set() };
         scene.add(g);
@@ -6627,10 +6668,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         bullets.forEach(b => {
             scene.remove(b);
-            b.traverse(child => {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) child.material.dispose();
-            });
         });
         bullets.length = 0;
 
@@ -7213,10 +7250,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (b.position.y > 18) {
                 scene.remove(b);
-                b.traverse(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) child.material.dispose();
-                });
                 bullets.splice(i, 1);
             }
         }
@@ -7310,10 +7343,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (b.position.distanceTo(r.position) < data.size * 0.88) {
                     scene.remove(b);
-                    b.traverse(child => {
-                        if (child.geometry) child.geometry.dispose();
-                        if (child.material) child.material.dispose();
-                    });
                     bullets.splice(bIdx, 1);
 
                     // רקטות וברק: הנזק מחושב אחרי הלולאה (פיצוץ באזור / קפיצה בין סלעים)
