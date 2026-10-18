@@ -5001,7 +5001,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 8. יצירת סלעים, כדורים ומטבעות
     // ==========================================
-    function spawnBullet(x, y, z, weapon) {
+    function spawnBullet(x, y, z, weapon, streamIdx) {
         const bullet = new THREE.Group();
         const blue = weapon === 'lightning';   // קליעים זהובים כמו בתמונת המטרה; ברק = כחול-לבן
         const glow = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending };
@@ -5028,7 +5028,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         bullet.add(core, shell, halo, trail);
         bullet.position.set(x, y, z);
-        bullet.userData = { core, trail, weapon: weapon || null };
+        bullet.userData = { core, trail, weapon: weapon || null, stream: streamIdx || 0 };
+        // ברק: אין כדור נראה. הקליעים עדיין קיימים לחישוב פגיעות, והזרם החשמלי נצבע דרכם (ראו updateLightningStreams).
+        if (blue) bullet.visible = false;
         scene.add(bullet);
         bullets.push(bullet);
     }
@@ -5315,8 +5317,172 @@ window.addEventListener('DOMContentLoaded', () => {
         if (hitAny) playSound('hit');
     }
 
+    // ---- ברק: זרמי חשמל כחולים שיוצאים מהקנים (במקום כדורים) ----
+    // כל קנה מצייר פס חשמל מחוספס שעובר דרך הקליעים שלו, ולכן הוא נשבר ונעקם יחד עם תנועת התותח
+    // ונעצר בסלע שנפגע. מרכז לבן, זוהר כחול סביבו, והבהוב מחדש בכל פריים.
+    const STREAM_MAX_PTS = 300;     // נקודות לכל פס (חיץ קבוע, בלי הקצאות בכל פריים)
+    const STREAM_GAP = 2.6;         // קליעים קרובים מזה מתחברים לזרם אחד
+    const STREAM_TAIL = 1.7;        // אורך הזרם מאחורי קליע בודד (קצב אש נמוך)
+    const STREAM_STEP = 0.42;       // אורך מקטע ברק
+    const STREAM_JITTER = 0.26;     // עוצמת ההתעקמות הצידה
+    const lightningStreams = [];    // לכל קנה: { layers: [3 ריבונים] }
+    let streamMuzzleXs = null, streamMuzzleY = 0;
+
+    function createStreamRibbon(width, color, opacity) {
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array(STREAM_MAX_PTS * 2 * 3);
+        const idx = new Uint16Array(STREAM_MAX_PTS * 6);
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+        geo.setIndex(new THREE.BufferAttribute(idx, 1).setUsage(THREE.DynamicDrawUsage));
+        geo.setDrawRange(0, 0);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+            color, transparent: true, opacity, depthWrite: false, depthTest: false,
+            blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+        }));
+        mesh.renderOrder = 21;
+        mesh.frustumCulled = false;
+        mesh.visible = false;
+        mesh.userData = { width, pos, idx, geo, baseOpacity: opacity };
+        scene.add(mesh);
+        return mesh;
+    }
+
+    function ensureLightningStream(i) {
+        while (lightningStreams.length <= i) {
+            lightningStreams.push({
+                layers: [
+                    createStreamRibbon(0.52, 0x1f6bff, 0.20),   // זוהר חיצוני
+                    createStreamRibbon(0.24, 0x59b8ff, 0.55),   // גוף כחול
+                    createStreamRibbon(0.09, 0xffffff, 1.0)     // ליבה לבנה
+                ]
+            });
+        }
+        return lightningStreams[i];
+    }
+
+    function fillStreamRibbon(mesh, strands) {
+        const u = mesh.userData;
+        let vi = 0, ii = 0;
+        for (let s = 0; s < strands.length; s++) {
+            const pts = strands[s];
+            const n = pts.length;
+            if (n < 2) continue;
+            if (vi + n > STREAM_MAX_PTS) break;
+            for (let i = 0; i < n; i++) {
+                const a = pts[i > 0 ? i - 1 : 0], b = pts[i < n - 1 ? i + 1 : n - 1];
+                let dx = b[0] - a[0], dy = b[1] - a[1];
+                const l = Math.hypot(dx, dy) || 1;
+                dx /= l; dy /= l;
+                const nx = -dy, ny = dx;
+                const hw = u.width * 0.5 * pts[i][2];
+                const o = (vi + i) * 6;
+                u.pos[o] = pts[i][0] + nx * hw; u.pos[o + 1] = pts[i][1] + ny * hw; u.pos[o + 2] = 0.45;
+                u.pos[o + 3] = pts[i][0] - nx * hw; u.pos[o + 4] = pts[i][1] - ny * hw; u.pos[o + 5] = 0.45;
+                if (i < n - 1) {
+                    const k = (vi + i) * 2;
+                    u.idx[ii] = k; u.idx[ii + 1] = k + 1; u.idx[ii + 2] = k + 2;
+                    u.idx[ii + 3] = k + 1; u.idx[ii + 4] = k + 3; u.idx[ii + 5] = k + 2;
+                    ii += 6;
+                }
+            }
+            vi += n;
+        }
+        u.geo.attributes.position.needsUpdate = true;
+        u.geo.index.needsUpdate = true;
+        u.geo.setDrawRange(0, ii);
+        mesh.visible = ii > 0;
+        mesh.material.opacity = u.baseOpacity * (0.78 + Math.random() * 0.22);
+    }
+
+    // נקודות עוגן -> קו חשמל מחוספס (מקטעים קצרים עם סטייה אקראית לצדדים)
+    function electrifyStrand(anchors) {
+        const out = [];
+        for (let i = 0; i < anchors.length - 1; i++) {
+            const x1 = anchors[i][0], y1 = anchors[i][1], x2 = anchors[i + 1][0], y2 = anchors[i + 1][1];
+            const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+            const px = -dy / len, py = dx / len;
+            const k = Math.max(1, Math.round(len / STREAM_STEP));
+            for (let j = 0; j < k; j++) {
+                const t = j / k;
+                const jit = (i === 0 && j === 0) ? 0 : (Math.random() - 0.5) * STREAM_JITTER;
+                out.push([x1 + dx * t + px * jit, y1 + dy * t + py * jit, 1]);
+            }
+        }
+        const last = anchors[anchors.length - 1];
+        out.push([last[0], last[1], 1]);
+        out[0][2] = 0.55;
+        out[out.length - 1][2] = 0.3;
+        return out;
+    }
+
+    function updateLightningStreams() {
+        // איסוף קליעי הברק לפי קנה
+        const perBarrel = [];
+        for (let i = 0; i < bullets.length; i++) {
+            const d = bullets[i].userData;
+            if (d && d.weapon === 'lightning') {
+                (perBarrel[d.stream] || (perBarrel[d.stream] = [])).push(bullets[i]);
+            }
+        }
+        const count = Math.max(perBarrel.length, lightningStreams.length);
+        for (let si = 0; si < count; si++) {
+            const list = perBarrel[si];
+            if (!list || !list.length) {
+                if (lightningStreams[si]) lightningStreams[si].layers.forEach(m => { m.visible = false; });
+                continue;
+            }
+            const stream = ensureLightningStream(si);
+            list.sort((a, b) => a.position.y - b.position.y);
+            const mx = streamMuzzleXs ? streamMuzzleXs[si] : list[0].position.x;
+            const my = streamMuzzleY;
+
+            // עוגנים: מהקנה דרך הקליעים. קליעים רחוקים נפרדים לפסים נפרדים עם זנב קצר.
+            const strands = [];
+            let cur = null, lastY = 0;
+            for (let i = 0; i < list.length; i++) {
+                const x = list[i].position.x, y = list[i].position.y;
+                const isLast = i === list.length - 1;
+                if (!cur) {
+                    cur = (streamMuzzleXs && y - my <= STREAM_GAP) ? [[mx, my]] : [[x, y - STREAM_TAIL]];
+                    lastY = cur[0][1];
+                } else if (y - lastY > STREAM_GAP) {
+                    strands.push(cur);
+                    cur = [[x, y - STREAM_TAIL]];
+                    lastY = cur[0][1];
+                }
+                if (y - lastY >= 0.3 || isLast) {
+                    cur.push([x, y]);
+                    lastY = y;
+                }
+            }
+            if (cur) strands.push(cur);
+
+            const dense = [];
+            for (let s = 0; s < strands.length; s++) {
+                if (strands[s].length >= 2) dense.push(electrifyStrand(strands[s]));
+            }
+            // ענפי ברק קצרים שקופצים הצידה
+            if (dense.length && Math.random() < 0.4) {
+                const base = dense[Math.floor(Math.random() * dense.length)];
+                const p = base[1 + Math.floor(Math.random() * (base.length - 1))];
+                const ang = Math.PI / 2 + (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.8);
+                const fl = 0.5 + Math.random() * 0.7;
+                const ex = p[0] + Math.cos(ang) * fl, ey = p[1] + Math.sin(ang) * fl;
+                dense.push([[p[0], p[1], 0.9],
+                            [(p[0] + ex) / 2 + (Math.random() - 0.5) * 0.2, (p[1] + ey) / 2 + (Math.random() - 0.5) * 0.2, 0.7],
+                            [ex, ey, 0.25]]);
+            }
+            stream.layers.forEach(m => fillStreamRibbon(m, dense));
+        }
+    }
+
+    function hideLightningStreams() {
+        lightningStreams.forEach(st => st.layers.forEach(m => { m.visible = false; }));
+    }
+
     // ניקוי בתחילת/סוף ריצה
     function clearWeaponState() {
+        hideLightningStreams();
         pendingWeaponHits.length = 0;
         weaponFx.forEach(disposeWeaponFx);
         weaponFx.length = 0;
@@ -6573,15 +6739,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 muzzleXs = [cannonGroup.position.x - 0.35 * CANNON_SCALE, cannonGroup.position.x + 0.35 * CANNON_SCALE];
             }
 
+            streamMuzzleXs = muzzleXs;
+            streamMuzzleY = muzzleY;
+
             if (activeWeapon === 'laser') {
                 updateLaser(time, muzzleXs, muzzleY);
             } else {
                 hideLaser();
                 const shotInterval = activeWeapon === 'rocket' ? 1000 / (fireRate * ROCKET_RATE) : 1000 / (fireRate * 4);
                 if (time - lastShotTime > shotInterval) {
-                    muzzleXs.forEach(bx => {
+                    muzzleXs.forEach((bx, bi) => {
                         if (activeWeapon === 'rocket') spawnRocket(bx, muzzleY, 0);
-                        else spawnBullet(bx, muzzleY, 0, activeWeapon === 'lightning' ? 'lightning' : null);
+                        else spawnBullet(bx, muzzleY, 0, activeWeapon === 'lightning' ? 'lightning' : null, bi);
                         spawnMuzzleFlash(bx, muzzleY, 0);
                     });
                     cannonRecoil = 0.14;
@@ -6609,6 +6778,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 bullets.splice(i, 1);
             }
         }
+
+        updateLightningStreams();
 
         // ======================================
         // סלעים
