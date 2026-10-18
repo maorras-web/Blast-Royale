@@ -5569,8 +5569,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- לייזר: יריות בלסטר קצרות כמו במלחמת הכוכבים (במקום קרניים רציפות) ----
     // כל ירייה היא "גלולה" זוהרת שטסה למעלה ועוברת דרך כל הסלעים (פעם אחת לכל סלע).
-    const LASER_BOLT_COLOR = 0xff3428;   // אדום-לוהט, עם מעטפת אנרגיה בולטת
-    const LASER_BOLT_CORE = 0xfff4dc;    // ליבה לבנה-חמה
+    const LASER_BOLT_COLOR = 0xff0808;   // גוף אדום טהור וברור
+    const LASER_BOLT_CORE = 0xff3030;    // ליבה אדומה בוהקת — ללא גוון לבן
     const LASER_BOLT_SPEED = 0.95;       // מהירה בהרבה מקליע רגיל (0.42)
     const LASER_BOLT_DAMAGE = 0.75;      // x כוח ירי לכל סלע שהירייה חודרת
     const laserBolts = [];
@@ -5584,8 +5584,8 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         laserBoltShared = {
             geo: new THREE.SphereGeometry(1, 14, 10),
-            outer: mat(0xff4a24, 0.20),
-            mid: mat(LASER_BOLT_COLOR, 0.68),
+            outer: mat(0xff0018, 0.34),
+            mid: mat(LASER_BOLT_COLOR, 0.90),
             core: mat(LASER_BOLT_CORE, 1.0)
         };
         return laserBoltShared;
