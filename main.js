@@ -5244,11 +5244,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (data.hp <= 0) {
             if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
-            if (data.size > 0.9) {
-                const childHp = Math.max(1, Math.floor(data.maxHp / 2));
-                spawnRock(r.position.x - 0.35, r.position.y, childHp, data.size * 0.7, -0.05 - Math.random() * 0.03, 0.05 + Math.random() * 0.08);
-                spawnRock(r.position.x + 0.35, r.position.y, childHp, data.size * 0.7, 0.05 + Math.random() * 0.03, 0.05 + Math.random() * 0.08);
-            }
+            splitRockIntoChildren(r, data);
             removeRock(r, idx);
             updateUI();
         } else {
@@ -5881,7 +5877,41 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(hp, 64, 66);
     }
 
-    function spawnRock(x, y, hp, size, launchVx = null, launchVy = null) {
+    // ==========================================
+    // פיזיקת סלעים בסגנון Ball Blast (משחק ההשראה)
+    // ==========================================
+    // מה נמדד בסרטון של משחק ההשראה:
+    //  - הסלעים נכנסים מצד המסך בגובה קבוע (בלי ליפול), ורק אחרי שנכנסו מתחילה הכבידה.
+    //  - כל קפיצה מהקרקע מגיעה לאותו גובה בדיוק (בלי איבוד אנרגיה); סלע גדול קופץ גבוה יותר מקטן.
+    //  - המהירות האופקית קבועה, והסלעים מוחזרים מקירות המסך.
+    //  - סלעים עוברים זה דרך זה (בלי התנגשות ביניהם).
+    //  - סלע שנהרס מתפצל לשניים קטנים יותר שנפרדים לשני הצדדים ומקפצים.
+    const ROCK_BOUNCE_FRAMES = 74;           // פריימים שלוקח לסלע הגדול לעלות מהקרקע לשיא (~1.2 שנ' ב-60fps). קטן = מהיר יותר
+    const ROCK_SPEED_X = 0.040;              // מהירות אופקית קבועה לפריים (יחידות עולם)
+    const ROCK_CHILD_SCALE = 0.66;           // גודל הסלעים שנוצרים מהפיצול ביחס להורה
+    const ROCK_COLLIDE_EACH_OTHER = false;   // true = כמו קודם: סלעים דוחפים זה את זה
+    // כמה מגובה המסך (מהקרקע) מגיע שיא הקפיצה של סלע בגודל נתון
+    function rockApexFraction(size) {
+        return THREE.MathUtils.clamp(0.26 + 0.22 * size, 0.36, 0.66);
+    }
+    // כבידה אחת לכל הסלעים (מותאמת לגובה המסך), ומהירות קפיצה קבועה לפי גודל הסלע
+    function getRockPhysics(size) {
+        const field = Math.max(8, getScreenTopWorldY() - 0.2);
+        const bigRise = rockApexFraction(1.75) * field;
+        const g = 2 * bigRise / (ROCK_BOUNCE_FRAMES * ROCK_BOUNCE_FRAMES);
+        return { g, bounceVy: Math.sqrt(2 * g * rockApexFraction(size) * field) };
+    }
+    // פיצול סלע שנהרס לשניים: נוצרים באותה נקודה ונפרדים לשני הצדדים עם קפיצה קטנה כלפי מעלה
+    function splitRockIntoChildren(r, data) {
+        if (data.size <= 0.9) return;
+        const childHp = Math.max(1, Math.floor(data.maxHp / 2));
+        const childSize = data.size * ROCK_CHILD_SCALE;
+        const speed = data.speedX || ROCK_SPEED_X;
+        spawnRock(r.position.x - 0.3, r.position.y, childHp, childSize, -speed, 0.09);
+        spawnRock(r.position.x + 0.3, r.position.y, childHp, childSize, speed, 0.09);
+    }
+
+    function spawnRock(x, y, hp, size, launchVx = null, launchVy = null, entering = false) {
         const tier = getRockTier(hp);
         const geo = createIrregularRockGeometry(size, hp);
         const mat = new THREE.MeshStandardMaterial({
@@ -5927,15 +5957,21 @@ window.addEventListener('DOMContentLoaded', () => {
         label.position.y = 0.0;
         rock.add(label);
 
+        const initVx = launchVx !== null ? launchVx : (Math.random() < 0.5 ? -1 : 1) * ROCK_SPEED_X;
+        const phys = getRockPhysics(size);
         rock.userData = {
             hp,
             maxHp: hp,
             size,
-            vx: launchVx !== null ? launchVx : (Math.random() - 0.5) * 0.055,
+            vx: initVx,
             vy: launchVy !== null ? launchVy : 0,
-            rotX: (Math.random() - 0.5) * 0.032,
-            rotY: (Math.random() - 0.5) * 0.038,
-            rotZ: (Math.random() - 0.5) * 0.028,
+            speedX: Math.abs(initVx),                   // מהירות אופקית קבועה
+            g: phys.g,                                  // כבידה
+            bounceVy: phys.bounceVy,                    // מהירות הקפיצה מהקרקע (תמיד אותו גובה)
+            entering,                                   // נכנס מצד המסך: בלי כבידה ובלי קיר עד שנכנס
+            rotX: (Math.random() - 0.5) * 0.012,
+            rotY: (Math.random() - 0.5) * 0.014,
+            rotZ: 0,                                    // גלגול: מחושב כל פריים לפי המהירות האופקית
             ctx,
             texture,
             hitCooldown: 0,
@@ -6390,13 +6426,17 @@ window.addEventListener('DOMContentLoaded', () => {
             hasStartedFirstWave = true;
 
             const count = Math.min(2 + Math.floor(level / 2), 5);
+            // כמו במשחק ההשראה: הסלעים נכנסים מצדי המסך (לסירוגין) בגובה קבוע, ורק אחרי שנכנסו מתחילה הכבידה.
+            const topY = getScreenTopWorldY();
+            const enterY = 0.2 + (topY - 0.2) * 0.62;
             for (let i = 0; i < count; i++) {
                 const size = 0.95 + Math.random() * 0.8;
                 const hp = Math.floor((8 + level * 6) * (size / 1.2));
-                const spawnX = (Math.random() - 0.5) * (screenLimitX * 1.4);
-                // מתחילים מעל קצה המסך העליון (+ גודל הסלע + מרווח), עם דחיפה קלה כלפי מטה
-                const spawnY = getScreenTopWorldY() + size * 1.6 + 1.5 + i * 3;
-                spawnRock(spawnX, spawnY, hp, size, null, -0.12);
+                const side = i % 2 === 0 ? -1 : 1;
+                const lane = Math.floor(i / 2);
+                const spawnX = side * (screenLimitX + 2.6 + size + lane * (size * 2.6 + 0.6));
+                const spawnY = Math.min(enterY, topY - size - 2.5);
+                spawnRock(spawnX, spawnY, hp, size, -side * ROCK_SPEED_X * (0.92 + Math.random() * 0.16), 0, true);
             }
 
             updateUI();
@@ -7053,9 +7093,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 r.scale.setScalar(1 + data.flash * 0.05);
             }
 
-            data.vy -= 0.0025;
+            if (!data.entering) data.vy -= data.g;     // בכניסה מהצד אין כבידה
             r.position.x += data.vx;
             r.position.y += data.vy;
+            if (data.entering && Math.abs(r.position.x) <= screenLimitX) data.entering = false;
+            data.rotZ = -data.vx / data.size * 0.9;     // גולל לכיוון התנועה
             r.rotation.x += data.rotX;
             r.rotation.y += data.rotY;
             r.rotation.z += data.rotZ;
@@ -7089,23 +7131,22 @@ window.addEventListener('DOMContentLoaded', () => {
             // ==================================
             if (r.position.y - data.size < 0.2) {
                 r.position.y = 0.2 + data.size;
-                data.vy = Math.abs(data.vy) * 0.95;
-                if (data.vy < 0.12) data.vy = 0.16;
-                data.vx *= 0.985;
+                data.vy = data.bounceVy;                               // תמיד אותו גובה קפיצה (בלי איבוד אנרגיה)
+                data.vx = (Math.sign(data.vx) || 1) * data.speedX;     // מהירות אופקית קבועה
                 spawnDustBurst(r.position.x, 0.25, r.position.z);
             }
 
             // ==================================
             // גבולות X
             // ==================================
-            if (Math.abs(r.position.x) > screenLimitX) {
+            if (!data.entering && Math.abs(r.position.x) > screenLimitX) {
                 data.vx *= -1;
                 r.position.x = Math.sign(r.position.x) * screenLimitX;
             }
 
             // התנגשות בין כל זוגות הסלעים: מבוצעת פעם אחת בכל פריים.
             // כך סלעים שנפגשים באמת דוחפים, מפרידים ומעבירים תנע אחד לשני.
-            if (rIdx === 0) {
+            if (rIdx === 0 && ROCK_COLLIDE_EACH_OTHER) {
                 resolveRockRockCollisions();
             }
 
@@ -7141,11 +7182,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (data.hp <= 0) {
                         if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
 
-                        if (data.size > 0.9) {
-                            const childHp = Math.max(1, Math.floor(data.maxHp / 2));
-                            spawnRock(r.position.x - 0.35, r.position.y, childHp, data.size * 0.7, -0.05 - Math.random() * 0.03, 0.05 + Math.random() * 0.08);
-                            spawnRock(r.position.x + 0.35, r.position.y, childHp, data.size * 0.7, 0.05 + Math.random() * 0.03, 0.05 + Math.random() * 0.08);
-                        }
+                        splitRockIntoChildren(r, data);
 
                         removeRock(r, rIdx);
                         updateUI();
