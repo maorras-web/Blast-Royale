@@ -5914,7 +5914,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ---- ברק: זרמי חשמל כחולים שיוצאים מהקנים (במקום כדורים) ----
     // כל קנה מצייר פס חשמל מחוספס שעובר דרך הקליעים שלו, ולכן הוא נשבר ונעקם יחד עם תנועת התותח
     // ונעצר בסלע שנפגע. מרכז לבן, זוהר כחול סביבו, והבהוב מחדש בכל פריים.
-    const STREAM_MAX_PTS = 300;     // נקודות לכל פס (חיץ קבוע, בלי הקצאות בכל פריים)
+    const STREAM_MAX_PTS = 600;     // נקודות לכל פס (חיץ קבוע, בלי הקצאות בכל פריים)
     const STREAM_GAP = 2.6;         // קליעים קרובים מזה מתחברים לזרם אחד
     const STREAM_TAIL = 1.7;        // אורך הזרם מאחורי קליע בודד (קצב אש נמוך)
     const STREAM_STEP = 0.42;       // אורך מקטע ברק
@@ -6091,11 +6091,11 @@ window.addEventListener('DOMContentLoaded', () => {
         glowCanvas.width = glowCanvas.height = 128;
         const gx = glowCanvas.getContext('2d');
         const gg = gx.createRadialGradient(64, 64, 0, 64, 64, 64);
-        gg.addColorStop(0.00, 'rgba(190,240,255,0.9)');
-        gg.addColorStop(0.12, 'rgba(90,190,255,0.75)');
-        gg.addColorStop(0.30, 'rgba(40,110,255,0.42)');
-        gg.addColorStop(0.60, 'rgba(30,60,230,0.14)');
-        gg.addColorStop(1.00, 'rgba(20,20,180,0)');
+        gg.addColorStop(0.00, 'rgba(255,255,255,1)');
+        gg.addColorStop(0.10, 'rgba(215,248,255,0.95)');
+        gg.addColorStop(0.28, 'rgba(110,205,255,0.55)');
+        gg.addColorStop(0.55, 'rgba(70,110,255,0.20)');
+        gg.addColorStop(1.00, 'rgba(40,30,200,0)');
         gx.fillStyle = gg;
         gx.fillRect(0, 0, 128, 128);
 
@@ -6104,9 +6104,9 @@ window.addEventListener('DOMContentLoaded', () => {
         tailCanvas.height = 128;
         const tx = tailCanvas.getContext('2d');
         const tg = tx.createLinearGradient(0, 0, 0, 128);
-        tg.addColorStop(0.0, 'rgba(80,170,255,0.75)');
-        tg.addColorStop(0.35, 'rgba(40,90,240,0.35)');
-        tg.addColorStop(1.0, 'rgba(40,30,200,0)');
+        tg.addColorStop(0.0, 'rgba(150,235,255,0.85)');
+        tg.addColorStop(0.35, 'rgba(70,140,255,0.38)');
+        tg.addColorStop(1.0, 'rgba(60,40,220,0)');
         tx.fillStyle = tg;
         tx.fillRect(0, 0, 32, 128);
         // מרכז חזק יותר בציר האנכי (זנב מחודד)
@@ -6124,7 +6124,7 @@ window.addEventListener('DOMContentLoaded', () => {
             transparent: true,
             depthWrite: false,
             depthTest: false,
-            blending: THREE.NormalBlending,
+            blending: THREE.AdditiveBlending,
             vertexShader: [
                 'varying vec3 vPos;',
                 'varying vec3 vN;',
@@ -6170,12 +6170,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 '  float v2 = pow(clamp(1.0 - abs(n2 - 0.5) * 2.4, 0.0, 1.0), 6.0);',
                 '  float facing = clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0);',
                 '  float rim = pow(1.0 - facing, 2.2);',
-                '  vec3 base = mix(vec3(0.05, 0.10, 0.70), vec3(0.10, 0.50, 0.95), n2);',
-                '  vec3 col = base;',
-                '  col += vec3(0.45, 0.88, 1.0) * (v1 * 1.1 + v2 * 0.7);',
-                '  col += vec3(0.35, 0.25, 1.0) * rim * 0.9;',
-                '  col += vec3(0.60, 0.92, 1.0) * pow(facing, 4.0) * 0.55;',
-                '  float a = 0.97;',
+                '  vec3 base = mix(vec3(0.10, 0.16, 0.95), vec3(0.20, 0.72, 1.0), n2);',
+                '  vec3 col = base * 0.95;',
+                '  col += vec3(0.80, 0.96, 1.0) * (v1 * 1.4 + v2 * 0.9);',
+                '  col += vec3(0.45, 0.35, 1.0) * rim * 1.3;',
+                '  col += vec3(0.95, 1.0, 1.0) * pow(facing, 3.0) * 0.8;',
+                '  float a = clamp(0.80 + rim * 0.35 + v1 * 0.5, 0.0, 1.0);',
                 '  gl_FragColor = vec4(col, a);',
                 '}'
             ].join('\n')
@@ -6184,7 +6184,7 @@ window.addEventListener('DOMContentLoaded', () => {
         plasmaAssets = {
             glowTex: new THREE.CanvasTexture(glowCanvas),
             tailTex: new THREE.CanvasTexture(tailCanvas),
-            sphereGeo: new THREE.SphereGeometry(0.34, 22, 16),
+            sphereGeo: new THREE.SphereGeometry(0.30, 22, 16),
             tailGeo: new THREE.PlaneGeometry(0.50, 2.0),
             sphereMat: mat
         };
@@ -6198,7 +6198,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const g = new THREE.Group();
 
         const tail = new THREE.Mesh(A.tailGeo, new THREE.MeshBasicMaterial({
-            map: A.tailTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.NormalBlending
+            map: A.tailTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending
         }));
         tail.position.y = -1.15;
         tail.renderOrder = 20;
@@ -6206,7 +6206,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const glow = new THREE.Sprite(new THREE.SpriteMaterial({
             map: A.glowTex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending
         }));
-        glow.scale.set(1.55, 1.55, 1);
+        glow.scale.set(1.9, 1.9, 1);
         glow.renderOrder = 21;
 
         const sphere = new THREE.Mesh(A.sphereGeo, A.sphereMat);
@@ -6226,11 +6226,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensurePlasmaLayers() {
         if (plasmaLayers) return plasmaLayers;
         plasmaLayers = [
-            createStreamRibbon(0.24, 0x1a2cc8, 0.55),   // מסגרת כחולה כהה (קריאה גם על שמיים בהירים)
-            createStreamRibbon(0.10, 0x59d8ff, 0.95),   // גוף תכלת
-            createStreamRibbon(0.035, 0xffffff, 1.0)    // ליבה לבנה דקה
+            createStreamRibbon(0.20, 0x4a5cff, 0.32),   // הילה סגולה-כחולה
+            createStreamRibbon(0.085, 0x8fe9ff, 0.80),  // גוף תכלת
+            createStreamRibbon(0.032, 0xffffff, 1.0)    // ליבה לבנה דקה
         ];
-        plasmaLayers.forEach(m => { m.material.blending = THREE.NormalBlending; m.material.needsUpdate = true; });
         return plasmaLayers;
     }
 
@@ -6253,7 +6252,7 @@ window.addEventListener('DOMContentLoaded', () => {
             orb.scale.setScalar(pulse);
             od.sphere.rotation.x += 0.06;
             od.sphere.rotation.y += 0.09;
-            od.glow.material.opacity = 0.60 + 0.15 * Math.sin(time * 0.05 + od.seed * 2);
+            od.glow.material.opacity = 0.85 + 0.15 * Math.sin(time * 0.05 + od.seed * 2);
 
             // קשתות חשמל סביב הכדור: מתחדשות בערך כל 3 פריימים, ועוקבות אחרי הכדור בכל פריים.
             for (let a = 0; a < od.arcs.length; a++) {
