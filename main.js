@@ -3785,6 +3785,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const PREVIEW_CANNON = (window.location.search.match(/[?&]cannon=(titan|viper)\b/) || [])[1] || null;
     let advancedCannonOwned = MK2_PREVIEW || localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
     let activeCannon = MK2_PREVIEW ? 'mk2' : (localStorage.getItem('bb3d_active_cannon') || 'classic');
+    // TITAN ו-VIPER: תותחים חדשים שנבנים על הגוף הקלאסי. כאן נשמר מה נרכש; המחיר נקבע כאן (אפשר לשנות).
+    const NEW_CANNON_PRICES = { titan: 1000, viper: 2000 };
+    let ownedNewCannons = [];
+    try {
+        const savedNew = JSON.parse(localStorage.getItem('bb3d_cannons_new_owned') || '[]');
+        if (Array.isArray(savedNew)) ownedNewCannons = savedNew.filter(id => id === 'titan' || id === 'viper');
+    } catch (e) { /* ignore */ }
 
     const advancedCannonGroup = new THREE.Group();
     advancedCannonGroup.visible = false;   // ה-MK-II הישן כבוי; התותח האפור בנוי על הקלאסי
@@ -4741,6 +4748,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function setActiveCannon(type) {
+        // TITAN / VIPER: activeCannon נשאר 'classic' (הגוף והגלגלים), ו-activeNewCannon קובע את הראש והקנים
+        const newCannonId = (!PREVIEW_CANNON && NEW_CANNONS[type] && ownedNewCannons.includes(type)) ? type : null;
         activeCannon = (!PREVIEW_CANNON && type === 'mk2' && advancedCannonOwned) ? 'mk2' : 'classic';
         advancedCannonGroup.visible = false;
         // הנובה גדול יותר; כל החישובים (קליעים, התנגשויות, גלגלים) משתמשים ב-CANNON_SCALE החי
@@ -4748,8 +4757,8 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.scale.setScalar(CANNON_SCALE);
         mk2Tracks.children.forEach((strip, i) => { strip.position.z = (i === 0 ? -1 : 1) * MK2_WHEEL_Z * CANNON_SCALE; });
         applyCannonLook(activeCannon === 'mk2');
-        applyNewCannonLook(PREVIEW_CANNON);
-        if (!MK2_PREVIEW && !PREVIEW_CANNON) localStorage.setItem('bb3d_active_cannon', activeCannon);
+        applyNewCannonLook(PREVIEW_CANNON || newCannonId);
+        if (!MK2_PREVIEW && !PREVIEW_CANNON) localStorage.setItem('bb3d_active_cannon', newCannonId || activeCannon);
     }
 
     setActiveCannon(activeCannon);
@@ -5001,6 +5010,10 @@ window.addEventListener('DOMContentLoaded', () => {
           desc: 'The reliable twin-barrel cannon. Balanced, steady and easy to control.' },
         { kind: 'cannon', id: 'mk2', name: 'Nova Cannon', icon: '🛡️', color: '#38bdf8', tag: 'CANNON',
           desc: 'Armored off-road cannon with powered suspension and big tyres. Bigger, tougher and ready for anything.' },
+        { kind: 'cannon', id: 'titan', name: 'Titan', icon: '🔥', color: '#ff7a00', tag: 'CANNON',
+          desc: 'Armored siege cannon with a single massive barrel and orange hazard plating.' },
+        { kind: 'cannon', id: 'viper', name: 'Viper', icon: '🐍', color: '#ef4444', tag: 'CANNON',
+          desc: 'Sleek red cannon with a triple-barrel array that sprays a wide fan of shots.' },
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
           stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
@@ -5017,9 +5030,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function invItemState(item) {
         if (item.kind === 'cannon') {
+            if (NEW_CANNONS[item.id]) {
+                return { owned: ownedNewCannons.includes(item.id), equipped: activeNewCannon === item.id, price: NEW_CANNON_PRICES[item.id] || 0 };
+            }
             const price = item.id === 'mk2' ? ADVANCED_CANNON_PRICE : 0;
             const owned = item.id === 'mk2' ? advancedCannonOwned : true;
-            const equipped = (activeCannon === 'mk2') === (item.id === 'mk2');
+            const equipped = !activeNewCannon && (activeCannon === 'mk2') === (item.id === 'mk2');
             return { owned, equipped, price };
         }
         const w = WEAPONS[item.id];
@@ -5027,6 +5043,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectOrBuyCannon(id) {
+        if (NEW_CANNONS[id]) {
+            if (!ownedNewCannons.includes(id)) {
+                const price = NEW_CANNON_PRICES[id] || 0;
+                if (coins < price) return;
+                coins -= price;
+                ownedNewCannons.push(id);
+                localStorage.setItem('bb3d_cannons_new_owned', JSON.stringify(ownedNewCannons));
+                localStorage.setItem('bb3d_coins', coins);
+            }
+            setActiveCannon(id);
+            updateUI();
+            return;
+        }
         if (id === 'mk2') {
             if (!advancedCannonOwned) {
                 if (coins < ADVANCED_CANNON_PRICE) return;
