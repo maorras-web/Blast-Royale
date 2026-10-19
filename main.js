@@ -4645,12 +4645,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const NEW_CANNONS = {};
 
-    // ---------------- TITAN: טנק כבד, קנה אחד עבה, פסי אזהרה כתומים ----------------
+    // ---------------- TITAN: טנק כבד, קנה אחד עבה וארוך, פסי אזהרה כתומים ----------------
     {
-        const steel = nmat(0x4b5157, 0.70, 0.42);
-        const dark = nmat(0x1f2327, 0.60, 0.45);
-        const orange = nmat(0xff7a00, 0.35, 0.50, 0x3a1500);
-        const glow = new THREE.MeshBasicMaterial({ color: 0xffa830 });
+        const steel = nmat(0x50565d, 0.55, 0.45);
+        const dark = nmat(0x1c2024, 0.60, 0.45);
+        const orange = nmat(0xe85d00, 0.20, 0.62, 0x240c00);   // כתום עמוק (לא צהוב)
+        const glow = new THREE.MeshBasicMaterial({ color: 0xff8a1f });
         const noShadowGlow = m => m !== glow;
 
         const head = new THREE.Group();
@@ -4676,22 +4676,24 @@ window.addEventListener('DOMContentLoaded', () => {
         B.build(head, noShadowGlow);
 
         const R = makeBatcher();
-        R.add(new THREE.CylinderGeometry(0.50, 0.54, 0.26, 24), dark, 0, 1.70, 0);          // צווארון הקנה
-        R.add(new THREE.CylinderGeometry(0.30, 0.34, 0.82, 24), steel, 0, 2.05, 0);         // הקנה
-        R.add(new THREE.TorusGeometry(0.335, 0.035, 6, 24), orange, 0, 1.98, 0, Math.PI / 2, 0, 0);   // טבעת כתומה
-        R.add(new THREE.CylinderGeometry(0.43, 0.40, 0.18, 24), dark, 0, 2.50, 0);          // בולם לוע
-        R.add(new THREE.CylinderGeometry(0.24, 0.24, 0.02, 20), glow, 0, 2.60, 0);          // זוהר הלוע
+        R.add(new THREE.CylinderGeometry(0.52, 0.58, 0.30, 24), dark, 0, 1.72, 0);          // צווארון הקנה
+        R.add(new THREE.CylinderGeometry(0.31, 0.36, 1.00, 24), steel, 0, 2.25, 0);         // הקנה: עבה וארוך
+        R.add(new THREE.TorusGeometry(0.345, 0.04, 6, 24), orange, 0, 1.95, 0, Math.PI / 2, 0, 0);   // טבעות כתומות
+        R.add(new THREE.TorusGeometry(0.325, 0.04, 6, 24), orange, 0, 2.35, 0, Math.PI / 2, 0, 0);
+        R.add(new THREE.CylinderGeometry(0.47, 0.42, 0.22, 24), dark, 0, 2.80, 0);          // בולם לוע גדול
+        R.add(new THREE.CylinderGeometry(0.26, 0.26, 0.02, 20), glow, 0, 2.92, 0);          // זוהר הלוע
         R.build(rig, noShadowGlow);
 
-        NEW_CANNONS.titan = { head, rig, barrelX: [0], muzzleY: 2.25 };
+        NEW_CANNONS.titan = { head, rig, barrelX: [0], muzzleY: 2.6 };
     }
 
-    // ---------------- VIPER: קל ומהיר, שלושה קנים, כנפיים אדומות ----------------
+    // ---------------- VIPER: קל ומהיר, שלושה קנים, כנפיים אדומות חדות ----------------
     {
         const red = nmat(0xc2171d, 0.55, 0.32, 0x2a0204);
         const dark = nmat(0x14171b, 0.60, 0.40);
         const steel = nmat(0x8a939b, 0.85, 0.28);
-        const orange = nmat(0xff7a00, 0.35, 0.50, 0x3a1500);
+        const orange = nmat(0xe85d00, 0.20, 0.62, 0x240c00);
+        const glass = nmat(0x0b0e12, 0.90, 0.15);
         const glow = new THREE.MeshBasicMaterial({ color: 0xff5a2a });
         const noShadowGlow = m => m !== glow;
 
@@ -4704,32 +4706,38 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const B = makeBatcher();
         B.add(nrb(2.00, 0.20, 1.50, 0.08, 0.03), dark, 0, 0.76, 0.05);                      // סיפון נמוך
-        B.add(new THREE.SphereGeometry(0.55, 24, 14), red, 0, 0.95, -0.05, 0, 0, 0, 1.35, 0.50, 1.45);   // חופה אדומה אווירודינמית
+        B.add(new THREE.SphereGeometry(0.55, 24, 14), red, 0, 1.00, -0.05, 0, 0, 0, 1.15, 0.62, 1.50);   // חופה אדומה ארוכה וגבוהה
+        B.add(new THREE.SphereGeometry(0.55, 20, 12), glass, 0, 1.04, 0.28, 0, 0, 0, 0.80, 0.42, 0.75);  // שמשה כהה בחזית החופה
         [-1, 1].forEach(sd => {
-            B.add(nrb(1.00, 0.06, 1.15, 0.03, 0.02), red, sd * 1.12, 0.86, 0, 0, 0, sd * 0.22);          // כנף
-            B.add(new THREE.BoxGeometry(0.95, 0.035, 0.05), glow, sd * 1.12, 0.885, 0.60, 0, 0, sd * 0.22);   // פס זוהר בקצה הכנף
-            B.add(nrb(0.24, 0.24, 0.50, 0.05, 0.02), dark, sd * 0.78, 0.92, 0.55);          // יניקות אוויר
-            B.add(new THREE.BoxGeometry(0.20, 0.05, 0.04), glow, sd * 0.50, 0.80, -0.78);   // פנסי זנב
+            B.add(nrb(0.95, 0.05, 1.15, 0.025, 0.015), red, sd * 1.08, 0.84, -0.05, 0, sd * 0.35, sd * 0.14);     // כנף: נוטה ומוסטת לאחור
+            B.add(new THREE.BoxGeometry(0.90, 0.03, 0.045), glow, sd * 1.10, 0.865, 0.48, 0, sd * 0.35, sd * 0.14); // פס זוהר בקצה הכנף
+            B.add(nrb(0.26, 0.26, 1.25, 0.06, 0.03), red, sd * 0.98, 0.74, 0);                // חצאית צד שמחברת כנף לגוף
+            B.add(nrb(0.24, 0.24, 0.50, 0.05, 0.02), dark, sd * 0.72, 0.90, 0.62);            // יניקות אוויר
+            B.add(new THREE.BoxGeometry(0.20, 0.05, 0.04), glow, sd * 0.50, 0.80, -0.78);     // פנסי זנב
         });
         B.add(nrb(0.08, 0.36, 0.50, 0.03, 0.02), red, 0, 1.06, -0.72);                      // סנפיר אחורי
         B.build(head, noShadowGlow);
 
         const R = makeBatcher();
-        R.add(nrb(1.50, 0.16, 0.46, 0.05, 0.03), dark, 0, 1.12, 0.02);                      // בסיס הקנים
-        R.add(new THREE.CylinderGeometry(0.12, 0.14, 1.00, 18), steel, 0, 1.68, 0);         // קנה מרכזי ארוך
-        R.add(new THREE.CylinderGeometry(0.16, 0.14, 0.10, 18), dark, 0, 2.23, 0);
-        R.add(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 14), glow, 0, 2.29, 0);
-        R.add(new THREE.TorusGeometry(0.145, 0.025, 6, 16), orange, 0, 1.55, 0, Math.PI / 2, 0, 0);
+        R.add(nrb(1.60, 0.18, 0.50, 0.05, 0.03), dark, 0, 1.12, 0.02);                      // בסיס הקנים
+        R.add(new THREE.CylinderGeometry(0.14, 0.17, 1.25, 18), steel, 0, 1.80, 0);         // קנה מרכזי ארוך ועבה
+        R.add(new THREE.CylinderGeometry(0.19, 0.17, 0.10, 18), dark, 0, 2.475, 0);
+        R.add(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 14), glow, 0, 2.535, 0);
+        R.add(new THREE.TorusGeometry(0.18, 0.028, 6, 16), orange, 0, 1.60, 0, Math.PI / 2, 0, 0);
         [-1, 1].forEach(sd => {
-            R.add(new THREE.CylinderGeometry(0.11, 0.13, 0.75, 18), steel, sd * 0.50, 1.52, 0);        // קנים צדדיים קצרים
-            R.add(new THREE.CylinderGeometry(0.15, 0.13, 0.10, 18), dark, sd * 0.50, 1.945, 0);
-            R.add(new THREE.CylinderGeometry(0.085, 0.085, 0.02, 14), glow, sd * 0.50, 2.005, 0);
-            R.add(new THREE.TorusGeometry(0.135, 0.025, 6, 16), orange, sd * 0.50, 1.40, 0, Math.PI / 2, 0, 0);
+            R.add(new THREE.CylinderGeometry(0.13, 0.15, 0.95, 18), steel, sd * 0.52, 1.65, 0);       // קנים צדדיים
+            R.add(new THREE.CylinderGeometry(0.17, 0.15, 0.10, 18), dark, sd * 0.52, 2.175, 0);
+            R.add(new THREE.CylinderGeometry(0.10, 0.10, 0.02, 14), glow, sd * 0.52, 2.235, 0);
+            R.add(new THREE.TorusGeometry(0.165, 0.028, 6, 16), orange, sd * 0.52, 1.45, 0, Math.PI / 2, 0, 0);
         });
         R.build(rig, noShadowGlow);
 
-        NEW_CANNONS.viper = { head, rig, barrelX: [-0.50, 0, 0.50], muzzleY: 1.75 };
+        NEW_CANNONS.viper = { head, rig, barrelX: [-0.52, 0, 0.52], muzzleY: 1.95 };
     }
+
+    // צבע הגוף התחתון הקלאסי (הקופסה הכהה) מתחלף לצבע של התותח, כדי שלא יישאר "קופסה שחורה"
+    const NEWC_HULL = { titan: nmat(0x373c42, 0.65, 0.40), viper: nmat(0x6e0d14, 0.60, 0.30, 0x1a0204) };
+    const classicHullMeshes = classicBodyParts.filter(p => p.isMesh && p.material === bodyMetalMat);
 
     let activeNewCannon = null;
     function applyNewCannonLook(id) {
@@ -4737,6 +4745,7 @@ window.addEventListener('DOMContentLoaded', () => {
         Object.keys(NEW_CANNONS).forEach(k => { NEW_CANNONS[k].head.visible = (k === activeNewCannon); });
         // הצריח והקנים הקלאסיים מוסתרים; הגוף התחתון, ההשעיה והגלגלים נשארים
         if (activeNewCannon) classicTurretParts.forEach(p => { p.visible = false; });
+        classicHullMeshes.forEach(m => { m.material = activeNewCannon ? NEWC_HULL[activeNewCannon] : bodyMetalMat; });
     }
 
     function applyCannonLook(isMk2) {
