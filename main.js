@@ -5504,6 +5504,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (data.hp <= 0) {
             if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
             splitRockIntoChildren(r, data);
+            missionOnRock();
             removeRock(r, idx);
             updateUI();
         } else {
@@ -6991,7 +6992,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function startNextWave() {
         // לא מתחילים גל חדש עד שכל הסלעים נעלמו.
         if (rocks.length === 0) {
-            if (hasStartedFirstWave) level++;
+            if (hasStartedFirstWave) { level++; missionOnLevel(level); }
             hasStartedFirstWave = true;
 
             const count = Math.min(2 + Math.floor(level / 2), 5);
@@ -7196,6 +7197,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (splashScreen) splashScreen.classList.add('hidden');
 
         resetRunState();
+        missionOnRunStart();
         score = 0;
         playerHp = maxHp;
         level = 1;
@@ -7596,6 +7598,14 @@ window.addEventListener('DOMContentLoaded', () => {
             <p>Score: <b data-go="score">0</b></p>
             <p>Best: <b data-go="best">0</b></p>
             <p data-go="record" style="display:none;color:#ffd24a;font-weight:800">🏆 New best!</p>
+            <p data-go="gap" style="display:none;color:#ffd24a;font-weight:800"></p>
+            <div class="go-stats">
+                <div><span>Rocks</span><b data-go="rocks">0</b></div>
+                <div><span>Coins</span><b data-go="coins">+0</b></div>
+                <div><span>Level</span><b data-go="level">1</b></div>
+            </div>
+            <div class="go-card" data-go="goal"></div>
+            <div class="go-card" data-go="mission"></div>
             <button class="pz-act" data-act="again">↻ Play again</button>
             <button class="pz-act alt" data-act="menu">🏠 Menu</button>
         </div>`;
@@ -7623,6 +7633,8 @@ window.addEventListener('DOMContentLoaded', () => {
         goScoreEl.textContent = score;
         goBestEl.textContent = bestScore;
         goRecordEl.style.display = isNewBest ? 'block' : 'none';
+        missionOnRunEnd(true);
+        fillGameOverExtras(isNewBest);
         gameOverOverlay.classList.add('on');
         updateUI();
     }
@@ -7648,6 +7660,7 @@ window.addEventListener('DOMContentLoaded', () => {
         pauseBtn.style.display = 'none';
         setLevelUpVisible(false);
         resetRunState();
+        missionOnRunEnd(false);
         localStorage.setItem('bb3d_coins', coins);
         if (splashScreen) splashScreen.classList.remove('hidden');
         updateUI();
@@ -7665,6 +7678,280 @@ window.addEventListener('DOMContentLoaded', () => {
 
     pauseOverlay.addEventListener('click', handleOverlayAction);
     gameOverOverlay.addEventListener('click', handleOverlayAction);
+
+    // ==========================================
+    // משימות יומיות + "המטרה הבאה" במסך הסיום
+    // ==========================================
+    // שלוש משימות ביום (מתאפסות בחצות לפי שעון המכשיר). ההתקדמות נשמרת ב-localStorage.
+    // לכל משימה פרס במטבעות שנאסף בלחיצה על Claim בתפריט.
+    const MISSIONS_KEY = 'bb3d_missions';
+    const MISSION_TYPES = {
+        rocks: { icon: '🪨', text: n => `Destroy ${n} rocks`,         targets: [40, 70, 110] },
+        coins: { icon: '🪙', text: n => `Collect ${n} coins`,         targets: [50, 100, 160] },
+        level: { icon: '🌊', text: n => `Reach level ${n} in one run`, targets: [4, 6, 8] },
+        runs:  { icon: '🎮', text: n => `Finish ${n} runs`,           targets: [2, 4, 6] }
+    };
+    const MISSION_REWARDS = [150, 300, 500];   // קל / בינוני / קשה (מטבעות)
+
+    function missionDayKey() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    // מחולל אקראי עם זרע (אותן משימות לכל מי שפותח באותו יום)
+    function missionRand(seedStr) {
+        let h = 2166136261;
+        for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+        return () => {
+            h += 0x6D2B79F5;
+            let t = h;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    function generateMissions(dayKey) {
+        const rnd = missionRand('bb3d-' + dayKey);
+        const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+        const types = shuffle(Object.keys(MISSION_TYPES));
+        const tiers = shuffle([0, 1, 2]);
+        return types.slice(0, 3).map((type, i) => ({
+            type, tier: tiers[i],
+            target: MISSION_TYPES[type].targets[tiers[i]],
+            reward: MISSION_REWARDS[tiers[i]],
+            progress: 0, claimed: false
+        }));
+    }
+
+    let missionsState = null;
+    function saveMissions() {
+        try { localStorage.setItem(MISSIONS_KEY, JSON.stringify(missionsState)); } catch (e) { /* ignore */ }
+    }
+    function loadMissions() {
+        const key = missionDayKey();
+        try {
+            const saved = JSON.parse(localStorage.getItem(MISSIONS_KEY));
+            if (saved && saved.date === key && Array.isArray(saved.list) && saved.list.length === 3) { missionsState = saved; return; }
+        } catch (e) { /* ignore */ }
+        missionsState = { date: key, list: generateMissions(key) };
+        saveMissions();
+    }
+    function missionText(m) { return MISSION_TYPES[m.type].text(m.target); }
+    function missionDone(m) { return m.progress >= m.target; }
+    function missionReadyCount() { return missionsState.list.filter(m => missionDone(m) && !m.claimed).length; }
+
+    // ---- אירועים מהמשחק ----
+    const runStats = { rocks: 0, coins: 0, level: 1, active: false };
+    function freshMissions() {
+        if (!missionsState || missionsState.date !== missionDayKey()) { loadMissions(); renderMissions(); }
+    }
+    function missionAdd(type, amount) {
+        freshMissions();
+        missionsState.list.forEach(m => {
+            if (m.type !== type || missionDone(m)) return;
+            m.progress = Math.min(m.target, m.progress + amount);
+            if (missionDone(m)) showMissionToast(m);
+        });
+    }
+    function missionMax(type, value) {
+        freshMissions();
+        missionsState.list.forEach(m => {
+            if (m.type !== type || missionDone(m)) return;
+            m.progress = Math.min(m.target, Math.max(m.progress, value));
+            if (missionDone(m)) showMissionToast(m);
+        });
+    }
+    function missionOnRock() { runStats.rocks++; missionAdd('rocks', 1); }
+    function missionOnCoin(n) { runStats.coins += n; missionAdd('coins', n); }
+    function missionOnLevel(lv) { runStats.level = Math.max(runStats.level, lv); missionMax('level', lv); }
+    function missionOnRunStart() { runStats.rocks = 0; runStats.coins = 0; runStats.level = 1; runStats.active = true; }
+    function missionOnRunEnd(finished) {
+        if (!runStats.active && !finished) { renderMissions(); return; }
+        runStats.active = false;
+        if (finished) missionAdd('runs', 1);
+        saveMissions();
+        renderMissions();
+    }
+
+    // ---- סגנונות ----
+    const missionStyle = document.createElement('style');
+    missionStyle.textContent = `
+        .msn-section{margin-bottom:6px}
+        .msn-sub{font-size:11px;font-weight:700;color:rgba(255,255,255,.55);margin:-2px 2px 8px;letter-spacing:.04em}
+        .msn-list{display:flex;flex-direction:column;gap:8px}
+        .msn-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;
+            background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,214,140,.16)}
+        .msn-row.ready{border-color:rgba(255,210,74,.75);box-shadow:0 0 0 1px rgba(255,210,74,.25),0 0 18px rgba(255,190,40,.25)}
+        .msn-row.claimed{opacity:.55}
+        .msn-ico{flex:none;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;
+            background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08)}
+        .msn-main{flex:1;min-width:0}
+        .msn-text{font-size:13px;font-weight:800;color:#f6efe2;line-height:1.15;margin-bottom:5px}
+        .msn-bar{height:7px;border-radius:999px;background:rgba(0,0,0,.4);overflow:hidden}
+        .msn-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#f0a028,#ffe27a);transition:width .3s}
+        .msn-num{font-size:10px;font-weight:700;color:rgba(255,255,255,.55);margin-top:3px;font-variant-numeric:tabular-nums}
+        .msn-act{flex:none;min-width:74px;text-align:center}
+        .msn-state{display:inline-block;font-size:12px;font-weight:800;color:#ffd24a;padding:6px 8px;border-radius:999px;background:rgba(255,210,74,.10);border:1px solid rgba(255,210,74,.28)}
+        .msn-state.done{color:#7be495;background:rgba(80,200,120,.10);border-color:rgba(80,200,120,.30)}
+        .msn-claim{font:inherit;font-weight:900;font-size:13px;color:#3a1d05;padding:9px 10px;border:0;border-radius:12px;white-space:nowrap;
+            background:linear-gradient(#ffe27a,#f0a028);box-shadow:0 3px 0 #b36d10;animation:msnPulse 1.1s ease-in-out infinite;touch-action:manipulation}
+        .msn-claim:active{transform:translateY(2px);box-shadow:0 1px 0 #b36d10}
+        @keyframes msnPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+        .msn-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 118px);transform:translate(-50%,-14px);z-index:68;pointer-events:none;
+            opacity:0;transition:opacity .25s,transform .25s;max-width:88vw;padding:9px 14px;border-radius:14px;text-align:center;
+            font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr;font-size:13px;font-weight:800;color:#3a1d05;
+            background:linear-gradient(#ffe27a,#f0a028);box-shadow:0 8px 22px rgba(0,0,0,.45)}
+        .msn-toast.on{opacity:1;transform:translate(-50%,0)}
+        .pz-box{max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}   /* מסך הסיום ארוך יותר עכשיו: שלא ייחתך בטלפונים נמוכים */
+        .go-stats{display:flex;gap:8px;margin:10px 0 8px}
+        .go-stats>div{flex:1;padding:8px 4px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08)}
+        .go-stats span{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.06em;text-transform:uppercase}
+        .go-stats b{display:block;font-size:19px;color:#ffd24a;font-variant-numeric:tabular-nums}
+        .go-card{margin:8px 0 0;padding:10px 12px;border-radius:14px;text-align:left;background:rgba(0,0,0,.28);border:1px solid rgba(255,214,140,.18)}
+        .go-card:empty{display:none}
+        .go-card.ready{border-color:rgba(255,210,74,.7);box-shadow:0 0 16px rgba(255,190,40,.22)}
+        .go-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+        .go-top span{font-size:10px;font-weight:900;letter-spacing:.12em;color:rgba(255,255,255,.55)}
+        .go-top b{font-size:14px;color:#fff;text-align:right}
+        .go-sub{font-size:12px;font-weight:700;color:rgba(255,255,255,.75);margin-top:6px}
+        .go-sub.ok{color:#7be495}
+    `;
+    document.head.appendChild(missionStyle);
+
+    // ---- הודעה קצרה כשמשימה הושלמה באמצע ריצה ----
+    const msnToast = document.createElement('div');
+    msnToast.className = 'msn-toast';
+    document.body.appendChild(msnToast);
+    let msnToastTimer = null;
+    function showMissionToast(m) {
+        msnToast.textContent = `✓ Mission complete: ${missionText(m)} (+${m.reward} C, claim in menu)`;
+        msnToast.classList.add('on');
+        clearTimeout(msnToastTimer);
+        msnToastTimer = setTimeout(() => msnToast.classList.remove('on'), 2800);
+    }
+
+    // ---- כרטיס המשימות בתפריט הפתיחה (נבנה ב-JS, בראש אזור הגלילה) ----
+    let msnSection = null;
+    function buildMissionsSection() {
+        const scroll = splashScreen && splashScreen.querySelector('.splash-scroll');
+        if (!scroll) return;
+        msnSection = document.createElement('section');
+        msnSection.className = 'splash-section msn-section';
+        msnSection.innerHTML = `
+            <div class="shop-section-title">Daily Missions</div>
+            <div class="msn-sub" data-msn="timer"></div>
+            <div class="msn-list" data-msn="list"></div>`;
+        scroll.insertBefore(msnSection, scroll.firstChild);
+        msnSection.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-claim]');
+            if (b) claimMission(parseInt(b.dataset.claim, 10));
+        });
+    }
+    function renderMissions() {
+        if (!msnSection || !missionsState) return;
+        if (missionsState.date !== missionDayKey()) loadMissions();
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const mins = Math.max(1, Math.round((midnight - now) / 60000));
+        msnSection.querySelector('[data-msn="timer"]').textContent = `New missions in ${Math.floor(mins / 60)}h ${mins % 60}m`;
+        msnSection.querySelector('[data-msn="list"]').innerHTML = missionsState.list.map((m, i) => {
+            const done = missionDone(m);
+            const pct = Math.round(Math.min(1, m.progress / m.target) * 100);
+            let action;
+            if (m.claimed) action = '<span class="msn-state done">Done ✓</span>';
+            else if (done) action = `<button class="msn-claim" type="button" data-claim="${i}">Claim +${m.reward}</button>`;
+            else action = `<span class="msn-state">+${m.reward} C</span>`;
+            return `<div class="msn-row${done && !m.claimed ? ' ready' : ''}${m.claimed ? ' claimed' : ''}">
+                <div class="msn-ico">${MISSION_TYPES[m.type].icon}</div>
+                <div class="msn-main">
+                    <div class="msn-text">${missionText(m)}</div>
+                    <div class="msn-bar"><i style="width:${pct}%"></i></div>
+                    <div class="msn-num">${Math.min(m.progress, m.target).toLocaleString('en-US')} / ${m.target.toLocaleString('en-US')}</div>
+                </div>
+                <div class="msn-act">${action}</div>
+            </div>`;
+        }).join('');
+    }
+    function claimMission(i) {
+        const m = missionsState.list[i];
+        if (!m || m.claimed || !missionDone(m)) return;
+        m.claimed = true;
+        coins += m.reward;
+        localStorage.setItem('bb3d_coins', coins);
+        saveMissions();
+        playSound('coin');
+        renderMissions();
+        updateUI();
+    }
+
+    // ---- מסך הסיום: סטטיסטיקות, מטרה הבאה, ומשימה קרובה ----
+    function pickNextGoal() {
+        const goals = [
+            { label: `Fire Power → Lvl ${firePowerLvl + 1}`, cost: firePowerLvl * 50 },
+            { label: `Fire Rate → Lvl ${fireRateLvl + 1}`, cost: fireRateLvl * 60 }
+        ];
+        if (ownedWeapons.includes(activeWeapon)) {
+            const sc = nextStarCost(activeWeapon);
+            if (sc !== null) goals.push({ label: `${WEAPONS[activeWeapon].name} → ★${getStars(activeWeapon) + 1}`, cost: sc });
+        }
+        if (!advancedCannonOwned) goals.push({ label: 'Nova Cannon', cost: ADVANCED_CANNON_PRICE });
+        const unaffordable = goals.filter(g => g.cost > coins).sort((a, b) => (a.cost - coins) - (b.cost - coins));
+        if (unaffordable.length) return unaffordable[0];            // הכי קרוב להשגה
+        return goals.sort((a, b) => b.cost - a.cost)[0];            // הכול בהישג יד: מציעים את היקר ביותר
+    }
+    function fillGameOverExtras(isNewBest) {
+        const q = k => gameOverOverlay.querySelector(`[data-go="${k}"]`);
+        q('rocks').textContent = runStats.rocks;
+        q('coins').textContent = `+${runStats.coins}`;
+        q('level').textContent = runStats.level;
+
+        const gapEl = q('gap');
+        if (!isNewBest && bestScore > score && score >= bestScore * 0.5) {
+            gapEl.textContent = `Only ${(bestScore - score + 1).toLocaleString('en-US')} to beat your best!`;
+            gapEl.style.display = 'block';
+        } else gapEl.style.display = 'none';
+
+        const goal = pickNextGoal();
+        const can = coins >= goal.cost;
+        const pct = Math.round(Math.min(1, coins / goal.cost) * 100);
+        const goalEl = q('goal');
+        goalEl.classList.toggle('ready', can);
+        goalEl.innerHTML = `
+            <div class="go-top"><span>NEXT GOAL</span><b>${goal.label}</b></div>
+            <div class="msn-bar"><i style="width:${pct}%"></i></div>
+            <div class="go-sub${can ? ' ok' : ''}">${can
+                ? `Ready to buy! (${goal.cost.toLocaleString('en-US')} C) Open the menu to upgrade`
+                : `${coins.toLocaleString('en-US')} / ${goal.cost.toLocaleString('en-US')} C · ${(goal.cost - coins).toLocaleString('en-US')} to go`}</div>`;
+
+        const ready = missionsState.list.find(m => missionDone(m) && !m.claimed);
+        const open = missionsState.list.filter(m => !missionDone(m)).sort((a, b) => (b.progress / b.target) - (a.progress / a.target))[0];
+        const missionEl = q('mission');
+        missionEl.classList.toggle('ready', !!ready);
+        if (ready) {
+            missionEl.innerHTML = `
+                <div class="go-top"><span>MISSION</span><b>🎁 ${missionText(ready)}</b></div>
+                <div class="go-sub ok">Complete! Claim +${ready.reward} C in the menu</div>`;
+        } else if (open) {
+            const mp = Math.round(Math.min(1, open.progress / open.target) * 100);
+            missionEl.innerHTML = `
+                <div class="go-top"><span>MISSION</span><b>${missionText(open)}</b></div>
+                <div class="msn-bar"><i style="width:${mp}%"></i></div>
+                <div class="go-sub">${open.progress.toLocaleString('en-US')} / ${open.target.toLocaleString('en-US')} · +${open.reward} C</div>`;
+        } else {
+            missionEl.innerHTML = `<div class="go-top"><span>MISSION</span><b>All done today ✓</b></div><div class="go-sub">New missions tomorrow</div>`;
+        }
+        const menuBtn = gameOverOverlay.querySelector('[data-act="menu"]');
+        if (menuBtn) menuBtn.textContent = (ready || can) ? '🏠 Menu 🎁' : '🏠 Menu';
+    }
+
+    // ---- אתחול ושמירה ----
+    loadMissions();
+    buildMissionsSection();
+    renderMissions();
+    setInterval(() => {
+        if (splashScreen && !splashScreen.classList.contains('hidden')) renderMissions();
+    }, 30000);
+    window.addEventListener('pagehide', saveMissions);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveMissions(); });
 
     // ==========================================
     // שמיים חיים: מטוסים מאחורי הפירמידות (שלב 2)
@@ -8042,6 +8329,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         if (Math.random() > 0.3) spawnCoin(r.position.x, r.position.y);
 
                         splitRockIntoChildren(r, data);
+                        missionOnRock();
 
                         removeRock(r, rIdx);
                         updateUI();
@@ -8112,6 +8400,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // הגעה לאזור הכיפה = איסוף מיידי.
             if (distance <= 0.82) {
                 coins += 5;
+                missionOnCoin(5);
                 playSound('coin');
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
@@ -8127,6 +8416,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 !Number.isFinite(c.position.z)
             ) {
                 coins += 5;
+                missionOnCoin(5);
                 playSound('coin');
                 disposeCoin(c);
                 droppedCoins.splice(cIdx, 1);
