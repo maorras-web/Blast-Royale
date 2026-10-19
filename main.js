@@ -4860,16 +4860,16 @@ window.addEventListener('DOMContentLoaded', () => {
           desc: 'Armored off-road cannon with powered suspension and big tyres. Bigger, tougher and ready for anything.' },
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
-          stats: { Damage: 3, Speed: 4, Area: 1 } },
+          stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
         { kind: 'weapon', id: 'rocket', name: 'Rockets', icon: '🚀', color: '#fb923c', tag: 'WEAPON',
           desc: 'Slow, heavy rockets that explode on impact and damage every rock inside the blast.',
-          stats: { Damage: 4, Speed: 2, Area: 5 } },
+          stars: ['+20% blast radius', '+25% damage', '+20% blast radius', 'Cluster: each blast spawns 4 mini-blasts'] },
         { kind: 'weapon', id: 'lightning', name: 'Lightning', icon: '⚡', color: '#60a5fa', tag: 'WEAPON',
           desc: 'Plasma orbs that arc between nearby rocks. Perfect against crowded waves.',
-          stats: { Damage: 3, Speed: 4, Area: 4 } },
+          stars: ['+1 chain jump', '+25% damage', '+1 chain jump', 'Overcharge: +1 chain jump and +25% damage'] },
         { kind: 'weapon', id: 'laser', name: 'Laser', icon: '🔦', color: '#f87171', tag: 'WEAPON',
           desc: 'Rapid laser bolts that fly straight through the rocks in their path.',
-          stats: { Damage: 3, Speed: 5, Area: 2 } }
+          stars: ['+20% damage', 'Wider bolts: easier to hit', '+20% damage', 'Double bolts: two bolts per barrel'] }
     ];
 
     function invItemState(item) {
@@ -4919,6 +4919,47 @@ window.addEventListener('DOMContentLoaded', () => {
         else selectOrBuyWeapon(item.id);
     }
 
+    // ---- כוכבי נשק: כל נשק שנקנה מתחיל ב-1 כוכב ואפשר לשדרג עד 5 (במטבעות) ----
+    const STAR_COSTS = [3000, 8000, 20000, 50000];   // המחיר להגיע לכוכב 2, 3, 4, 5
+    let weaponStarsMap = {};
+    try {
+        const savedStars = JSON.parse(localStorage.getItem('bb3d_weapon_stars') || '{}');
+        if (savedStars && typeof savedStars === 'object') weaponStarsMap = savedStars;
+    } catch (e) { /* ignore */ }
+    let fanToggle = false;
+
+    function getStars(id) { return Math.max(1, Math.min(5, parseInt(weaponStarsMap[id], 10) || 1)); }
+    function nextStarCost(id) { const st = getStars(id); return st >= 5 ? null : STAR_COSTS[st - 1]; }
+    function upgradeWeaponStar(id) {
+        if (!ownedWeapons.includes(id)) return;
+        const cost = nextStarCost(id);
+        if (cost === null || coins < cost) return;
+        coins -= cost;
+        weaponStarsMap[id] = getStars(id) + 1;
+        localStorage.setItem('bb3d_coins', coins);
+        localStorage.setItem('bb3d_weapon_stars', JSON.stringify(weaponStarsMap));
+        updateUI();
+    }
+    // מה כל כוכב נותן (חייב להתאים לטקסטים ב-INV_ITEMS)
+    function starDmgMult(id) {
+        const st = getStars(id);
+        if (id === 'standard') return 1 + (st >= 2 ? 0.20 : 0) + (st >= 4 ? 0.25 : 0);
+        if (id === 'rocket') return 1 + (st >= 3 ? 0.25 : 0);
+        if (id === 'lightning') return 1 + (st >= 3 ? 0.25 : 0) + (st >= 5 ? 0.25 : 0);
+        if (id === 'laser') return 1 + (st >= 2 ? 0.20 : 0) + (st >= 4 ? 0.20 : 0);
+        return 1;
+    }
+    function rocketRadiusMult() { const st = getStars('rocket'); return 1 + (st >= 2 ? 0.20 : 0) + (st >= 4 ? 0.20 : 0); }
+    function lightningExtraJumps() { const st = getStars('lightning'); return (st >= 2 ? 1 : 0) + (st >= 4 ? 1 : 0) + (st >= 5 ? 1 : 0); }
+    function laserWidthMult() { return getStars('laser') >= 3 ? 1.35 : 1; }
+    function laserDoubleBolts() { return getStars('laser') >= 5; }
+    function standardFanAngles() {
+        const st = getStars('standard');
+        if (st >= 5) return [-0.24, -0.12, 0.12, 0.24];
+        if (st >= 3) return [-0.14, 0.14];
+        return [];
+    }
+
     function refreshInventory() {
         if (!invUI) return;
         invUI.coins.textContent = coins.toLocaleString('en-US');
@@ -4930,6 +4971,10 @@ window.addEventListener('DOMContentLoaded', () => {
             c.price.style.display = st.owned ? 'none' : 'inline-flex';
             c.price.textContent = '🪙 ' + st.price.toLocaleString('en-US');
             c.price.classList.toggle('no', !st.owned && coins < st.price);
+            if (c.stars) {
+                const n = getStars(c.item.id);
+                c.stars.innerHTML = st.owned ? '★'.repeat(n) + '<u>' + '★'.repeat(5 - n) + '</u>' : '';
+            }
         });
         if (invOpenKey) renderInvDetail();
     }
@@ -4946,7 +4991,17 @@ window.addEventListener('DOMContentLoaded', () => {
         d.tag.textContent = item.tag;
         d.desc.textContent = item.desc;
         d.stats.innerHTML = '';
-        if (item.stats) {
+        const curStars = item.stars ? getStars(item.id) : 0;
+        if (item.stars) {
+            ['Base weapon'].concat(item.stars).forEach((txt, k) => {
+                const level = k + 1;
+                const row = document.createElement('div');
+                const unlocked = st.owned && level <= curStars;
+                row.className = 'inv-star-row' + (unlocked ? ' on' : '') + (st.owned && level === curStars + 1 ? ' next' : '');
+                row.innerHTML = '<b>' + level + '★</b><span>' + txt + '</span><em>' + (unlocked ? '✓' : '🔒') + '</em>';
+                d.stats.appendChild(row);
+            });
+        } else if (item.stats) {
             Object.keys(item.stats).forEach(label => {
                 const row = document.createElement('div');
                 row.className = 'inv-stat';
@@ -4955,6 +5010,24 @@ window.addEventListener('DOMContentLoaded', () => {
                 row.innerHTML = '<span>' + label + '</span><div class="inv-bar">' + bars + '</div>';
                 d.stats.appendChild(row);
             });
+        }
+        const u = d.upgrade;
+        if (item.stars && st.owned) {
+            u.style.display = 'block';
+            const cost = nextStarCost(item.id);
+            if (cost === null) {
+                u.className = 'inv-upgrade max';
+                u.textContent = 'MAX LEVEL  ★★★★★';
+                u.disabled = true;
+            } else {
+                const canUp = coins >= cost;
+                u.className = 'inv-upgrade' + (canUp ? '' : ' no');
+                u.textContent = canUp ? 'UPGRADE  ★' + (curStars + 1) + '  ·  🪙 ' + cost.toLocaleString('en-US')
+                                      : 'NEED 🪙 ' + cost.toLocaleString('en-US');
+                u.disabled = !canUp;
+            }
+        } else {
+            u.style.display = 'none';
         }
         const a = d.action;
         if (st.equipped) {
@@ -5381,7 +5454,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         bullet.add(halo, shell, core, trail);
         bullet.position.set(x, y, z);
-        bullet.userData = { core, trail, weapon: weapon || null, stream: streamIdx || 0 };
+        bullet.userData = { core, trail, weapon: weapon || null, stream: streamIdx || 0, dmgMult: weapon ? 1 : starDmgMult('standard') };
         // ברק: הקליע נשאר בלתי נראה לצורך חישוב הפגיעה; כדור הפלזמה מצויר בנפרד (updatePlasmaOrbs).
         if (blue) {
             bullet.visible = false;
@@ -5392,6 +5465,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         scene.add(bullet);
         bullets.push(bullet);
+        return bullet;
     }
 
 
@@ -5412,6 +5486,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const weaponFx = [];
     const pendingWeaponHits = [];
+    const delayedBlasts = [];
     const laserBeams = [];
     let lastLaserTick = 0;
 
@@ -5533,14 +5608,14 @@ window.addEventListener('DOMContentLoaded', () => {
         weaponFx.push(g);
     }
 
-    function spawnBlastFx(x, y) {
+    function spawnBlastFx(x, y, R) {
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(0.78, 1.0, 32),
             new THREE.MeshBasicMaterial({ color: 0xffb050, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
         );
         ring.position.set(x, y, 0.5);
         ring.renderOrder = 20;
-        ring.userData = { type: 'blastRing', life: 16, maxLife: 16, baseOpacity: 0.9 };
+        ring.userData = { type: 'blastRing', life: 16, maxLife: 16, baseOpacity: 0.9, R: R || ROCKET_RADIUS };
         scene.add(ring);
         weaponFx.push(ring);
 
@@ -5550,7 +5625,7 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         ball.position.set(x, y, 0.5);
         ball.renderOrder = 19;
-        ball.userData = { type: 'blastBall', life: 12, maxLife: 12, baseOpacity: 0.7 };
+        ball.userData = { type: 'blastBall', life: 12, maxLife: 12, baseOpacity: 0.7, R: R || ROCKET_RADIUS };
         scene.add(ball);
         weaponFx.push(ball);
 
@@ -5576,7 +5651,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 fx.children.forEach(c => { c.material.opacity = c.userData.baseOpacity * k * (0.7 + 0.3 * Math.random()); });
             } else if (d.type === 'blastRing') {
                 const prog = 1 - k;
-                fx.scale.setScalar(0.4 + prog * ROCKET_RADIUS * 1.05);
+                fx.scale.setScalar(0.4 + prog * (d.R || ROCKET_RADIUS) * 1.05);
                 fx.material.opacity = d.baseOpacity * k;
             } else if (d.type === 'plasmaRing') {
                 fx.scale.setScalar(0.3 + (1 - k) * 1.9);
@@ -5586,7 +5661,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 fx.material.opacity = d.baseOpacity * k * k;
             } else if (d.type === 'blastBall') {
                 const prog = 1 - k;
-                fx.scale.setScalar(0.3 + prog * ROCKET_RADIUS * 0.75);
+                fx.scale.setScalar(0.3 + prog * (d.R || ROCKET_RADIUS) * 0.75);
                 fx.material.opacity = d.baseOpacity * k * k;
             }
             if (d.life <= 0) {
@@ -5621,24 +5696,35 @@ window.addEventListener('DOMContentLoaded', () => {
         spawnImpactBurst(x, y, 0, 0x9fe6ff);
     }
 
-    function explodeRocket(x, y) {
-        spawnBlastFx(x, y);
+    function explodeRocket(x, y, opts) {
+        const o = opts || {};
+        const R = ROCKET_RADIUS * rocketRadiusMult() * (o.rScale || 1);
+        const dmgMul = starDmgMult('rocket') * (o.dScale || 1);
+        spawnBlastFx(x, y, R);
         playSound('hit');
         rocks.slice().forEach(r => {
             const d = Math.hypot(r.position.x - x, r.position.y - y);
-            const reach = ROCKET_RADIUS + r.userData.size * 0.6;
+            const reach = R + r.userData.size * 0.6;
             if (d < reach) {
                 const falloff = 1 - 0.5 * Math.min(1, d / reach);   // 100% במרכז, 50% בקצה
-                damageRock(r, firePower * ROCKET_DAMAGE * falloff, true);
+                damageRock(r, firePower * ROCKET_DAMAGE * dmgMul * falloff, true);
             }
         });
+        // כוכב 5: פיצוצים קטנים סביב הפיצוץ הראשי
+        if (!o.noCluster && getStars('rocket') >= 5) {
+            for (let i = 0; i < 4; i++) {
+                const ang = (i / 4) * Math.PI * 2 + 0.6;
+                delayedBlasts.push({ t: 7 + i * 3, x: x + Math.cos(ang) * R * 0.85, y: y + Math.sin(ang) * R * 0.85, rScale: 0.5, dScale: 0.45 });
+            }
+        }
     }
 
     function chainLightning(startRock, hitX, hitY) {
         const visited = new Set();
         let target = startRock;
         let prevX = hitX, prevY = hitY;
-        for (let jump = 0; jump <= LIGHTNING_JUMPS; jump++) {
+        const maxJumps = LIGHTNING_JUMPS + lightningExtraJumps();
+        for (let jump = 0; jump <= maxJumps; jump++) {
             if (!target || !rocks.includes(target)) break;
             visited.add(target);
             const tx = target.position.x, ty = target.position.y;
@@ -5653,13 +5739,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (d < bestD) { bestD = d; best = o; }
             });
 
-            damageRock(target, firePower * LIGHTNING_DAMAGE * Math.pow(LIGHTNING_FALLOFF, jump), true);
+            damageRock(target, firePower * LIGHTNING_DAMAGE * starDmgMult('lightning') * Math.pow(LIGHTNING_FALLOFF, jump), true);
             prevX = tx; prevY = ty;
             target = best;
         }
     }
 
     function processWeaponHits() {
+        for (let i = delayedBlasts.length - 1; i >= 0; i--) {
+            const d = delayedBlasts[i];
+            d.t -= 1;
+            if (d.t <= 0) {
+                delayedBlasts.splice(i, 1);
+                explodeRocket(d.x, d.y, { rScale: d.rScale, dScale: d.dScale, noCluster: true });
+            }
+        }
         if (!pendingWeaponHits.length) return;
         const hits = pendingWeaponHits.splice(0);
         let blasts = 0;
@@ -5787,10 +5881,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 const r = rocks[k];
                 if (!r || hit.has(r)) continue;
                 const sz = r.userData.size;
-                if (Math.abs(r.position.x - b.position.x) > sz * 0.85 + 0.08) continue;
+                if (Math.abs(r.position.x - b.position.x) > (sz * 0.85 + 0.08) * laserWidthMult()) continue;
                 if (r.position.y < y0 - sz * 0.6 || r.position.y > y1 + sz * 0.6) continue;
                 hit.add(r);
-                damageRock(r, firePower * LASER_BOLT_DAMAGE, true);
+                damageRock(r, firePower * LASER_BOLT_DAMAGE * starDmgMult('laser'), true);
                 hitSomething = true;
             }
             if (hitSomething && time - lastLaserHitSnd > 70) {
@@ -6198,6 +6292,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hideLightningStreams();
         clearLaserBolts();
         pendingWeaponHits.length = 0;
+        delayedBlasts.length = 0;
         weaponFx.forEach(disposeWeaponFx);
         weaponFx.length = 0;
         hideLaser();
@@ -7273,22 +7368,24 @@ window.addEventListener('DOMContentLoaded', () => {
         .inv-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 28px);scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
         .inv-scroll::-webkit-scrollbar{display:none}
         .inv-sec-title{margin:4px 0 10px;padding:7px 14px;border-radius:10px;background:linear-gradient(90deg,rgba(250,204,21,.28),rgba(250,204,21,0));font-weight:900;font-size:13px;letter-spacing:3px}
-        .inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-        .inv-card{position:relative;aspect-ratio:1/1.12;border-radius:18px;border:2px solid rgba(255,255,255,.16);padding:0;overflow:hidden;
+        .inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+        .inv-card{position:relative;aspect-ratio:1/1.18;border-radius:16px;border:2px solid rgba(255,255,255,.16);padding:0;overflow:hidden;
             display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#fff;cursor:pointer;
             background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.03));box-shadow:0 5px 0 rgba(0,0,0,.38)}
         .inv-card:active{transform:scale(.96)}
         .inv-glow{position:absolute;inset:0;background:radial-gradient(70% 55% at 50% 38%,var(--c),transparent 72%);opacity:.40;pointer-events:none}
-        .inv-ico{position:relative;font-size:40px;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.45))}
-        .inv-name{position:relative;font-size:12px;font-weight:800;text-align:center;padding:0 4px;line-height:1.1}
+        .inv-ico{position:relative;font-size:32px;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.45))}
+        .inv-name{position:relative;font-size:10.5px;font-weight:800;text-align:center;padding:0 4px;line-height:1.1}
         .inv-card.equipped{border-color:#4ade80;box-shadow:0 0 0 2px rgba(74,222,128,.35),0 5px 0 rgba(0,0,0,.38)}
         .inv-card.locked{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.30))}
         .inv-card.locked .inv-ico{filter:grayscale(.9) brightness(.65)}
         .inv-card.locked .inv-glow{opacity:.12}
         .inv-check{position:absolute;top:7px;left:7px;width:22px;height:22px;border-radius:50%;display:none;align-items:center;justify-content:center;
             background:#22c55e;border:2px solid #bbf7d0;color:#fff;font-size:13px;font-weight:900}
-        .inv-price{position:relative;display:none;align-items:center;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.6);
-            border:1px solid rgba(250,204,21,.55);font-size:11px;font-weight:800;color:#fde047}
+        .inv-stars{position:relative;font-size:9px;letter-spacing:.5px;color:#fde047;line-height:1}
+        .inv-stars u{text-decoration:none;color:rgba(255,255,255,.22)}
+        .inv-price{position:relative;display:none;align-items:center;padding:2px 7px;border-radius:999px;background:rgba(0,0,0,.6);
+            border:1px solid rgba(250,204,21,.55);font-size:10px;font-weight:800;color:#fde047}
         .inv-price.no{color:#fca5a5;border-color:rgba(248,113,113,.55)}
         .inv-detail{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.66);
             font-family:Rubik,system-ui,Arial,sans-serif;direction:ltr}
@@ -7302,12 +7399,24 @@ window.addEventListener('DOMContentLoaded', () => {
         .inv-dname{font-size:22px;font-weight:900;line-height:1.1}
         .inv-dtag{margin-top:3px;font-size:11px;font-weight:800;letter-spacing:2px;color:#fde047}
         .inv-desc{font-size:14px;line-height:1.45;color:#e7e5e4;margin-bottom:12px}
-        .inv-stats{display:grid;gap:8px;margin-bottom:14px}
+        .inv-stats{display:grid;gap:6px;margin-bottom:14px}
         .inv-stat{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#d6d3d1}
         .inv-bar{display:flex;gap:4px}
         .inv-bar i{flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.13)}
         .inv-bar i.on{background:linear-gradient(#fde047,#f59e0b)}
         .inv-action{width:100%;padding:13px;border-radius:16px;border:3px solid;font-size:18px;font-weight:900;letter-spacing:1px;color:#fff;cursor:pointer;font-family:inherit}
+        .inv-star-row{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:10px;background:rgba(255,255,255,.05);font-size:12.5px;color:#a8a29e}
+        .inv-star-row b{flex:none;min-width:30px;color:#78716c;font-weight:900}
+        .inv-star-row span{flex:1;line-height:1.25}
+        .inv-star-row em{flex:none;font-style:normal;font-size:12px}
+        .inv-star-row.on{background:rgba(250,204,21,.13);color:#fff}
+        .inv-star-row.on b{color:#fde047}
+        .inv-star-row.next{outline:1px dashed rgba(167,139,250,.8);color:#e9e4ff}
+        .inv-upgrade{display:none;width:100%;margin-top:10px;padding:11px;border-radius:16px;border:3px solid #3b2a8f;font-size:15px;font-weight:900;letter-spacing:1px;
+            color:#fff;cursor:pointer;font-family:inherit;background:linear-gradient(#b79bff,#6d4be0);box-shadow:0 4px 0 #2a1d6b;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+        .inv-upgrade:active:not(:disabled){transform:translateY(2px)}
+        .inv-upgrade.no,.inv-upgrade:disabled{background:linear-gradient(#9aa4ad,#6d767e);border-color:#4a525a;box-shadow:0 4px 0 #3a4046;text-shadow:none}
+        .inv-upgrade.max{background:linear-gradient(#ffe27a,#f59e0b);border-color:#92560a;box-shadow:0 4px 0 #6b3d06;color:#4a2800;text-shadow:none}
         .inv-action:active:not(:disabled){transform:translateY(2px)}
         .inv-action.buy{background:linear-gradient(#b9ff50,#4fb512);border-color:#1f6a0a;box-shadow:0 5px 0 #14500a;text-shadow:0 2px 0 rgba(0,0,0,.4)}
         .inv-action.equip{background:linear-gradient(#ffe27a,#f59e0b);border-color:#92560a;box-shadow:0 5px 0 #6b3d06;color:#4a2800}
@@ -7343,6 +7452,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <div class="inv-desc"></div>
             <div class="inv-stats"></div>
             <button class="inv-action" type="button"></button>
+            <button class="inv-upgrade" type="button"></button>
         </div>`;
     document.body.appendChild(invDetail);
 
@@ -7353,9 +7463,9 @@ window.addEventListener('DOMContentLoaded', () => {
         el.className = 'inv-card';
         el.style.setProperty('--c', item.color);
         el.innerHTML = '<span class="inv-glow"></span><span class="inv-ico">' + item.icon + '</span><span class="inv-name">' + item.name +
-            '</span><span class="inv-check">✓</span><span class="inv-price"></span>';
+            '</span>' + (item.stars ? '<span class="inv-stars"></span>' : '') + '<span class="inv-check">✓</span><span class="inv-price"></span>';
         invScreen.querySelector('[data-sec="' + item.kind + '"]').appendChild(el);
-        invCards.push({ item, el, check: el.querySelector('.inv-check'), price: el.querySelector('.inv-price') });
+        invCards.push({ item, el, check: el.querySelector('.inv-check'), price: el.querySelector('.inv-price'), stars: el.querySelector('.inv-stars') });
         el.addEventListener('click', () => {
             invOpenKey = item.kind + ':' + item.id;
             invDetail.style.display = 'flex';
@@ -7374,7 +7484,8 @@ window.addEventListener('DOMContentLoaded', () => {
             tag: invDetail.querySelector('.inv-dtag'),
             desc: invDetail.querySelector('.inv-desc'),
             stats: invDetail.querySelector('.inv-stats'),
-            action: invDetail.querySelector('.inv-action')
+            action: invDetail.querySelector('.inv-action'),
+            upgrade: invDetail.querySelector('.inv-upgrade')
         }
     };
 
@@ -7384,6 +7495,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     invDetail.addEventListener('click', (e) => { if (e.target === invDetail) closeInvDetail(); });
     invDetail.querySelector('.inv-x').addEventListener('click', closeInvDetail);
+    invUI.detail.upgrade.addEventListener('click', () => {
+        const item = INV_ITEMS.find(i => (i.kind + ':' + i.id) === invOpenKey);
+        if (item && item.stars) upgradeWeaponStar(item.id);
+    });
     invUI.detail.action.addEventListener('click', () => {
         const item = INV_ITEMS.find(i => (i.kind + ':' + i.id) === invOpenKey);
         if (item) invAct(item);
@@ -7766,10 +7881,26 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                     muzzleXs.forEach((bx, bi) => {
                         if (activeWeapon === 'rocket') spawnRocket(bx, muzzleY, 0);
-                        else if (activeWeapon === 'laser') spawnLaserBolt(bx, muzzleY);
+                        else if (activeWeapon === 'laser') {
+                            if (laserDoubleBolts()) { spawnLaserBolt(bx - 0.17, muzzleY); spawnLaserBolt(bx + 0.17, muzzleY); }
+                            else spawnLaserBolt(bx, muzzleY);
+                        }
                         else spawnBullet(bx, muzzleY, 0, activeWeapon === 'lightning' ? 'lightning' : null, bi);
                         spawnMuzzleFlash(bx, muzzleY, 0, activeWeapon === 'lightning' ? 0x9fe6ff : undefined);
                     });
+                    if (activeWeapon === 'standard') {
+                        const fan = standardFanAngles();
+                        if (fan.length) {
+                            fanToggle = !fanToggle;   // בכל ירייה שנייה, כדי לא להכביד
+                            if (fanToggle) {
+                                fan.forEach(ang => {
+                                    const fb = spawnBullet(cannonGroup.position.x, muzzleY, 0, null, 0);
+                                    fb.userData.vx = 0.42 * Math.tan(ang);
+                                    fb.rotation.z = -ang;
+                                });
+                            }
+                        }
+                    }
                     cannonRecoil = 0.14;
                     suspensionKick(0.016, 0.010);
                     lastShotTime = time;
@@ -7783,9 +7914,10 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = bullets.length - 1; i >= 0; i--) {
             const b = bullets[i];
             b.position.y += (b.userData && b.userData.speed) || 0.42;
+            if (b.userData && b.userData.vx) b.position.x += b.userData.vx;
             if (b.userData && b.userData.flame) b.userData.flame.scale.set(1, 0.75 + Math.random() * 0.55, 1);
 
-            if (b.position.y > 18) {
+            if (b.position.y > 18 || Math.abs(b.position.x) > 16) {
                 scene.remove(b);
                 bullets.splice(i, 1);
             }
@@ -7891,9 +8023,10 @@ window.addEventListener('DOMContentLoaded', () => {
                         continue;
                     }
 
-                    data.hp -= firePower;
+                    const shotDmg = Math.max(1, Math.round(firePower * ((b.userData && b.userData.dmgMult) || 1)));
+                    data.hp -= shotDmg;
                     data.flash = 1;
-                    score += firePower;
+                    score += shotDmg;
                     spawnImpactBurst(r.position.x, r.position.y, r.position.z);
                     playSound('hit');
 
