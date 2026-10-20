@@ -6473,6 +6473,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     // פיצול סלע שנהרס לשניים: נוצרים באותה נקודה ונפרדים לשני הצדדים עם קפיצה קטנה כלפי מעלה
     function splitRockIntoChildren(r, data) {
+        if (data.isBoss) return;     // הבוס לא מתפרק: הוא מוחלף בפרס
         if (data.size <= 0.9) return;
         const childHp = Math.max(1, Math.floor(data.maxHp / 2));
         const childSize = data.size * ROCK_CHILD_SCALE;
@@ -6582,6 +6583,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const b = rocks[j];
                 if (!b || !b.userData) continue;
                 const bd = b.userData;
+                if (ad.isBoss || bd.isBoss) continue;   // הבוס מרחף: לא מתנגש עם סלעים
                 const br = bd.size * 0.95;
 
                 let dx = b.position.x - a.position.x;
@@ -6841,6 +6843,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function removeRock(rock, index) {
+        if (rock.userData.isBoss) onBossDefeated(rock);
         spawnImpactBurst(rock.position.x, rock.position.y, rock.position.z);
         if (rock.position.y < 2.2) {
             spawnDustBurst(rock.position.x, rock.position.y, rock.position.z);
@@ -6988,12 +6991,204 @@ window.addEventListener('DOMContentLoaded', () => {
         return origin.y + dir.y * t;
     }
 
+    // ==========================================
+    // בוס מרחף: מופיע בכל שלב שמתחלק ב-5. מרחף בחלק העליון של המסך ולא נוגע בתותח (אין לו התנגשות איתו),
+    // אבל מפיל סלעים רגילים ויש לו פס חיים ושלושה שלבי קרב (מהיר ומפיל יותר כשהחיים יורדים).
+    // הוא סלע לכל דבר בשביל כל סוגי הנשק (כדורים, טילים, ברק, לייזר, פלזמה), ולכן אין צורך בקוד נשק נפרד.
+    // ==========================================
+    const BOSS_EVERY = 5;                      // בוס בכל שלב שמתחלק במספר הזה
+    const BOSS_HP_FACTOR = 16;                 // חיי הבוס = חיי סלע רגיל בשלב הזה x המספר הזה
+    const BOSS_SIZE = 2.4;
+    const BOSS_MAX_ROCKS = 7;                  // אם כבר יש כל כך הרבה סלעים על המסך, הוא לא מפיל עוד
+    const BOSS_DROP_FRAMES = [150, 115, 85];   // כל כמה פריימים הוא מפיל סלע (לפי שלב הקרב)
+    let bossRock = null;
+    let bossUi = null;
+    let bossSpikeGeo = null;
+
+    function ensureBossUI() {
+        if (bossUi) return bossUi;
+        const style = document.createElement('style');
+        style.textContent = `
+            #boss-bar{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 86px);
+                width:min(66vw,300px);z-index:30;pointer-events:none;opacity:0;transition:opacity .3s;
+                font-family:Rubik,system-ui,Arial,sans-serif;text-align:center}
+            #boss-bar.on{opacity:1}
+            #boss-bar .bb-label{font-weight:900;letter-spacing:.32em;font-size:12px;color:#ff6a4d;text-shadow:0 1px 3px #000;margin-bottom:4px}
+            #boss-bar .bb-track{height:14px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(255,120,90,.65);
+                overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+            #boss-bar .bb-fill{height:100%;width:100%;background:linear-gradient(90deg,#ff3b2f,#ff9a3c);transition:width .12s linear}
+            #boss-banner{position:fixed;left:0;right:0;top:34%;z-index:31;text-align:center;pointer-events:none;opacity:0;
+                font-family:Rubik,system-ui,Arial,sans-serif;font-weight:900;font-size:40px;letter-spacing:.12em;color:#ff5a3c;
+                text-shadow:0 3px 12px rgba(0,0,0,.75)}
+            #boss-banner.show{animation:bossBanner 1.9s ease-out forwards}
+            @keyframes bossBanner{0%{opacity:0;transform:scale(.6)}15%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
+        `;
+        document.head.appendChild(style);
+        const bar = document.createElement('div');
+        bar.id = 'boss-bar';
+        bar.innerHTML = '<div class="bb-label">BOSS</div><div class="bb-track"><div class="bb-fill"></div></div>';
+        const banner = document.createElement('div');
+        banner.id = 'boss-banner';
+        document.body.appendChild(bar);
+        document.body.appendChild(banner);
+        bossUi = { bar, fill: bar.querySelector('.bb-fill'), banner, lastPct: -1 };
+        return bossUi;
+    }
+
+    function showBossBanner(text) {
+        const ui = ensureBossUI();
+        ui.banner.textContent = text;
+        ui.banner.classList.remove('show');
+        void ui.banner.offsetWidth;     // מאתחל את האנימציה גם אם הכיתוב כבר הופיע
+        ui.banner.classList.add('show');
+    }
+
+    function clearBossState() {
+        bossRock = null;
+        if (bossUi) {
+            bossUi.bar.classList.remove('on');
+            bossUi.banner.classList.remove('show');
+        }
+    }
+
+    function updateBossBar(d) {
+        if (!bossUi) return;
+        const pct = Math.max(0, Math.round(d.hp / d.maxHp * 100));
+        if (pct !== bossUi.lastPct) {
+            bossUi.lastPct = pct;
+            bossUi.fill.style.width = pct + '%';
+        }
+    }
+
+    function spawnBoss() {
+        const ui = ensureBossUI();
+        const topY = getScreenTopWorldY();
+        const size = BOSS_SIZE;
+        const hp = Math.round((8 + level * 6) * BOSS_HP_FACTOR);
+
+        spawnRock(0, topY + size + 2, hp, size, 0, 0, false);
+        const r = rocks[rocks.length - 1];
+        const d = r.userData;
+        d.isBoss = true;
+        d.vx = 0; d.vy = 0; d.speedX = 0;
+        d.rotX = 0; d.rotY = 0;
+        d.t = 0;
+        d.intro = 0;                                   // 0..1: ירידה מלמעלה המסך
+        d.startY = r.position.y;
+        d.hoverY = 0.2 + (topY - 0.2) * 0.64;          // גובה הריחוף (מתחת לכרטיסי המידע)
+        d.sway = 0;
+        d.phase = 0;
+        d.dropT = 90;
+
+        // מראה: גוון אדום חם וקוצים בקשת מעל הסלע. ללא צל מגע על הקרקע (הוא באוויר).
+        r.material.color.setHex(0xff9a88);
+        d.baseEmissive.setHex(0x7a1408);
+        r.material.emissive.copy(d.baseEmissive);
+        r.material.emissiveIntensity = 0.6;
+        if (d.contactShadow) {
+            scene.remove(d.contactShadow);
+            if (d.contactShadow.geometry) d.contactShadow.geometry.dispose();
+            if (d.contactShadow.material) d.contactShadow.material.dispose();
+            d.contactShadow = null;
+        }
+        if (!bossSpikeGeo) bossSpikeGeo = new THREE.ConeGeometry(0.2, 0.7, 6);
+        const spikeMat = new THREE.MeshStandardMaterial({ color: 0x3a0d0a, roughness: 0.5, metalness: 0.4, flatShading: true });
+        for (let i = 0; i < 7; i++) {
+            const a = -1.15 + i * (2.3 / 6);
+            const sp = new THREE.Mesh(bossSpikeGeo, spikeMat);
+            sp.position.set(Math.sin(a) * size * 0.95, Math.cos(a) * size * 0.95, 0.1);
+            sp.rotation.z = -a;
+            sp.scale.setScalar(0.8 + (i % 2) * 0.35);
+            r.add(sp);
+        }
+
+        bossRock = r;
+        ui.lastPct = -1;
+        updateBossBar(d);
+        ui.bar.classList.add('on');
+        showBossBanner('BOSS');
+    }
+
+    function bossDropRocks(r, d, n) {
+        for (let i = 0; i < n; i++) {
+            if (rocks.length > BOSS_MAX_ROCKS) return;
+            const size = 0.95 + Math.random() * 0.45;
+            const hp = Math.max(4, Math.floor((8 + level * 6) * (size / 1.2) * 0.7));
+            const dir = (i % 2 === 0 ? 1 : -1) * (Math.random() < 0.5 ? 1 : -1);
+            spawnRock(
+                r.position.x + (Math.random() - 0.5) * d.size,
+                r.position.y - d.size * 0.7,
+                hp, size, dir * ROCK_SPEED_X, -0.05, false
+            );
+        }
+    }
+
+    function updateBossMotion(r, d) {
+        d.t++;
+        if (d.intro < 1) {
+            d.intro = Math.min(1, d.intro + 1 / 110);
+            const e = 1 - Math.pow(1 - d.intro, 3);
+            r.position.y = d.startY + (d.hoverY - d.startY) * e;
+        } else {
+            r.position.y = d.hoverY + Math.sin(d.t * 0.035) * 0.45;
+        }
+        const amp = Math.max(0.5, screenLimitX - d.size * 0.55);
+        d.sway += 0.011 * [1, 1.35, 1.7][d.phase];
+        r.position.x = Math.sin(d.sway) * amp;
+        r.rotation.set(Math.sin(d.t * 0.021) * 0.10, Math.sin(d.t * 0.013) * 0.28, Math.sin(d.t * 0.017) * 0.12);
+
+        // שלבי קרב לפי החיים שנשארו: בכל מעבר הוא מתעצבן ומפיל שני סלעים מיד.
+        const frac = d.hp / d.maxHp;
+        const ph = frac <= 0.33 ? 2 : (frac <= 0.66 ? 1 : 0);
+        if (ph > d.phase) {
+            d.phase = ph;
+            d.flash = 1;
+            bossDropRocks(r, d, 2);
+        }
+        if (d.intro >= 1) {
+            d.dropT--;
+            if (d.dropT <= 0) {
+                bossDropRocks(r, d, 1);
+                d.dropT = BOSS_DROP_FRAMES[d.phase];
+            }
+        }
+        updateBossBar(d);
+    }
+
+    function onBossDefeated(rock) {
+        const d = rock.userData;
+        const n = Math.min(30, 12 + level * 2);
+        for (let i = 0; i < n; i++) {
+            spawnCoin(
+                rock.position.x + (Math.random() - 0.5) * d.size * 1.6,
+                rock.position.y + (Math.random() - 0.5) * d.size
+            );
+        }
+        for (let i = 0; i < 6; i++) {
+            spawnImpactBurst(
+                rock.position.x + (Math.random() - 0.5) * d.size * 1.4,
+                rock.position.y + (Math.random() - 0.5) * d.size,
+                0
+            );
+        }
+        score += 150 + level * 20;
+        showBossBanner('BOSS DEFEATED');
+        if (bossUi) bossUi.bar.classList.remove('on');
+        bossRock = null;
+    }
+
     let hasStartedFirstWave = false;
     function startNextWave() {
         // לא מתחילים גל חדש עד שכל הסלעים נעלמו.
         if (rocks.length === 0) {
             if (hasStartedFirstWave) { level++; missionOnLevel(level); }
             hasStartedFirstWave = true;
+
+            if (level % BOSS_EVERY === 0) {
+                spawnBoss();
+                updateUI();
+                return;
+            }
 
             const count = Math.min(2 + Math.floor(level / 2), 5);
             // כמו במשחק ההשראה: הסלעים נכנסים מצדי המסך (לסירוגין) בגובה קבוע, ורק אחרי שנכנסו מתחילה הכבידה.
@@ -7156,6 +7351,7 @@ window.addEventListener('DOMContentLoaded', () => {
             scene.remove(rock);
         }
         rocks.length = 0;
+        clearBossState();
 
         bullets.forEach(b => {
             scene.remove(b);
@@ -7617,6 +7813,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function triggerGameOver() {
         isGameOver = true;
+        clearBossState();
         hideLaser();
         isDragging = false;
         dragPointerId = null;
@@ -8233,6 +8430,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const data = r.userData;
 
             if (data.hitCooldown > 0) data.hitCooldown -= 1;
+            if (data.isBoss) updateBossMotion(r, data);
 
             // הבהוב פגיעה: הסלע מתחמם לרגע ו"קופץ" מעט בגודל, ואז חוזר לרגיל.
             if (data.flash > 0) {
@@ -8242,7 +8440,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 r.scale.setScalar(1 + data.flash * 0.05);
             }
 
-            if (!data.entering) data.vy -= data.g;     // בכניסה מהצד אין כבידה
+            if (!data.entering && !data.isBoss) data.vy -= data.g;     // בכניסה מהצד אין כבידה. הבוס מרחף
             r.position.x += data.vx;
             r.position.y += data.vy;
             if (data.entering && Math.abs(r.position.x) <= screenLimitX) data.entering = false;
@@ -8345,7 +8543,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // ==================================
             // פגיעה בתותח
             // ==================================
-            const cannonImpact = collideRockWithCannon(r, cannonColVx);
+            const cannonImpact = data.isBoss ? 0 : collideRockWithCannon(r, cannonColVx);   // הבוס לא נוגע בתותח
             if (cannonImpact > 0.02 && data.hitCooldown <= 0) {
                 playerHp -= 10;
                 data.hitCooldown = 24;
