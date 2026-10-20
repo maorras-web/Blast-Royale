@@ -4666,6 +4666,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const OCT = Math.PI / 8;                                   // מסובבים כך שפאה שטוחה פונה קדימה
         const apo = y => 1.00 + (y - 0.68) / 0.78 * 0.10;          // רדיוס הפאה בגובה y בגוף הראשי
         const B = makeBatcher();
+        if (cfg.buildBody) {
+            cfg.buildBody(B);                                      // גוף מותאם (Aurum): גוף טרפזי זוויתי
+        } else {
         B.add(new THREE.CylinderGeometry(1.10, 0.98, 0.40, 8), cfg.dark, 0, 0.48, 0, 0, OCT, 0);              // בטן
         B.add(new THREE.CylinderGeometry(1.082, 1.19, 0.78, 8), cfg.hull, 0, 1.07, 0, 0, OCT, 0);             // גוף ראשי
         B.add(new THREE.CylinderGeometry(1.25, 1.25, 0.07, 8), cfg.trim, 0, 1.485, 0, 0, OCT, 0);             // שפה עליונה
@@ -4684,18 +4687,21 @@ window.addEventListener('DOMContentLoaded', () => {
             B.add(new THREE.BoxGeometry(0.50, 0.40, 0.05), cfg.panel, sd * (apo(1.06) + 0.04), 1.06, 0, 0, sd * Math.PI / 2, 0);
         });
         cfg.emblem(B, apo);
+        }
 
-        // כיפה גדולה עם טבעת בסיס זוהרת
-        B.add(new THREE.SphereGeometry(0.72, 32, 18), cfg.dome, 0, 1.50, 0, 0, 0, 0, 1.0, 0.90, 1.0);
-        B.add(new THREE.TorusGeometry(0.72, 0.04, 8, 36), cfg.glow2, 0, 1.52, 0, Math.PI / 2, 0, 0);
+        // כיפה גדולה עם טבעת בסיס זוהרת (אפשר לשנות גודל וגובה דרך cfg.domeCfg)
+        const dm = cfg.domeCfg || { r: 0.72, y: 1.50, sy: 0.90, ringY: 1.52 };
+        B.add(new THREE.SphereGeometry(dm.r, 32, 18), cfg.dome, 0, dm.y, 0, 0, 0, 0, 1.0, dm.sy, 1.0);
+        B.add(new THREE.TorusGeometry(dm.r, 0.04, 8, 36), cfg.glow2, 0, dm.ringY, 0, Math.PI / 2, 0, 0);
         B.build(head, noShadowGlow);
 
         // שני הקנים: צינורות שחורים על הכיפה (זזים ברתיעה)
         const R = makeBatcher();
+        const ps = cfg.pipeScale || 1;                            // עובי הקנים (Aurum עבה יותר)
         [-1, 1].forEach(sd => {
-            R.add(new THREE.CylinderGeometry(0.115, 0.125, 0.56, 18), cfg.pipe, sd * 0.33, 2.19, 0);
-            R.add(new THREE.CylinderGeometry(0.16, 0.16, 0.10, 18), cfg.pipeCap, sd * 0.33, 1.95, 0);
-            R.add(new THREE.CylinderGeometry(0.145, 0.12, 0.07, 18), cfg.pipeCap, sd * 0.33, 2.50, 0);
+            R.add(new THREE.CylinderGeometry(0.115 * ps, 0.125 * ps, 0.56, 18), cfg.pipe, sd * 0.33, 2.19, 0);
+            R.add(new THREE.CylinderGeometry(0.16 * ps, 0.16 * ps, 0.10, 18), cfg.pipeCap, sd * 0.33, 1.95, 0);
+            R.add(new THREE.CylinderGeometry(0.145 * ps, 0.12 * ps, 0.07, 18), cfg.pipeCap, sd * 0.33, 2.50, 0);
             R.add(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 14), cfg.glow2, sd * 0.33, 2.545, 0);
         });
         R.build(rig, noShadowGlow);
@@ -4724,19 +4730,53 @@ window.addEventListener('DOMContentLoaded', () => {
     {   // ---------------- AURUM (viper): זהב וברונזה ----------------
         const glow = new THREE.MeshBasicMaterial({ color: 0xffb62e });
         const glow2 = new THREE.MeshBasicMaterial({ color: 0xffd25a });
+        const gold = nmat(0xdba52e, 0.90, 0.26, 0x2c1a00);          // זהב מתכתי מבריק
+        const stone = nmat(0x74797d, 0.30, 0.55);                   // אבן אפורה (גוף)
+        const stone2 = nmat(0x8d9296, 0.30, 0.50);                  // אבן בהירה יותר (לוח קדמי)
+        const darkBelly = nmat(0x4a3410, 0.35, 0.50);
+
+        // פוליגון מחזית (x,y) שנשלף לעומק z: מאפשר צורות זוויתיות (טרפז, משולש) בלי הרבה אובייקטים
+        const poly = (pts, depth, bevel) => {
+            const sh = new THREE.Shape();
+            sh.moveTo(pts[0][0], pts[0][1]);
+            for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i][0], pts[i][1]);
+            sh.closePath();
+            const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1, curveSegments: 1 });
+            g.translate(0, 0, -depth / 2);
+            return g;
+        };
+
         NEW_CANNONS.viper = buildTwinDomeCannon({
             glow, glow2,
-            hull: nmat(0xcf9520, 0.30, 0.42),
-            dark: nmat(0x4a3410, 0.35, 0.50),
-            trim: nmat(0x9a6812, 0.35, 0.40),
-            panel: nmat(0x2e3338, 0.35, 0.40),
-            sidePanel: nmat(0x5c3f0e, 0.35, 0.45),
-            dome: nmat(0xe4a521, 0.40, 0.22, 0x2a1600),
+            hull: stone,
+            dark: darkBelly,
+            trim: gold,
+            panel: stone,
+            sidePanel: stone,
+            dome: nmat(0xf0a216, 0.45, 0.12, 0x3d2000),               // ענבר עמוק ומבריק
             pipe: nmat(0x0c0d0f, 0.40, 0.40),
-            pipeCap: nmat(0x8c6a1c, 0.40, 0.35),
-            emblem: (B, apo) => {
-                B.add(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 3), glow, 0, 1.07, apo(1.07) + 0.07, Math.PI / 2, 0, 0);   // משולש זוהר מכוון למטה
-            }
+            pipeCap: gold,
+            pipeScale: 1.25,
+            domeCfg: { r: 0.80, y: 1.52, sy: 0.92, ringY: 1.56 },
+            buildBody: (B) => {
+                // גוף ראשי: טרפז (רחב למעלה, צר למטה) מאבן אפורה
+                B.add(poly([[-1.22, 1.46], [1.22, 1.46], [1.02, 0.66], [0.62, 0.32], [-0.62, 0.32], [-1.02, 0.66]], 1.60, 0.05), stone, 0, 0, 0);
+                B.add(nrb(1.30, 0.22, 1.40, 0.06, 0.03), darkBelly, 0, 0.30, 0);                    // בטן כהה
+                B.add(nrb(2.56, 0.10, 1.74, 0.06, 0.03), gold, 0, 1.53, 0);                          // סיפון עליון מוזהב
+                // לוח קדמי: מסגרת זהב בצורת V + לוח אבן בהיר
+                B.add(poly([[-0.70, 1.40], [0.70, 1.40], [0.58, 0.62], [0, 0.30], [-0.58, 0.62]], 0.10, 0.02), gold, 0, 0, 0.84);
+                B.add(poly([[-0.62, 1.34], [0.62, 1.34], [0.52, 0.64], [0, 0.40], [-0.52, 0.64]], 0.10, 0.02), stone2, 0, 0, 0.88);
+                // משולש זוהר מכוון למטה, ממוסגר בזהב
+                B.add(poly([[-0.34, 1.20], [0.34, 1.20], [0, 0.50]], 0.06, 0.015), gold, 0, 0, 0.95);
+                B.add(poly([[-0.26, 1.14], [0.26, 1.14], [0, 0.64]], 0.05, 0), glow, 0, 0, 0.985);
+                [-1, 1].forEach(sd => {
+                    // פס זהב אלכסוני בשני צדי הלוח הקדמי (שברון)
+                    B.add(new THREE.BoxGeometry(0.09, 1.02, 0.07), gold, sd * 0.835, 0.915, 0.87, 0, 0, -sd * 0.435);
+                    // שריון כתף זוויתי מוזהב מעל הקפיצים
+                    B.add(nrb(0.50, 0.52, 0.80, 0.10, 0.05), gold, sd * 1.28, 1.22, 0.15, 0, sd * 0.12, 0);
+                });
+            },
+            emblem: () => {}
         });
     }
 
@@ -4760,10 +4800,23 @@ window.addEventListener('DOMContentLoaded', () => {
     classicCannonWheels.forEach(wheelOuter => {
         const spin = wheelOuter.userData.spinGroup;
         if (!spin) return;
-        const mk = (ringMat, capMat) => {
+        const mk = (ringMat, capMat, fancy) => {
             const g = new THREE.Group();
             g.visible = false;
             [-1, 1].forEach(sd => {
+                if (fancy) {
+                    // Aurum: טבעת עבה, דיסק מרכזי כהה וכיפת פירמידה זהובה (כמו בעיצוב)
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.05, 8, 36), ringMat);
+                    ring.position.z = sd * 0.20;
+                    const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.03, 28), nmat(0x16120c, 0.5, 0.5));
+                    inner.rotation.x = Math.PI / 2;
+                    inner.position.z = sd * 0.19;
+                    const pyr = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.16, 4), capMat);
+                    pyr.rotation.set(sd * Math.PI / 2, 0, Math.PI / 4);
+                    pyr.position.z = sd * 0.23;
+                    g.add(ring, inner, pyr);
+                    return;
+                }
                 const ring = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.032, 8, 32), ringMat);
                 ring.position.z = sd * 0.20;
                 const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 20), capMat);
@@ -4776,7 +4829,7 @@ window.addEventListener('DOMContentLoaded', () => {
         };
         newcWheelDeco.push({
             titan: mk(new THREE.MeshBasicMaterial({ color: 0x22e6ff }), nmat(0x0c0e10, 0.7, 0.3)),
-            viper: mk(nmat(0xf2b52a, 0.9, 0.22), nmat(0xd8a02a, 0.9, 0.25))
+            viper: mk(nmat(0xc89a38, 0.9, 0.24), nmat(0xe0b038, 0.9, 0.22), true)
         });
     });
     function applyNewCannonSkin(id) {
