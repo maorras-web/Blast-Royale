@@ -4645,99 +4645,146 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const NEW_CANNONS = {};
 
-    // ---------------- TITAN: טנק כבד, קנה אחד עבה וארוך, פסי אזהרה כתומים ----------------
-    {
-        const steel = nmat(0x50565d, 0.55, 0.45);
-        const dark = nmat(0x1c2024, 0.60, 0.45);
-        const orange = nmat(0xe85d00, 0.20, 0.62, 0x240c00);   // כתום עמוק (לא צהוב)
-        const glow = new THREE.MeshBasicMaterial({ color: 0xff8a1f });
-        const noShadowGlow = m => m !== glow;
-
+    // ==========================================================================
+    // שני התותחים החדשים לפי התמונה: הגוף משוריין עם לוחות זוויתיים, כיפה למעלה, ושני קנים שחורים עליה.
+    //   'titan' = CYBER: שחור עם פסי ניאון תכולים, כיפה כחולה-טורקיז
+    //   'viper' = AURUM: זהב וברונזה, כיפה זהובה, משולש זוהר בחזית
+    // (המזהים titan/viper נשארים כדי לא לשבור קניות ששמורות בטלפון.)
+    // כל תותח נבנה פעם אחת וממוזג לפי חומר: מעט רשתות, בלי האטה.
+    // ==========================================================================
+    function buildTwinDomeCannon(cfg) {
         const head = new THREE.Group();
         head.position.y = NEWC_LIFT;
         head.visible = false;
         bodyRig.add(head);
         const rig = new THREE.Group();
         head.add(rig);
+        const noShadowGlow = m => m !== cfg.glow && m !== cfg.glow2;
 
         const B = makeBatcher();
-        B.add(nrb(2.70, 0.30, 1.90, 0.10, 0.04), steel, 0, 0.81, 0);                       // סיפון משוריין רחב
-        for (let i = -4; i <= 4; i++) {                                                     // פסי אזהרה בחזית הסיפון
-            B.add(new THREE.BoxGeometry(0.15, 0.27, 0.05), i % 2 === 0 ? orange : dark, i * 0.29, 0.81, 0.955, 0, 0, 0.6);
-        }
-        B.add(nrb(1.90, 0.62, 1.45, 0.16, 0.05), steel, 0, 1.27, -0.05);                    // גוף הצריח
-        B.add(nrb(1.50, 0.22, 0.08, 0.04, 0.02), orange, 0, 1.28, 0.70);                    // לוח כתום קדמי
-        for (let i = 0; i < 3; i++) B.add(new THREE.BoxGeometry(0.90, 0.03, 0.12), dark, 0, 1.585, -0.35 + i * 0.22);   // פתחי אוורור
+        // סיפון תחתון רחב
+        B.add(nrb(2.55, 0.24, 1.85, 0.08, 0.03), cfg.dark, 0, 0.78, 0);
+        // גוף ראשי
+        B.add(nrb(1.80, 0.80, 1.45, 0.12, 0.05), cfg.hull, 0, 1.18, -0.08);
+        // לוח עליון מתחת לכיפה
+        B.add(nrb(1.55, 0.18, 1.30, 0.06, 0.03), cfg.trim, 0, 1.62, -0.08);
+        // לוח קדמי נטוי (רחב למעלה, צר למטה) + לוח פנימי כהה
+        B.add(nrb(1.40, 0.64, 0.16, 0.05, 0.03), cfg.plate, 0, 1.13, 0.76, -0.16, 0, 0);
+        B.add(nrb(0.84, 0.40, 0.07, 0.03, 0.02), cfg.panel, 0, 1.06, 0.86, -0.16, 0, 0);
+        // לוחות צד זוויתיים (פינות קטומות) + פסי אור / עיטורים
         [-1, 1].forEach(sd => {
-            B.add(nrb(0.55, 0.72, 1.25, 0.08, 0.04), steel, sd * 1.42, 0.95, 0);            // תאי שריון בצדדים
-            B.add(new THREE.BoxGeometry(0.50, 0.05, 1.00), orange, sd * 1.42, 1.33, 0);
-            B.add(new THREE.CylinderGeometry(0.09, 0.10, 0.55, 12), dark, sd * 0.65, 1.57, -0.78);   // ארובות
+            B.add(nrb(0.52, 0.72, 1.00, 0.07, 0.03), cfg.hull, sd * 1.06, 1.12, 0.30, 0, sd * 0.45, 0);
+            B.add(nrb(0.40, 0.58, 1.10, 0.06, 0.03), cfg.dark, sd * 1.25, 0.96, -0.30);          // חצאית צד
+            B.add(new THREE.BoxGeometry(0.07, 0.34, 0.035), cfg.glow, sd * 1.12, 1.10, 0.74, 0, sd * 0.45, 0);   // פס אנכי בפינה
+            B.add(new THREE.BoxGeometry(0.34, 0.04, 0.04), cfg.trim, sd * 1.02, 1.50, 0.52, 0, sd * 0.45, 0);    // קו עליון בפינה
         });
+        // פס אור אופקי בחלק העליון של הלוח הקדמי
+        B.add(new THREE.BoxGeometry(1.02, 0.05, 0.04), cfg.glow, 0, 1.43, 0.84, -0.16, 0, 0);
+        // סמל בחזית
+        cfg.emblem(B);
+        // כיפה + טבעת בסיס
+        B.add(new THREE.SphereGeometry(0.62, 28, 16), cfg.dome, 0, 1.72, -0.05, 0, 0, 0, 1.02, 0.80, 1.05);
+        B.add(new THREE.TorusGeometry(0.60, 0.028, 8, 32), cfg.glow2, 0, 1.64, -0.05, Math.PI / 2, 0, 0);
         B.build(head, noShadowGlow);
 
+        // שני הקנים (צינורות שחורים על הכיפה) - זזים ברתיעה
         const R = makeBatcher();
-        R.add(new THREE.CylinderGeometry(0.52, 0.58, 0.30, 24), dark, 0, 1.72, 0);          // צווארון הקנה
-        R.add(new THREE.CylinderGeometry(0.31, 0.36, 1.00, 24), steel, 0, 2.25, 0);         // הקנה: עבה וארוך
-        R.add(new THREE.TorusGeometry(0.345, 0.04, 6, 24), orange, 0, 1.95, 0, Math.PI / 2, 0, 0);   // טבעות כתומות
-        R.add(new THREE.TorusGeometry(0.325, 0.04, 6, 24), orange, 0, 2.35, 0, Math.PI / 2, 0, 0);
-        R.add(new THREE.CylinderGeometry(0.47, 0.42, 0.22, 24), dark, 0, 2.80, 0);          // בולם לוע גדול
-        R.add(new THREE.CylinderGeometry(0.26, 0.26, 0.02, 20), glow, 0, 2.92, 0);          // זוהר הלוע
+        [-1, 1].forEach(sd => {
+            R.add(new THREE.CylinderGeometry(0.115, 0.125, 0.58, 18), cfg.pipe, sd * 0.33, 2.18, 0);
+            R.add(new THREE.CylinderGeometry(0.15, 0.15, 0.09, 18), cfg.pipeCap, sd * 0.33, 1.92, 0);
+            R.add(new THREE.CylinderGeometry(0.14, 0.12, 0.07, 18), cfg.pipeCap, sd * 0.33, 2.49, 0);
+            R.add(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 14), cfg.glow2, sd * 0.33, 2.53, 0);
+        });
         R.build(rig, noShadowGlow);
-
-        NEW_CANNONS.titan = { head, rig, barrelX: [0], muzzleY: 2.6 };
+        return { head, rig, barrelX: [-0.33, 0.33], muzzleY: 2.2 };
     }
 
-    // ---------------- VIPER: קל ומהיר, שלושה קנים, כנפיים אדומות חדות ----------------
-    {
-        const red = nmat(0xc2171d, 0.55, 0.32, 0x2a0204);
-        const dark = nmat(0x14171b, 0.60, 0.40);
-        const steel = nmat(0x8a939b, 0.85, 0.28);
-        const orange = nmat(0xe85d00, 0.20, 0.62, 0x240c00);
-        const glass = nmat(0x0b0e12, 0.90, 0.15);
-        const glow = new THREE.MeshBasicMaterial({ color: 0xff5a2a });
-        const noShadowGlow = m => m !== glow;
-
-        const head = new THREE.Group();
-        head.position.y = NEWC_LIFT;
-        head.visible = false;
-        bodyRig.add(head);
-        const rig = new THREE.Group();
-        head.add(rig);
-
-        const B = makeBatcher();
-        B.add(nrb(2.00, 0.20, 1.50, 0.08, 0.03), dark, 0, 0.76, 0.05);                      // סיפון נמוך
-        B.add(new THREE.SphereGeometry(0.55, 24, 14), red, 0, 1.00, -0.05, 0, 0, 0, 1.15, 0.62, 1.50);   // חופה אדומה ארוכה וגבוהה
-        B.add(new THREE.SphereGeometry(0.55, 20, 12), glass, 0, 1.04, 0.28, 0, 0, 0, 0.80, 0.42, 0.75);  // שמשה כהה בחזית החופה
-        [-1, 1].forEach(sd => {
-            B.add(nrb(0.95, 0.05, 1.15, 0.025, 0.015), red, sd * 1.08, 0.84, -0.05, 0, sd * 0.35, sd * 0.14);     // כנף: נוטה ומוסטת לאחור
-            B.add(new THREE.BoxGeometry(0.90, 0.03, 0.045), glow, sd * 1.10, 0.865, 0.48, 0, sd * 0.35, sd * 0.14); // פס זוהר בקצה הכנף
-            B.add(nrb(0.26, 0.26, 1.25, 0.06, 0.03), red, sd * 0.98, 0.74, 0);                // חצאית צד שמחברת כנף לגוף
-            B.add(nrb(0.24, 0.24, 0.50, 0.05, 0.02), dark, sd * 0.72, 0.90, 0.62);            // יניקות אוויר
-            B.add(new THREE.BoxGeometry(0.20, 0.05, 0.04), glow, sd * 0.50, 0.80, -0.78);     // פנסי זנב
+    {   // ---------------- CYBER (titan): שחור + ניאון תכול ----------------
+        const glow = new THREE.MeshBasicMaterial({ color: 0x22e6ff });
+        const glow2 = new THREE.MeshBasicMaterial({ color: 0x15b6d0 });
+        NEW_CANNONS.titan = buildTwinDomeCannon({
+            glow, glow2,
+            hull: nmat(0x2b3138, 0.65, 0.38),
+            dark: nmat(0x15181c, 0.60, 0.45),
+            trim: nmat(0x3a4148, 0.70, 0.35),
+            plate: nmat(0x23282e, 0.65, 0.38),
+            panel: nmat(0x08090b, 0.50, 0.30),
+            dome: nmat(0x2c8aa0, 0.30, 0.16, 0x04202a),
+            pipe: nmat(0x0c0d0f, 0.70, 0.35),
+            pipeCap: nmat(0x24292f, 0.75, 0.30),
+            emblem: B => {
+                [-1, 1].forEach(sd => B.add(new THREE.BoxGeometry(0.05, 0.22, 0.04), glow, sd * 0.52, 1.04, 0.90, -0.16, 0, 0));
+            }
         });
-        B.add(nrb(0.08, 0.36, 0.50, 0.03, 0.02), red, 0, 1.06, -0.72);                      // סנפיר אחורי
-        B.build(head, noShadowGlow);
+    }
 
-        const R = makeBatcher();
-        R.add(nrb(1.60, 0.18, 0.50, 0.05, 0.03), dark, 0, 1.12, 0.02);                      // בסיס הקנים
-        R.add(new THREE.CylinderGeometry(0.14, 0.17, 1.25, 18), steel, 0, 1.80, 0);         // קנה מרכזי ארוך ועבה
-        R.add(new THREE.CylinderGeometry(0.19, 0.17, 0.10, 18), dark, 0, 2.475, 0);
-        R.add(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 14), glow, 0, 2.535, 0);
-        R.add(new THREE.TorusGeometry(0.18, 0.028, 6, 16), orange, 0, 1.60, 0, Math.PI / 2, 0, 0);
-        [-1, 1].forEach(sd => {
-            R.add(new THREE.CylinderGeometry(0.13, 0.15, 0.95, 18), steel, sd * 0.52, 1.65, 0);       // קנים צדדיים
-            R.add(new THREE.CylinderGeometry(0.17, 0.15, 0.10, 18), dark, sd * 0.52, 2.175, 0);
-            R.add(new THREE.CylinderGeometry(0.10, 0.10, 0.02, 14), glow, sd * 0.52, 2.235, 0);
-            R.add(new THREE.TorusGeometry(0.165, 0.028, 6, 16), orange, sd * 0.52, 1.45, 0, Math.PI / 2, 0, 0);
+    {   // ---------------- AURUM (viper): זהב וברונזה ----------------
+        const glow = new THREE.MeshBasicMaterial({ color: 0xffb02e });
+        const glow2 = new THREE.MeshBasicMaterial({ color: 0xffc94a });
+        NEW_CANNONS.viper = buildTwinDomeCannon({
+            glow, glow2,
+            hull: nmat(0xb98a2c, 0.85, 0.30),
+            dark: nmat(0x4a3a18, 0.70, 0.40),
+            trim: nmat(0x8d6a22, 0.85, 0.32),
+            plate: nmat(0xa87b25, 0.85, 0.30),
+            panel: nmat(0x3a3f45, 0.60, 0.40),
+            dome: nmat(0xd49a1c, 0.90, 0.20, 0x2a1800),
+            pipe: nmat(0x0c0d0f, 0.70, 0.35),
+            pipeCap: nmat(0x6b5218, 0.85, 0.30),
+            emblem: B => {
+                B.add(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 3), glow, 0, 1.06, 0.91, Math.PI / 2, 0, 0);   // משולש זוהר מכוון למטה
+            }
         });
-        R.build(rig, noShadowGlow);
-
-        NEW_CANNONS.viper = { head, rig, barrelX: [-0.52, 0, 0.52], muzzleY: 1.95 };
     }
 
     // צבע הגוף התחתון הקלאסי (הקופסה הכהה) מתחלף לצבע של התותח, כדי שלא יישאר "קופסה שחורה"
-    const NEWC_HULL = { titan: nmat(0x373c42, 0.65, 0.40), viper: nmat(0x6e0d14, 0.60, 0.30, 0x1a0204) };
+    const NEWC_HULL = { titan: nmat(0x1a1e23, 0.65, 0.40), viper: nmat(0x7a5a1c, 0.80, 0.32) };
     const classicHullMeshes = classicBodyParts.filter(p => p.isMesh && p.material === bodyMetalMat);
+
+
+    // ---- צבעי גלגלים וקפיצים לכל תותח חדש (חומרים משותפים - חוזרים לצבע המקורי כשחוזרים לקלאסי) ----
+    const SKIN_ORIG = {
+        chrome: chromeMat.color.getHex(), gun: gunmetalMat.color.getHex(),
+        coil: suspensionRubberMat.color.getHex(), coilEm: suspensionRubberMat.emissive.getHex(),
+        metal: suspensionMetalMat.color.getHex()
+    };
+    const NEWC_SKINS = {
+        titan: { chrome: 0x20262c, gun: 0x101418, coil: 0x16c8e6, coilEm: 0x04323a, metal: 0x4a525a },
+        viper: { chrome: 0xc8962a, gun: 0x5e4710, coil: 0xe0a21e, coilEm: 0x2a1a00, metal: 0xb58a30 }
+    };
+    // טבעת צבעונית ומכסה על ציר הגלגל (בשני הצדדים של כל גלגל)
+    const newcWheelDeco = [];
+    classicCannonWheels.forEach(wheelOuter => {
+        const spin = wheelOuter.userData.spinGroup;
+        if (!spin) return;
+        const mk = (ringMat, capMat) => {
+            const g = new THREE.Group();
+            g.visible = false;
+            [-1, 1].forEach(sd => {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.032, 8, 32), ringMat);
+                ring.position.z = sd * 0.20;
+                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 20), capMat);
+                cap.rotation.x = Math.PI / 2;
+                cap.position.z = sd * 0.215;
+                g.add(ring, cap);
+            });
+            spin.add(g);
+            return g;
+        };
+        newcWheelDeco.push({
+            titan: mk(new THREE.MeshBasicMaterial({ color: 0x22e6ff }), nmat(0x0c0e10, 0.7, 0.3)),
+            viper: mk(nmat(0xf2b52a, 0.9, 0.22), nmat(0xd8a02a, 0.9, 0.25))
+        });
+    });
+    function applyNewCannonSkin(id) {
+        const k = NEWC_SKINS[id];
+        chromeMat.color.setHex(k ? k.chrome : SKIN_ORIG.chrome);
+        gunmetalMat.color.setHex(k ? k.gun : SKIN_ORIG.gun);
+        suspensionRubberMat.color.setHex(k ? k.coil : SKIN_ORIG.coil);
+        suspensionRubberMat.emissive.setHex(k ? k.coilEm : SKIN_ORIG.coilEm);
+        suspensionMetalMat.color.setHex(k ? k.metal : SKIN_ORIG.metal);
+        newcWheelDeco.forEach(d => { d.titan.visible = (id === 'titan'); d.viper.visible = (id === 'viper'); });
+    }
 
     let activeNewCannon = null;
     function applyNewCannonLook(id) {
@@ -4746,6 +4793,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // הצריח והקנים הקלאסיים מוסתרים; הגוף התחתון, ההשעיה והגלגלים נשארים
         if (activeNewCannon) classicTurretParts.forEach(p => { p.visible = false; });
         classicHullMeshes.forEach(m => { m.material = activeNewCannon ? NEWC_HULL[activeNewCannon] : bodyMetalMat; });
+        applyNewCannonSkin(activeNewCannon);
     }
 
     function applyCannonLook(isMk2) {
@@ -5019,10 +5067,10 @@ window.addEventListener('DOMContentLoaded', () => {
           desc: 'The reliable twin-barrel cannon. Balanced, steady and easy to control.' },
         { kind: 'cannon', id: 'mk2', name: 'Nova Cannon', icon: '🛡️', color: '#38bdf8', tag: 'CANNON',
           desc: 'Armored off-road cannon with powered suspension and big tyres. Bigger, tougher and ready for anything.' },
-        { kind: 'cannon', id: 'titan', name: 'Titan', icon: '🔥', color: '#ff7a00', tag: 'CANNON',
-          desc: 'Armored siege cannon with a single massive barrel and orange hazard plating.' },
-        { kind: 'cannon', id: 'viper', name: 'Viper', icon: '🐍', color: '#ef4444', tag: 'CANNON',
-          desc: 'Sleek red cannon with a triple-barrel array that sprays a wide fan of shots.' },
+        { kind: 'cannon', id: 'titan', name: 'Cyber', icon: '🔷', color: '#22d3ee', tag: 'CANNON',
+          desc: 'Black armored cannon with glowing cyan neon lines and a tinted glass dome. Twin barrels.' },
+        { kind: 'cannon', id: 'viper', name: 'Aurum', icon: '👑', color: '#f5b81c', tag: 'CANNON',
+          desc: 'Gold and bronze battle cannon with a golden dome and a glowing emblem. Twin barrels.' },
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
           stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
