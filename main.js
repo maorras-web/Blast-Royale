@@ -4661,78 +4661,77 @@ window.addEventListener('DOMContentLoaded', () => {
         head.add(rig);
         const noShadowGlow = m => m !== cfg.glow && m !== cfg.glow2;
 
+        // הגוף: מנסרה מתומנת רחבה למעלה וצרה למטה (פאה קדמית + 4 פאות זוויתיות + צדדים), כמו בתמונה.
+        const OCT = Math.PI / 8;                                   // מסובבים כך שפאה שטוחה פונה קדימה
+        const apo = y => 0.84 + (y - 0.93) / 0.80 * 0.18;          // רדיוס הפאה בגובה y (רחב למעלה)
         const B = makeBatcher();
-        // סיפון תחתון רחב
-        B.add(nrb(2.55, 0.24, 1.85, 0.08, 0.03), cfg.dark, 0, 0.78, 0);
-        // גוף ראשי
-        B.add(nrb(1.80, 0.80, 1.45, 0.12, 0.05), cfg.hull, 0, 1.18, -0.08);
-        // לוח עליון מתחת לכיפה
-        B.add(nrb(1.55, 0.18, 1.30, 0.06, 0.03), cfg.trim, 0, 1.62, -0.08);
-        // לוח קדמי נטוי (רחב למעלה, צר למטה) + לוח פנימי כהה
-        B.add(nrb(1.40, 0.64, 0.16, 0.05, 0.03), cfg.plate, 0, 1.13, 0.76, -0.16, 0, 0);
-        B.add(nrb(0.84, 0.40, 0.07, 0.03, 0.02), cfg.panel, 0, 1.06, 0.86, -0.16, 0, 0);
-        // לוחות צד זוויתיים (פינות קטומות) + פסי אור / עיטורים
+        B.add(new THREE.CylinderGeometry(0.98, 0.78, 0.26, 8), cfg.dark, 0, 0.80, 0, 0, OCT, 0);              // בטן כהה
+        B.add(new THREE.CylinderGeometry(1.104, 0.909, 0.80, 8), cfg.hull, 0, 1.33, 0, 0, OCT, 0);            // גוף ראשי
+        B.add(new THREE.CylinderGeometry(1.17, 1.17, 0.08, 8), cfg.trim, 0, 1.72, 0, 0, OCT, 0);              // שפה עליונה
+        B.add(new THREE.CylinderGeometry(1.02, 1.05, 0.06, 8), cfg.dark, 0, 1.10, 0, 0, OCT, 0);              // חגורה כהה באמצע הגוף
+
+        // פאה קדמית: לוח כהה גדול + פס/סמל
+        B.add(nrb(0.70, 0.52, 0.05, 0.03, 0.02), cfg.panel, 0, 1.30, apo(1.30) + 0.03, 0.24, 0, 0);
+        // 4 פאות זוויתיות (±45°): פס אנכי + קו עליון
         [-1, 1].forEach(sd => {
-            B.add(nrb(0.52, 0.72, 1.00, 0.07, 0.03), cfg.hull, sd * 1.06, 1.12, 0.30, 0, sd * 0.45, 0);
-            B.add(nrb(0.40, 0.58, 1.10, 0.06, 0.03), cfg.dark, sd * 1.25, 0.96, -0.30);          // חצאית צד
-            B.add(new THREE.BoxGeometry(0.07, 0.34, 0.035), cfg.glow, sd * 1.12, 1.10, 0.74, 0, sd * 0.45, 0);   // פס אנכי בפינה
-            B.add(new THREE.BoxGeometry(0.34, 0.04, 0.04), cfg.trim, sd * 1.02, 1.50, 0.52, 0, sd * 0.45, 0);    // קו עליון בפינה
+            const phi = sd * Math.PI / 4, r = apo(1.30) + 0.05;
+            B.add(new THREE.BoxGeometry(0.09, 0.40, 0.05), cfg.glow, Math.sin(phi) * r, 1.30, Math.cos(phi) * r, 0, phi, 0);
+            const r2 = apo(1.62) + 0.05;
+            B.add(new THREE.BoxGeometry(0.46, 0.05, 0.05), cfg.glow2, Math.sin(phi) * r2, 1.62, Math.cos(phi) * r2, 0, phi, 0);
+            // פאת צד: לוח כהה
+            B.add(new THREE.BoxGeometry(0.50, 0.40, 0.05), cfg.panel, sd * (apo(1.30) + 0.03), 1.30, 0, 0, sd * Math.PI / 2, 0);
         });
-        // פס אור אופקי בחלק העליון של הלוח הקדמי
-        B.add(new THREE.BoxGeometry(1.02, 0.05, 0.04), cfg.glow, 0, 1.43, 0.84, -0.16, 0, 0);
-        // סמל בחזית
-        cfg.emblem(B);
-        // כיפה + טבעת בסיס
-        B.add(new THREE.SphereGeometry(0.62, 28, 16), cfg.dome, 0, 1.72, -0.05, 0, 0, 0, 1.02, 0.80, 1.05);
-        B.add(new THREE.TorusGeometry(0.60, 0.028, 8, 32), cfg.glow2, 0, 1.64, -0.05, Math.PI / 2, 0, 0);
+        cfg.emblem(B, apo);
+
+        // כיפה גדולה עם טבעת בסיס זוהרת
+        B.add(new THREE.SphereGeometry(0.70, 32, 18), cfg.dome, 0, 1.80, 0, 0, 0, 0, 1.0, 0.92, 1.0);
+        B.add(new THREE.TorusGeometry(0.70, 0.04, 8, 36), cfg.glow2, 0, 1.80, 0, Math.PI / 2, 0, 0);
         B.build(head, noShadowGlow);
 
-        // שני הקנים (צינורות שחורים על הכיפה) - זזים ברתיעה
+        // שני הקנים: צינורות שחורים על הכיפה (זזים ברתיעה)
         const R = makeBatcher();
         [-1, 1].forEach(sd => {
-            R.add(new THREE.CylinderGeometry(0.115, 0.125, 0.58, 18), cfg.pipe, sd * 0.33, 2.18, 0);
-            R.add(new THREE.CylinderGeometry(0.15, 0.15, 0.09, 18), cfg.pipeCap, sd * 0.33, 1.92, 0);
-            R.add(new THREE.CylinderGeometry(0.14, 0.12, 0.07, 18), cfg.pipeCap, sd * 0.33, 2.49, 0);
-            R.add(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 14), cfg.glow2, sd * 0.33, 2.53, 0);
+            R.add(new THREE.CylinderGeometry(0.115, 0.125, 0.58, 18), cfg.pipe, sd * 0.33, 2.55, 0);
+            R.add(new THREE.CylinderGeometry(0.16, 0.16, 0.10, 18), cfg.pipeCap, sd * 0.33, 2.30, 0);
+            R.add(new THREE.CylinderGeometry(0.145, 0.12, 0.07, 18), cfg.pipeCap, sd * 0.33, 2.86, 0);
+            R.add(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 14), cfg.glow2, sd * 0.33, 2.905, 0);
         });
         R.build(rig, noShadowGlow);
-        return { head, rig, barrelX: [-0.33, 0.33], muzzleY: 2.2 };
+        return { head, rig, barrelX: [-0.33, 0.33], muzzleY: 2.62 };
     }
 
     {   // ---------------- CYBER (titan): שחור + ניאון תכול ----------------
-        const glow = new THREE.MeshBasicMaterial({ color: 0x22e6ff });
-        const glow2 = new THREE.MeshBasicMaterial({ color: 0x15b6d0 });
+        const glow = new THREE.MeshBasicMaterial({ color: 0x35f0ff });
+        const glow2 = new THREE.MeshBasicMaterial({ color: 0x18c4de });
         NEW_CANNONS.titan = buildTwinDomeCannon({
             glow, glow2,
-            hull: nmat(0x2b3138, 0.65, 0.38),
-            dark: nmat(0x15181c, 0.60, 0.45),
-            trim: nmat(0x3a4148, 0.70, 0.35),
-            plate: nmat(0x23282e, 0.65, 0.38),
-            panel: nmat(0x08090b, 0.50, 0.30),
-            dome: nmat(0x2c8aa0, 0.30, 0.16, 0x04202a),
-            pipe: nmat(0x0c0d0f, 0.70, 0.35),
-            pipeCap: nmat(0x24292f, 0.75, 0.30),
-            emblem: B => {
-                [-1, 1].forEach(sd => B.add(new THREE.BoxGeometry(0.05, 0.22, 0.04), glow, sd * 0.52, 1.04, 0.90, -0.16, 0, 0));
+            hull: nmat(0x3a424b, 0.30, 0.42),
+            dark: nmat(0x15181d, 0.35, 0.50),
+            trim: nmat(0x4c565f, 0.35, 0.40),
+            panel: nmat(0x090a0c, 0.30, 0.35),
+            dome: nmat(0x3aa9c4, 0.20, 0.16, 0x0a3a46),
+            pipe: nmat(0x0c0d0f, 0.40, 0.40),
+            pipeCap: nmat(0x2a3037, 0.45, 0.35),
+            emblem: (B, apo) => {
+                B.add(new THREE.BoxGeometry(0.78, 0.055, 0.05), glow, 0, 1.66, apo(1.66) + 0.04, 0.24, 0, 0);    // פס אור עליון בחזית
             }
         });
     }
 
     {   // ---------------- AURUM (viper): זהב וברונזה ----------------
-        const glow = new THREE.MeshBasicMaterial({ color: 0xffb02e });
-        const glow2 = new THREE.MeshBasicMaterial({ color: 0xffc94a });
+        const glow = new THREE.MeshBasicMaterial({ color: 0xffb62e });
+        const glow2 = new THREE.MeshBasicMaterial({ color: 0xffd25a });
         NEW_CANNONS.viper = buildTwinDomeCannon({
             glow, glow2,
-            hull: nmat(0xb98a2c, 0.85, 0.30),
-            dark: nmat(0x4a3a18, 0.70, 0.40),
-            trim: nmat(0x8d6a22, 0.85, 0.32),
-            plate: nmat(0xa87b25, 0.85, 0.30),
-            panel: nmat(0x3a3f45, 0.60, 0.40),
-            dome: nmat(0xd49a1c, 0.90, 0.20, 0x2a1800),
-            pipe: nmat(0x0c0d0f, 0.70, 0.35),
-            pipeCap: nmat(0x6b5218, 0.85, 0.30),
-            emblem: B => {
-                B.add(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 3), glow, 0, 1.06, 0.91, Math.PI / 2, 0, 0);   // משולש זוהר מכוון למטה
+            hull: nmat(0xe3b13a, 0.30, 0.40, 0x2a1b00),
+            dark: nmat(0x6e5522, 0.35, 0.50),
+            trim: nmat(0xbd8c28, 0.35, 0.38, 0x1a1000),
+            panel: nmat(0x30353b, 0.35, 0.40),
+            dome: nmat(0xf6bd34, 0.35, 0.22, 0x4a3000),
+            pipe: nmat(0x0c0d0f, 0.40, 0.40),
+            pipeCap: nmat(0x8c6a1c, 0.40, 0.35),
+            emblem: (B, apo) => {
+                B.add(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 3), glow, 0, 1.31, apo(1.31) + 0.075, Math.PI / 2, 0, 0);   // משולש זוהר מכוון למטה
             }
         });
     }
@@ -4792,7 +4791,7 @@ window.addEventListener('DOMContentLoaded', () => {
         Object.keys(NEW_CANNONS).forEach(k => { NEW_CANNONS[k].head.visible = (k === activeNewCannon); });
         // הצריח והקנים הקלאסיים מוסתרים; הגוף התחתון, ההשעיה והגלגלים נשארים
         if (activeNewCannon) classicTurretParts.forEach(p => { p.visible = false; });
-        classicHullMeshes.forEach(m => { m.material = activeNewCannon ? NEWC_HULL[activeNewCannon] : bodyMetalMat; });
+        classicHullMeshes.forEach(m => { m.material = activeNewCannon ? NEWC_HULL[activeNewCannon] : bodyMetalMat; if (activeNewCannon) m.visible = false; });
         applyNewCannonSkin(activeNewCannon);
     }
 
