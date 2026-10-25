@@ -1,106 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<title>Rover Explorer</title>
-<link rel="stylesheet" href="style.css?v=28">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1e1b18">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Blast Royale</title>
+    <link rel="icon" href="data:,">
+    
+    <!-- פונט Rubik מודרני -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css?v=7">
+    
+    <!-- ספריית Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-<div id="desktop-warning">
-  <div class="warning-icon">📱</div>
-  <div class="warning-title">Mobile Devices Only</div>
-  <div class="warning-text">This game is designed for mobile phones only</div>
-</div>
-
-<div id="orientation-warning">
-  <div class="warning-icon">📱</div>
-  <div class="warning-text">Please rotate your device to landscape</div>
-  <div class="warning-sub">Rotate to landscape mode</div>
-</div>
-
-<div id="sun-glow"></div>
-<div id="hud-msg"></div>
-
-<div id="settings-panel">
-  <div class="sp-box">
-    <div class="sp-title">SETTINGS</div>
-    <div class="sp-line">
-      <span class="sp-label">SHOW FPS</span>
-      <button class="sp-toggle" id="fps-toggle">ON</button>
+    <!-- שכבת הגבלה: המשחק מיועד לטלפונים בלבד ובמצב אנכי -->
+    <div id="desktop-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">📱</div>
+            <h2>Mobile Only</h2>
+            <p>This game is designed for phones in portrait mode.</p>
+            <small>Open the game on your phone to play.</small>
+        </div>
     </div>
-    <button class="sp-close" id="diag-btn" style="margin-bottom:8px">RUN SPEED TEST (35 s)</button>
-    <button class="sp-close" id="diag-btn2" style="margin-bottom:8px">SPEED TEST AT CURRENT LEVEL (35 s)</button>
-    <button class="sp-close" id="sp-close">CLOSE</button>
-  </div>
-</div>
 
-<div id="ui-container">
-  <div id="hud-chips">
-    <div id="current-biome"><svg class="ico leaf" viewBox="0 0 24 24"><path fill="currentColor" d="M20 3C10 3 4 8 4 15c0 1.6.5 3 1.3 4.2L3 22l1.8.6 2-2.6C8 20.6 9.4 21 11 21c7 0 10-7 9-18zM9 17c0-4 3-7 8-9-3 2-5 5-6 9z"/></svg><span id="biome-text">Green Field</span></div>
-    <div id="time-display" data-night="0"><svg class="ico sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></g></svg><svg class="ico moon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg><span id="time-text">12:00</span></div>
-  </div>
-  <div id="hud-map">
-    <div id="minimap">
-      <canvas id="minimap-canvas" width="140" height="140"></canvas>
-      <div id="minimap-rover"></div>
+    <div id="landscape-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">↕️</div>
+            <h2>Rotate your phone</h2>
+            <p>Switch your phone to portrait mode to play.</p>
+        </div>
     </div>
-    <button id="btn-fullscreen">⛶ Fullscreen</button>
-    <button id="btn-settings">⚙ Settings</button>
-  </div>
-</div>
 
-<!-- Steering: LEFT button on the left, RIGHT button on the right -->
-<div id="steer-left">
-  <button class="ctrl-round steer-btn" data-key="left"><svg class="tri left" viewBox="0 0 24 24"><path d="M12 5 L21 19 H3 Z"/></svg><span class="ctrl-label">LEFT</span></button>
-  <button class="ctrl-round steer-btn" data-key="right"><svg class="tri right" viewBox="0 0 24 24"><path d="M12 5 L21 19 H3 Z"/></svg><span class="ctrl-label">RIGHT</span></button>
-</div>
+    <!-- UI עליון בזמן משחק -->
+    <div id="ui-container">
+        <div class="ui-card">
+            <span class="ui-title">SCORE</span>
+            <span id="score-val" class="ui-value">0</span>
+        </div>
 
-<!-- Pedals: GAS and REVERSE on the right side -->
-<div id="pedals-right">
-  <button class="ctrl-round pedal-gas" data-key="forward"><svg class="tri up" viewBox="0 0 24 24"><path d="M12 5 L21 19 H3 Z"/></svg><span class="pad"></span><span class="ctrl-label">GAS</span></button>
-  <button class="ctrl-round pedal-reverse" data-key="backward"><span class="pad"></span><svg class="tri down" viewBox="0 0 24 24"><path d="M12 5 L21 19 H3 Z"/></svg><span class="ctrl-label">REVERSE</span></button>
-</div>
+        <div class="ui-card">
+            <span class="ui-title">COINS</span>
+            <span id="coins-val" class="ui-value">0</span>
+        </div>
 
-<!-- Camera controls: view toggle, closer, farther -->
-<div id="cam-controls">
-  <button class="cam-btn" id="cam-view"><svg class="i-cam" viewBox="0 0 24 24"><path d="M4 7h10a2 2 0 0 1 2 2v1.5l4-2.5v8l-4-2.5V15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zM6 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm6.5 0a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" transform="translate(0 1.5)"/></svg><svg class="i-car" viewBox="0 0 24 24"><path d="M5 11l1.6-4.2A2 2 0 0 1 8.5 5.5h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1.5 1.9V17a1 1 0 0 1-1 1H18a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1v-4.1A2 2 0 0 1 5 11zm2.4-.5h9.2l-1.1-3H8.5zM7 12.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zm10 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg></button>
-  <button class="cam-btn" id="cam-in">+</button>
-  <button class="cam-btn" id="cam-out">−</button>
-  <button class="cam-btn" id="btn-sound"><svg class="i-on" viewBox="0 0 24 24"><path d="M3 9.5h3.5L11 5.5v13l-4.5-4H3z"/><path d="M14 8.5a4.5 4.5 0 0 1 0 7M16.5 6a8 8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="i-off" viewBox="0 0 24 24"><path d="M3 9.5h3.5L11 5.5v13l-4.5-4H3z"/><path d="M15 9.5l5 5M20 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-</div>
+        <div class="ui-card">
+            <span class="ui-title">LEVEL</span>
+            <span id="level-text" class="ui-value">1</span>
+        </div>
 
-<!-- Dashboard panel: health + fuel -->
-<div id="status-bars">
-  <div class="dash-main">
-    <div class="gauge"><div class="gauge-shape"><i class="gfill health-fill"></i></div><span>HEALTH</span></div>
-    <div class="bars">
-      <div class="bar-row">
-        <svg viewBox="0 0 24 24" style="color:#6ff2b0"><path fill="currentColor" d="M12 21s-7-4.5-9.5-9C1 8.5 3 5 6.5 5c2 0 3.5 1 5.5 3 2-2 3.5-3 5.5-3C21 5 23 8.5 21.5 12 19 16.5 12 21 12 21z"/></svg>
-        <div class="bar"><div class="bar-fill hp" id="bar-health" style="width:100%"></div></div>
-      </div>
-      <div class="bar-row">
-        <svg viewBox="0 0 24 24" style="color:#6fb4ff"><path fill="currentColor" d="M12 2s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/></svg>
-        <div class="bar"><div class="bar-fill en" id="bar-energy" style="width:100%"></div></div>
-      </div>
+        <div class="ui-card" id="hp-container">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #a1a1aa;">
+                <span>HP</span>
+                <span id="hp-text">100 / 100</span>
+            </div>
+            <div class="hp-bar-bg">
+                <div id="hp-bar"></div>
+            </div>
+        </div>
     </div>
-    <div class="gauge"><div class="gauge-shape"><i class="gfill fuel-fill"><b></b><b></b><b></b><b></b><b></b><b></b></i></div><span>FUEL GAUGE</span></div>
-  </div>
-  <div class="dash-title">DASHBOARD PANEL</div>
-</div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-<script type="module" src="main.js?v=60"></script>
+    <!-- מסך פתיחה (Splash / Start) -->
+    <div id="splash-screen" class="modal-overlay intro-only">
+        <div class="modal-card splash-sheet">
+            <h1 class="game-title">BLAST<br><span>ROYALE</span></h1>
+
+            <!-- שורת נתונים קבועה: מטבעות ושיא -->
+            <div class="splash-head">
+                <div class="head-stat">
+                    <span class="head-label">🪙 Coins</span>
+                    <strong id="start-coins">0</strong>
+                </div>
+                <div class="head-stat">
+                    <span class="head-label">🏆 Best</span>
+                    <strong id="start-best-score">0</strong>
+                </div>
+            </div>
+
+            <!-- אזור הגלילה: תותח, שדרוגים, מפה -->
+            <div class="splash-scroll">
+                <section class="splash-section">
+                    <div class="shop-section-title">Upgrades</div>
+                    <div class="upgrades-list">
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">Fire Power</div>
+                                <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-power-btn" class="btn-upg">50 C</button>
+                        </div>
+
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">Fire Rate</div>
+                                <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-rate-btn" class="btn-upg">60 C</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="splash-section">
+                    <div class="shop-section-title">Map</div>
+                    <div class="maps-grid">
+                        <button class="map-card selected owned" data-map-id="forest" type="button">
+                            <span class="map-icon">🔺</span>
+                            <span class="map-info"><strong>PYRAMIDS</strong><small>Pyramids</small></span>
+                            <span class="map-action">Selected</span>
+                        </button>
+                        <button class="map-card owned" data-map-id="volcano" type="button">
+                            <span class="map-icon">🌊</span>
+                            <span class="map-info"><strong>SEA</strong><small>Night sea</small></span>
+                            <span class="map-action">Select</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <button id="inventory-btn" class="inv-open" type="button"><span>🎒</span>INVENTORY</button>
+
+            <button id="start-btn" class="btn-primary" type="button">Start Game</button>
+        </div>
+    </div>
+
+    <!-- קובץ המשחק הראשי -->
+    <script src="main.js?v=129"></script>
 </body>
 </html>
