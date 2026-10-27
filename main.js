@@ -5079,7 +5079,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (startBestScoreEl) startBestScoreEl.innerText = bestScore;
         if (hpTextEl) hpTextEl.innerText = `${Math.max(0, playerHp)} / ${maxHp}`;
         if (hpBarEl) hpBarEl.style.width = `${Math.max(0, (playerHp / maxHp) * 100)}%`;
-        if (levelTextEl) levelTextEl.innerText = `LEVEL ${level}`;
+        if (levelTextEl) levelTextEl.innerText = level;   // הכותרת "LEVEL" כבר בכרטיס, אז כאן רק המספר
 
         // מחירים לשדרוגים
         const powerCost = firePowerLvl * 50;
