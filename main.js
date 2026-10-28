@@ -22,10 +22,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // SAND_COLOR = צבע החול/דיונות. SAND_TEXTURE = צבע בסיס מצויר של טקסטורת החול (להבהיר/להכהות את החול).
     // GOLD_* = גווני הזהב של הפירמידות (קודקוד / אמצע / בסיס).
     const SAND_COLOR = 0x8a6428;
-    const SAND_TEXTURE = '#c4914a';
-    const GOLD_LIGHT = '#d9a93c';
-    const GOLD_MID = '#b8862a';
-    const GOLD_DARK = '#8a5f16';
+    const SAND_TEXTURE = '#e2b25c';
+    const GOLD_LIGHT = '#d89a40';
+    const GOLD_MID = '#c98d3b';
+    const GOLD_DARK = '#a8742c';
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
@@ -846,6 +846,7 @@ window.addEventListener('DOMContentLoaded', () => {
             } else if (mapId === 'sand') {
                 height *= 1.35;   // דיונות רכות מעט גבוהות יותר מהדשא
                 height += Math.sin(x * 0.23 - z * 0.31) * 0.05 * centerWeight;
+                height *= 1 - THREE.MathUtils.smoothstep(z, 26, 44);   // הקצה הרחוק משתטח, כדי שייתחבר בלי תפר לחול שמעבר
             }
 
             position.setZ(i, height);
@@ -1776,7 +1777,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3) שכבת מרחק — צלליות נמוכות שמייצרות מעבר רך אל הפירמידות.
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < (sandy ? 0 : 10); i++) {
             const side = i % 2 === 0 ? -1 : 1;
             const z = -20.0 - Math.random() * 8.0;
             const x = side * (8.5 + Math.random() * 4.5);
@@ -1979,102 +1980,95 @@ window.addEventListener('DOMContentLoaded', () => {
     // מפת DESERT: חול במקום דשא + פירמידות זהב עם ציורי מצרים העתיקה
     // ==========================================
 
-    // טקסטורת חול + מפת בליטה: אדוות רוח קצרות ומעוקלות (כמו חול אמיתי), שמקבלות צל והדגשה מהשמש.
-    let sandCache = null;
-    function getSandCanvases() {
-        if (sandCache) return sandCache;
-        const size = 512;
-        const mkc = () => { const cv = document.createElement('canvas'); cv.width = cv.height = size; return cv; };
-        const canvas = mkc(), bumpCanvas = mkc();
+    // טקסטורת חול: שדה אדוות רוח טבעי (גלים בכיוונים שונים בכתמים), מצויר פיקסל-פיקסל ונחזר בצורה חלקה.
+    // הצללה מחושבת מהשיפוע מול כיוון השמש, לכן האדוות נראות בנפח בלי מפת בליטה.
+    let sandCanvasCache = null;
+    function getSandCanvas() {
+        if (sandCanvasCache) return sandCanvasCache;
+        const N = 512, TAU = Math.PI * 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = N;
         const ctx = canvas.getContext('2d');
-        const bctx = bumpCanvas.getContext('2d');
+        const img = ctx.createImageData(N, N);
 
-        ctx.fillStyle = SAND_TEXTURE;
-        ctx.fillRect(0, 0, size, size);
-        bctx.fillStyle = '#808080';
-        bctx.fillRect(0, 0, size, size);
+        const base = new THREE.Color(SAND_TEXTURE);
+        const br = Math.round(base.r * 255), bg = Math.round(base.g * 255), bb = Math.round(base.b * 255);
 
-        const wrapped = (x, y, margin, draw) => {
-            const xs = [0], ys = [0];
-            if (x < margin) xs.push(size); else if (x > size - margin) xs.push(-size);
-            if (y < margin) ys.push(size); else if (y > size - margin) ys.push(-size);
-            xs.forEach(dx => ys.forEach(dy => draw(x + dx, y + dy)));
-        };
-
-        // כתמים רחבים של חול בהיר וכהה.
-        for (let i = 0; i < 40; i++) {
-            const x = Math.random() * size, y = Math.random() * size;
-            const r = 50 + Math.random() * 100;
-            const light = Math.random() < 0.5;
-            wrapped(x, y, r, (px, py) => {
-                const g = ctx.createRadialGradient(px, py, 0, px, py, r);
-                const c = light ? '246,214,140' : '130,84,34';
-                g.addColorStop(0, `rgba(${c},0.20)`);
-                g.addColorStop(1, `rgba(${c},0)`);
-                ctx.fillStyle = g;
-                ctx.fillRect(px - r, py - r, r * 2, r * 2);
+        // רכיבי הגלים: מספרים שלמים של מחזורים לאורך הטקסטורה = חיבור חלק בין האריחים.
+        const comps = [];
+        for (let i = 0; i < 7; i++) {
+            const len = 15 + Math.random() * 17;
+            const ang = 0.35 + (Math.random() - 0.5) * 1.3;
+            comps.push({
+                kx: Math.round(len * Math.cos(ang)), ky: Math.round(len * Math.sin(ang)),
+                wx: 1 + Math.floor(Math.random() * 3), wy: 1 + Math.floor(Math.random() * 3),
+                p: Math.random() * TAU, wamp: 1.2 + Math.random() * 2.2,
+                mx: 1 + Math.floor(Math.random() * 2), my: 1 + Math.floor(Math.random() * 2), q: Math.random() * TAU,
+                ph: Math.random() * TAU
             });
         }
+        // כתמי גוון רחבים (חול בהיר/כהה).
+        const tint = [];
+        for (let i = 0; i < 4; i++) {
+            tint.push({ ax: 1 + Math.floor(Math.random() * 3), ay: 1 + Math.floor(Math.random() * 3), p: Math.random() * TAU });
+        }
 
-        // אדוות: קטעים קצרים וגליים בגדלים ובזוויות שונות; כל קטע = הדגשה בהירה + צל כהה צמוד.
-        ctx.lineCap = 'round';
-        bctx.lineCap = 'round';
-        for (let i = 0; i < 80; i++) {
-            const x0 = Math.random() * size, y0 = Math.random() * size;
-            const len = 160 + Math.random() * 260;
-            const amp = 4 + Math.random() * 8;
-            const freq = 1 + Math.random() * 1.2;
-            const phase = Math.random() * Math.PI * 2;
-            const tilt = (Math.random() - 0.5) * 0.1;
-            const w = 3.5 + Math.random() * 3.5;
-            const path = (c, ox, oy, off) => {
-                c.beginPath();
-                for (let t = 0; t <= len; t += 6) {
-                    const y = y0 + oy + off + t * tilt + Math.sin(t / len * Math.PI * freq + phase) * amp;
-                    if (t === 0) c.moveTo(x0 + ox + t, y); else c.lineTo(x0 + ox + t, y);
+        const hgt = new Float32Array(N * N);
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                let s = 0;
+                for (let c = 0; c < comps.length; c++) {
+                    const k = comps[c];
+                    let m = 0.5 + 0.5 * Math.sin(TAU * (k.mx * x + k.my * y) / N + k.q);
+                    m = m * m;
+                    const warp = k.wamp * Math.sin(TAU * (k.wx * x + k.wy * y) / N + k.p);
+                    s += m * Math.sin(TAU * (k.kx * x + k.ky * y) / N + warp + k.ph);
                 }
-                c.stroke();
-            };
-            [-size, 0, size].forEach(ox => [-size, 0, size].forEach(oy => {
-                ctx.lineWidth = w; ctx.strokeStyle = 'rgba(255,228,165,0.26)'; path(ctx, ox, oy, 0);
-                ctx.lineWidth = w; ctx.strokeStyle = 'rgba(105,60,20,0.24)'; path(ctx, ox, oy, w * 1.3);
-                bctx.lineWidth = w * 1.6; bctx.strokeStyle = 'rgba(225,225,225,0.55)'; path(bctx, ox, oy, 0);
-                bctx.lineWidth = w; bctx.strokeStyle = 'rgba(50,50,50,0.5)'; path(bctx, ox, oy, w * 1.4);
-            }));
+                hgt[y * N + x] = s;
+            }
         }
-
-        const grains = ['#a8814a', '#bb9156', '#cfa468', '#e0b97c', '#efd096', '#98703c'];
-        for (let i = 0; i < 9000; i++) {
-            ctx.globalAlpha = 0.35 + Math.random() * 0.4;
-            ctx.fillStyle = grains[(Math.random() * grains.length) | 0];
-            const s = 1 + Math.random() * 1.6;
-            ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
+        for (let y = 0; y < N; y++) {
+            for (let x = 0; x < N; x++) {
+                const i = y * N + x;
+                const d = hgt[((y + 1) % N) * N + ((x + 1) % N)] - hgt[i];
+                const shade = Math.max(-1, Math.min(1, d * 2.2));
+                let n = 0;
+                for (let t = 0; t < tint.length; t++) n += Math.sin(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
+                n *= 0.25;
+                const grain = (Math.random() - 0.5) * 14;
+                let r = br * (1 + 0.07 * n), g = bg * (1 + 0.07 * n), bl = bb * (1 + 0.09 * n);
+                if (shade > 0) { r += shade * 22; g += shade * 20; bl += shade * 16; }
+                else { r += shade * 34; g += shade * 40; bl += shade * 38; }
+                const o = i * 4;
+                img.data[o] = Math.max(0, Math.min(255, r + grain));
+                img.data[o + 1] = Math.max(0, Math.min(255, g + grain));
+                img.data[o + 2] = Math.max(0, Math.min(255, bl + grain));
+                img.data[o + 3] = 255;
+            }
         }
-        ctx.globalAlpha = 1;
-        sandCache = { canvas, bumpCanvas };
-        return sandCache;
+        ctx.putImageData(img, 0, 0);
+        sandCanvasCache = canvas;
+        return canvas;
     }
 
-    function createSandTexture(repeatX, repeatY, bump = false) {
-        const c = getSandCanvases();
-        const texture = new THREE.CanvasTexture(bump ? c.bumpCanvas : c.canvas);
+    function createSandTexture(repeatX, repeatY) {
+        const texture = new THREE.CanvasTexture(getSandCanvas());
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(repeatX, repeatY);
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-        if (!bump) texture.encoding = THREE.sRGBEncoding;
+        texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         return texture;
     }
 
-    // דיונות חלקות (בלי פאות) בצדדים ובעומק, וקרקע חול רחוקה שממשיכה מעבר לקצה השטח עד האופק.
+    // דיונות חלקות בצדדים ובעומק, וקרקע חול רחוקה שממשיכה מעבר לקצה השטח עד האופק.
+    // ה-UV של הדיונות מחושב מהמיקום בעולם (כמו על הקרקע) כדי שהחול ימשיך ברצף בלי "טבעות" של כדור.
     function addSandDunes() {
         const duneMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            map: createSandTexture(4, 2),
-            bumpMap: createSandTexture(4, 2, true),
-            bumpScale: 1.2,
+            map: createSandTexture(1, 1),
             roughness: 1.0,
             metalness: 0
         });
@@ -2085,15 +2079,20 @@ window.addEventListener('DOMContentLoaded', () => {
             [16.5, -0.2, -26, 10.0, 2.7, 7.0, -0.3],
             [-2, -0.5, -34, 14, 1.6, 4.5, 0.1]
         ].forEach(([x, y, z, sx, sy, sz, rot]) => {
-            const dune = addMesh(new THREE.SphereGeometry(1, 32, 16), duneMat, x, y, z, false, true);
-            dune.scale.set(sx, sy, sz);
-            dune.rotation.y = rot;
+            const geo = new THREE.SphereGeometry(1, 40, 20);
+            geo.scale(sx, sy, sz);
+            geo.rotateY(rot);
+            geo.translate(x, y, z);
+            const pos = geo.attributes.position, uv = geo.attributes.uv;
+            for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + 20) / 4, (45 - pos.getZ(i)) / 4.09);
+            uv.needsUpdate = true;
+            addMesh(geo, duneMat, 0, 0, 0, false, true);
         });
 
         const far = addMesh(
             new THREE.PlaneGeometry(400, 200),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, map: createSandTexture(100, 50), bumpMap: createSandTexture(100, 50, true), bumpScale: 1.2, roughness: 1.0, metalness: 0 }),
-            0, -0.06, -145, false, true
+            new THREE.MeshStandardMaterial({ color: 0xffffff, map: createSandTexture(100, 49), roughness: 1.0, metalness: 0 }),
+            0, 0.018, -145, false, true
         );
         far.rotation.x = -Math.PI / 2;
     }
@@ -2404,12 +2403,12 @@ window.addEventListener('DOMContentLoaded', () => {
         // תבליט: צל כהה, הדגשה בהירה, ואז הצורה עצמה; בטקסטורת הבליטה הצורה "מורמת".
         const emboss = fn => {
             cx.save(); cx.translate(0.06, 0.07);
-            fn(cx, { fill: '#6e4a10', ink: '#6e4a10', cream: '#6e4a10', red: '#6e4a10' });
+            fn(cx, { fill: '#5a3608', ink: '#5a3608', cream: '#5a3608', red: '#5a3608' });
             cx.restore();
             cx.save(); cx.translate(-0.035, -0.04);
-            fn(cx, { fill: '#fff2b8', ink: '#fff2b8', cream: '#fff2b8', red: '#fff2b8' });
+            fn(cx, { fill: '#fff4c4', ink: '#fff4c4', cream: '#fff4c4', red: '#fff4c4' });
             cx.restore();
-            fn(cx, { fill: '#e6bd50', ink: '#74500f', cream: '#ecc55c', red: '#e6bd50' });
+            fn(cx, { fill: '#f4c859', ink: '#6a420c', cream: '#f8d36c', red: '#f4c859' });
             fn(bx, { fill: '#d0d0d0', ink: '#ececec', cream: '#dcdcdc', red: '#d0d0d0' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
@@ -2454,10 +2453,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const ground = slant * 0.935;
         const fig = (name, dx, size, flip = 1) => glyph(name, c0 + dx * k, ground - size * k * 0.5, size * k, flip);
         fig('papyrus', -8.1, 3.7);
-        fig('seatedAnubis', -5.5, 6.2, 1);
-        fig('horus', -1.8, 6.4, 1);
-        fig('anubis', 1.8, 6.4, -1);
-        fig('seatedHathor', 5.5, 6.2, -1);
+        fig('seatedAnubis', -5.5, 6.6, 1);
+        fig('horus', -1.8, 6.8, 1);
+        fig('anubis', 1.8, 6.8, -1);
+        fig('seatedHathor', 5.5, 6.6, -1);
         fig('papyrus', 8.1, 3.7);
         bar(ground + 0.05, 0.12 * k);
 
@@ -2559,8 +2558,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const terrainMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             map: isSand ? createSandTexture(10, 22) : createLawnTexture(10, 22),
-            bumpMap: isSand ? createSandTexture(10, 22, true) : null,
-            bumpScale: 1.2,
             roughness: groundRoughness,
             metalness: 0.0
         });
@@ -2595,8 +2592,8 @@ window.addEventListener('DOMContentLoaded', () => {
         // שקיעה זהובה: רקע, ערפל ותאורה חמים.
         scene.background.set(FOG_COLOR);
         scene.fog.color.set(FOG_COLOR);
-        scene.fog.near = isSand ? 34 : FOG_NEAR;
-        scene.fog.far = isSand ? 185 : FOG_FAR;   // במפת החול ערפל קל, כדי שהפירמידות יישארו זהובות ובהירות
+        scene.fog.near = isSand ? 55 : FOG_NEAR;
+        scene.fog.far = isSand ? 340 : FOG_FAR;   // במפת החול ערפל קל מאוד: אין פס חיוור באופק
         sunLight.color.set(0xffbd78);
         sunLight.intensity = 1.75;
         hemiLight.color.set(0xffd9a0);
@@ -2626,21 +2623,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 map: tex.map,
                 bumpMap: tex.bump,
                 bumpScale: 2.6,
-                roughness: 0.4,
-                metalness: 0.2,
-                emissive: 0xffffff,
-                emissiveMap: tex.map,
-                emissiveIntensity: 0.12
+                roughness: 0.36,
+                metalness: 0.12,
+                emissive: 0x2a1600,
+                fog: false   // ללא ערפל: הזהב נשאר רווי ולא מחוויר (הערפל הוסיף כחול ועשה אותן "אבן חול")
             });
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
             const capMat = new THREE.MeshStandardMaterial({
-                color: 0xffd24a,
-                roughness: 0.3,
-                metalness: 0.25,
-                emissive: 0x8a6200
+                color: 0xe0a53a,
+                roughness: 0.28,
+                metalness: 0.2,
+                emissive: 0x4a2e00,
+                fog: false
             });
-            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xfff0b0 });
+            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xffe9a0, fog: false });
 
             pyramidSpecs.forEach(s => {
                 const p = addMesh(
