@@ -2228,58 +2228,160 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.beginPath(); c.arc(0, 0, 0.22, 0, Math.PI * 2); c.fillStyle = st.red; c.fill(); stroke(0.08);
                 break;
             }
-            case 'mask': {   // מסכת פרעה במסגרת מעוגלת
+            case 'mask': {   // מסכת פרעה (בסגנון טוטנחאמון) במסגרת כפולה
                 const r = 0.2;
+                const frame = (m) => {
+                    c.beginPath();
+                    c.moveTo(-0.5 + m + r, -0.5 + m); c.lineTo(0.5 - m - r, -0.5 + m); c.quadraticCurveTo(0.5 - m, -0.5 + m, 0.5 - m, -0.5 + m + r);
+                    c.lineTo(0.5 - m, 0.5 - m - r); c.quadraticCurveTo(0.5 - m, 0.5 - m, 0.5 - m - r, 0.5 - m);
+                    c.lineTo(-0.5 + m + r, 0.5 - m); c.quadraticCurveTo(-0.5 + m, 0.5 - m, -0.5 + m, 0.5 - m - r);
+                    c.lineTo(-0.5 + m, -0.5 + m + r); c.quadraticCurveTo(-0.5 + m, -0.5 + m, -0.5 + m + r, -0.5 + m);
+                    c.closePath();
+                };
+                frame(0); c.fillStyle = st.cream; c.fill(); stroke(0.06);
+                frame(0.06); stroke(0.025);
+                c.save(); c.scale(0.84, 0.84); c.translate(0, 0.03);
+                const o = 0.018;
+                const fillShape = () => { c.fillStyle = st.fill; c.fill(); c.strokeStyle = st.ink; c.lineWidth = o; c.stroke(); };
+                // צווארון רחב (usekh): טבעות מקבילות
+                for (const rr of [0.40, 0.34, 0.28, 0.22]) {
+                    c.beginPath(); c.arc(0, 0.12, rr, 0.12 * Math.PI, 0.88 * Math.PI);
+                    c.strokeStyle = st.ink; c.lineWidth = 0.05; c.stroke();
+                    c.strokeStyle = st.fill; c.lineWidth = 0.035; c.stroke();
+                }
+                // כיסוי הראש (נמס): כיפה + שני "זנבות" מפוספסים
                 c.beginPath();
-                c.moveTo(-0.5 + r, -0.5); c.lineTo(0.5 - r, -0.5); c.quadraticCurveTo(0.5, -0.5, 0.5, -0.5 + r);
-                c.lineTo(0.5, 0.5 - r); c.quadraticCurveTo(0.5, 0.5, 0.5 - r, 0.5);
-                c.lineTo(-0.5 + r, 0.5); c.quadraticCurveTo(-0.5, 0.5, -0.5, 0.5 - r);
-                c.lineTo(-0.5, -0.5 + r); c.quadraticCurveTo(-0.5, -0.5, -0.5 + r, -0.5);
-                c.closePath();
-                c.fillStyle = st.cream; c.fill(); stroke(0.07);
-                c.save(); c.scale(0.86, 0.86); c.translate(0, 0.02);
-                // כיסוי ראש (נמס) עם כנפיים
-                c.beginPath();
-                c.moveTo(0, -0.42); c.quadraticCurveTo(0.3, -0.42, 0.36, -0.1);
-                c.lineTo(0.42, 0.38); c.lineTo(0.2, 0.38); c.lineTo(0.17, 0.05);
-                c.lineTo(-0.17, 0.05); c.lineTo(-0.2, 0.38); c.lineTo(-0.42, 0.38);
-                c.lineTo(-0.36, -0.1); c.quadraticCurveTo(-0.3, -0.42, 0, -0.42);
-                c.closePath(); solid();
-                for (const sd of [-1, 1]) {
-                    for (let k = 0; k < 5; k++) {
-                        c.beginPath(); c.moveTo(sd * 0.22, -0.02 + k * 0.08); c.lineTo(sd * 0.39, 0.0 + k * 0.08); stroke(0.03);
+                c.moveTo(0, -0.44); c.bezierCurveTo(0.23, -0.44, 0.31, -0.3, 0.32, -0.08);
+                c.lineTo(0.38, 0.3); c.lineTo(0.18, 0.3); c.lineTo(0.17, 0.02);
+                c.lineTo(-0.17, 0.02); c.lineTo(-0.18, 0.3); c.lineTo(-0.38, 0.3); c.lineTo(-0.32, -0.08);
+                c.bezierCurveTo(-0.31, -0.3, -0.23, -0.44, 0, -0.44);
+                c.closePath(); fillShape();
+                for (const sd of [-1, 1]) {   // פסי הזנבות
+                    for (let k = 0; k < 9; k++) {
+                        const yy = 0.0 + k * 0.034, x0 = sd * (0.175 + k * 0.004), x1 = sd * (0.33 + k * 0.006);
+                        c.beginPath(); c.moveTo(x0, yy); c.lineTo(x1, yy + 0.012); c.strokeStyle = st.ink; c.lineWidth = 0.012; c.stroke();
                     }
                 }
-                // פנים
-                c.beginPath(); c.ellipse(0, -0.05, 0.15, 0.22, 0, 0, Math.PI * 2); c.fillStyle = st.cream; c.fill(); stroke(0.04);
-                c.beginPath(); c.ellipse(-0.06, -0.1, 0.035, 0.018, 0, 0, Math.PI * 2); c.ellipse(0.06, -0.1, 0.035, 0.018, 0, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
-                c.beginPath(); c.moveTo(-0.11, -0.12); c.lineTo(-0.02, -0.12); c.moveTo(0.02, -0.12); c.lineTo(0.11, -0.12); stroke(0.025);
-                c.beginPath(); c.moveTo(0, -0.08); c.lineTo(-0.015, 0.02); c.lineTo(0.015, 0.03); stroke(0.025);
-                c.beginPath(); c.moveTo(-0.05, 0.09); c.lineTo(0.05, 0.09); stroke(0.03);
-                c.beginPath(); c.arc(0, -0.3, 0.025, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();   // אורֵאוּס
-                c.beginPath(); c.rect(-0.03, 0.15, 0.06, 0.15); solid();                                 // זקן
-                for (const rr of [0.3, 0.38, 0.46]) {                                                     // צווארון
-                    c.beginPath(); c.arc(0, 0.28, rr * 0.8, 0.15 * Math.PI, 0.85 * Math.PI); stroke(0.04);
+                for (let k = 1; k <= 4; k++) {   // פסי הכיפה (קשתות מקבילות למצח)
+                    c.beginPath(); c.arc(0, -0.06, 0.1 + k * 0.05, 1.12 * Math.PI, 1.88 * Math.PI);
+                    c.strokeStyle = st.ink; c.lineWidth = 0.011; c.stroke();
                 }
+                // פנים
+                c.beginPath(); c.ellipse(0, -0.04, 0.155, 0.225, 0, 0, Math.PI * 2); fillShape();
+                // גבות וקוהל
+                for (const sd of [-1, 1]) {
+                    c.beginPath(); c.moveTo(sd * 0.03, -0.12); c.quadraticCurveTo(sd * 0.08, -0.15, sd * 0.14, -0.115); c.strokeStyle = st.ink; c.lineWidth = 0.022; c.stroke();
+                    c.beginPath(); c.moveTo(sd * 0.025, -0.075); c.quadraticCurveTo(sd * 0.075, -0.105, sd * 0.115, -0.075); c.quadraticCurveTo(sd * 0.075, -0.052, sd * 0.025, -0.075);
+                    c.closePath(); c.fillStyle = st.cream; c.fill(); c.lineWidth = 0.012; c.stroke();
+                    c.beginPath(); c.arc(sd * 0.07, -0.077, 0.011, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                    c.beginPath(); c.moveTo(sd * 0.115, -0.075); c.lineTo(sd * 0.165, -0.06); c.lineWidth = 0.014; c.stroke();
+                }
+                // אף ופה
+                c.beginPath(); c.moveTo(0, -0.07); c.lineTo(-0.012, 0.02); c.quadraticCurveTo(0, 0.045, 0.012, 0.02);
+                c.strokeStyle = st.ink; c.lineWidth = 0.012; c.stroke();
+                c.beginPath(); c.moveTo(-0.045, 0.085); c.quadraticCurveTo(0, 0.07, 0.045, 0.085); c.quadraticCurveTo(0, 0.115, -0.045, 0.085);
+                c.closePath(); c.fillStyle = st.fill; c.fill(); c.lineWidth = 0.012; c.stroke();
+                // אורֵאוּס על המצח
+                c.beginPath(); c.ellipse(0, -0.255, 0.022, 0.03, 0, 0, Math.PI * 2); fillShape();
+                c.beginPath(); c.moveTo(0, -0.225); c.quadraticCurveTo(0.03, -0.2, 0, -0.18); c.strokeStyle = st.ink; c.lineWidth = 0.014; c.stroke();
+                // זקן מקולע
+                c.beginPath(); c.moveTo(-0.035, 0.17); c.lineTo(0.035, 0.17); c.lineTo(0.04, 0.34); c.quadraticCurveTo(0.055, 0.4, 0.0, 0.4); c.quadraticCurveTo(-0.055, 0.4, -0.04, 0.34); c.closePath(); fillShape();
+                for (let k = 0; k < 6; k++) { c.beginPath(); c.moveTo(-0.038, 0.2 + k * 0.032); c.lineTo(0.038, 0.2 + k * 0.032); c.strokeStyle = st.ink; c.lineWidth = 0.008; c.stroke(); }
                 c.restore();
                 break;
             }
-            case 'papyrus': {   // זר פפירוס
-                for (const dx of [-0.32, -0.16, 0, 0.16, 0.32]) {
-                    const tx = dx * 1.5, ty = -0.2 + Math.abs(dx) * 0.7;
-                    c.beginPath(); c.moveTo(0, 0.5); c.quadraticCurveTo(dx * 0.4, 0.1, tx, ty); line();
-                    for (let k = 0; k < 7; k++) {
-                        const a = -Math.PI * (0.15 + 0.7 * k / 6);
-                        c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + Math.cos(a) * 0.16, ty + Math.sin(a) * 0.16); stroke(0.05);
+            case 'papyrus': {   // זר פפירוס: גבעולים עם "מניפות" בראשם
+                for (let i = -3; i <= 3; i++) {
+                    const tx = i * 0.17, ty = -0.3 + Math.abs(i) * 0.08 + (i % 2 ? 0.03 : 0);
+                    c.beginPath(); c.moveTo(i * 0.025, 0.44); c.quadraticCurveTo(i * 0.09, 0.1, tx, ty);
+                    c.strokeStyle = st.ink; c.lineWidth = 0.05; c.stroke();
+                    c.strokeStyle = st.fill; c.lineWidth = 0.028; c.stroke();
+                    for (let k = 0; k < 11; k++) {
+                        const a = -Math.PI * (0.08 + 0.84 * k / 10);
+                        c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + Math.cos(a) * 0.13, ty + Math.sin(a) * 0.13);
+                        c.strokeStyle = st.ink; c.lineWidth = 0.014; c.stroke();
+                        c.beginPath(); c.arc(tx + Math.cos(a) * 0.135, ty + Math.sin(a) * 0.135, 0.012, 0, Math.PI * 2); c.fillStyle = st.fill; c.fill();
                     }
                 }
+                c.beginPath(); c.rect(-0.12, 0.34, 0.24, 0.07); solid();
                 break;
             }
-            case 'anubis': drawDeity(c, st, 'jackal', false); break;
-            case 'horus': drawDeity(c, st, 'falcon', false); break;
-            case 'hathor': drawDeity(c, st, 'hathor', false); break;
-            case 'seatedAnubis': drawDeity(c, st, 'jackal', true); break;
-            case 'seatedHathor': drawDeity(c, st, 'hathor', true); break;
+            case 'lotusBud': {   // ניצן לוטוס
+                c.beginPath(); c.moveTo(0, 0.5); c.lineTo(0, 0.1); line();
+                c.beginPath(); c.moveTo(0, 0.12); c.bezierCurveTo(0.2, 0.05, 0.16, -0.25, 0, -0.42); c.bezierCurveTo(-0.16, -0.25, -0.2, 0.05, 0, 0.12); c.closePath(); solid();
+                c.beginPath(); c.moveTo(0, 0.1); c.lineTo(0, -0.38); stroke(0.04);
+                break;
+            }
+            case 'anubis': case 'horus': case 'hathor': case 'pharaoh':
+            case 'seatedAnubis': case 'seatedHorus': case 'seatedHathor': case 'seatedPharaoh':
+                drawFigure(c, st, name);
+                break;
+            case 'owl': {
+                c.beginPath(); c.ellipse(0, 0.05, 0.2, 0.3, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0, -0.28, 0.15, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.02, -0.28); c.lineTo(0.12, -0.2); c.lineTo(0.0, -0.18); c.closePath(); stroke(0.05);
+                c.beginPath(); c.arc(-0.07, -0.3, 0.04, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                c.beginPath(); c.moveTo(-0.1, 0.2); c.lineTo(-0.1, 0.5); c.moveTo(0.1, 0.2); c.lineTo(0.1, 0.5); stroke(0.07);
+                break;
+            }
+            case 'chick': {
+                c.beginPath(); c.ellipse(-0.02, 0.05, 0.28, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0.26, -0.12, 0.1, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.35, -0.13); c.lineTo(0.46, -0.1); c.lineTo(0.35, -0.08); c.closePath(); stroke(0.05);
+                c.beginPath(); c.moveTo(-0.05, 0.22); c.lineTo(-0.05, 0.46); c.moveTo(0.1, 0.2); c.lineTo(0.1, 0.46); stroke(0.07);
+                break;
+            }
+            case 'reed': {
+                c.beginPath(); c.moveTo(0, 0.5); c.lineTo(0, -0.3); line();
+                c.beginPath(); c.moveTo(0, -0.3); c.quadraticCurveTo(0.12, -0.5, 0.03, -0.55); c.quadraticCurveTo(-0.06, -0.45, 0, -0.3); c.closePath(); solid();
+                c.beginPath(); c.moveTo(0, 0.1); c.quadraticCurveTo(0.2, 0.0, 0.3, -0.2); stroke(0.06);
+                break;
+            }
+            case 'cloth': {
+                c.beginPath(); c.moveTo(-0.3, -0.35); c.lineTo(0.3, -0.35); c.lineTo(0.24, 0.35); c.lineTo(-0.24, 0.35); c.closePath(); solid();
+                for (const yy of [-0.15, 0.0, 0.15]) { c.beginPath(); c.moveTo(-0.26, yy); c.lineTo(0.26, yy); stroke(0.05); }
+                break;
+            }
+            case 'basket': {
+                c.beginPath(); c.moveTo(-0.38, -0.05); c.lineTo(0.38, -0.05); c.lineTo(0.28, 0.35); c.lineTo(-0.28, 0.35); c.closePath(); solid();
+                c.beginPath(); c.arc(0, -0.05, 0.3, Math.PI, 2 * Math.PI); line();
+                break;
+            }
+            case 'loaf': {
+                c.beginPath(); c.moveTo(-0.4, 0.25); c.quadraticCurveTo(0, -0.5, 0.4, 0.25); c.closePath(); solid();
+                break;
+            }
+            case 'arm': {
+                c.beginPath(); c.moveTo(-0.45, 0.08); c.lineTo(0.1, 0.0); line();
+                c.beginPath(); c.moveTo(0.05, -0.1); c.lineTo(0.35, -0.1); c.lineTo(0.38, 0.08); c.lineTo(0.05, 0.12); c.closePath(); solid();
+                break;
+            }
+            case 'mouth': {
+                c.beginPath(); c.ellipse(0, 0, 0.36, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(-0.3, 0); c.lineTo(0.3, 0); stroke(0.06);
+                break;
+            }
+            case 'disc': {
+                c.beginPath(); c.arc(0, 0, 0.32, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0, 0, 0.09, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                break;
+            }
+            case 'snake': {
+                c.beginPath(); c.moveTo(-0.45, 0.2); c.bezierCurveTo(-0.2, -0.3, 0.05, 0.4, 0.3, -0.05); line();
+                c.beginPath(); c.arc(0.34, -0.1, 0.08, 0, Math.PI * 2); solid();
+                break;
+            }
+            case 'house': {
+                c.beginPath(); c.moveTo(-0.38, 0.35); c.lineTo(-0.38, -0.3); c.lineTo(0.38, -0.3); c.lineTo(0.38, 0.35); line();
+                c.beginPath(); c.moveTo(-0.38, 0.35); c.lineTo(-0.15, 0.35); stroke(0.1);
+                break;
+            }
+            case 'zig': {
+                c.beginPath(); c.moveTo(-0.45, 0.1);
+                for (let k = 1; k <= 6; k++) c.lineTo(-0.45 + k * 0.15, 0.1 + (k % 2 ? -0.2 : 0));
+                line();
+                break;
+            }
             case 'cartouche': {   // קרטוש עם סמלים בפנים (רוחב ~2.3)
                 c.beginPath();
                 c.moveTo(-0.6, -0.4); c.lineTo(0.6, -0.4);
@@ -2298,85 +2400,172 @@ window.addEventListener('DOMContentLoaded', () => {
         c.restore();
     }
 
-    // אלים בפרופיל (פונים ימינה): ראש תן/נץ/חתחור, גוף עומד או יושב על כס.
-    function drawDeity(c, st, head, seated) {
-        const stroke = w => { c.strokeStyle = st.ink; c.lineWidth = w; c.stroke(); };
-        const solid = () => { c.fillStyle = st.fill; c.fill(); stroke(0.035); };
-        const line = () => { stroke(0.1); c.strokeStyle = st.fill; c.lineWidth = 0.05; c.stroke(); };
-        const poly = pts => {
-            c.beginPath();
-            pts.forEach(([px, py], i) => { if (i) c.lineTo(px, py); else c.moveTo(px, py); });
-            c.closePath(); solid();
-        };
+    // דמויות אלים בסגנון תבליט מצרי קלאסי: ראש בפרופיל, כתפיים וחזה מלפנים, רגליים בצעד / ישיבה על כס.
+    // הדמות פונה ימינה; הקואורדינטות בריבוע שגובהו 1 (ראש למעלה, כפות רגליים ב-y=0.5).
+    // סוגים: anubis / horus / hathor / pharaoh, ובתוספת "seated" לישיבה.
+    function drawFigure(c, st, kind) {
+        const seated = kind.indexOf('seated') === 0;
+        const head = (seated ? kind.slice(6) : kind).toLowerCase();
+        const O = 0.011;
         c.lineCap = 'round'; c.lineJoin = 'round';
-        if (seated) {
-            poly([[-0.36, -0.02], [-0.26, -0.02], [-0.26, 0.5], [-0.36, 0.5]]);
-            poly([[-0.36, 0.2], [0.12, 0.2], [0.12, 0.5], [-0.36, 0.5]]);
-            poly([[-0.12, 0.08], [0.3, 0.08], [0.3, 0.2], [-0.12, 0.2]]);
-            poly([[0.2, 0.2], [0.32, 0.2], [0.34, 0.5], [0.22, 0.5]]);
-            poly([[-0.17, -0.2], [0.07, -0.2], [0.05, 0.1], [-0.17, 0.1]]);
-            c.beginPath(); c.moveTo(0.04, -0.14); c.lineTo(0.26, -0.04); line();
+
+        const path = pts => { c.beginPath(); pts.forEach((p, i) => { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); };
+        const poly = pts => { path(pts); c.closePath(); c.fillStyle = st.fill; c.fill(); c.strokeStyle = st.ink; c.lineWidth = O; c.stroke(); };
+        const limb = (pts, w) => {
+            path(pts);
+            c.strokeStyle = st.ink; c.lineWidth = w + O * 1.8; c.stroke();
+            c.strokeStyle = st.fill; c.lineWidth = w; c.stroke();
+        };
+        const det = (pts, w) => { path(pts); c.strokeStyle = st.ink; c.lineWidth = w || 0.007; c.stroke(); };
+        const disc = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = st.fill; c.fill(); c.strokeStyle = st.ink; c.lineWidth = O; c.stroke(); };
+
+        // ---------- גוף תחתון ----------
+        if (!seated) {
+            limb([[-0.035, 0.18], [-0.075, 0.34], [-0.12, 0.47]], 0.062);
+            poly([[-0.155, 0.46], [-0.085, 0.455], [-0.035, 0.5], [-0.165, 0.5]]);
+            limb([[0.03, 0.18], [0.085, 0.33], [0.13, 0.47]], 0.062);
+            poly([[0.1, 0.455], [0.17, 0.455], [0.27, 0.5], [0.1, 0.5]]);
+            poly([[-0.085, -0.07], [0.085, -0.07], [0.19, 0.2], [-0.1, 0.2]]);
+            poly([[0.045, -0.07], [0.085, -0.07], [0.19, 0.2], [0.075, 0.2]]);   // סינר קדמי
+            for (let i = 0; i < 5; i++) det([[-0.075 + i * 0.034, -0.06], [-0.09 + i * 0.041, 0.19]]);
         } else {
-            poly([[-0.1, -0.2], [0.12, -0.2], [0.09, 0.0], [-0.09, 0.0]]);
-            poly([[-0.1, 0.0], [0.12, 0.0], [0.19, 0.26], [-0.13, 0.26]]);
-            poly([[-0.1, 0.26], [0.0, 0.26], [-0.04, 0.5], [-0.16, 0.5]]);
-            poly([[0.02, 0.26], [0.14, 0.26], [0.2, 0.5], [0.06, 0.5]]);
-            c.beginPath(); c.moveTo(0.1, -0.16); c.lineTo(0.3, -0.06); line();
+            poly([[-0.37, -0.12], [-0.27, -0.12], [-0.27, 0.5], [-0.37, 0.5]]);                       // גב הכס
+            poly([[-0.34, 0.19], [0.13, 0.19], [0.13, 0.5], [-0.34, 0.5]]);                           // מושב
+            det([[-0.31, 0.23], [0.1, 0.23], [0.1, 0.47], [-0.31, 0.47], [-0.31, 0.23]], 0.009);
+            for (let i = 0; i < 6; i++) det([[-0.27 + i * 0.06, 0.27], [-0.27 + i * 0.06, 0.43]], 0.007);
+            poly([[0.16, 0.465], [0.38, 0.465], [0.38, 0.5], [0.16, 0.5]]);                           // הדום
+            limb([[0.24, 0.14], [0.245, 0.43]], 0.06);
+            poly([[0.225, 0.425], [0.285, 0.425], [0.36, 0.46], [0.225, 0.46]]);
+            poly([[-0.2, -0.07], [-0.02, -0.07], [0.275, 0.04], [0.275, 0.17], [-0.2, 0.17]]);        // קילט על הברכיים
+            for (let i = 0; i < 6; i++) det([[0.0 + i * 0.05, 0.0 + i * 0.012], [0.0 + i * 0.05, 0.16]]);
         }
+
+        // ---------- גוף עליון (מוזז לאחור בישיבה) ----------
+        const dx = seated ? -0.10 : 0.0;
         c.save();
-        c.translate(seated ? -0.05 : 0.0, seated ? -0.32 : -0.3);
-        poly([[-0.04, 0.05], [0.06, 0.05], [0.06, 0.14], [-0.04, 0.14]]);
-        if (head === 'jackal') {
-            c.beginPath(); c.ellipse(0, 0, 0.1, 0.09, 0, 0, Math.PI * 2); solid();
-            poly([[0.05, -0.05], [0.3, -0.01], [0.3, 0.03], [0.05, 0.06]]);
-            poly([[-0.06, -0.07], [-0.12, -0.3], [0.0, -0.09]]);
-            poly([[0.0, -0.08], [-0.01, -0.32], [0.08, -0.06]]);
-        } else if (head === 'falcon') {
-            c.beginPath(); c.arc(0, 0, 0.1, 0, Math.PI * 2); solid();
-            poly([[0.07, -0.03], [0.21, 0.02], [0.07, 0.06]]);
-            c.beginPath(); c.arc(0, -0.18, 0.07, 0, Math.PI * 2); solid();
+        c.translate(dx, 0);
+        poly([[-0.092, -0.1], [0.092, -0.1], [0.092, -0.068], [-0.092, -0.068]]);                    // חגורה
+        poly([[-0.105, -0.285], [0.105, -0.285], [0.078, -0.1], [-0.078, -0.1]]);                    // פלג גוף עליון
+        det([[-0.035, -0.2], [0.0, -0.185], [0.035, -0.2]], 0.008);                                  // חזה
+        det([[0.0, -0.13], [0.0, -0.12]], 0.012);                                                    // טבור
+        if (!seated) {
+            limb([[-0.105, -0.27], [-0.12, -0.15], [-0.105, -0.05]], 0.045);                         // יד אחורית
+            limb([[0.105, -0.27], [0.175, -0.17], [0.245, -0.15]], 0.045);                           // יד קדמית
+            limb([[0.27, -0.33], [0.27, 0.47]], 0.016);                                              // שרביט
+            poly([[0.25, 0.5], [0.27, 0.465], [0.29, 0.5]]);
+            disc(0.255, -0.15, 0.024);
         } else {
-            c.beginPath(); c.arc(0, 0, 0.1, 0, Math.PI * 2); solid();
-            poly([[-0.1, -0.02], [0.0, -0.1], [-0.12, 0.2], [-0.04, 0.2]]);
-            c.beginPath(); c.arc(-0.02, -0.12, 0.13, Math.PI * 1.05, Math.PI * 1.95); line();
-            c.beginPath(); c.arc(0, -0.2, 0.065, 0, Math.PI * 2); solid();
+            limb([[-0.105, -0.27], [-0.12, -0.14], [-0.04, -0.03]], 0.045);
+            limb([[0.105, -0.27], [0.19, -0.2], [0.29, -0.2]], 0.045);
+            disc(0.3, -0.2, 0.022);
+            drawEgyptGlyph(c, 'ankh', 0.335, -0.14, 0.17, st);
         }
+        poly([[-0.03, -0.34], [0.04, -0.34], [0.04, -0.285], [-0.03, -0.285]]);                     // צוואר
+        for (const rr of [0.145, 0.12, 0.098]) {                                                     // צווארון רחב
+            c.beginPath(); c.arc(0, -0.29, rr, 0.06 * Math.PI, 0.94 * Math.PI);
+            c.strokeStyle = st.ink; c.lineWidth = 0.034; c.stroke();
+            c.strokeStyle = st.fill; c.lineWidth = 0.022; c.stroke();
+        }
+        for (let i = 0; i < 9; i++) {                                                                // חרוזים
+            const a = Math.PI * (0.14 + i * 0.09);
+            det([[Math.cos(a) * 0.095, -0.29 + Math.sin(a) * 0.095], [Math.cos(a) * 0.148, -0.29 + Math.sin(a) * 0.148]], 0.005);
+        }
+
+        // ---------- ראש ----------
+        c.save();
+        c.translate(0.02, -0.4);
+        const eye = (ex, ey) => {
+            c.beginPath(); c.ellipse(ex, ey, 0.016, 0.009, 0, 0, Math.PI * 2); c.fillStyle = st.cream; c.fill();
+            c.strokeStyle = st.ink; c.lineWidth = 0.006; c.stroke();
+            c.beginPath(); c.arc(ex + 0.003, ey, 0.006, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+            det([[ex + 0.01, ey + 0.002], [ex - 0.05, ey + 0.012]], 0.007);                         // קוהל
+        };
+        if (head === 'anubis') {
+            poly([[-0.07, -0.02], [-0.11, 0.12], [-0.02, 0.118], [0.0, 0.04]]);                    // רעמה
+            c.beginPath(); c.ellipse(0, 0, 0.058, 0.052, 0, 0, Math.PI * 2); c.fillStyle = st.fill; c.fill(); c.strokeStyle = st.ink; c.lineWidth = O; c.stroke();
+            poly([[0.035, -0.03], [0.165, -0.008], [0.17, 0.012], [0.035, 0.034]]);                 // חוטם
+            disc(0.165, -0.002, 0.012);
+            poly([[-0.05, -0.035], [-0.09, -0.18], [-0.012, -0.05]]);                              // אוזן אחורית
+            poly([[-0.005, -0.05], [-0.03, -0.185], [0.04, -0.045]]);                              // אוזן קדמית
+            det([[-0.04, -0.06], [-0.08, -0.15]], 0.006);
+            eye(0.028, -0.01);
+            det([[0.04, 0.012], [0.16, 0.008]], 0.006);                                            // קו הפה
+        } else if (head === 'horus') {
+            poly([[-0.07, -0.02], [-0.11, 0.12], [-0.02, 0.118], [0.0, 0.04]]);
+            c.beginPath(); c.ellipse(0, 0, 0.056, 0.054, 0, 0, Math.PI * 2); c.fillStyle = st.fill; c.fill(); c.strokeStyle = st.ink; c.lineWidth = O; c.stroke();
+            poly([[0.045, -0.025], [0.125, 0.0], [0.115, 0.022], [0.075, 0.02], [0.05, 0.04]]);     // מקור
+            eye(0.026, -0.01);
+            det([[0.03, 0.01], [0.04, 0.07]], 0.008);                                              // פס הנץ
+            disc(0.0, -0.095, 0.05);                                                                // דיסקת שמש
+            c.beginPath(); c.arc(0.0, -0.095, 0.028, 0, Math.PI * 2); c.strokeStyle = st.ink; c.lineWidth = 0.007; c.stroke();
+        } else if (head === 'hathor') {
+            poly([[-0.075, -0.05], [-0.005, -0.082], [0.05, -0.055], [0.032, 0.0], [0.052, 0.118], [-0.105, 0.13], [-0.09, 0.0]]);   // פאה
+            poly([[0.0, -0.05], [0.045, -0.046], [0.05, -0.02], [0.062, -0.004], [0.052, 0.012], [0.057, 0.027], [0.042, 0.048], [0.0, 0.052], [-0.04, 0.0]]);
+            eye(0.026, -0.012);
+            det([[0.0, -0.04], [0.05, -0.037]], 0.01);                                              // גבה
+            poly([[-0.085, -0.08], [-0.125, -0.13], [-0.095, -0.195], [-0.065, -0.16], [-0.09, -0.135], [-0.055, -0.1]]);   // קרני פרה
+            poly([[0.065, -0.08], [0.105, -0.13], [0.075, -0.195], [0.045, -0.16], [0.07, -0.135], [0.035, -0.1]]);
+            disc(-0.01, -0.15, 0.037);
+            c.beginPath(); c.arc(-0.01, -0.15, 0.02, 0, Math.PI * 2); c.strokeStyle = st.ink; c.lineWidth = 0.006; c.stroke();
+        } else {   // פרעה
+            poly([[-0.075, -0.06], [-0.005, -0.09], [0.052, -0.06], [0.045, -0.025], [0.065, 0.0], [0.04, 0.13], [-0.11, 0.13], [-0.095, 0.0]]);
+            for (let k = 0; k < 6; k++) det([[-0.09, 0.02 + k * 0.018], [0.02, 0.016 + k * 0.018]], 0.006);
+            poly([[0.012, -0.045], [0.048, -0.042], [0.054, -0.02], [0.066, -0.004], [0.056, 0.012], [0.06, 0.027], [0.044, 0.046], [0.012, 0.05]]);
+            eye(0.03, -0.012);
+            det([[0.012, -0.036], [0.056, -0.034]], 0.01);
+            poly([[0.04, 0.045], [0.068, 0.05], [0.062, 0.12], [0.036, 0.1]]);                      // זקן
+            disc(0.05, -0.062, 0.012);                                                              // אורֵאוּס
+        }
+        c.restore();
         c.restore();
     }
 
     // טקסטורת פאה אחת של פירמידה מוזהבת בסגנון תבליט מצרי: אבני גוש + מסכת פרעה, עמודות הירוגליפים,
-    // אלים יושבים ועומדים, פפירוס ופס לוטוסים בבסיס. הציור ביחידות עולם, לכן הפרופורציות נשמרות.
+    // שורת אלים (אנוביס, חורוס, חתחור, פרעה), זרי פפירוס ופס לוטוסים בבסיס.
+    // הציור נעשה ביחידות עולם (x לאורך הבסיס, y משיא הפירמידה כלפי מטה) ולכן הפרופורציות נשמרות על הפאה.
+    // res = רזולוציית הטקסטורה (הפירמידה המרכזית 2048, הצדדיות 1024); מפת הבליטה בחצי רזולוציה.
     const goldTexCache = {};
-    function createGoldPyramidTextures(radius, height, seed) {
-        const cacheKey = radius + '_' + height + '_' + seed;
+    function createGoldPyramidTextures(radius, height, seed, res = 1024) {
+        const cacheKey = radius + '_' + height + '_' + seed + '_' + res;
         if (goldTexCache[cacheKey]) return goldTexCache[cacheKey];
 
         const baseW = radius * Math.SQRT2;
         const apothem = radius / Math.SQRT2;
         const slant = Math.sqrt(height * height + apothem * apothem);
-        const CW = 1024, CH = 1024;
-        const mk = () => { const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; return cv; };
-        const colorCanvas = mk(), bumpCanvas = mk();
+        const CW = res, CH = res;
+        const BW = Math.max(512, res / 2), BH = BW;
+        const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
+        const colorCanvas = mk(CW, CH), bumpCanvas = mk(BW, BH);
         const cx = colorCanvas.getContext('2d');
         const bx = bumpCanvas.getContext('2d');
 
         let rs = (seed * 7919 + 12345) % 2147483647 || 1;
         const rnd = () => { rs = (rs * 48271) % 2147483647; return rs / 2147483647; };
 
-        // זהב מבריק: בהיר בקודקוד, עמוק יותר בבסיס.
+        // זהב: גרדיאנט עדין + "ברק" רחב באמצע וכהות בפינות התחתונות.
         const grad = cx.createLinearGradient(0, 0, 0, CH);
         grad.addColorStop(0, GOLD_LIGHT);
         grad.addColorStop(0.5, GOLD_MID);
         grad.addColorStop(1, GOLD_DARK);
         cx.fillStyle = grad;
         cx.fillRect(0, 0, CW, CH);
+        const sheen = cx.createRadialGradient(CW * 0.5, CH * 0.5, 0, CW * 0.5, CH * 0.5, CW * 0.75);
+        sheen.addColorStop(0, 'rgba(255,236,160,0.20)');
+        sheen.addColorStop(1, 'rgba(255,236,160,0)');
+        cx.fillStyle = sheen; cx.fillRect(0, 0, CW, CH);
+        for (const px of [0, CW]) {
+            const sh = cx.createRadialGradient(px, CH, 0, px, CH, CW * 0.6);
+            sh.addColorStop(0, 'rgba(70,36,0,0.28)');
+            sh.addColorStop(1, 'rgba(70,36,0,0)');
+            cx.fillStyle = sh; cx.fillRect(0, 0, CW, CH);
+        }
         bx.fillStyle = '#808080';
-        bx.fillRect(0, 0, CW, CH);
+        bx.fillRect(0, 0, BW, BH);
 
         cx.setTransform(CW / baseW, 0, 0, CH / slant, 0, 0);
-        bx.setTransform(CW / baseW, 0, 0, CH / slant, 0, 0);
+        bx.setTransform(BW / baseW, 0, 0, BH / slant, 0, 0);
 
-        // אבני גוש עדינות (פחות בולטות מהתבליט).
+        // אבני גוש עדינות.
         const courseH = 0.95;
         const courses = Math.ceil(slant / courseH);
         for (let i = 0; i < courses; i++) {
@@ -2388,28 +2577,28 @@ window.addEventListener('DOMContentLoaded', () => {
                 cx.fillStyle = light ? `rgba(255,226,140,${0.03 + rnd() * 0.06})` : `rgba(70,40,4,${0.04 + rnd() * 0.08})`;
                 cx.fillRect(x, y0, w, courseH);
                 cx.fillStyle = 'rgba(60,34,4,0.30)'; cx.fillRect(x, y0, 0.04, courseH);
-                bx.fillStyle = 'rgba(0,0,0,0.35)'; bx.fillRect(x, y0, 0.05, courseH);
+                bx.fillStyle = 'rgba(0,0,0,0.30)'; bx.fillRect(x, y0, 0.05, courseH);
                 x += w;
             }
             cx.fillStyle = 'rgba(60,34,4,0.38)'; cx.fillRect(0, y0, baseW, 0.05);
-            bx.fillStyle = 'rgba(0,0,0,0.4)'; bx.fillRect(0, y0, baseW, 0.06);
+            bx.fillStyle = 'rgba(0,0,0,0.35)'; bx.fillRect(0, y0, baseW, 0.06);
         }
-        for (let i = 0; i < 3500; i++) {
+        for (let i = 0; i < 4000; i++) {
             const gx = rnd() * baseW, gy = rnd() * slant, gs = 0.03 + rnd() * 0.05;
-            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.32)' : 'rgba(90,56,8,0.22)';
+            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.30)' : 'rgba(90,56,8,0.22)';
             cx.fillRect(gx, gy, gs, gs);
         }
 
-        // תבליט: צל כהה, הדגשה בהירה, ואז הצורה עצמה; בטקסטורת הבליטה הצורה "מורמת".
+        // תבליט: צל כהה, הדגשה בהירה, ואז הצורה עצמה. בטקסטורת הבליטה הצורה "מורמת" והפרטים חרוטים.
         const emboss = fn => {
-            cx.save(); cx.translate(0.06, 0.07);
+            cx.save(); cx.translate(0.07, 0.08);
             fn(cx, { fill: '#5a3608', ink: '#5a3608', cream: '#5a3608', red: '#5a3608' });
             cx.restore();
-            cx.save(); cx.translate(-0.035, -0.04);
+            cx.save(); cx.translate(-0.04, -0.045);
             fn(cx, { fill: '#fff4c4', ink: '#fff4c4', cream: '#fff4c4', red: '#fff4c4' });
             cx.restore();
             fn(cx, { fill: '#f4c859', ink: '#6a420c', cream: '#f8d36c', red: '#f4c859' });
-            fn(bx, { fill: '#d0d0d0', ink: '#ececec', cream: '#dcdcdc', red: '#d0d0d0' });
+            fn(bx, { fill: '#c8c8c8', ink: '#585858', cream: '#d6d6d6', red: '#c8c8c8' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
         const c0 = baseW / 2;
@@ -2417,51 +2606,57 @@ window.addEventListener('DOMContentLoaded', () => {
         const bar = (y, h) => {
             cx.fillStyle = '#8d6216'; cx.fillRect(0, y, baseW, h);
             cx.fillStyle = '#fff2b8'; cx.fillRect(0, y - 0.05, baseW, 0.05);
-            bx.fillStyle = '#d0d0d0'; bx.fillRect(0, y, baseW, h);
+            bx.fillStyle = '#c8c8c8'; bx.fillRect(0, y, baseW, h);
         };
 
         // 1. מסכת פרעה במסגרת (בחלק העליון).
         glyph('mask', c0, slant * 0.33, 5.0 * k);
 
         // 2. שורת הירוגליפים קטנה מתחת למסכה.
-        const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was'];
+        const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was', 'owl', 'chick', 'reed',
+            'cloth', 'basket', 'loaf', 'arm', 'mouth', 'disc', 'snake', 'house', 'zig', 'djed'];
+        const pick = () => smallSet[(rnd() * smallSet.length) | 0];
         bar(slant * 0.428, 0.1 * k);
         {
             const half = baseW * 0.452 * 0.5 * 0.86;
-            for (let x = -half; x <= half; x += 0.95 * k) glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, slant * 0.452, 0.6 * k);
+            for (let x = -half; x <= half; x += 0.95 * k) glyph(pick(), c0 + x, slant * 0.452, 0.6 * k);
         }
         bar(slant * 0.476, 0.1 * k);
 
-        // 3. עמודות הירוגליפים אנכיות משני צדי עמודה מרכזית (כמו בתבליטים אמיתיים).
+        // 3. עמודות הירוגליפים אנכיות משני צדי עמודה מרכזית, עם קווי הפרדה.
         const colTop = 0.495, colBottom = 0.68;
-        const colStep = 0.85 * k;
+        const colStep = 0.8 * k;
         const nCols = Math.floor((baseW * 0.5) / colStep);
         for (let ci = -nCols; ci <= nCols; ci++) {
             const x = ci * colStep;
             if (Math.abs(x) < 1.3 * k) continue;
             const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.9 * k) / baseW + 0.02);
-            for (let f = fTop; f <= colBottom; f += (0.78 * k) / slant) {
-                glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, f * slant, 0.56 * k);
-            }
+            for (let f = fTop; f <= colBottom; f += (0.72 * k) / slant) glyph(pick(), c0 + x, f * slant, 0.64 * k);
+        }
+        for (const sd of [-1, 1]) {
+            const lx = c0 + sd * 1.15 * k;
+            cx.fillStyle = '#8d6216'; cx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
+            bx.fillStyle = '#c8c8c8'; bx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
         }
         glyph('djed', c0, slant * 0.545, 1.6 * k);
         glyph('ankh', c0, slant * 0.605, 1.6 * k);
         glyph('was', c0, slant * 0.66, 1.6 * k);
         bar(slant * 0.69, 0.1 * k);
 
-        // 4. שורת אלים גדולה: פפירוס, אנוביס יושב, חורוס, אנוביס, חתחור יושבת, פפירוס.
+        // 4. שורת אלים גדולה: פפירוס, אנוביס יושב, פרעה, חתחור, חורוס יושב, פפירוס.
         const ground = slant * 0.935;
         const fig = (name, dx, size, flip = 1) => glyph(name, c0 + dx * k, ground - size * k * 0.5, size * k, flip);
-        fig('papyrus', -8.1, 3.7);
-        fig('seatedAnubis', -5.5, 6.6, 1);
-        fig('horus', -1.8, 6.8, 1);
-        fig('anubis', 1.8, 6.8, -1);
-        fig('seatedHathor', 5.5, 6.6, -1);
-        fig('papyrus', 8.1, 3.7);
+        fig('papyrus', -8.5, 4.0);
+        fig('seatedAnubis', -5.7, 6.6, 1);
+        fig('pharaoh', -2.4, 6.8, 1);
+        fig('hathor', 2.4, 6.8, -1);
+        fig('seatedHorus', 5.7, 6.6, -1);
+        fig('papyrus', 8.5, 4.0);
         bar(ground + 0.05, 0.12 * k);
 
-        // 5. פס לוטוסים בבסיס.
-        for (let x = -9.5; x <= 9.5; x += 1.9) glyph('lotus', c0 + x * k, slant * 0.97, 1.9 * k);
+        // 5. פס לוטוסים בבסיס: פרח פתוח וניצן לסירוגין.
+        let lf = 0;
+        for (let x = -9.5; x <= 9.5; x += 1.9) glyph(lf++ % 2 ? 'lotusBud' : 'lotus', c0 + x * k, slant * 0.97, 1.9 * k);
         bar(slant - 0.16, 0.16);
 
         const makeTex = (canvas, srgb) => {
@@ -2615,8 +2810,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isSand) {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
-            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1);
-            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2);
+            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 1024);
+            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 2048);   // הפירמידה המרכזית: רזולוציה כפולה לפרטי התבליט
             // זהב מבריק: הטקסטורה גם מאירה קלות (emissiveMap) כדי שהתבליט ייראה זוהר גם בצד הצל.
             const goldMat = tex => new THREE.MeshStandardMaterial({
                 color: 0xffffff,
