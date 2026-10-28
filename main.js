@@ -23,9 +23,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // GOLD_* = גווני הזהב של הפירמידות (קודקוד / אמצע / בסיס).
     const SAND_COLOR = 0x8a6428;
     const SAND_TEXTURE = '#c4914a';
-    const GOLD_LIGHT = '#f6d96a';
-    const GOLD_MID = '#e2b53c';
-    const GOLD_DARK = '#bf8a24';
+    const GOLD_LIGHT = '#d9a93c';
+    const GOLD_MID = '#b8862a';
+    const GOLD_DARK = '#8a5f16';
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
@@ -1979,17 +1979,20 @@ window.addEventListener('DOMContentLoaded', () => {
     // מפת DESERT: חול במקום דשא + פירמידות זהב עם ציורי מצרים העתיקה
     // ==========================================
 
-    // טקסטורת חול: גרגרים, כתמי בהיר/כהה ואדוות רוח חזקות. הציור נשמר פעם אחת ומשותף לכל השימושים.
-    let sandCanvasCache = null;
-    function getSandCanvas() {
-        if (sandCanvasCache) return sandCanvasCache;
+    // טקסטורת חול + מפת בליטה: אדוות רוח קצרות ומעוקלות (כמו חול אמיתי), שמקבלות צל והדגשה מהשמש.
+    let sandCache = null;
+    function getSandCanvases() {
+        if (sandCache) return sandCache;
         const size = 512;
-        const canvas = document.createElement('canvas');
-        canvas.width = canvas.height = size;
+        const mkc = () => { const cv = document.createElement('canvas'); cv.width = cv.height = size; return cv; };
+        const canvas = mkc(), bumpCanvas = mkc();
         const ctx = canvas.getContext('2d');
+        const bctx = bumpCanvas.getContext('2d');
 
         ctx.fillStyle = SAND_TEXTURE;
         ctx.fillRect(0, 0, size, size);
+        bctx.fillStyle = '#808080';
+        bctx.fillRect(0, 0, size, size);
 
         const wrapped = (x, y, margin, draw) => {
             const xs = [0], ys = [0];
@@ -1998,6 +2001,7 @@ window.addEventListener('DOMContentLoaded', () => {
             xs.forEach(dx => ys.forEach(dy => draw(x + dx, y + dy)));
         };
 
+        // כתמים רחבים של חול בהיר וכהה.
         for (let i = 0; i < 40; i++) {
             const x = Math.random() * size, y = Math.random() * size;
             const r = 50 + Math.random() * 100;
@@ -2012,26 +2016,31 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // אדוות רוח: צל כהה + הדגשה בהירה צמודה, כמו רכסי חול קטנים.
+        // אדוות: קטעים קצרים וגליים בגדלים ובזוויות שונות; כל קטע = הדגשה בהירה + צל כהה צמוד.
         ctx.lineCap = 'round';
-        for (let i = 0; i < 22; i++) {
-            const y0 = (i + Math.random() * 0.6) * (size / 22);
-            const amp = 4 + Math.random() * 9;
-            const k = 1 + Math.floor(Math.random() * 3);
+        bctx.lineCap = 'round';
+        for (let i = 0; i < 80; i++) {
+            const x0 = Math.random() * size, y0 = Math.random() * size;
+            const len = 160 + Math.random() * 260;
+            const amp = 4 + Math.random() * 8;
+            const freq = 1 + Math.random() * 1.2;
             const phase = Math.random() * Math.PI * 2;
-            const w = 2 + Math.random() * 2.5;
-            [[0, 'rgba(110,68,24,0.30)'], [w * 1.1, 'rgba(255,226,160,0.38)']].forEach(([off, col]) => {
-                ctx.strokeStyle = col;
-                ctx.lineWidth = w;
-                [-size, 0, size].forEach(dy => {
-                    ctx.beginPath();
-                    for (let x = 0; x <= size; x += 8) {
-                        const y = y0 + off + dy + Math.sin(x / size * Math.PI * 2 * k + phase) * amp;
-                        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
-                });
-            });
+            const tilt = (Math.random() - 0.5) * 0.1;
+            const w = 3.5 + Math.random() * 3.5;
+            const path = (c, ox, oy, off) => {
+                c.beginPath();
+                for (let t = 0; t <= len; t += 6) {
+                    const y = y0 + oy + off + t * tilt + Math.sin(t / len * Math.PI * freq + phase) * amp;
+                    if (t === 0) c.moveTo(x0 + ox + t, y); else c.lineTo(x0 + ox + t, y);
+                }
+                c.stroke();
+            };
+            [-size, 0, size].forEach(ox => [-size, 0, size].forEach(oy => {
+                ctx.lineWidth = w; ctx.strokeStyle = 'rgba(255,228,165,0.26)'; path(ctx, ox, oy, 0);
+                ctx.lineWidth = w; ctx.strokeStyle = 'rgba(105,60,20,0.24)'; path(ctx, ox, oy, w * 1.3);
+                bctx.lineWidth = w * 1.6; bctx.strokeStyle = 'rgba(225,225,225,0.55)'; path(bctx, ox, oy, 0);
+                bctx.lineWidth = w; bctx.strokeStyle = 'rgba(50,50,50,0.5)'; path(bctx, ox, oy, w * 1.4);
+            }));
         }
 
         const grains = ['#a8814a', '#bb9156', '#cfa468', '#e0b97c', '#efd096', '#98703c'];
@@ -2042,16 +2051,17 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
         }
         ctx.globalAlpha = 1;
-        sandCanvasCache = canvas;
-        return canvas;
+        sandCache = { canvas, bumpCanvas };
+        return sandCache;
     }
 
-    function createSandTexture(repeatX, repeatY) {
-        const texture = new THREE.CanvasTexture(getSandCanvas());
+    function createSandTexture(repeatX, repeatY, bump = false) {
+        const c = getSandCanvases();
+        const texture = new THREE.CanvasTexture(bump ? c.bumpCanvas : c.canvas);
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(repeatX, repeatY);
         texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-        texture.encoding = THREE.sRGBEncoding;
+        if (!bump) texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
@@ -2063,6 +2073,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const duneMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             map: createSandTexture(4, 2),
+            bumpMap: createSandTexture(4, 2, true),
+            bumpScale: 1.2,
             roughness: 1.0,
             metalness: 0
         });
@@ -2080,7 +2092,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const far = addMesh(
             new THREE.PlaneGeometry(400, 200),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, map: createSandTexture(100, 50), roughness: 1.0, metalness: 0 }),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, map: createSandTexture(100, 50), bumpMap: createSandTexture(100, 50, true), bumpScale: 1.2, roughness: 1.0, metalness: 0 }),
             0, -0.06, -145, false, true
         );
         far.rotation.x = -Math.PI / 2;
@@ -2304,13 +2316,13 @@ window.addEventListener('DOMContentLoaded', () => {
             poly([[-0.12, 0.08], [0.3, 0.08], [0.3, 0.2], [-0.12, 0.2]]);
             poly([[0.2, 0.2], [0.32, 0.2], [0.34, 0.5], [0.22, 0.5]]);
             poly([[-0.17, -0.2], [0.07, -0.2], [0.05, 0.1], [-0.17, 0.1]]);
-            c.beginPath(); c.moveTo(0.04, -0.14); c.lineTo(0.3, -0.02); line();
+            c.beginPath(); c.moveTo(0.04, -0.14); c.lineTo(0.26, -0.04); line();
         } else {
             poly([[-0.1, -0.2], [0.12, -0.2], [0.09, 0.0], [-0.09, 0.0]]);
             poly([[-0.1, 0.0], [0.12, 0.0], [0.19, 0.26], [-0.13, 0.26]]);
             poly([[-0.1, 0.26], [0.0, 0.26], [-0.04, 0.5], [-0.16, 0.5]]);
             poly([[0.02, 0.26], [0.14, 0.26], [0.2, 0.5], [0.06, 0.5]]);
-            c.beginPath(); c.moveTo(0.1, -0.16); c.lineTo(0.36, -0.04); line();
+            c.beginPath(); c.moveTo(0.1, -0.16); c.lineTo(0.3, -0.06); line();
         }
         c.save();
         c.translate(seated ? -0.05 : 0.0, seated ? -0.32 : -0.3);
@@ -2374,13 +2386,13 @@ window.addEventListener('DOMContentLoaded', () => {
             while (x < baseW) {
                 const w = 1.4 + rnd() * 1.4;
                 const light = rnd() < 0.5;
-                cx.fillStyle = light ? `rgba(255,240,170,${0.04 + rnd() * 0.08})` : `rgba(120,78,12,${0.03 + rnd() * 0.07})`;
+                cx.fillStyle = light ? `rgba(255,226,140,${0.03 + rnd() * 0.06})` : `rgba(70,40,4,${0.04 + rnd() * 0.08})`;
                 cx.fillRect(x, y0, w, courseH);
-                cx.fillStyle = 'rgba(96,60,8,0.28)'; cx.fillRect(x, y0, 0.04, courseH);
+                cx.fillStyle = 'rgba(60,34,4,0.30)'; cx.fillRect(x, y0, 0.04, courseH);
                 bx.fillStyle = 'rgba(0,0,0,0.35)'; bx.fillRect(x, y0, 0.05, courseH);
                 x += w;
             }
-            cx.fillStyle = 'rgba(96,60,8,0.35)'; cx.fillRect(0, y0, baseW, 0.05);
+            cx.fillStyle = 'rgba(60,34,4,0.38)'; cx.fillRect(0, y0, baseW, 0.05);
             bx.fillStyle = 'rgba(0,0,0,0.4)'; bx.fillRect(0, y0, baseW, 0.06);
         }
         for (let i = 0; i < 3500; i++) {
@@ -2397,7 +2409,7 @@ window.addEventListener('DOMContentLoaded', () => {
             cx.save(); cx.translate(-0.035, -0.04);
             fn(cx, { fill: '#fff2b8', ink: '#fff2b8', cream: '#fff2b8', red: '#fff2b8' });
             cx.restore();
-            fn(cx, { fill: '#dcb23c', ink: '#8d6216', cream: '#e6bd4c', red: '#dcb23c' });
+            fn(cx, { fill: '#e6bd50', ink: '#74500f', cream: '#ecc55c', red: '#e6bd50' });
             fn(bx, { fill: '#d0d0d0', ink: '#ececec', cream: '#dcdcdc', red: '#d0d0d0' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
@@ -2410,44 +2422,47 @@ window.addEventListener('DOMContentLoaded', () => {
         };
 
         // 1. מסכת פרעה במסגרת (בחלק העליון).
-        glyph('mask', c0, slant * 0.315, 4.8 * k);
+        glyph('mask', c0, slant * 0.33, 5.0 * k);
 
         // 2. שורת הירוגליפים קטנה מתחת למסכה.
         const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was'];
-        const rowGlyphs = (f, size, step) => {
-            const half = baseW * f * 0.5 * 0.86;
-            for (let x = -half; x <= half; x += step) glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, f * slant, size);
-        };
-        bar(slant * 0.385, 0.1 * k);
-        rowGlyphs(0.415, 0.6 * k, 0.95 * k);
-        bar(slant * 0.445, 0.1 * k);
+        bar(slant * 0.428, 0.1 * k);
+        {
+            const half = baseW * 0.452 * 0.5 * 0.86;
+            for (let x = -half; x <= half; x += 0.95 * k) glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, slant * 0.452, 0.6 * k);
+        }
+        bar(slant * 0.476, 0.1 * k);
 
-        // 3. גוש עמודות הירוגליפים משני צדי עמודה מרכזית.
-        for (let f = 0.48; f <= 0.69; f += 0.034) {
-            const half = baseW * f * 0.5 * 0.86;
-            for (let x = -half; x <= half; x += 0.9 * k) {
-                if (Math.abs(x) < 1.1 * k) continue;
-                glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, f * slant, 0.58 * k);
+        // 3. עמודות הירוגליפים אנכיות משני צדי עמודה מרכזית (כמו בתבליטים אמיתיים).
+        const colTop = 0.495, colBottom = 0.68;
+        const colStep = 0.85 * k;
+        const nCols = Math.floor((baseW * 0.5) / colStep);
+        for (let ci = -nCols; ci <= nCols; ci++) {
+            const x = ci * colStep;
+            if (Math.abs(x) < 1.3 * k) continue;
+            const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.9 * k) / baseW + 0.02);
+            for (let f = fTop; f <= colBottom; f += (0.78 * k) / slant) {
+                glyph(smallSet[(rnd() * smallSet.length) | 0], c0 + x, f * slant, 0.56 * k);
             }
         }
-        glyph('djed', c0, slant * 0.52, 1.7 * k);
-        glyph('ankh', c0, slant * 0.60, 1.7 * k);
-        glyph('was', c0, slant * 0.68, 1.7 * k);
-        bar(slant * 0.715, 0.1 * k);
+        glyph('djed', c0, slant * 0.545, 1.6 * k);
+        glyph('ankh', c0, slant * 0.605, 1.6 * k);
+        glyph('was', c0, slant * 0.66, 1.6 * k);
+        bar(slant * 0.69, 0.1 * k);
 
-        // 4. שורת אלים: פפירוס, אנוביס יושב, חורוס, אנוביס, חתחור יושבת, פפירוס.
-        const ground = slant * 0.925;
+        // 4. שורת אלים גדולה: פפירוס, אנוביס יושב, חורוס, אנוביס, חתחור יושבת, פפירוס.
+        const ground = slant * 0.935;
         const fig = (name, dx, size, flip = 1) => glyph(name, c0 + dx * k, ground - size * k * 0.5, size * k, flip);
-        fig('papyrus', -7.3, 3.4);
-        fig('seatedAnubis', -4.9, 5.0, 1);
-        fig('horus', -2.1, 5.4, 1);
-        fig('anubis', 2.1, 5.4, -1);
-        fig('seatedHathor', 4.9, 5.0, -1);
-        fig('papyrus', 7.3, 3.4);
+        fig('papyrus', -8.1, 3.7);
+        fig('seatedAnubis', -5.5, 6.2, 1);
+        fig('horus', -1.8, 6.4, 1);
+        fig('anubis', 1.8, 6.4, -1);
+        fig('seatedHathor', 5.5, 6.2, -1);
+        fig('papyrus', 8.1, 3.7);
         bar(ground + 0.05, 0.12 * k);
 
         // 5. פס לוטוסים בבסיס.
-        for (let x = -9.5; x <= 9.5; x += 1.9) glyph('lotus', c0 + x * k, slant * 0.962, 1.7 * k);
+        for (let x = -9.5; x <= 9.5; x += 1.9) glyph('lotus', c0 + x * k, slant * 0.97, 1.9 * k);
         bar(slant - 0.16, 0.16);
 
         const makeTex = (canvas, srgb) => {
@@ -2544,6 +2559,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const terrainMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
             map: isSand ? createSandTexture(10, 22) : createLawnTexture(10, 22),
+            bumpMap: isSand ? createSandTexture(10, 22, true) : null,
+            bumpScale: 1.2,
             roughness: groundRoughness,
             metalness: 0.0
         });
@@ -2608,12 +2625,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 color: 0xffffff,
                 map: tex.map,
                 bumpMap: tex.bump,
-                bumpScale: 2.2,
-                roughness: 0.42,
+                bumpScale: 2.6,
+                roughness: 0.4,
                 metalness: 0.2,
                 emissive: 0xffffff,
                 emissiveMap: tex.map,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.12
             });
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
