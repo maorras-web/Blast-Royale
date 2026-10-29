@@ -1997,12 +1997,12 @@ window.addEventListener('DOMContentLoaded', () => {
         // רכיבי הגלים: מספרים שלמים של מחזורים לאורך הטקסטורה = חיבור חלק בין האריחים.
         const comps = [];
         for (let i = 0; i < 6; i++) {
-            const len = 15 + Math.random() * 17;
+            const len = 3.5 + Math.random() * 5;   // אדוות רחבות ורכות כמו בתמונת המטרה (פחות מחזורים בכל אריח)
             const ang = 0.35 + (Math.random() - 0.5) * 1.3;
             comps.push({
                 kx: Math.round(len * Math.cos(ang)), ky: Math.round(len * Math.sin(ang)),
                 wx: 1 + Math.floor(Math.random() * 3), wy: 1 + Math.floor(Math.random() * 3),
-                p: Math.random() * TAU, wamp: 1.2 + Math.random() * 2.2,
+                p: Math.random() * TAU, wamp: 1.0 + Math.random() * 1.8,
                 mx: 1 + Math.floor(Math.random() * 2), my: 1 + Math.floor(Math.random() * 2), q: Math.random() * TAU,
                 ph: Math.random() * TAU
             });
@@ -2036,14 +2036,14 @@ window.addEventListener('DOMContentLoaded', () => {
             for (let x = 0; x < N; x++) {
                 const i = y * N + x;
                 const d = hgt[((y + 1) % N) * N + ((x + 1) % N)] - hgt[i];
-                const shade = Math.max(-1, Math.min(1, d * 2.2));
+                const shade = Math.max(-1, Math.min(1, d * 7.0));
                 let n = 0;
                 for (let t = 0; t < tint.length; t++) n += sinL(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
                 n *= 0.25;
-                const grain = (Math.random() - 0.5) * 14;
+                const grain = (Math.random() - 0.5) * 7;
                 let r = br * (1 + 0.07 * n), g = bg * (1 + 0.07 * n), bl = bb * (1 + 0.09 * n);
-                if (shade > 0) { r += shade * 22; g += shade * 20; bl += shade * 16; }
-                else { r += shade * 34; g += shade * 40; bl += shade * 38; }
+                if (shade > 0) { r += shade * 30; g += shade * 28; bl += shade * 22; }
+                else { r += shade * 46; g += shade * 52; bl += shade * 50; }
                 const o = i * 4;
                 img.data[o] = Math.max(0, Math.min(255, r + grain));
                 img.data[o + 1] = Math.max(0, Math.min(255, g + grain));
@@ -2530,6 +2530,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // הציור נעשה ביחידות עולם (x לאורך הבסיס, y משיא הפירמידה כלפי מטה) ולכן הפרופורציות נשמרות על הפאה.
     // res = רזולוציית הטקסטורה (הפירמידה המרכזית 2048, הצדדיות 1024); מפת הבליטה בחצי רזולוציה.
     const goldTexCache = {};
+    // מכשיר חלש = מעט זיכרון/ליבות: הטקסטורות נאפות ברזולוציה נמוכה יותר (בדיקה: ?lowfx=1 בכתובת)
+    const LOW_END_DEVICE = (new URLSearchParams(location.search).get('lowfx') === '1')
+        || (navigator.deviceMemory && navigator.deviceMemory <= 3)
+        || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+    const GOLD_RES_SCALE = LOW_END_DEVICE ? 0.75 : 1;
     function createGoldPyramidTextures(radius, height, seed, res = 1024) {
         const cacheKey = radius + '_' + height + '_' + seed + '_' + res;
         if (goldTexCache[cacheKey]) return goldTexCache[cacheKey];
@@ -2549,9 +2554,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // זהב: גרדיאנט עדין + "ברק" רחב באמצע וכהות בפינות התחתונות.
         const grad = cx.createLinearGradient(0, 0, 0, CH);
-        grad.addColorStop(0, GOLD_LIGHT);
-        grad.addColorStop(0.5, GOLD_MID);
-        grad.addColorStop(1, GOLD_DARK);
+        grad.addColorStop(0, '#dc9a36');     // רקע ענבר עמוק: הניגודיות מגיעה מהצורות הבהירות שמעליו
+        grad.addColorStop(0.5, '#c4862c');
+        grad.addColorStop(1, '#8a501a');
         cx.fillStyle = grad;
         cx.fillRect(0, 0, CW, CH);
         const sheen = cx.createRadialGradient(CW * 0.5, CH * 0.5, 0, CW * 0.5, CH * 0.5, CW * 0.75);
@@ -2618,7 +2623,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // כל צורה מצוירת פעמיים: בצבע הזהב (קנבס הצבע) ובגובה (קנבס הגבהים: הצורה "מורמת", הפרטים חרוטים).
         // ההצללה הרכה של התבליט מחושבת פעם אחת בסוף מהגבהים, ולכן אין צורך במפת בליטה בזמן ריצה.
         const emboss = fn => {
-            fn(cx, { fill: '#ebba50', ink: '#946018', cream: '#f2c660', red: '#ebba50' });
+            fn(cx, { fill: '#f7ce64', ink: '#5e3608', cream: '#fad775', red: '#f7ce64' });   // צורה בהירה + קו מתאר כהה
             fn(bx, { fill: '#dcdcdc', ink: '#6e6e6e', cream: '#cfcfcf', red: '#dcdcdc' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
@@ -2710,18 +2715,18 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let y = 1; y < CH - 1; y++) {
             for (let x = 1; x < CW - 1; x++) {
                 const i = y * CW + x;
-                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 4.4;   // אור מלמעלה-שמאל
-                let m = 1 + s * 1.0;
-                if (x > so && y > so) {   // צל מוטל: בליטה שמעל הפיקסל מצד שמאל-למעלה מטילה עליו צל
-                    const d1 = H[i - so * CW - so] - H[i] - 0.10;
-                    const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.10;
+                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 6.2;   // אור מלמעלה-שמאל, תבליט עמוק יותר
+                let m = 1 + s * 1.15;
+                if (x > so && y > so) {   // צל מוטל: בליטה שמעל הפיקסל מצד שמאל-למעלה מטילה עליו צל כהה
+                    const d1 = H[i - so * CW - so] - H[i] - 0.08;
+                    const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.08;
                     const sh = (d1 > 0 ? d1 : 0) + (d2 > 0 ? d2 * 0.6 : 0);
-                    m *= 1 - Math.min(0.20, sh * 1.0);
+                    m *= 1 - Math.min(0.42, sh * 1.7);
                 }
-                if (m < 0.58) m = 0.58; else if (m > 1.75) m = 1.75;
+                if (m < 0.46) m = 0.46; else if (m > 1.8) m = 1.8;
                 const o = i * 4;
-                let r = cd[o] * m * 1.10, g = cd[o + 1] * m * 1.12, b = cd[o + 2] * m * 1.22;   // הבהרה כללית לגוון של תמונת הייחוס
-                if (s > 0.22) { const sp = (s - 0.22) * 210; r += sp; g += sp * 0.9; b += sp * 0.55; }   // ברק בקצוות מוארים
+                let r = cd[o] * m * 1.10, g = cd[o + 1] * m * 1.02, b = cd[o + 2] * m * 0.88;   // גוון ענבר-זהב רווי (לא צהוב חיוור)
+                if (s > 0.22) { const sp = (s - 0.22) * 230; r += sp; g += sp * 0.82; b += sp * 0.42; }   // ברק בקצוות מוארים
                 cd[o] = r > 255 ? 255 : r;
                 cd[o + 1] = g > 255 ? 255 : g;
                 cd[o + 2] = b > 255 ? 255 : b;
@@ -2731,7 +2736,7 @@ window.addEventListener('DOMContentLoaded', () => {
         bumpCanvas.width = bumpCanvas.height = 1;   // שחרור זיכרון קנבס הגבהים
 
         const t = new THREE.CanvasTexture(colorCanvas);
-        t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        t.anisotropy = Math.min(LOW_END_DEVICE ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
         t.encoding = THREE.sRGBEncoding;
         t.minFilter = THREE.LinearMipMapLinearFilter;
         t.magFilter = THREE.LinearFilter;
@@ -2753,10 +2758,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const g = cv.getContext('2d');
         // כדור זהב: מרכז בהיר, שוליים כהים וחמים (כמו שהמתכת "נעלמת" בקצה).
         const base = g.createRadialGradient(S * 0.5, S * 0.4, 0, S * 0.5, S * 0.5, S * 0.52);
-        base.addColorStop(0, '#fffaf0');
-        base.addColorStop(0.45, '#fdeec8');
-        base.addColorStop(0.75, '#e2b068');
-        base.addColorStop(1, '#6e4218');
+        base.addColorStop(0, '#fff3d4');
+        base.addColorStop(0.45, '#fbe1a2');
+        base.addColorStop(0.75, '#dca24e');
+        base.addColorStop(1, '#5a3410');
         g.fillStyle = base; g.fillRect(0, 0, S, S);
         // השתקפות שמיים בהירה למעלה, וקרקע כהה למטה, עם קו אופק דק ביניהם.
         const sky = g.createLinearGradient(0, 0, 0, S * 0.45);
@@ -2912,8 +2917,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isSand) {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
-            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 1024);
-            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // 1024 לכל הפירמידות (הצדדיות קרובות למצלמה וצריכות חדות); טקסטורה אחת משותפת לשתי הצדדיות
+            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, Math.round(1024 * GOLD_RES_SCALE));
+            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, Math.round(1024 * GOLD_RES_SCALE));   // 1024 לכל הפירמידות (הצדדיות קרובות למצלמה וצריכות חדות); טקסטורה אחת משותפת לשתי הצדדיות
             // זהב מתכתי: Matcap = כדור זהב מצויר מראש; לא תלוי באורות הסצנה, לכן לא מחוויר ונשאר זול לחישוב.
             // toneMapped:false = הצבע יוצא בדיוק כמו שצויר.
             const matcap = createGoldMatcap();
@@ -6917,22 +6922,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const ROCK_BOUNCE_FRAMES = 74;           // פריימים שלוקח לסלע הגדול לעלות מהקרקע לשיא (~1.2 שנ' ב-60fps). קטן = מהיר יותר
     const ROCK_SPEED_X = 0.040;              // מהירות אופקית קבועה לפריים (יחידות עולם)
     const ROCK_CHILD_SCALE = 0.66;           // גודל הסלעים שנוצרים מהפיצול ביחס להורה
+    const ROCK_SIZE_SCALE = 0.86;            // הקטנה ויזואלית של הסלעים הרגילים (לא של הבוסים): יותר מקום לתותח. החיים, הקפיצה והפיצול נשארים כמו קודם.
     const ROCK_COLLIDE_EACH_OTHER = false;   // true = כמו קודם: סלעים דוחפים זה את זה
     // כמה מגובה המסך (מהקרקע) מגיע שיא הקפיצה של סלע בגודל נתון
     function rockApexFraction(size) {
-        return THREE.MathUtils.clamp(0.26 + 0.22 * size, 0.36, 0.66);
+        return THREE.MathUtils.clamp(0.26 + 0.22 * (size / ROCK_SIZE_SCALE), 0.36, 0.66);   // לפי הגודל "המקורי" כדי שהקפיצות יישארו זהות
     }
     // כבידה אחת לכל הסלעים (מותאמת לגובה המסך), ומהירות קפיצה קבועה לפי גודל הסלע
     function getRockPhysics(size) {
         const field = Math.max(8, getScreenTopWorldY() - 0.2);
-        const bigRise = rockApexFraction(1.75) * field;
+        const bigRise = rockApexFraction(1.75 * ROCK_SIZE_SCALE) * field;
         const g = 2 * bigRise / (ROCK_BOUNCE_FRAMES * ROCK_BOUNCE_FRAMES);
         return { g, bounceVy: Math.sqrt(2 * g * rockApexFraction(size) * field) };
     }
     // פיצול סלע שנהרס לשניים: נוצרים באותה נקודה ונפרדים לשני הצדדים עם קפיצה קטנה כלפי מעלה
     function splitRockIntoChildren(r, data) {
         if (data.isBoss) return;     // הבוס לא מתפרק: הוא מוחלף בפרס
-        if (data.size <= 0.9) return;
+        if (data.size <= 0.9 * ROCK_SIZE_SCALE) return;   // אותו כלל פיצול כמו קודם, ביחס לגודל החדש
         const childHp = Math.max(1, Math.floor(data.maxHp / 2));
         const childSize = data.size * ROCK_CHILD_SCALE;
         const speed = data.speedX || ROCK_SPEED_X;
@@ -7570,8 +7576,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function bossDropRocks(r, d, n) {
         for (let i = 0; i < n; i++) {
             if (rocks.length > BOSS_MAX_ROCKS) return;
-            const size = 0.95 + Math.random() * 0.45;
-            const hp = Math.max(4, Math.floor((8 + level * 6) * (size / 1.2) * 0.7));
+            const baseSize = 0.95 + Math.random() * 0.45;
+            const size = baseSize * ROCK_SIZE_SCALE;
+            const hp = Math.max(4, Math.floor((8 + level * 6) * (baseSize / 1.2) * 0.7));
             const dir = (i % 2 === 0 ? 1 : -1) * (Math.random() < 0.5 ? 1 : -1);
             spawnRock(
                 r.position.x + (Math.random() - 0.5) * d.size,
@@ -7653,8 +7660,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const topY = getScreenTopWorldY();
             const enterY = 0.2 + (topY - 0.2) * 0.62;
             for (let i = 0; i < count; i++) {
-                const size = 0.95 + Math.random() * 0.8;
-                const hp = Math.floor((8 + level * 6) * (size / 1.2));
+                const baseSize = 0.95 + Math.random() * 0.8;
+                const size = baseSize * ROCK_SIZE_SCALE;
+                const hp = Math.floor((8 + level * 6) * (baseSize / 1.2));
                 const side = i % 2 === 0 ? -1 : 1;
                 const lane = Math.floor(i / 2);
                 const spawnX = side * (screenLimitX + 2.6 + size + lane * (size * 2.6 + 0.6));
