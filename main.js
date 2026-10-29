@@ -2578,11 +2578,11 @@ window.addEventListener('DOMContentLoaded', () => {
         refl(0.88, 0.08, '90,45,0', 0.18);
         // עומק: כהות עדינה בבסיס ובשני הצדדים של הפאה (כמו חלל מוצל בין הפירמידה לקרקע ובין הפאות).
         const baseShade = cx.createLinearGradient(0, CH * 0.9, 0, CH);
-        baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.38)');
+        baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.20)');
         cx.fillStyle = baseShade; cx.fillRect(0, 0, CW, CH);
         for (const sd of [0, 1]) {
             const eg = cx.createLinearGradient(CW * sd, 0, CW * (sd ? 0.9 : 0.1), 0);
-            eg.addColorStop(0, 'rgba(60,30,0,0.22)'); eg.addColorStop(1, 'rgba(60,30,0,0)');
+            eg.addColorStop(0, 'rgba(60,30,0,0.10)'); eg.addColorStop(1, 'rgba(60,30,0,0)');
             cx.fillStyle = eg; cx.fillRect(0, 0, CW, CH);
         }
         bx.fillStyle = '#606060';
@@ -2631,7 +2631,7 @@ window.addEventListener('DOMContentLoaded', () => {
         };
 
         // 1. מסכת פרעה במסגרת (בחלק העליון).
-        glyph('mask', c0, slant * 0.33, 5.0 * k);
+        glyph('mask', c0, slant * 0.33, 5.2 * k);
 
         // 2. שורת הירוגליפים קטנה מתחת למסכה.
         const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was', 'owl', 'chick', 'reed',
@@ -2640,19 +2640,19 @@ window.addEventListener('DOMContentLoaded', () => {
         bar(slant * 0.428, 0.1 * k);
         {
             const half = baseW * 0.452 * 0.5 * 0.86;
-            for (let x = -half; x <= half; x += 0.95 * k) glyph(pick(), c0 + x, slant * 0.452, 0.6 * k);
+            for (let x = -half; x <= half; x += 1.12 * k) glyph(pick(), c0 + x, slant * 0.452, 0.72 * k);
         }
         bar(slant * 0.476, 0.1 * k);
 
         // 3. עמודות הירוגליפים אנכיות משני צדי עמודה מרכזית, עם קווי הפרדה.
         const colTop = 0.495, colBottom = 0.68;
-        const colStep = 0.8 * k;
+        const colStep = 0.86 * k;
         const nCols = Math.floor((baseW * 0.5) / colStep);
         for (let ci = -nCols; ci <= nCols; ci++) {
             const x = ci * colStep;
             if (Math.abs(x) < 1.3 * k) continue;
             const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.9 * k) / baseW + 0.02);
-            for (let f = fTop; f <= colBottom; f += (0.72 * k) / slant) glyph(pick(), c0 + x, f * slant, 0.64 * k);
+            for (let f = fTop; f <= colBottom; f += (0.8 * k) / slant) glyph(pick(), c0 + x, f * slant, 0.72 * k);
         }
         for (const sd of [-1, 1]) {
             const lx = c0 + sd * 1.15 * k;
@@ -2668,10 +2668,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const ground = slant * 0.935;
         const fig = (name, dx, size, flip = 1) => glyph(name, c0 + dx * k, ground - size * k * 0.5, size * k, flip);
         fig('papyrus', -8.5, 4.0);
-        fig('seatedAnubis', -5.7, 6.6, 1);
-        fig('pharaoh', -2.4, 6.8, 1);
-        fig('hathor', 2.4, 6.8, -1);
-        fig('seatedHorus', 5.7, 6.6, -1);
+        fig('seatedAnubis', -5.8, 6.9, 1);
+        fig('pharaoh', -2.4, 7.0, 1);
+        fig('hathor', 2.4, 7.0, -1);
+        fig('seatedHorus', 5.8, 6.9, -1);
         fig('papyrus', 8.5, 4.0);
         bar(ground + 0.05, 0.12 * k);
 
@@ -2716,11 +2716,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     const d1 = H[i - so * CW - so] - H[i] - 0.10;
                     const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.10;
                     const sh = (d1 > 0 ? d1 : 0) + (d2 > 0 ? d2 * 0.6 : 0);
-                    m *= 1 - Math.min(0.32, sh * 1.3);
+                    m *= 1 - Math.min(0.20, sh * 1.0);
                 }
-                if (m < 0.42) m = 0.42; else if (m > 1.75) m = 1.75;
+                if (m < 0.58) m = 0.58; else if (m > 1.75) m = 1.75;
                 const o = i * 4;
-                let r = cd[o] * m, g = cd[o + 1] * m, b = cd[o + 2] * m;
+                let r = cd[o] * m * 1.10, g = cd[o + 1] * m * 1.12, b = cd[o + 2] * m * 1.22;   // הבהרה כללית לגוון של תמונת הייחוס
                 if (s > 0.22) { const sp = (s - 0.22) * 210; r += sp; g += sp * 0.9; b += sp * 0.55; }   // ברק בקצוות מוארים
                 cd[o] = r > 255 ? 255 : r;
                 cd[o + 1] = g > 255 ? 255 : g;
@@ -2731,7 +2731,7 @@ window.addEventListener('DOMContentLoaded', () => {
         bumpCanvas.width = bumpCanvas.height = 1;   // שחרור זיכרון קנבס הגבהים
 
         const t = new THREE.CanvasTexture(colorCanvas);
-        t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         t.encoding = THREE.sRGBEncoding;
         t.minFilter = THREE.LinearMipMapLinearFilter;
         t.magFilter = THREE.LinearFilter;
@@ -2912,8 +2912,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isSand) {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
-            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 512);
-            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // המרכזית 1024, הצדדיות 512: מספיק לגודל על המסך וקל לזיכרון
+            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 1024);
+            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // 1024 לכל הפירמידות (הצדדיות קרובות למצלמה וצריכות חדות); טקסטורה אחת משותפת לשתי הצדדיות
             // זהב מתכתי: Matcap = כדור זהב מצויר מראש; לא תלוי באורות הסצנה, לכן לא מחוויר ונשאר זול לחישוב.
             // toneMapped:false = הצבע יוצא בדיוק כמו שצויר.
             const matcap = createGoldMatcap();
@@ -2926,7 +2926,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
-            const capMat = new THREE.MeshMatcapMaterial({ color: 0xffd36b, matcap, toneMapped: false, fog: false });
+            const capMat = new THREE.MeshMatcapMaterial({ color: 0xf2b448, matcap, toneMapped: false, fog: false });
             const ridgeMat = new THREE.LineBasicMaterial({ color: 0xfff2b0, fog: false, toneMapped: false });
 
             pyramidSpecs.forEach(s => {
