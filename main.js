@@ -2036,14 +2036,14 @@ window.addEventListener('DOMContentLoaded', () => {
             for (let x = 0; x < N; x++) {
                 const i = y * N + x;
                 const d = hgt[((y + 1) % N) * N + ((x + 1) % N)] - hgt[i];
-                const shade = Math.max(-1, Math.min(1, d * 7.0));
+                const shade = Math.max(-1, Math.min(1, d * 4.5));
                 let n = 0;
                 for (let t = 0; t < tint.length; t++) n += sinL(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
                 n *= 0.25;
                 const grain = (Math.random() - 0.5) * 7;
                 let r = br * (1 + 0.07 * n), g = bg * (1 + 0.07 * n), bl = bb * (1 + 0.09 * n);
-                if (shade > 0) { r += shade * 30; g += shade * 28; bl += shade * 22; }
-                else { r += shade * 46; g += shade * 52; bl += shade * 50; }
+                if (shade > 0) { r += shade * 20; g += shade * 19; bl += shade * 15; }
+                else { r += shade * 28; g += shade * 31; bl += shade * 30; }
                 const o = i * 4;
                 img.data[o] = Math.max(0, Math.min(255, r + grain));
                 img.data[o + 1] = Math.max(0, Math.min(255, g + grain));
@@ -2554,13 +2554,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // זהב: גרדיאנט עדין + "ברק" רחב באמצע וכהות בפינות התחתונות.
         const grad = cx.createLinearGradient(0, 0, 0, CH);
-        grad.addColorStop(0, '#dc9a36');     // רקע ענבר עמוק: הניגודיות מגיעה מהצורות הבהירות שמעליו
-        grad.addColorStop(0.5, '#c4862c');
-        grad.addColorStop(1, '#8a501a');
+        grad.addColorStop(0, '#f0bc45');     // זהב מלוטש בהיר (כמו בהמחשה): צהוב-זהוב, לא חום-ענבר
+        grad.addColorStop(0.5, '#e0a634');
+        grad.addColorStop(1, '#a96f22');
         cx.fillStyle = grad;
         cx.fillRect(0, 0, CW, CH);
         const sheen = cx.createRadialGradient(CW * 0.5, CH * 0.5, 0, CW * 0.5, CH * 0.5, CW * 0.75);
-        sheen.addColorStop(0, 'rgba(255,236,160,0.10)');
+        sheen.addColorStop(0, 'rgba(255,240,170,0.18)');
         sheen.addColorStop(1, 'rgba(255,236,160,0)');
         cx.fillStyle = sheen; cx.fillRect(0, 0, CW, CH);
         for (const px of [0, CW]) {
@@ -2577,10 +2577,10 @@ window.addEventListener('DOMContentLoaded', () => {
             gr.addColorStop(Math.min(1, pos + w), `rgba(${rgb},0)`);
             cx.fillStyle = gr; cx.fillRect(0, 0, CW, CH);
         };
-        refl(0.22, 0.10, '255,240,170', 0.22);
-        refl(0.45, 0.08, '90,45,0', 0.20);
-        refl(0.66, 0.10, '255,240,170', 0.18);
-        refl(0.88, 0.08, '90,45,0', 0.18);
+        refl(0.22, 0.10, '255,244,180', 0.32);
+        refl(0.45, 0.08, '90,45,0', 0.11);
+        refl(0.66, 0.10, '255,244,180', 0.28);
+        refl(0.88, 0.08, '90,45,0', 0.10);
         // עומק: כהות עדינה בבסיס ובשני הצדדים של הפאה (כמו חלל מוצל בין הפירמידה לקרקע ובין הפאות).
         const baseShade = cx.createLinearGradient(0, CH * 0.9, 0, CH);
         baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.20)');
@@ -2605,32 +2605,32 @@ window.addEventListener('DOMContentLoaded', () => {
             while (x < baseW) {
                 const w = 1.4 + rnd() * 1.4;
                 const light = rnd() < 0.5;
-                cx.fillStyle = light ? `rgba(255,226,140,${0.02 + rnd() * 0.04})` : `rgba(70,40,4,${0.02 + rnd() * 0.05})`;
+                cx.fillStyle = light ? `rgba(255,226,140,${0.01 + rnd() * 0.02})` : `rgba(70,40,4,${0.01 + rnd() * 0.025})`;
                 cx.fillRect(x, y0, w, courseH);
-                cx.fillStyle = 'rgba(60,34,4,0.14)'; cx.fillRect(x, y0, 0.04, courseH);
-                bx.fillStyle = 'rgba(0,0,0,0.22)'; bx.fillRect(x, y0, 0.05, courseH);
+                cx.fillStyle = 'rgba(60,34,4,0.035)'; cx.fillRect(x, y0, 0.04, courseH);
+                bx.fillStyle = 'rgba(0,0,0,0.05)'; bx.fillRect(x, y0, 0.05, courseH);
                 x += w;
             }
-            cx.fillStyle = 'rgba(60,34,4,0.18)'; cx.fillRect(0, y0, baseW, 0.05);
-            bx.fillStyle = 'rgba(0,0,0,0.26)'; bx.fillRect(0, y0, baseW, 0.06);
+            cx.fillStyle = 'rgba(60,34,4,0.045)'; cx.fillRect(0, y0, baseW, 0.05);
+            bx.fillStyle = 'rgba(0,0,0,0.06)'; bx.fillRect(0, y0, baseW, 0.06);
         }
         for (let i = 0; i < 4000; i++) {
             const gx = rnd() * baseW, gy = rnd() * slant, gs = 0.03 + rnd() * 0.05;
-            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.30)' : 'rgba(90,56,8,0.22)';
+            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.30)' : 'rgba(90,56,8,0.12)';
             cx.fillRect(gx, gy, gs, gs);
         }
 
         // כל צורה מצוירת פעמיים: בצבע הזהב (קנבס הצבע) ובגובה (קנבס הגבהים: הצורה "מורמת", הפרטים חרוטים).
         // ההצללה הרכה של התבליט מחושבת פעם אחת בסוף מהגבהים, ולכן אין צורך במפת בליטה בזמן ריצה.
         const emboss = fn => {
-            fn(cx, { fill: '#f7ce64', ink: '#5e3608', cream: '#fad775', red: '#f7ce64' });   // צורה בהירה + קו מתאר כהה
+            fn(cx, { fill: '#ffdc76', ink: '#7d4f12', cream: '#ffe28a', red: '#ffdc76' });   // צורה בהירה + קו מתאר כהה
             fn(bx, { fill: '#dcdcdc', ink: '#6e6e6e', cream: '#cfcfcf', red: '#dcdcdc' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
         const c0 = baseW / 2;
         const glyph = (name, gx, gy, gs, flip = 1) => emboss((c, st) => drawEgyptGlyph(c, name, gx, gy, gs, st, flip));
         const bar = (y, h) => {
-            cx.fillStyle = '#8d6216'; cx.fillRect(0, y, baseW, h);
+            cx.fillStyle = '#a67318'; cx.fillRect(0, y, baseW, h);
             cx.fillStyle = '#fff2b8'; cx.fillRect(0, y - 0.05, baseW, 0.05);
             bx.fillStyle = '#dcdcdc'; bx.fillRect(0, y, baseW, h);
         };
@@ -2723,9 +2723,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     const sh = (d1 > 0 ? d1 : 0) + (d2 > 0 ? d2 * 0.6 : 0);
                     m *= 1 - Math.min(0.42, sh * 1.7);
                 }
-                if (m < 0.46) m = 0.46; else if (m > 1.8) m = 1.8;
+                if (m < 0.58) m = 0.58; else if (m > 1.8) m = 1.8;
                 const o = i * 4;
-                let r = cd[o] * m * 1.10, g = cd[o + 1] * m * 1.02, b = cd[o + 2] * m * 0.88;   // גוון ענבר-זהב רווי (לא צהוב חיוור)
+                let r = cd[o] * m * 1.06, g = cd[o + 1] * m * 1.05, b = cd[o + 2] * m * 0.90;   // גוון ענבר-זהב רווי (לא צהוב חיוור)
                 if (s > 0.22) { const sp = (s - 0.22) * 230; r += sp; g += sp * 0.82; b += sp * 0.42; }   // ברק בקצוות מוארים
                 cd[o] = r > 255 ? 255 : r;
                 cd[o + 1] = g > 255 ? 255 : g;
@@ -2758,17 +2758,17 @@ window.addEventListener('DOMContentLoaded', () => {
         const g = cv.getContext('2d');
         // כדור זהב: מרכז בהיר, שוליים כהים וחמים (כמו שהמתכת "נעלמת" בקצה).
         const base = g.createRadialGradient(S * 0.5, S * 0.4, 0, S * 0.5, S * 0.5, S * 0.52);
-        base.addColorStop(0, '#fff3d4');
-        base.addColorStop(0.45, '#fbe1a2');
-        base.addColorStop(0.75, '#dca24e');
-        base.addColorStop(1, '#5a3410');
+        base.addColorStop(0, '#fff6dc');
+        base.addColorStop(0.45, '#fde7ae');
+        base.addColorStop(0.75, '#f0c35e');
+        base.addColorStop(1, '#b8782a');
         g.fillStyle = base; g.fillRect(0, 0, S, S);
         // השתקפות שמיים בהירה למעלה, וקרקע כהה למטה, עם קו אופק דק ביניהם.
         const sky = g.createLinearGradient(0, 0, 0, S * 0.45);
         sky.addColorStop(0, 'rgba(255,252,238,0.6)'); sky.addColorStop(1, 'rgba(255,252,238,0)');
         g.fillStyle = sky; g.fillRect(0, 0, S, S);
         const ground = g.createLinearGradient(0, S * 0.58, 0, S);
-        ground.addColorStop(0, 'rgba(120,66,22,0)'); ground.addColorStop(1, 'rgba(120,66,22,0.6)');
+        ground.addColorStop(0, 'rgba(120,66,22,0)'); ground.addColorStop(1, 'rgba(120,66,22,0.30)');
         g.fillStyle = ground; g.fillRect(0, 0, S, S);
         g.fillStyle = 'rgba(90,50,14,0.28)'; g.fillRect(0, S * 0.5, S, S * 0.025);
         // כתם ברק חד.
@@ -2932,7 +2932,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
             const capMat = new THREE.MeshMatcapMaterial({ color: 0xf2b448, matcap, toneMapped: false, fog: false });
-            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xfff2b0, fog: false, toneMapped: false });
+            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.7, fog: false, toneMapped: false });
 
             pyramidSpecs.forEach(s => {
                 const p = addMesh(
