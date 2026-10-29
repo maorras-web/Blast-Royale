@@ -1996,7 +1996,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // רכיבי הגלים: מספרים שלמים של מחזורים לאורך הטקסטורה = חיבור חלק בין האריחים.
         const comps = [];
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 6; i++) {
             const len = 15 + Math.random() * 17;
             const ang = 0.35 + (Math.random() - 0.5) * 1.3;
             comps.push({
@@ -2013,16 +2013,21 @@ window.addEventListener('DOMContentLoaded', () => {
             tint.push({ ax: 1 + Math.floor(Math.random() * 3), ay: 1 + Math.floor(Math.random() * 3), p: Math.random() * TAU });
         }
 
+        // טבלת סינוס: מהירה בהרבה מ-Math.sin בלולאה של רבע מיליון פיקסלים (חשוב למכשירים חלשים).
+        const LUT = new Float32Array(4096);
+        for (let i = 0; i < 4096; i++) LUT[i] = Math.sin(i * TAU / 4096);
+        const K = 4096 / TAU;
+        const sinL = a => LUT[((a * K) | 0) & 4095];
         const hgt = new Float32Array(N * N);
         for (let y = 0; y < N; y++) {
             for (let x = 0; x < N; x++) {
                 let s = 0;
                 for (let c = 0; c < comps.length; c++) {
                     const k = comps[c];
-                    let m = 0.5 + 0.5 * Math.sin(TAU * (k.mx * x + k.my * y) / N + k.q);
+                    let m = 0.5 + 0.5 * sinL(TAU * (k.mx * x + k.my * y) / N + k.q);
                     m = m * m;
-                    const warp = k.wamp * Math.sin(TAU * (k.wx * x + k.wy * y) / N + k.p);
-                    s += m * Math.sin(TAU * (k.kx * x + k.ky * y) / N + warp + k.ph);
+                    const warp = k.wamp * sinL(TAU * (k.wx * x + k.wy * y) / N + k.p);
+                    s += m * sinL(TAU * (k.kx * x + k.ky * y) / N + warp + k.ph);
                 }
                 hgt[y * N + x] = s;
             }
@@ -2033,7 +2038,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const d = hgt[((y + 1) % N) * N + ((x + 1) % N)] - hgt[i];
                 const shade = Math.max(-1, Math.min(1, d * 2.2));
                 let n = 0;
-                for (let t = 0; t < tint.length; t++) n += Math.sin(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
+                for (let t = 0; t < tint.length; t++) n += sinL(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
                 n *= 0.25;
                 const grain = (Math.random() - 0.5) * 14;
                 let r = br * (1 + 0.07 * n), g = bg * (1 + 0.07 * n), bl = bb * (1 + 0.09 * n);
@@ -2055,7 +2060,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const texture = new THREE.CanvasTexture(getSandCanvas());
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(repeatX, repeatY);
-        texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
         texture.encoding = THREE.sRGBEncoding;
         texture.minFilter = THREE.LinearMipMapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -2079,7 +2084,7 @@ window.addEventListener('DOMContentLoaded', () => {
             [16.5, -0.2, -26, 10.0, 2.7, 7.0, -0.3],
             [-2, -0.5, -34, 14, 1.6, 4.5, 0.1]
         ].forEach(([x, y, z, sx, sy, sz, rot]) => {
-            const geo = new THREE.SphereGeometry(1, 40, 20);
+            const geo = new THREE.SphereGeometry(1, 24, 12);
             geo.scale(sx, sy, sz);
             geo.rotateY(rot);
             geo.translate(x, y, z);
@@ -2533,7 +2538,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const apothem = radius / Math.SQRT2;
         const slant = Math.sqrt(height * height + apothem * apothem);
         const CW = res, CH = res;
-        const BW = Math.max(512, res / 2), BH = BW;
+        const BW = CW, BH = CH;   // קנבס גבהים זמני (נמחק אחרי חישוב ההצללה)
         const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
         const colorCanvas = mk(CW, CH), bumpCanvas = mk(BW, BH);
         const cx = colorCanvas.getContext('2d');
@@ -2559,7 +2564,7 @@ window.addEventListener('DOMContentLoaded', () => {
             sh.addColorStop(1, 'rgba(70,36,0,0)');
             cx.fillStyle = sh; cx.fillRect(0, 0, CW, CH);
         }
-        bx.fillStyle = '#808080';
+        bx.fillStyle = '#606060';
         bx.fillRect(0, 0, BW, BH);
 
         cx.setTransform(CW / baseW, 0, 0, CH / slant, 0, 0);
@@ -2574,14 +2579,14 @@ window.addEventListener('DOMContentLoaded', () => {
             while (x < baseW) {
                 const w = 1.4 + rnd() * 1.4;
                 const light = rnd() < 0.5;
-                cx.fillStyle = light ? `rgba(255,226,140,${0.03 + rnd() * 0.06})` : `rgba(70,40,4,${0.04 + rnd() * 0.08})`;
+                cx.fillStyle = light ? `rgba(255,226,140,${0.02 + rnd() * 0.04})` : `rgba(70,40,4,${0.02 + rnd() * 0.05})`;
                 cx.fillRect(x, y0, w, courseH);
-                cx.fillStyle = 'rgba(60,34,4,0.30)'; cx.fillRect(x, y0, 0.04, courseH);
-                bx.fillStyle = 'rgba(0,0,0,0.30)'; bx.fillRect(x, y0, 0.05, courseH);
+                cx.fillStyle = 'rgba(60,34,4,0.14)'; cx.fillRect(x, y0, 0.04, courseH);
+                bx.fillStyle = 'rgba(0,0,0,0.22)'; bx.fillRect(x, y0, 0.05, courseH);
                 x += w;
             }
-            cx.fillStyle = 'rgba(60,34,4,0.38)'; cx.fillRect(0, y0, baseW, 0.05);
-            bx.fillStyle = 'rgba(0,0,0,0.35)'; bx.fillRect(0, y0, baseW, 0.06);
+            cx.fillStyle = 'rgba(60,34,4,0.18)'; cx.fillRect(0, y0, baseW, 0.05);
+            bx.fillStyle = 'rgba(0,0,0,0.26)'; bx.fillRect(0, y0, baseW, 0.06);
         }
         for (let i = 0; i < 4000; i++) {
             const gx = rnd() * baseW, gy = rnd() * slant, gs = 0.03 + rnd() * 0.05;
@@ -2589,16 +2594,11 @@ window.addEventListener('DOMContentLoaded', () => {
             cx.fillRect(gx, gy, gs, gs);
         }
 
-        // תבליט: צל כהה, הדגשה בהירה, ואז הצורה עצמה. בטקסטורת הבליטה הצורה "מורמת" והפרטים חרוטים.
+        // כל צורה מצוירת פעמיים: בצבע הזהב (קנבס הצבע) ובגובה (קנבס הגבהים: הצורה "מורמת", הפרטים חרוטים).
+        // ההצללה הרכה של התבליט מחושבת פעם אחת בסוף מהגבהים, ולכן אין צורך במפת בליטה בזמן ריצה.
         const emboss = fn => {
-            cx.save(); cx.translate(0.07, 0.08);
-            fn(cx, { fill: '#5a3608', ink: '#5a3608', cream: '#5a3608', red: '#5a3608' });
-            cx.restore();
-            cx.save(); cx.translate(-0.04, -0.045);
-            fn(cx, { fill: '#fff4c4', ink: '#fff4c4', cream: '#fff4c4', red: '#fff4c4' });
-            cx.restore();
-            fn(cx, { fill: '#f4c859', ink: '#6a420c', cream: '#f8d36c', red: '#f4c859' });
-            fn(bx, { fill: '#c8c8c8', ink: '#585858', cream: '#d6d6d6', red: '#c8c8c8' });
+            fn(cx, { fill: '#ebba50', ink: '#946018', cream: '#f2c660', red: '#ebba50' });
+            fn(bx, { fill: '#dcdcdc', ink: '#6e6e6e', cream: '#cfcfcf', red: '#dcdcdc' });
         };
         const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
         const c0 = baseW / 2;
@@ -2606,7 +2606,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const bar = (y, h) => {
             cx.fillStyle = '#8d6216'; cx.fillRect(0, y, baseW, h);
             cx.fillStyle = '#fff2b8'; cx.fillRect(0, y - 0.05, baseW, 0.05);
-            bx.fillStyle = '#c8c8c8'; bx.fillRect(0, y, baseW, h);
+            bx.fillStyle = '#dcdcdc'; bx.fillRect(0, y, baseW, h);
         };
 
         // 1. מסכת פרעה במסגרת (בחלק העליון).
@@ -2636,7 +2636,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for (const sd of [-1, 1]) {
             const lx = c0 + sd * 1.15 * k;
             cx.fillStyle = '#8d6216'; cx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
-            bx.fillStyle = '#c8c8c8'; bx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
+            bx.fillStyle = '#dcdcdc'; bx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
         }
         glyph('djed', c0, slant * 0.545, 1.6 * k);
         glyph('ankh', c0, slant * 0.605, 1.6 * k);
@@ -2659,16 +2659,56 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let x = -9.5; x <= 9.5; x += 1.9) glyph(lf++ % 2 ? 'lotusBud' : 'lotus', c0 + x * k, slant * 0.97, 1.9 * k);
         bar(slant - 0.16, 0.16);
 
-        const makeTex = (canvas, srgb) => {
-            const t = new THREE.CanvasTexture(canvas);
-            t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-            if (srgb) t.encoding = THREE.sRGBEncoding;
-            t.minFilter = THREE.LinearMipMapLinearFilter;
-            t.magFilter = THREE.LinearFilter;
-            t.needsUpdate = true;
-            return t;
+        // ---- אפייה של הצללת התבליט: טשטוש הגבהים, חישוב שיפוע מול אור מלמעלה-שמאל, והחלה על הצבע ----
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        bx.setTransform(1, 0, 0, 1, 0, 0);
+        const hd = bx.getImageData(0, 0, CW, CH).data;
+        const N = CW * CH;
+        let H = new Float32Array(N), T = new Float32Array(N);
+        for (let i = 0; i < N; i++) H[i] = hd[i * 4] / 255;
+        const blurPass = (src, dst, horizontal) => {   // טשטוש קופסה ברדיוס 1, בשני כיוונים = קירוב לגאוס
+            const w = CW, hh = CH;
+            for (let y = 0; y < hh; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = y * w + x;
+                    if (horizontal) {
+                        const a0 = src[x > 0 ? i - 1 : i], a2 = src[x < w - 1 ? i + 1 : i];
+                        dst[i] = (a0 + src[i] + a2) / 3;
+                    } else {
+                        const a0 = src[y > 0 ? i - w : i], a2 = src[y < hh - 1 ? i + w : i];
+                        dst[i] = (a0 + src[i] + a2) / 3;
+                    }
+                }
+            }
         };
-        const result = { map: makeTex(colorCanvas, true), bump: makeTex(bumpCanvas, false) };
+        for (let pass = 0; pass < 2; pass++) { blurPass(H, T, true); blurPass(T, H, false); }
+
+        const cimg = cx.getImageData(0, 0, CW, CH);
+        const cd = cimg.data;
+        for (let y = 1; y < CH - 1; y++) {
+            for (let x = 1; x < CW - 1; x++) {
+                const i = y * CW + x;
+                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 3.4;   // אור מלמעלה-שמאל
+                let m = 1 + s * 0.8;
+                if (m < 0.5) m = 0.5; else if (m > 1.7) m = 1.7;
+                const o = i * 4;
+                let r = cd[o] * m, g = cd[o + 1] * m, b = cd[o + 2] * m;
+                if (s > 0.3) { const sp = (s - 0.3) * 160; r += sp; g += sp * 0.9; b += sp * 0.55; }   // ברק בקצוות מוארים
+                cd[o] = r > 255 ? 255 : r;
+                cd[o + 1] = g > 255 ? 255 : g;
+                cd[o + 2] = b > 255 ? 255 : b;
+            }
+        }
+        cx.putImageData(cimg, 0, 0);
+        bumpCanvas.width = bumpCanvas.height = 1;   // שחרור זיכרון קנבס הגבהים
+
+        const t = new THREE.CanvasTexture(colorCanvas);
+        t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        t.encoding = THREE.sRGBEncoding;
+        t.minFilter = THREE.LinearMipMapLinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        t.needsUpdate = true;
+        const result = { map: t };
         goldTexCache[cacheKey] = result;
         return result;
     }
@@ -2810,15 +2850,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isSand) {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
-            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 1024);
-            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 2048);   // הפירמידה המרכזית: רזולוציה כפולה לפרטי התבליט
+            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 512);
+            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // המרכזית 1024, הצדדיות 512: מספיק לגודל על המסך וקל לזיכרון
             // זהב מבריק: הטקסטורה גם מאירה קלות (emissiveMap) כדי שהתבליט ייראה זוהר גם בצד הצל.
             const goldMat = tex => new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 map: tex.map,
-                bumpMap: tex.bump,
-                bumpScale: 2.6,
-                roughness: 0.36,
+                roughness: 0.34,
                 metalness: 0.12,
                 emissive: 0x2a1600,
                 fog: false   // ללא ערפל: הזהב נשאר רווי ולא מחוויר (הערפל הוסיף כחול ועשה אותן "אבן חול")
@@ -2826,10 +2864,10 @@ window.addEventListener('DOMContentLoaded', () => {
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
             const capMat = new THREE.MeshStandardMaterial({
-                color: 0xe0a53a,
+                color: 0xc98a2a,
                 roughness: 0.28,
                 metalness: 0.2,
-                emissive: 0x4a2e00,
+                emissive: 0x2a1800,
                 fog: false
             });
             const ridgeMat = new THREE.LineBasicMaterial({ color: 0xffe9a0, fog: false });
