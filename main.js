@@ -2576,6 +2576,15 @@ window.addEventListener('DOMContentLoaded', () => {
         refl(0.45, 0.08, '90,45,0', 0.20);
         refl(0.66, 0.10, '255,240,170', 0.18);
         refl(0.88, 0.08, '90,45,0', 0.18);
+        // עומק: כהות עדינה בבסיס ובשני הצדדים של הפאה (כמו חלל מוצל בין הפירמידה לקרקע ובין הפאות).
+        const baseShade = cx.createLinearGradient(0, CH * 0.9, 0, CH);
+        baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.38)');
+        cx.fillStyle = baseShade; cx.fillRect(0, 0, CW, CH);
+        for (const sd of [0, 1]) {
+            const eg = cx.createLinearGradient(CW * sd, 0, CW * (sd ? 0.9 : 0.1), 0);
+            eg.addColorStop(0, 'rgba(60,30,0,0.22)'); eg.addColorStop(1, 'rgba(60,30,0,0)');
+            cx.fillStyle = eg; cx.fillRect(0, 0, CW, CH);
+        }
         bx.fillStyle = '#606060';
         bx.fillRect(0, 0, BW, BH);
 
@@ -2695,6 +2704,7 @@ window.addEventListener('DOMContentLoaded', () => {
         };
         for (let pass = 0; pass < 2; pass++) { blurPass(H, T, true); blurPass(T, H, false); }
 
+        const so = Math.max(2, Math.round(CW / 256)), sh2 = so >> 1;   // מרחק הצל המוטל (בפיקסלים)
         const cimg = cx.getImageData(0, 0, CW, CH);
         const cd = cimg.data;
         for (let y = 1; y < CH - 1; y++) {
@@ -2702,6 +2712,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 const i = y * CW + x;
                 const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 4.4;   // אור מלמעלה-שמאל
                 let m = 1 + s * 1.0;
+                if (x > so && y > so) {   // צל מוטל: בליטה שמעל הפיקסל מצד שמאל-למעלה מטילה עליו צל
+                    const d1 = H[i - so * CW - so] - H[i] - 0.10;
+                    const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.10;
+                    const sh = (d1 > 0 ? d1 : 0) + (d2 > 0 ? d2 * 0.6 : 0);
+                    m *= 1 - Math.min(0.32, sh * 1.3);
+                }
                 if (m < 0.42) m = 0.42; else if (m > 1.75) m = 1.75;
                 const o = i * 4;
                 let r = cd[o] * m, g = cd[o + 1] * m, b = cd[o + 2] * m;
@@ -2726,7 +2742,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // זהב מתכתי נוצץ: חומר Matcap (בלי חישובי תאורה = קל למכשירים חלשים) + ניצוצות מתנצנצים
+    // זהב מתכתי: חומר Matcap (בלי חישובי תאורה = קל למכשירים חלשים)
     // ==========================================
     let goldMatcapTex = null;
     function createGoldMatcap() {
@@ -2757,65 +2773,6 @@ window.addEventListener('DOMContentLoaded', () => {
         goldMatcapTex = new THREE.CanvasTexture(cv);
         goldMatcapTex.encoding = THREE.sRGBEncoding;
         return goldMatcapTex;
-    }
-
-    let goldGlints = [];
-    let glintCanvas = null;
-    function createGlintTexture() {
-        if (!glintCanvas) {
-            const S = 64;
-            glintCanvas = document.createElement('canvas');
-            glintCanvas.width = glintCanvas.height = S;
-            const g = glintCanvas.getContext('2d');
-            const glow = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
-            glow.addColorStop(0, 'rgba(255,248,210,1)'); glow.addColorStop(0.25, 'rgba(255,214,120,0.55)'); glow.addColorStop(1, 'rgba(255,190,80,0)');
-            g.fillStyle = glow; g.fillRect(0, 0, S, S);
-            g.strokeStyle = 'rgba(255,250,225,0.95)'; g.lineCap = 'round';
-            g.lineWidth = 2; g.beginPath(); g.moveTo(S / 2, 2); g.lineTo(S / 2, S - 2); g.moveTo(2, S / 2); g.lineTo(S - 2, S / 2); g.stroke();
-            g.lineWidth = 1; g.beginPath(); g.moveTo(S * 0.28, S * 0.28); g.lineTo(S * 0.72, S * 0.72); g.moveTo(S * 0.72, S * 0.28); g.lineTo(S * 0.28, S * 0.72); g.stroke();
-        }
-        const t = new THREE.CanvasTexture(glintCanvas);
-        t.encoding = THREE.sRGBEncoding;
-        return t;
-    }
-
-    // ניצוצות בקודקוד ועל המקצועות הקדמיים של כל פירמידה; כל ניצוץ מתנצנץ בקצב ובפאזה משלו.
-    function addGoldGlints(specs) {
-        goldGlints = [];
-        const tex = createGlintTexture();
-        specs.forEach((s, pi) => {
-            const apex = new THREE.Vector3(s.x, s.y + s.h / 2, s.z + 0.4);
-            const gy = s.y - s.h / 2, off = s.r * Math.SQRT1_2;
-            const points = [[apex, 2.6]];
-            [[-1, 0.4], [1, 0.62], [-1, 0.8]].forEach(([side, t]) => {
-                const corner = new THREE.Vector3(s.x + side * off, gy, s.z + off + 0.3);
-                points.push([apex.clone().lerp(corner, t), 1.5]);
-            });
-            points.forEach(([pos, size], i) => {
-                const mat = new THREE.SpriteMaterial({
-                    map: tex, color: 0xfff0b8, blending: THREE.AdditiveBlending,
-                    transparent: true, depthWrite: false, fog: false, opacity: 0.8
-                });
-                const sp = new THREE.Sprite(mat);
-                sp.position.copy(pos);
-                sp.scale.set(size, size, 1);
-                mapGroup.add(sp);
-                goldGlints.push({ sp, base: size * (pi === 2 ? 1.25 : 1), speed: 0.9 + ((pi * 4 + i) % 5) * 0.28, phase: (pi * 1.7 + i * 2.3) });
-            });
-        });
-    }
-
-    function updateGoldGlints(time) {
-        if (!goldGlints.length) return;
-        const t = time * 0.001;
-        for (let i = 0; i < goldGlints.length; i++) {
-            const g = goldGlints[i];
-            const p = 0.5 + 0.5 * Math.sin(t * g.speed + g.phase);
-            const q = p * p * p;                       // נצנוץ חד: רוב הזמן חלש, ולפרקים בוהק
-            const sc = g.base * (0.3 + 0.9 * q);
-            g.sp.scale.set(sc, sc, 1);
-            g.sp.material.opacity = 0.2 + 0.8 * q;
-        }
     }
 
     // גיאומטריית פירמידה שבה כל פאה ממפה את הטקסטורה במלואה (פעם אחת), כדי שהציורים ייראו על כל פאה.
@@ -2866,7 +2823,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const isSand = mapId === 'sand';
         const theme = 'desert'; // שמיים/שמש/ערפל משותפים לשתי המפות; ההבדל: דשא + פירמידות סלע מול חול + פירמידות זהב
         clearMapGroup();
-        goldGlints = [];
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
@@ -2992,7 +2948,25 @@ window.addEventListener('DOMContentLoaded', () => {
                 );
                 cap.rotation.y = Math.PI / 4;
             });
-            addGoldGlints(pyramidSpecs);   // ניצוצות מתנצנצים בקודקודים ובמקצועות
+
+            // צל מגע רך על החול בבסיס כל פירמידה: מקרקע אותן ונותן תחושת עומק.
+            const shadowCv = document.createElement('canvas');
+            shadowCv.width = 4; shadowCv.height = 64;
+            const sg = shadowCv.getContext('2d');
+            const sGrad = sg.createLinearGradient(0, 0, 0, 64);
+            sGrad.addColorStop(0, 'rgba(50,25,0,0.5)'); sGrad.addColorStop(0.5, 'rgba(50,25,0,0.18)'); sGrad.addColorStop(1, 'rgba(50,25,0,0)');
+            sg.fillStyle = sGrad; sg.fillRect(0, 0, 4, 64);
+            const shadowMat = new THREE.MeshBasicMaterial({
+                map: new THREE.CanvasTexture(shadowCv), transparent: true, depthWrite: false, fog: false,
+                polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
+            });
+            pyramidSpecs.forEach(s => {
+                const side = s.r * Math.SQRT2, frontZ = s.z + s.r * Math.SQRT1_2;
+                const sp = new THREE.Mesh(new THREE.PlaneGeometry(side * 1.12, 3.4), shadowMat);
+                sp.rotation.x = -Math.PI / 2;
+                sp.position.set(s.x, 0.07, frontZ + 1.7);
+                mapGroup.add(sp);
+            });
         } else {
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
@@ -8753,7 +8727,6 @@ window.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         if (grassWind) grassWind.uTime.value = time * 0.001;
         if (!isPaused) updateSkyTraffic(time);
-        updateGoldGlints(time);
 
         if (!isGameStarted || isPaused || isGameOver || awaitingStart) {
             renderer.render(scene, camera);
