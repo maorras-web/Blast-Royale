@@ -23,9 +23,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // GOLD_* = גווני הזהב של הפירמידות (קודקוד / אמצע / בסיס).
     const SAND_COLOR = 0x8a6428;
     const SAND_TEXTURE = '#e2b25c';
-    const GOLD_LIGHT = '#d89a40';
-    const GOLD_MID = '#c98d3b';
-    const GOLD_DARK = '#a8742c';
+    const GOLD_LIGHT = '#e0a640';
+    const GOLD_MID = '#d19a40';
+    const GOLD_DARK = '#b0782c';
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
@@ -2555,7 +2555,7 @@ window.addEventListener('DOMContentLoaded', () => {
         cx.fillStyle = grad;
         cx.fillRect(0, 0, CW, CH);
         const sheen = cx.createRadialGradient(CW * 0.5, CH * 0.5, 0, CW * 0.5, CH * 0.5, CW * 0.75);
-        sheen.addColorStop(0, 'rgba(255,236,160,0.20)');
+        sheen.addColorStop(0, 'rgba(255,236,160,0.10)');
         sheen.addColorStop(1, 'rgba(255,236,160,0)');
         cx.fillStyle = sheen; cx.fillRect(0, 0, CW, CH);
         for (const px of [0, CW]) {
@@ -2564,6 +2564,18 @@ window.addEventListener('DOMContentLoaded', () => {
             sh.addColorStop(1, 'rgba(70,36,0,0)');
             cx.fillStyle = sh; cx.fillRect(0, 0, CW, CH);
         }
+        // "השתקפויות" רחבות על המתכת: פסים אלכסוניים בהירים וכהים לסירוגין.
+        const refl = (pos, w, rgb, a) => {
+            const gr = cx.createLinearGradient(0, 0, CW, CH * 0.55);
+            gr.addColorStop(Math.max(0, pos - w), `rgba(${rgb},0)`);
+            gr.addColorStop(pos, `rgba(${rgb},${a})`);
+            gr.addColorStop(Math.min(1, pos + w), `rgba(${rgb},0)`);
+            cx.fillStyle = gr; cx.fillRect(0, 0, CW, CH);
+        };
+        refl(0.22, 0.10, '255,240,170', 0.22);
+        refl(0.45, 0.08, '90,45,0', 0.20);
+        refl(0.66, 0.10, '255,240,170', 0.18);
+        refl(0.88, 0.08, '90,45,0', 0.18);
         bx.fillStyle = '#606060';
         bx.fillRect(0, 0, BW, BH);
 
@@ -2688,12 +2700,12 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let y = 1; y < CH - 1; y++) {
             for (let x = 1; x < CW - 1; x++) {
                 const i = y * CW + x;
-                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 3.4;   // אור מלמעלה-שמאל
-                let m = 1 + s * 0.8;
-                if (m < 0.5) m = 0.5; else if (m > 1.7) m = 1.7;
+                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 4.4;   // אור מלמעלה-שמאל
+                let m = 1 + s * 1.0;
+                if (m < 0.42) m = 0.42; else if (m > 1.75) m = 1.75;
                 const o = i * 4;
                 let r = cd[o] * m, g = cd[o + 1] * m, b = cd[o + 2] * m;
-                if (s > 0.3) { const sp = (s - 0.3) * 160; r += sp; g += sp * 0.9; b += sp * 0.55; }   // ברק בקצוות מוארים
+                if (s > 0.22) { const sp = (s - 0.22) * 210; r += sp; g += sp * 0.9; b += sp * 0.55; }   // ברק בקצוות מוארים
                 cd[o] = r > 255 ? 255 : r;
                 cd[o + 1] = g > 255 ? 255 : g;
                 cd[o + 2] = b > 255 ? 255 : b;
@@ -2711,6 +2723,99 @@ window.addEventListener('DOMContentLoaded', () => {
         const result = { map: t };
         goldTexCache[cacheKey] = result;
         return result;
+    }
+
+    // ==========================================
+    // זהב מתכתי נוצץ: חומר Matcap (בלי חישובי תאורה = קל למכשירים חלשים) + ניצוצות מתנצנצים
+    // ==========================================
+    let goldMatcapTex = null;
+    function createGoldMatcap() {
+        if (goldMatcapTex) return goldMatcapTex;
+        const S = 128;
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = S;
+        const g = cv.getContext('2d');
+        // כדור זהב: מרכז בהיר, שוליים כהים וחמים (כמו שהמתכת "נעלמת" בקצה).
+        const base = g.createRadialGradient(S * 0.5, S * 0.4, 0, S * 0.5, S * 0.5, S * 0.52);
+        base.addColorStop(0, '#fffaf0');
+        base.addColorStop(0.45, '#fdeec8');
+        base.addColorStop(0.75, '#e2b068');
+        base.addColorStop(1, '#6e4218');
+        g.fillStyle = base; g.fillRect(0, 0, S, S);
+        // השתקפות שמיים בהירה למעלה, וקרקע כהה למטה, עם קו אופק דק ביניהם.
+        const sky = g.createLinearGradient(0, 0, 0, S * 0.45);
+        sky.addColorStop(0, 'rgba(255,252,238,0.6)'); sky.addColorStop(1, 'rgba(255,252,238,0)');
+        g.fillStyle = sky; g.fillRect(0, 0, S, S);
+        const ground = g.createLinearGradient(0, S * 0.58, 0, S);
+        ground.addColorStop(0, 'rgba(120,66,22,0)'); ground.addColorStop(1, 'rgba(120,66,22,0.6)');
+        g.fillStyle = ground; g.fillRect(0, 0, S, S);
+        g.fillStyle = 'rgba(90,50,14,0.28)'; g.fillRect(0, S * 0.5, S, S * 0.025);
+        // כתם ברק חד.
+        const hl = g.createRadialGradient(S * 0.36, S * 0.28, 0, S * 0.36, S * 0.28, S * 0.16);
+        hl.addColorStop(0, 'rgba(255,255,255,0.95)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = hl; g.fillRect(0, 0, S, S);
+        goldMatcapTex = new THREE.CanvasTexture(cv);
+        goldMatcapTex.encoding = THREE.sRGBEncoding;
+        return goldMatcapTex;
+    }
+
+    let goldGlints = [];
+    let glintCanvas = null;
+    function createGlintTexture() {
+        if (!glintCanvas) {
+            const S = 64;
+            glintCanvas = document.createElement('canvas');
+            glintCanvas.width = glintCanvas.height = S;
+            const g = glintCanvas.getContext('2d');
+            const glow = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+            glow.addColorStop(0, 'rgba(255,248,210,1)'); glow.addColorStop(0.25, 'rgba(255,214,120,0.55)'); glow.addColorStop(1, 'rgba(255,190,80,0)');
+            g.fillStyle = glow; g.fillRect(0, 0, S, S);
+            g.strokeStyle = 'rgba(255,250,225,0.95)'; g.lineCap = 'round';
+            g.lineWidth = 2; g.beginPath(); g.moveTo(S / 2, 2); g.lineTo(S / 2, S - 2); g.moveTo(2, S / 2); g.lineTo(S - 2, S / 2); g.stroke();
+            g.lineWidth = 1; g.beginPath(); g.moveTo(S * 0.28, S * 0.28); g.lineTo(S * 0.72, S * 0.72); g.moveTo(S * 0.72, S * 0.28); g.lineTo(S * 0.28, S * 0.72); g.stroke();
+        }
+        const t = new THREE.CanvasTexture(glintCanvas);
+        t.encoding = THREE.sRGBEncoding;
+        return t;
+    }
+
+    // ניצוצות בקודקוד ועל המקצועות הקדמיים של כל פירמידה; כל ניצוץ מתנצנץ בקצב ובפאזה משלו.
+    function addGoldGlints(specs) {
+        goldGlints = [];
+        const tex = createGlintTexture();
+        specs.forEach((s, pi) => {
+            const apex = new THREE.Vector3(s.x, s.y + s.h / 2, s.z + 0.4);
+            const gy = s.y - s.h / 2, off = s.r * Math.SQRT1_2;
+            const points = [[apex, 2.6]];
+            [[-1, 0.4], [1, 0.62], [-1, 0.8]].forEach(([side, t]) => {
+                const corner = new THREE.Vector3(s.x + side * off, gy, s.z + off + 0.3);
+                points.push([apex.clone().lerp(corner, t), 1.5]);
+            });
+            points.forEach(([pos, size], i) => {
+                const mat = new THREE.SpriteMaterial({
+                    map: tex, color: 0xfff0b8, blending: THREE.AdditiveBlending,
+                    transparent: true, depthWrite: false, fog: false, opacity: 0.8
+                });
+                const sp = new THREE.Sprite(mat);
+                sp.position.copy(pos);
+                sp.scale.set(size, size, 1);
+                mapGroup.add(sp);
+                goldGlints.push({ sp, base: size * (pi === 2 ? 1.25 : 1), speed: 0.9 + ((pi * 4 + i) % 5) * 0.28, phase: (pi * 1.7 + i * 2.3) });
+            });
+        });
+    }
+
+    function updateGoldGlints(time) {
+        if (!goldGlints.length) return;
+        const t = time * 0.001;
+        for (let i = 0; i < goldGlints.length; i++) {
+            const g = goldGlints[i];
+            const p = 0.5 + 0.5 * Math.sin(t * g.speed + g.phase);
+            const q = p * p * p;                       // נצנוץ חד: רוב הזמן חלש, ולפרקים בוהק
+            const sc = g.base * (0.3 + 0.9 * q);
+            g.sp.scale.set(sc, sc, 1);
+            g.sp.material.opacity = 0.2 + 0.8 * q;
+        }
     }
 
     // גיאומטריית פירמידה שבה כל פאה ממפה את הטקסטורה במלואה (פעם אחת), כדי שהציורים ייראו על כל פאה.
@@ -2761,6 +2866,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const isSand = mapId === 'sand';
         const theme = 'desert'; // שמיים/שמש/ערפל משותפים לשתי המפות; ההבדל: דשא + פירמידות סלע מול חול + פירמידות זהב
         clearMapGroup();
+        goldGlints = [];
 
         // עומק סביבתי נבנה לפני הקרקע והפריטים, כדי שהעולם ירגיש
         // כמו סביבה שלמה ולא רק אוסף אובייקטים.
@@ -2852,25 +2958,20 @@ window.addEventListener('DOMContentLoaded', () => {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
             const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 512);
             const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // המרכזית 1024, הצדדיות 512: מספיק לגודל על המסך וקל לזיכרון
-            // זהב מבריק: הטקסטורה גם מאירה קלות (emissiveMap) כדי שהתבליט ייראה זוהר גם בצד הצל.
-            const goldMat = tex => new THREE.MeshStandardMaterial({
+            // זהב מתכתי: Matcap = כדור זהב מצויר מראש; לא תלוי באורות הסצנה, לכן לא מחוויר ונשאר זול לחישוב.
+            // toneMapped:false = הצבע יוצא בדיוק כמו שצויר.
+            const matcap = createGoldMatcap();
+            const goldMat = tex => new THREE.MeshMatcapMaterial({
                 color: 0xffffff,
                 map: tex.map,
-                roughness: 0.34,
-                metalness: 0.12,
-                emissive: 0x2a1600,
-                fog: false   // ללא ערפל: הזהב נשאר רווי ולא מחוויר (הערפל הוסיף כחול ועשה אותן "אבן חול")
+                matcap,
+                toneMapped: false,
+                fog: false
             });
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
-            const capMat = new THREE.MeshStandardMaterial({
-                color: 0xc98a2a,
-                roughness: 0.28,
-                metalness: 0.2,
-                emissive: 0x2a1800,
-                fog: false
-            });
-            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xffe9a0, fog: false });
+            const capMat = new THREE.MeshMatcapMaterial({ color: 0xffd36b, matcap, toneMapped: false, fog: false });
+            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xfff2b0, fog: false, toneMapped: false });
 
             pyramidSpecs.forEach(s => {
                 const p = addMesh(
@@ -2891,6 +2992,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 );
                 cap.rotation.y = Math.PI / 4;
             });
+            addGoldGlints(pyramidSpecs);   // ניצוצות מתנצנצים בקודקודים ובמקצועות
         } else {
             // פירמידות סלע ענקיות: שתיים מסגרות משני הצדדים ואחת גדולה ברקע.
             // הן ממוקמות מחוץ לשביל, והשטח שבו התותח והסלעים זזים נשאר פנוי.
@@ -8651,6 +8753,7 @@ window.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animate);
         if (grassWind) grassWind.uTime.value = time * 0.001;
         if (!isPaused) updateSkyTraffic(time);
+        updateGoldGlints(time);
 
         if (!isGameStarted || isPaused || isGameOver || awaitingStart) {
             renderer.render(scene, camera);
