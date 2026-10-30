@@ -23,9 +23,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // GOLD_* = גווני הזהב של הפירמידות (קודקוד / אמצע / בסיס).
     const SAND_COLOR = 0x8a6428;
     const SAND_TEXTURE = '#e2b25c';
-    const GOLD_LIGHT = '#e0a640';
-    const GOLD_MID = '#d19a40';
-    const GOLD_DARK = '#b0782c';
+    const GOLD_LIGHT = '#d9983a';
+    const GOLD_MID = '#c98c34';
+    const GOLD_DARK = '#e6b64e';
 
     // ערפל אווירי: הצבע קרוב לצבע האופק של שמיים השקיעה, כך שהמרחק "נבלע" בשמיים.
     // עד FOG_NEAR (מרחק מהמצלמה) אין ערפל בכלל, ומשם הוא מתגבר בהדרגה עד FOG_FAR.
@@ -836,9 +836,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
             let height = waveA + waveB + waveC;
 
-            // משאירים את האזור שמתחת לקנון כמעט שטוח.
-            const centerDistance = Math.hypot(x / 5.0, z / 3.8);
-            const centerWeight = THREE.MathUtils.smoothstep(centerDistance, 0.25, 1.0);
+            // רצועה שטוחה לחלוטין לכל רוחב תנועת התותח (|x| עד ~6.2) ולעומק הגלגלים, כדי שהגלגלים
+            // לא ייכנסו לגבשושית; מחוץ לה הגלים חוזרים בהדרגה.
+            const flatDx = Math.max(0, Math.abs(x) - 6.2) / 3.5;
+            const flatDz = Math.max(0, Math.abs(z) - 2.8) / 3.0;
+            const centerWeight = THREE.MathUtils.smoothstep(Math.hypot(flatDx, flatDz), 0.0, 1.0);
             height *= centerWeight;
 
             if (mapId === 'ice') {
@@ -1997,12 +1999,12 @@ window.addEventListener('DOMContentLoaded', () => {
         // רכיבי הגלים: מספרים שלמים של מחזורים לאורך הטקסטורה = חיבור חלק בין האריחים.
         const comps = [];
         for (let i = 0; i < 6; i++) {
-            const len = 3.5 + Math.random() * 5;   // אדוות רחבות ורכות כמו בתמונת המטרה (פחות מחזורים בכל אריח)
+            const len = 15 + Math.random() * 17;
             const ang = 0.35 + (Math.random() - 0.5) * 1.3;
             comps.push({
                 kx: Math.round(len * Math.cos(ang)), ky: Math.round(len * Math.sin(ang)),
                 wx: 1 + Math.floor(Math.random() * 3), wy: 1 + Math.floor(Math.random() * 3),
-                p: Math.random() * TAU, wamp: 1.0 + Math.random() * 1.8,
+                p: Math.random() * TAU, wamp: 1.2 + Math.random() * 2.2,
                 mx: 1 + Math.floor(Math.random() * 2), my: 1 + Math.floor(Math.random() * 2), q: Math.random() * TAU,
                 ph: Math.random() * TAU
             });
@@ -2036,14 +2038,14 @@ window.addEventListener('DOMContentLoaded', () => {
             for (let x = 0; x < N; x++) {
                 const i = y * N + x;
                 const d = hgt[((y + 1) % N) * N + ((x + 1) % N)] - hgt[i];
-                const shade = Math.max(-1, Math.min(1, d * 4.5));
+                const shade = Math.max(-1, Math.min(1, d * 2.2));
                 let n = 0;
                 for (let t = 0; t < tint.length; t++) n += sinL(TAU * (tint[t].ax * x + tint[t].ay * y) / N + tint[t].p);
                 n *= 0.25;
-                const grain = (Math.random() - 0.5) * 7;
+                const grain = (Math.random() - 0.5) * 14;
                 let r = br * (1 + 0.07 * n), g = bg * (1 + 0.07 * n), bl = bb * (1 + 0.09 * n);
-                if (shade > 0) { r += shade * 20; g += shade * 19; bl += shade * 15; }
-                else { r += shade * 28; g += shade * 31; bl += shade * 30; }
+                if (shade > 0) { r += shade * 22; g += shade * 20; bl += shade * 16; }
+                else { r += shade * 34; g += shade * 40; bl += shade * 38; }
                 const o = i * 4;
                 img.data[o] = Math.max(0, Math.min(255, r + grain));
                 img.data[o + 1] = Math.max(0, Math.min(255, g + grain));
@@ -2233,7 +2235,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 c.beginPath(); c.arc(0, 0, 0.22, 0, Math.PI * 2); c.fillStyle = st.red; c.fill(); stroke(0.08);
                 break;
             }
-            case 'mask': {   // מסכת פרעה (בסגנון טוטנחאמון) במסגרת כפולה
+            case 'mask': {   // מסכת פרעה (בסגנון טוטנחאמון) במסגרת כפולה, צרה וגבוהה
+                c.scale(0.86, 1);
                 const r = 0.2;
                 const frame = (m) => {
                     c.beginPath();
@@ -2525,16 +2528,11 @@ window.addEventListener('DOMContentLoaded', () => {
         c.restore();
     }
 
-    // טקסטורת פאה אחת של פירמידה מוזהבת בסגנון תבליט מצרי: אבני גוש + מסכת פרעה, עמודות הירוגליפים,
-    // שורת אלים (אנוביס, חורוס, חתחור, פרעה), זרי פפירוס ופס לוטוסים בבסיס.
-    // הציור נעשה ביחידות עולם (x לאורך הבסיס, y משיא הפירמידה כלפי מטה) ולכן הפרופורציות נשמרות על הפאה.
-    // res = רזולוציית הטקסטורה (הפירמידה המרכזית 2048, הצדדיות 1024); מפת הבליטה בחצי רזולוציה.
+    // טקסטורת פאה אחת של פירמידה מוזהבת בסגנון תבליט מצרי (כמו בתמונת המטרה): זהב חלק ומלוטש עם מעברי אור רחבים,
+    // מסכת פרעה, "קיר" צפוף של עמודות הירוגליפים, שורת אלים גבוהה עם זרי פפירוס ופס לוטוסים.
+    // הציור ביחידות עולם (x לאורך הבסיס, y משיא הפירמידה כלפי מטה), לכן הפרופורציות נשמרות על הפאה.
+    // התבליט נאפה פעם אחת: מפת גבהים -> הצללה + צל מוטל, ללא מפת בליטה בזמן ריצה (קל למכשירים חלשים).
     const goldTexCache = {};
-    // מכשיר חלש = מעט זיכרון/ליבות: הטקסטורות נאפות ברזולוציה נמוכה יותר (בדיקה: ?lowfx=1 בכתובת)
-    const LOW_END_DEVICE = (new URLSearchParams(location.search).get('lowfx') === '1')
-        || (navigator.deviceMemory && navigator.deviceMemory <= 3)
-        || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-    const GOLD_RES_SCALE = LOW_END_DEVICE ? 0.75 : 1;
     function createGoldPyramidTextures(radius, height, seed, res = 1024) {
         const cacheKey = radius + '_' + height + '_' + seed + '_' + res;
         if (goldTexCache[cacheKey]) return goldTexCache[cacheKey];
@@ -2543,33 +2541,25 @@ window.addEventListener('DOMContentLoaded', () => {
         const apothem = radius / Math.SQRT2;
         const slant = Math.sqrt(height * height + apothem * apothem);
         const CW = res, CH = res;
-        const BW = CW, BH = CH;   // קנבס גבהים זמני (נמחק אחרי חישוב ההצללה)
-        const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
-        const colorCanvas = mk(CW, CH), bumpCanvas = mk(BW, BH);
+        const mk = () => { const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; return cv; };
+        const colorCanvas = mk(), heightCanvas = mk();
         const cx = colorCanvas.getContext('2d');
-        const bx = bumpCanvas.getContext('2d');
+        const bx = heightCanvas.getContext('2d');
 
         let rs = (seed * 7919 + 12345) % 2147483647 || 1;
         const rnd = () => { rs = (rs * 48271) % 2147483647; return rs / 2147483647; };
 
-        // זהב: גרדיאנט עדין + "ברק" רחב באמצע וכהות בפינות התחתונות.
+        // ---- בסיס זהב חלק: עמוק וכתום למעלה ובאמצע, בהיר וזוהר למטה (השתקפות החול והשמש) ----
         const grad = cx.createLinearGradient(0, 0, 0, CH);
-        grad.addColorStop(0, '#f0bc45');     // זהב מלוטש בהיר (כמו בהמחשה): צהוב-זהוב, לא חום-ענבר
-        grad.addColorStop(0.5, '#e0a634');
-        grad.addColorStop(1, '#a96f22');
+        grad.addColorStop(0, GOLD_LIGHT);
+        grad.addColorStop(0.45, GOLD_MID);
+        grad.addColorStop(1, GOLD_DARK);
         cx.fillStyle = grad;
         cx.fillRect(0, 0, CW, CH);
-        const sheen = cx.createRadialGradient(CW * 0.5, CH * 0.5, 0, CW * 0.5, CH * 0.5, CW * 0.75);
-        sheen.addColorStop(0, 'rgba(255,240,170,0.18)');
-        sheen.addColorStop(1, 'rgba(255,236,160,0)');
-        cx.fillStyle = sheen; cx.fillRect(0, 0, CW, CH);
-        for (const px of [0, CW]) {
-            const sh = cx.createRadialGradient(px, CH, 0, px, CH, CW * 0.6);
-            sh.addColorStop(0, 'rgba(70,36,0,0.28)');
-            sh.addColorStop(1, 'rgba(70,36,0,0)');
-            cx.fillStyle = sh; cx.fillRect(0, 0, CW, CH);
-        }
-        // "השתקפויות" רחבות על המתכת: פסים אלכסוניים בהירים וכהים לסירוגין.
+        const glow = cx.createRadialGradient(CW * 0.5, CH * 0.88, 0, CW * 0.5, CH * 0.88, CW * 0.55);
+        glow.addColorStop(0, 'rgba(255,236,150,0.30)'); glow.addColorStop(1, 'rgba(255,236,150,0)');
+        cx.fillStyle = glow; cx.fillRect(0, 0, CW, CH);
+        // השתקפויות רחבות על המתכת: פסים אלכסוניים בהירים וכהים לסירוגין.
         const refl = (pos, w, rgb, a) => {
             const gr = cx.createLinearGradient(0, 0, CW, CH * 0.55);
             gr.addColorStop(Math.max(0, pos - w), `rgba(${rgb},0)`);
@@ -2577,166 +2567,155 @@ window.addEventListener('DOMContentLoaded', () => {
             gr.addColorStop(Math.min(1, pos + w), `rgba(${rgb},0)`);
             cx.fillStyle = gr; cx.fillRect(0, 0, CW, CH);
         };
-        refl(0.22, 0.10, '255,244,180', 0.32);
-        refl(0.45, 0.08, '90,45,0', 0.11);
-        refl(0.66, 0.10, '255,244,180', 0.28);
-        refl(0.88, 0.08, '90,45,0', 0.10);
-        // עומק: כהות עדינה בבסיס ובשני הצדדים של הפאה (כמו חלל מוצל בין הפירמידה לקרקע ובין הפאות).
-        const baseShade = cx.createLinearGradient(0, CH * 0.9, 0, CH);
-        baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.20)');
+        refl(0.20, 0.11, '255,240,170', 0.30);
+        refl(0.44, 0.09, '95,48,0', 0.22);
+        refl(0.66, 0.11, '255,240,170', 0.24);
+        refl(0.88, 0.09, '95,48,0', 0.20);
+        // כהות עדינה בבסיס ובשני צידי הפאה.
+        const baseShade = cx.createLinearGradient(0, CH * 0.94, 0, CH);
+        baseShade.addColorStop(0, 'rgba(60,30,0,0)'); baseShade.addColorStop(1, 'rgba(60,30,0,0.22)');
         cx.fillStyle = baseShade; cx.fillRect(0, 0, CW, CH);
         for (const sd of [0, 1]) {
             const eg = cx.createLinearGradient(CW * sd, 0, CW * (sd ? 0.9 : 0.1), 0);
-            eg.addColorStop(0, 'rgba(60,30,0,0.10)'); eg.addColorStop(1, 'rgba(60,30,0,0)');
+            eg.addColorStop(0, 'rgba(60,30,0,0.12)'); eg.addColorStop(1, 'rgba(60,30,0,0)');
             cx.fillStyle = eg; cx.fillRect(0, 0, CW, CH);
         }
         bx.fillStyle = '#606060';
-        bx.fillRect(0, 0, BW, BH);
+        bx.fillRect(0, 0, CW, CH);
 
         cx.setTransform(CW / baseW, 0, 0, CH / slant, 0, 0);
-        bx.setTransform(BW / baseW, 0, 0, BH / slant, 0, 0);
+        bx.setTransform(CW / baseW, 0, 0, CH / slant, 0, 0);
 
-        // אבני גוש עדינות.
-        const courseH = 0.95;
-        const courses = Math.ceil(slant / courseH);
-        for (let i = 0; i < courses; i++) {
-            const y0 = i * courseH;
-            let x = -rnd() * 1.5;
-            while (x < baseW) {
-                const w = 1.4 + rnd() * 1.4;
-                const light = rnd() < 0.5;
-                cx.fillStyle = light ? `rgba(255,226,140,${0.01 + rnd() * 0.02})` : `rgba(70,40,4,${0.01 + rnd() * 0.025})`;
-                cx.fillRect(x, y0, w, courseH);
-                cx.fillStyle = 'rgba(60,34,4,0.035)'; cx.fillRect(x, y0, 0.04, courseH);
-                bx.fillStyle = 'rgba(0,0,0,0.05)'; bx.fillRect(x, y0, 0.05, courseH);
-                x += w;
-            }
-            cx.fillStyle = 'rgba(60,34,4,0.045)'; cx.fillRect(0, y0, baseW, 0.05);
-            bx.fillStyle = 'rgba(0,0,0,0.06)'; bx.fillRect(0, y0, baseW, 0.06);
+        // שורות אבן אופקיות בלבד, עדינות מאוד (בתמונת המטרה המשטח חלק, ללא תבנית לבנים).
+        const courseH = 1.9;
+        for (let y0 = courseH; y0 < slant; y0 += courseH) {
+            cx.fillStyle = 'rgba(80,44,4,0.06)'; cx.fillRect(0, y0, baseW, 0.04);
+            bx.fillStyle = 'rgba(0,0,0,0.08)'; bx.fillRect(0, y0, baseW, 0.05);
         }
-        for (let i = 0; i < 4000; i++) {
-            const gx = rnd() * baseW, gy = rnd() * slant, gs = 0.03 + rnd() * 0.05;
-            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.30)' : 'rgba(90,56,8,0.12)';
+        for (let i = 0; i < 2500; i++) {
+            const gx = rnd() * baseW, gy = rnd() * slant, gs = 0.03 + rnd() * 0.04;
+            cx.fillStyle = rnd() < 0.5 ? 'rgba(255,244,190,0.22)' : 'rgba(90,56,8,0.14)';
             cx.fillRect(gx, gy, gs, gs);
         }
 
-        // כל צורה מצוירת פעמיים: בצבע הזהב (קנבס הצבע) ובגובה (קנבס הגבהים: הצורה "מורמת", הפרטים חרוטים).
-        // ההצללה הרכה של התבליט מחושבת פעם אחת בסוף מהגבהים, ולכן אין צורך במפת בליטה בזמן ריצה.
+        // כל צורה מצוירת פעמיים: בצבע הזהב ובגובה (הצורה "מורמת", הפרטים חרוטים).
         const emboss = fn => {
-            fn(cx, { fill: '#ffdc76', ink: '#7d4f12', cream: '#ffe28a', red: '#ffdc76' });   // צורה בהירה + קו מתאר כהה
-            fn(bx, { fill: '#dcdcdc', ink: '#6e6e6e', cream: '#cfcfcf', red: '#dcdcdc' });
+            fn(cx, { fill: '#efbe54', ink: '#6a4010', cream: '#f5ca66', red: '#efbe54' });
+            fn(bx, { fill: '#dcdcdc', ink: '#5a5a5a', cream: '#cfcfcf', red: '#dcdcdc' });
         };
-        const k = baseW / 20.93;       // יחס לפירמידה הגדולה: כל הגדלים והמרווחים הצידה מוכפלים בו
+        const k = baseW / 20.93;       // יחס לפירמידה הגדולה: גדלים ומרווחים צידה מוכפלים בו
         const c0 = baseW / 2;
         const glyph = (name, gx, gy, gs, flip = 1) => emboss((c, st) => drawEgyptGlyph(c, name, gx, gy, gs, st, flip));
         const bar = (y, h) => {
-            cx.fillStyle = '#a67318'; cx.fillRect(0, y, baseW, h);
+            cx.fillStyle = '#8d6216'; cx.fillRect(0, y, baseW, h);
             cx.fillStyle = '#fff2b8'; cx.fillRect(0, y - 0.05, baseW, 0.05);
             bx.fillStyle = '#dcdcdc'; bx.fillRect(0, y, baseW, h);
         };
+        const vline = (x, y0, y1) => {
+            cx.fillStyle = '#8d6216'; cx.fillRect(x - 0.025, y0, 0.05, y1 - y0);
+            cx.fillStyle = '#fff2b8'; cx.fillRect(x - 0.06, y0, 0.03, y1 - y0);
+            bx.fillStyle = '#dcdcdc'; bx.fillRect(x - 0.025, y0, 0.05, y1 - y0);
+        };
 
-        // 1. מסכת פרעה במסגרת (בחלק העליון).
-        glyph('mask', c0, slant * 0.33, 5.2 * k);
+        // 1. מסכת פרעה: מסגרת צרה וגבוהה (כמו בתמונה), בחלק העליון.
+        glyph('mask', c0, slant * 0.30, 4.9 * k);
 
-        // 2. שורת הירוגליפים קטנה מתחת למסכה.
+        // 2. שורת הירוגליפים אחת מתחת למסכה.
         const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was', 'owl', 'chick', 'reed',
             'cloth', 'basket', 'loaf', 'arm', 'mouth', 'disc', 'snake', 'house', 'zig', 'djed'];
         const pick = () => smallSet[(rnd() * smallSet.length) | 0];
-        bar(slant * 0.428, 0.1 * k);
+        bar(slant * 0.392, 0.09 * k);
         {
-            const half = baseW * 0.452 * 0.5 * 0.86;
-            for (let x = -half; x <= half; x += 1.12 * k) glyph(pick(), c0 + x, slant * 0.452, 0.72 * k);
+            const f = 0.414, half = baseW * f * 0.5 * 0.88;
+            for (let x = -half; x <= half; x += 0.72 * k) glyph(pick(), c0 + x, f * slant, 0.5 * k);
         }
-        bar(slant * 0.476, 0.1 * k);
+        bar(slant * 0.438, 0.09 * k);
 
-        // 3. עמודות הירוגליפים אנכיות משני צדי עמודה מרכזית, עם קווי הפרדה.
-        const colTop = 0.495, colBottom = 0.68;
-        const colStep = 0.86 * k;
+        // 3. "קיר" צפוף של עמודות הירוגליפים קטנות, עם קווי הפרדה בין קבוצות עמודות.
+        const colTop = 0.46, colBottom = 0.655;
+        const colStep = 0.6 * k, rowStep = 0.55 * k;
         const nCols = Math.floor((baseW * 0.5) / colStep);
         for (let ci = -nCols; ci <= nCols; ci++) {
             const x = ci * colStep;
             if (Math.abs(x) < 1.3 * k) continue;
-            const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.9 * k) / baseW + 0.02);
-            for (let f = fTop; f <= colBottom; f += (0.8 * k) / slant) glyph(pick(), c0 + x, f * slant, 0.72 * k);
+            const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.7 * k) / baseW + 0.02);
+            for (let f = fTop; f <= colBottom; f += rowStep / slant) glyph(pick(), c0 + x, f * slant, 0.42 * k);
         }
-        for (const sd of [-1, 1]) {
-            const lx = c0 + sd * 1.15 * k;
-            cx.fillStyle = '#8d6216'; cx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
-            bx.fillStyle = '#dcdcdc'; bx.fillRect(lx - 0.03, slant * colTop, 0.06, slant * (colBottom - colTop + 0.015));
+        for (let j = 0; j < 4; j++) {
+            for (const sd of [-1, 1]) {
+                const lx = c0 + sd * (1.15 + 3.6 * j) * k;
+                const fTopL = Math.max(colTop, (2 * (1.15 + 3.6 * j) * k) / baseW + 0.02);
+                if (fTopL < colBottom) vline(lx, slant * fTopL, slant * (colBottom + 0.008));
+            }
         }
-        glyph('djed', c0, slant * 0.545, 1.6 * k);
-        glyph('ankh', c0, slant * 0.605, 1.6 * k);
-        glyph('was', c0, slant * 0.66, 1.6 * k);
-        bar(slant * 0.69, 0.1 * k);
+        glyph('djed', c0, slant * 0.50, 1.3 * k);
+        glyph('ankh', c0, slant * 0.56, 1.3 * k);
+        glyph('was', c0, slant * 0.62, 1.3 * k);
+        bar(slant * 0.668, 0.09 * k);
 
-        // 4. שורת אלים גדולה: פפירוס, אנוביס יושב, פרעה, חתחור, חורוס יושב, פפירוס.
-        const ground = slant * 0.935;
+        // 4. שורת אלים גבוהה: פפירוס, אנוביס יושב, פרעה, חתחור, חורוס יושב, פפירוס.
+        const ground = slant * 0.945;
         const fig = (name, dx, size, flip = 1) => glyph(name, c0 + dx * k, ground - size * k * 0.5, size * k, flip);
-        fig('papyrus', -8.5, 4.0);
-        fig('seatedAnubis', -5.8, 6.9, 1);
-        fig('pharaoh', -2.4, 7.0, 1);
-        fig('hathor', 2.4, 7.0, -1);
-        fig('seatedHorus', 5.8, 6.9, -1);
-        fig('papyrus', 8.5, 4.0);
-        bar(ground + 0.05, 0.12 * k);
+        fig('papyrus', -8.6, 4.4);
+        fig('seatedAnubis', -5.8, 7.2, 1);
+        fig('pharaoh', -2.4, 7.6, 1);
+        fig('hathor', 2.4, 7.6, -1);
+        fig('seatedHorus', 5.8, 7.2, -1);
+        fig('papyrus', 8.6, 4.4);
+        bar(ground + 0.05, 0.1 * k);
 
         // 5. פס לוטוסים בבסיס: פרח פתוח וניצן לסירוגין.
         let lf = 0;
-        for (let x = -9.5; x <= 9.5; x += 1.9) glyph(lf++ % 2 ? 'lotusBud' : 'lotus', c0 + x * k, slant * 0.97, 1.9 * k);
-        bar(slant - 0.16, 0.16);
+        for (let x = -9.5; x <= 9.5; x += 1.7) glyph(lf++ % 2 ? 'lotusBud' : 'lotus', c0 + x * k, slant * 0.974, 1.5 * k);
+        bar(slant - 0.14, 0.14);
 
-        // ---- אפייה של הצללת התבליט: טשטוש הגבהים, חישוב שיפוע מול אור מלמעלה-שמאל, והחלה על הצבע ----
+        // ---- אפייה של התבליט: טשטוש הגבהים, שיפוע מול אור משמאל-למעלה, וצל מוטל ----
         cx.setTransform(1, 0, 0, 1, 0, 0);
         bx.setTransform(1, 0, 0, 1, 0, 0);
         const hd = bx.getImageData(0, 0, CW, CH).data;
         const N = CW * CH;
         let H = new Float32Array(N), T = new Float32Array(N);
         for (let i = 0; i < N; i++) H[i] = hd[i * 4] / 255;
-        const blurPass = (src, dst, horizontal) => {   // טשטוש קופסה ברדיוס 1, בשני כיוונים = קירוב לגאוס
+        const blurPass = (src, dst, horizontal) => {
             const w = CW, hh = CH;
             for (let y = 0; y < hh; y++) {
                 for (let x = 0; x < w; x++) {
                     const i = y * w + x;
-                    if (horizontal) {
-                        const a0 = src[x > 0 ? i - 1 : i], a2 = src[x < w - 1 ? i + 1 : i];
-                        dst[i] = (a0 + src[i] + a2) / 3;
-                    } else {
-                        const a0 = src[y > 0 ? i - w : i], a2 = src[y < hh - 1 ? i + w : i];
-                        dst[i] = (a0 + src[i] + a2) / 3;
-                    }
+                    if (horizontal) dst[i] = (src[x > 0 ? i - 1 : i] + src[i] + src[x < w - 1 ? i + 1 : i]) / 3;
+                    else dst[i] = (src[y > 0 ? i - w : i] + src[i] + src[y < hh - 1 ? i + w : i]) / 3;
                 }
             }
         };
-        for (let pass = 0; pass < 2; pass++) { blurPass(H, T, true); blurPass(T, H, false); }
+        blurPass(H, T, true); blurPass(T, H, false);   // מעבר אחד: קצוות חדים יותר
 
-        const so = Math.max(2, Math.round(CW / 256)), sh2 = so >> 1;   // מרחק הצל המוטל (בפיקסלים)
+        const so = Math.max(2, Math.round(CW / 256)), sh2 = so >> 1;
         const cimg = cx.getImageData(0, 0, CW, CH);
         const cd = cimg.data;
         for (let y = 1; y < CH - 1; y++) {
             for (let x = 1; x < CW - 1; x++) {
                 const i = y * CW + x;
-                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 6.2;   // אור מלמעלה-שמאל, תבליט עמוק יותר
-                let m = 1 + s * 1.15;
-                if (x > so && y > so) {   // צל מוטל: בליטה שמעל הפיקסל מצד שמאל-למעלה מטילה עליו צל כהה
-                    const d1 = H[i - so * CW - so] - H[i] - 0.08;
-                    const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.08;
+                const s = (-(H[i + 1] - H[i - 1]) - (H[i + CW] - H[i - CW])) * 3.0;
+                let m = 1 + s * 0.95;
+                if (x > so && y > so) {
+                    const d1 = H[i - so * CW - so] - H[i] - 0.10;
+                    const d2 = H[i - sh2 * CW - sh2] - H[i] - 0.10;
                     const sh = (d1 > 0 ? d1 : 0) + (d2 > 0 ? d2 * 0.6 : 0);
-                    m *= 1 - Math.min(0.42, sh * 1.7);
+                    m *= 1 - Math.min(0.24, sh * 1.1);
                 }
-                if (m < 0.58) m = 0.58; else if (m > 1.8) m = 1.8;
+                if (m < 0.55) m = 0.55; else if (m > 1.8) m = 1.8;
                 const o = i * 4;
-                let r = cd[o] * m * 1.06, g = cd[o + 1] * m * 1.05, b = cd[o + 2] * m * 0.90;   // גוון ענבר-זהב רווי (לא צהוב חיוור)
-                if (s > 0.22) { const sp = (s - 0.22) * 230; r += sp; g += sp * 0.82; b += sp * 0.42; }   // ברק בקצוות מוארים
+                let r = cd[o] * m * 1.08, g = cd[o + 1] * m * 1.10, b = cd[o + 2] * m * 1.18;
+                if (s > 0.22) { const sp = (s - 0.22) * 230; r += sp; g += sp * 0.9; b += sp * 0.5; }   // ברק חד בקצוות המוארים
                 cd[o] = r > 255 ? 255 : r;
                 cd[o + 1] = g > 255 ? 255 : g;
                 cd[o + 2] = b > 255 ? 255 : b;
             }
         }
         cx.putImageData(cimg, 0, 0);
-        bumpCanvas.width = bumpCanvas.height = 1;   // שחרור זיכרון קנבס הגבהים
+        heightCanvas.width = heightCanvas.height = 1;   // שחרור זיכרון
 
         const t = new THREE.CanvasTexture(colorCanvas);
-        t.anisotropy = Math.min(LOW_END_DEVICE ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
+        t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         t.encoding = THREE.sRGBEncoding;
         t.minFilter = THREE.LinearMipMapLinearFilter;
         t.magFilter = THREE.LinearFilter;
@@ -2758,17 +2737,17 @@ window.addEventListener('DOMContentLoaded', () => {
         const g = cv.getContext('2d');
         // כדור זהב: מרכז בהיר, שוליים כהים וחמים (כמו שהמתכת "נעלמת" בקצה).
         const base = g.createRadialGradient(S * 0.5, S * 0.4, 0, S * 0.5, S * 0.5, S * 0.52);
-        base.addColorStop(0, '#fff6dc');
-        base.addColorStop(0.45, '#fde7ae');
-        base.addColorStop(0.75, '#f0c35e');
-        base.addColorStop(1, '#b8782a');
+        base.addColorStop(0, '#fffaf0');
+        base.addColorStop(0.45, '#fdeec8');
+        base.addColorStop(0.75, '#e2b068');
+        base.addColorStop(1, '#6e4218');
         g.fillStyle = base; g.fillRect(0, 0, S, S);
         // השתקפות שמיים בהירה למעלה, וקרקע כהה למטה, עם קו אופק דק ביניהם.
         const sky = g.createLinearGradient(0, 0, 0, S * 0.45);
         sky.addColorStop(0, 'rgba(255,252,238,0.6)'); sky.addColorStop(1, 'rgba(255,252,238,0)');
         g.fillStyle = sky; g.fillRect(0, 0, S, S);
         const ground = g.createLinearGradient(0, S * 0.58, 0, S);
-        ground.addColorStop(0, 'rgba(120,66,22,0)'); ground.addColorStop(1, 'rgba(120,66,22,0.30)');
+        ground.addColorStop(0, 'rgba(120,66,22,0)'); ground.addColorStop(1, 'rgba(120,66,22,0.6)');
         g.fillStyle = ground; g.fillRect(0, 0, S, S);
         g.fillStyle = 'rgba(90,50,14,0.28)'; g.fillRect(0, S * 0.5, S, S * 0.025);
         // כתם ברק חד.
@@ -2917,8 +2896,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isSand) {
             // פירמידות זהב עם ציורי הירוגליפים. פירמידה 1 ו-2 כמעט באותו גודל, ולכן חולקות טקסטורה.
-            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, Math.round(1024 * GOLD_RES_SCALE));
-            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, Math.round(1024 * GOLD_RES_SCALE));   // 1024 לכל הפירמידות (הצדדיות קרובות למצלמה וצריכות חדות); טקסטורה אחת משותפת לשתי הצדדיות
+            const texFront = createGoldPyramidTextures(pyramidSpecs[0].r, pyramidSpecs[0].h, 1, 1024);
+            const texBack = createGoldPyramidTextures(pyramidSpecs[2].r, pyramidSpecs[2].h, 2, 1024);   // 1024 לכל הפירמידות (הצדדיות קרובות למצלמה וצריכות חדות); טקסטורה אחת משותפת לשתי הצדדיות
             // זהב מתכתי: Matcap = כדור זהב מצויר מראש; לא תלוי באורות הסצנה, לכן לא מחוויר ונשאר זול לחישוב.
             // toneMapped:false = הצבע יוצא בדיוק כמו שצויר.
             const matcap = createGoldMatcap();
@@ -2932,7 +2911,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const matFront = goldMat(texFront);
             const matBack = goldMat(texBack);
             const capMat = new THREE.MeshMatcapMaterial({ color: 0xf2b448, matcap, toneMapped: false, fog: false });
-            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.7, fog: false, toneMapped: false });
+            const ridgeMat = new THREE.LineBasicMaterial({ color: 0xfff2b0, fog: false, toneMapped: false });
 
             pyramidSpecs.forEach(s => {
                 const p = addMesh(
@@ -5164,7 +5143,12 @@ window.addEventListener('DOMContentLoaded', () => {
     let targetX = 0;
 
     let cannonRecoil = 0;
-    const cannonBaseY = 0.45;
+    // גובה התותח נגזר מגיאומטריית הגלגל: תחתית הגלגל (מקומית) = -TIRE_GROUND_DROP, בקנה המידה החי של התותח.
+    // כך הגלגלים נוגעים בקרקע (פני השטח y=0.018) ולא שוקעים בה, גם בתותח הקלאסי וגם ב-MK2.
+    const GROUND_SURFACE_Y = 0.018;
+    function getCannonBaseY() {
+        return GROUND_SURFACE_Y + TIRE_GROUND_DROP * CANNON_SCALE + 0.01;
+    }
     cannonGroup.userData.previousWheelX = cannonGroup.position.x;
     const effects = [];
     const tempVec3 = new THREE.Vector3();
@@ -6922,23 +6906,22 @@ window.addEventListener('DOMContentLoaded', () => {
     const ROCK_BOUNCE_FRAMES = 74;           // פריימים שלוקח לסלע הגדול לעלות מהקרקע לשיא (~1.2 שנ' ב-60fps). קטן = מהיר יותר
     const ROCK_SPEED_X = 0.040;              // מהירות אופקית קבועה לפריים (יחידות עולם)
     const ROCK_CHILD_SCALE = 0.66;           // גודל הסלעים שנוצרים מהפיצול ביחס להורה
-    const ROCK_SIZE_SCALE = 0.86;            // הקטנה ויזואלית של הסלעים הרגילים (לא של הבוסים): יותר מקום לתותח. החיים, הקפיצה והפיצול נשארים כמו קודם.
     const ROCK_COLLIDE_EACH_OTHER = false;   // true = כמו קודם: סלעים דוחפים זה את זה
     // כמה מגובה המסך (מהקרקע) מגיע שיא הקפיצה של סלע בגודל נתון
     function rockApexFraction(size) {
-        return THREE.MathUtils.clamp(0.26 + 0.22 * (size / ROCK_SIZE_SCALE), 0.36, 0.66);   // לפי הגודל "המקורי" כדי שהקפיצות יישארו זהות
+        return THREE.MathUtils.clamp(0.26 + 0.22 * size, 0.36, 0.66);
     }
     // כבידה אחת לכל הסלעים (מותאמת לגובה המסך), ומהירות קפיצה קבועה לפי גודל הסלע
     function getRockPhysics(size) {
         const field = Math.max(8, getScreenTopWorldY() - 0.2);
-        const bigRise = rockApexFraction(1.75 * ROCK_SIZE_SCALE) * field;
+        const bigRise = rockApexFraction(1.75) * field;
         const g = 2 * bigRise / (ROCK_BOUNCE_FRAMES * ROCK_BOUNCE_FRAMES);
         return { g, bounceVy: Math.sqrt(2 * g * rockApexFraction(size) * field) };
     }
     // פיצול סלע שנהרס לשניים: נוצרים באותה נקודה ונפרדים לשני הצדדים עם קפיצה קטנה כלפי מעלה
     function splitRockIntoChildren(r, data) {
         if (data.isBoss) return;     // הבוס לא מתפרק: הוא מוחלף בפרס
-        if (data.size <= 0.9 * ROCK_SIZE_SCALE) return;   // אותו כלל פיצול כמו קודם, ביחס לגודל החדש
+        if (data.size <= 0.9) return;
         const childHp = Math.max(1, Math.floor(data.maxHp / 2));
         const childSize = data.size * ROCK_CHILD_SCALE;
         const speed = data.speedX || ROCK_SPEED_X;
@@ -7576,9 +7559,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function bossDropRocks(r, d, n) {
         for (let i = 0; i < n; i++) {
             if (rocks.length > BOSS_MAX_ROCKS) return;
-            const baseSize = 0.95 + Math.random() * 0.45;
-            const size = baseSize * ROCK_SIZE_SCALE;
-            const hp = Math.max(4, Math.floor((8 + level * 6) * (baseSize / 1.2) * 0.7));
+            const size = 0.95 + Math.random() * 0.45;
+            const hp = Math.max(4, Math.floor((8 + level * 6) * (size / 1.2) * 0.7));
             const dir = (i % 2 === 0 ? 1 : -1) * (Math.random() < 0.5 ? 1 : -1);
             spawnRock(
                 r.position.x + (Math.random() - 0.5) * d.size,
@@ -7660,9 +7642,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const topY = getScreenTopWorldY();
             const enterY = 0.2 + (topY - 0.2) * 0.62;
             for (let i = 0; i < count; i++) {
-                const baseSize = 0.95 + Math.random() * 0.8;
-                const size = baseSize * ROCK_SIZE_SCALE;
-                const hp = Math.floor((8 + level * 6) * (baseSize / 1.2));
+                const size = 0.95 + Math.random() * 0.8;
+                const hp = Math.floor((8 + level * 6) * (size / 1.2));
                 const side = i % 2 === 0 ? -1 : 1;
                 const lane = Math.floor(i / 2);
                 const spawnX = side * (screenLimitX + 2.6 + size + lane * (size * 2.6 + 0.6));
@@ -7844,7 +7825,7 @@ window.addEventListener('DOMContentLoaded', () => {
         level = 1;
         hasStartedFirstWave = false;
         cannonRecoil = 0;
-        cannonGroup.position.set(0, cannonBaseY, 0);
+        cannonGroup.position.set(0, getCannonBaseY(), 0);
         cannonGroup.userData.previousWheelX = 0;
         cannonGroup.userData.prevColX = 0;
     }
@@ -7865,7 +7846,7 @@ window.addEventListener('DOMContentLoaded', () => {
         level = 1;
         hasStartedFirstWave = false;
         cannonRecoil = 0;
-        cannonGroup.position.set(0, cannonBaseY, 0);
+        cannonGroup.position.set(0, getCannonBaseY(), 0);
         buildMap(selectedMap);
         updateUI();
 
@@ -8766,7 +8747,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // הגלגלים נשארים על הקרקע; הגוף הוא זה שצולל ומתרומם על המתלים.
-        cannonGroup.position.y = cannonBaseY;
+        cannonGroup.position.y = getCannonBaseY();
         updateSuspensionMotion();
 
         // MK-II משתמש באותה תנועת גוף/מתלים בדיוק כמו התותח המקורי.
