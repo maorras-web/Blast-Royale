@@ -66,7 +66,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const SMALL_SHADOWS = QUALITY.tier === 'high';   // צללים של ברגים/קפיצים/עשבים זעירים: רק במכשיר חזק
     if (QUALITY.tier === 'low') document.documentElement.classList.add('low-fx');
 
-    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // near=1.0 (במקום 0.1): אין שום דבר במרחק פחות מיחידה מהמצלמה, ודיוק העומק משתפר פי 10 (בלי הבהובי z-fighting).
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1.0, 1000);
     
     let screenLimitX = 4.8;
 
@@ -5092,7 +5093,10 @@ window.addEventListener('DOMContentLoaded', () => {
             color: 0x1f2937,
             transparent: true,
             opacity: 0.22,
-            depthWrite: false
+            depthWrite: false,
+            polygonOffset: true,       // מושך את הצל קדימה בעומק: לא נלחם בקרקע (z-fighting)
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2
         })
     );
 
@@ -5100,7 +5104,7 @@ window.addEventListener('DOMContentLoaded', () => {
         -Math.PI / 2;
 
     cannonShadow.position.y =
-        0.015;
+        0.024;   // מעל פני הקרקע (0.018) ומתחת לתחתית הגלגלים (~0.028)
 
     cannonShadow.scale.set(
         1.18,
@@ -5108,6 +5112,7 @@ window.addEventListener('DOMContentLoaded', () => {
         1
     );
 
+    cannonShadow.renderOrder = 1;   // תמיד אחרי הקרקע
     scene.add(
         cannonShadow
     );
@@ -5121,7 +5126,10 @@ window.addEventListener('DOMContentLoaded', () => {
             color: 0x0f172a,
             transparent: true,
             opacity: 0.10,
-            depthWrite: false
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -3,
+            polygonOffsetUnits: -3
         })
     );
 
@@ -5129,7 +5137,7 @@ window.addEventListener('DOMContentLoaded', () => {
         -Math.PI / 2;
 
     cannonShadowSoft.position.y =
-        0.018;
+        0.027;
 
     cannonShadowSoft.scale.set(
         1.10,
@@ -5137,6 +5145,7 @@ window.addEventListener('DOMContentLoaded', () => {
         1
     );
 
+    cannonShadowSoft.renderOrder = 2;
     scene.add(
         cannonShadowSoft
     );
