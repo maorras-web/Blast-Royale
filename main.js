@@ -6945,23 +6945,26 @@ window.addEventListener('DOMContentLoaded', () => {
     //  - סלע שנהרס מתפצל לשניים קטנים יותר שנפרדים לשני הצדדים ומקפצים.
     const ROCK_BOUNCE_FRAMES = 74;           // פריימים שלוקח לסלע הגדול לעלות מהקרקע לשיא (~1.2 שנ' ב-60fps). קטן = מהיר יותר
     const ROCK_SPEED_X = 0.040;              // מהירות אופקית קבועה לפריים (יחידות עולם)
+    // גודל כל הסלעים ביחס למקור: 1 = כמו קודם, 0.72 = קטנים ב-28% (יותר מקום לתותח להתחמק).
+    // הגודל משפיע גם על ההתנגשות, אבל החיים, הקפיצות והפיצול נשארים כמו קודם (מחושבים לפי הגודל המקורי).
+    const ROCK_SIZE_SCALE = 0.72;
     const ROCK_CHILD_SCALE = 0.66;           // גודל הסלעים שנוצרים מהפיצול ביחס להורה
     const ROCK_COLLIDE_EACH_OTHER = false;   // true = כמו קודם: סלעים דוחפים זה את זה
     // כמה מגובה המסך (מהקרקע) מגיע שיא הקפיצה של סלע בגודל נתון
     function rockApexFraction(size) {
-        return THREE.MathUtils.clamp(0.26 + 0.22 * size, 0.36, 0.66);
+        return THREE.MathUtils.clamp(0.26 + 0.22 * (size / ROCK_SIZE_SCALE), 0.36, 0.66);
     }
     // כבידה אחת לכל הסלעים (מותאמת לגובה המסך), ומהירות קפיצה קבועה לפי גודל הסלע
     function getRockPhysics(size) {
         const field = Math.max(8, getScreenTopWorldY() - 0.2);
-        const bigRise = rockApexFraction(1.75) * field;
+        const bigRise = rockApexFraction(1.75 * ROCK_SIZE_SCALE) * field;
         const g = 2 * bigRise / (ROCK_BOUNCE_FRAMES * ROCK_BOUNCE_FRAMES);
         return { g, bounceVy: Math.sqrt(2 * g * rockApexFraction(size) * field) };
     }
     // פיצול סלע שנהרס לשניים: נוצרים באותה נקודה ונפרדים לשני הצדדים עם קפיצה קטנה כלפי מעלה
     function splitRockIntoChildren(r, data) {
         if (data.isBoss) return;     // הבוס לא מתפרק: הוא מוחלף בפרס
-        if (data.size <= 0.9) return;
+        if (data.size <= 0.9 * ROCK_SIZE_SCALE) return;
         const childHp = Math.max(1, Math.floor(data.maxHp / 2));
         const childSize = data.size * ROCK_CHILD_SCALE;
         const speed = data.speedX || ROCK_SPEED_X;
@@ -7010,7 +7013,7 @@ window.addEventListener('DOMContentLoaded', () => {
             depthTest: false
         });
         const label = new THREE.Sprite(spriteMat);
-        label.scale.set(size * 1.25, size * 1.25, 1);
+        label.scale.set(size * 1.55, size * 1.55, 1);   // המספר גדול מעט יחסית לסלע הקטן, כדי להישאר קריא
         label.renderOrder = 20;
         label.position.y = 0.0;
         rock.add(label);
@@ -7485,7 +7488,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const BOSS_EVERY = 5;                      // בוס בכל שלב שמתחלק במספר הזה
     const BOSS_HP_FACTOR = 16;                 // חיי הבוס = חיי סלע רגיל בשלב הזה x המספר הזה
-    const BOSS_SIZE = 2.4;
+    const BOSS_SIZE = 2.4 * (0.5 + 0.5 * ROCK_SIZE_SCALE);   // הבוס קטן פחות מהסלעים הרגילים
     const BOSS_MAX_ROCKS = 7;                  // אם כבר יש כל כך הרבה סלעים על המסך, הוא לא מפיל עוד
     const BOSS_DROP_FRAMES = [150, 115, 85];   // כל כמה פריימים הוא מפיל סלע (לפי שלב הקרב)
     let bossRock = null;
@@ -7599,8 +7602,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function bossDropRocks(r, d, n) {
         for (let i = 0; i < n; i++) {
             if (rocks.length > BOSS_MAX_ROCKS) return;
-            const size = 0.95 + Math.random() * 0.45;
-            const hp = Math.max(4, Math.floor((8 + level * 6) * (size / 1.2) * 0.7));
+            const size = (0.95 + Math.random() * 0.45) * ROCK_SIZE_SCALE;
+            const hp = Math.max(4, Math.floor((8 + level * 6) * (size / ROCK_SIZE_SCALE / 1.2) * 0.7));
             const dir = (i % 2 === 0 ? 1 : -1) * (Math.random() < 0.5 ? 1 : -1);
             spawnRock(
                 r.position.x + (Math.random() - 0.5) * d.size,
@@ -7682,8 +7685,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const topY = getScreenTopWorldY();
             const enterY = 0.2 + (topY - 0.2) * 0.62;
             for (let i = 0; i < count; i++) {
-                const size = 0.95 + Math.random() * 0.8;
-                const hp = Math.floor((8 + level * 6) * (size / 1.2));
+                const size = (0.95 + Math.random() * 0.8) * ROCK_SIZE_SCALE;
+                const hp = Math.floor((8 + level * 6) * (size / ROCK_SIZE_SCALE / 1.2));
                 const side = i % 2 === 0 ? -1 : 1;
                 const lane = Math.floor(i / 2);
                 const spawnX = side * (screenLimitX + 2.6 + size + lane * (size * 2.6 + 0.6));
