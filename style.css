@@ -1125,3 +1125,15 @@ canvas {
         width: 50px;
     }
 }
+
+/* מכשיר חלש / ירידת איכות אוטומטית: בלי טשטוש רקע (backdrop-filter יקר מאוד מעל קנבס חי) */
+.low-fx *,
+.low-fx *::before,
+.low-fx *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.low-fx .modal-overlay {
+    background: rgba(15, 13, 11, 0.88);
+}
