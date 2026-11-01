@@ -5181,7 +5181,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- חומרים (4 סטנדרטיים/בסיסיים + זכוכית + קרן) ----
-    const hvHullMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, emissive: 0x000a28, roughness: 0.26, metalness: 0.88, side: THREE.DoubleSide, envMap: mk2Env, envMapIntensity: 0.55 });
+    const hvHullMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, emissive: 0x000a28, roughness: 0.26, metalness: 0.88, side: THREE.DoubleSide, envMap: mk2Env, envMapIntensity: 0.8 });
     const hvBowlMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, emissive: 0x00061a, roughness: 0.34, metalness: 0.85, side: THREE.DoubleSide, envMap: mk2Env, envMapIntensity: 0.5 });
     const hvDarkMat = new THREE.MeshStandardMaterial({ color: 0x0c1228, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.25 });
     const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
@@ -5194,8 +5194,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const PI2 = Math.PI / 2;
 
     // מעברי צבע לכל קודקוד: מתכת כהה שמתבהרת כלפי מעלה עם גוון כחול עדין, בלי שום עלות בזמן ריצה
-    const hvHullGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 0.6) / 0.66)); const v = 0.085 + 0.14 * t; return [v * 0.90, v * 0.98, v * 1.22]; };
-    const hvBowlGrad = (x, y) => { const t = Math.max(0, Math.min(1, y / 0.6)); const v = 0.05 + 0.10 * t; return [v * 0.9, v * 0.98, v * 1.30]; };
+    const hvHullGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 0.6) / 0.66)); const v = 0.115 + 0.17 * t; return [v * 0.96, v * 1.0, v * 1.10]; };
+    const hvBowlGrad = (x, y) => { const t = Math.max(0, Math.min(1, y / 0.6)); const v = 0.07 + 0.11 * t; return [v * 0.92, v * 0.98, v * 1.22]; };
     const hvDomeGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 1.24) / 0.52)); return [0.0 + 0.07 * t, 0.02 + 0.14 * t, 0.92 + 0.08 * t]; };
 
     // ---- גוף: שכבה עליונה (מתכת כהה) ותחתית (כהה יותר), פרופיל חלק עם כתף מוגבהת ----
@@ -5215,17 +5215,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
     const hvGlowParts = [
-        [new THREE.TorusGeometry(1.45, 0.075, 7, 56), 0, 0.52, 0, PI2, 0, 0, 1, 1, 1, 0x0b2bff],
-        [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0, 1, 1, 1, 0x2f55ff],
-        [new THREE.TorusGeometry(1.52, 0.022, 5, 56), 0, 0.60, 0, PI2, 0, 0, 1, 1, 1, 0x4a72ff],
+        [new THREE.TorusGeometry(1.45, 0.095, 7, 56), 0, 0.52, 0, PI2, 0, 0, 1, 1, 1, 0x2a5bff],
+        [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0, 1, 1, 1, 0x7fa0ff],
+        [new THREE.TorusGeometry(1.52, 0.022, 5, 56), 0, 0.60, 0, PI2, 0, 0, 1, 1, 1, 0xc4d2ff],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0, 1, 1, 1, 0x2f5bff],
         [new THREE.CylinderGeometry(0.30, 0.30, 0.03, 18), 0, -0.04, 0, 0, 0, 0, 1, 1, 1, 0x9ab8ff]
     ];
     const hvSlope = Math.atan2(0.16, 0.25);   // שיפוע הכתף של הגוף
     for (let i = 0; i < 14; i++) {
         const phi = i / 14 * Math.PI * 2;
-        const pc = i % 2 ? 0x1038ff : 0x2a55ff;
-        hvGlowParts.push([new THREE.BoxGeometry(0.22, 0.035, 0.10).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.01, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
+        const pc = i % 2 ? 0x2f66ff : 0x58a0ff;
+        hvGlowParts.push([new THREE.BoxGeometry(0.27, 0.04, 0.125).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.01, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
     }
     hvGlowParts.push([new THREE.TorusGeometry(1.20, 0.028, 6, 52), 0, 0.345, 0, PI2, 0, 0, 1, 1, 1, 0x1f45ff]);
     hoverRig.add(hvMerge(hvGlowParts, hvGlowMat));
@@ -5246,7 +5246,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ], hvLightMat));
 
     // ---- כיפת זכוכית (רשת שקופה אחת) ----
-    hoverRig.add(hvMerge([[new THREE.SphereGeometry(0.58, 28, 14, 0, Math.PI * 2, 0, PI2), 0, 1.24, 0.46, 0, 0, 0, 1, 0.95, 1, hvDomeGrad]], hvGlassMat));
+    hoverRig.add(hvMerge([[new THREE.SphereGeometry(0.58, 28, 14, 0, Math.PI * 2, 0, PI2), 0, 1.24, 0.46, 0, 0, 0, 1, 1.15, 1, hvDomeGrad]], hvGlassMat));
 
     // ---- קרן טרקטור שקופה מתחת (חרוט אחד) ----
     const hvBeam = hvMerge([[new THREE.CylinderGeometry(0.55, 1.05, 0.72, 24, 1, true), 0, -0.36, 0]], hvBeamMat);
@@ -5258,7 +5258,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvBarrelParts = [], hvBarrelGlow = [];
     [-HV_BARREL_X, HV_BARREL_X].forEach(bx => {
         // קנים כמו בעיצוב המטרה: בסיס רחב, שלושה מקטעים כהים עם טבעות אור ביניהם, צווארון וכיפת פלדה בקצה
-        const bz = -0.74, DK = 0x242c37, ST = 0x808c9b;
+        const bz = -0.74, DK = 0x2d3643, ST = 0x95a1b0;
         hvBarrelParts.push([new THREE.CylinderGeometry(0.30, 0.335, 0.36, 16), bx, 1.30, bz, 0, 0, 0, 1, 1, 1, 0x2a313c]);
         hvBarrelParts.push([new THREE.CylinderGeometry(0.215, 0.235, 0.28, 16), bx, 1.64, bz, 0, 0, 0, 1, 1, 1, DK]);
         hvBarrelParts.push([new THREE.CylinderGeometry(0.215, 0.215, 0.26, 16), bx, 1.95, bz, 0, 0, 0, 1, 1, 1, DK]);
@@ -5266,7 +5266,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBarrelParts.push([new THREE.CylinderGeometry(0.265, 0.265, 0.07, 16), bx, 2.30, bz, 0, 0, 0, 1, 1, 1, ST]);
         hvBarrelParts.push([new THREE.SphereGeometry(0.235, 16, 8, 0, Math.PI * 2, 0, PI2), bx, 2.335, bz, 0, 0, 0, 1, 0.7, 1, ST]);
         [1.49, 1.80, 2.10].forEach(gy => {
-            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.034, 6, 18), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x1a3cff]);
+            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.046, 6, 20), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x3a78ff]);
         });
     });
     hvBarrels.add(hvMerge(hvBarrelParts, hvSteelMat));
