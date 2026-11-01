@@ -224,6 +224,48 @@ window.addEventListener('DOMContentLoaded', () => {
         return mesh;
     }
 
+    // איחוד רשתות סטטיות: כל הרשתות בקבוצה שחולקות אותו חומר ואותה הגדרת צללים הופכות לרשת אחת.
+    // המראה זהה בדיוק (המיקומים והסיבובים נאפים לתוך הגיאומטריה), אבל יש הרבה פחות קריאות ציור.
+    // מתאים רק לקבוצה שנמצאת במיקום (0,0,0) בלי סיבוב, ושהחלקים בה לא זזים אחרי הבנייה.
+    function mergeGroupMeshes(group) {
+        const buckets = new Map();
+        group.children.slice().forEach(m => {
+            if (!m.isMesh || m.isInstancedMesh || m.children.length || !m.geometry || Array.isArray(m.material) || m.renderOrder) return;
+            const key = m.material.uuid + '|' + (m.castShadow ? 1 : 0) + (m.receiveShadow ? 1 : 0);
+            if (!buckets.has(key)) buckets.set(key, []);
+            buckets.get(key).push(m);
+        });
+        buckets.forEach(list => {
+            if (list.length < 2) return;
+            const pos = [], nor = [], uvs = [];
+            list.forEach(m => {
+                m.updateMatrix();
+                let g = m.geometry.clone();
+                g.applyMatrix4(m.matrix);
+                if (g.index) g = g.toNonIndexed();
+                pos.push(g.attributes.position.array);
+                nor.push(g.attributes.normal.array);
+                uvs.push(g.attributes.uv ? g.attributes.uv.array : new Float32Array((g.attributes.position.array.length / 3) * 2));
+                g.dispose();
+            });
+            const cat = arrs => {
+                let n = 0; arrs.forEach(a => { n += a.length; });
+                const out = new Float32Array(n); let o = 0;
+                arrs.forEach(a => { out.set(a, o); o += a.length; });
+                return out;
+            };
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(cat(pos), 3));
+            geo.setAttribute('normal', new THREE.BufferAttribute(cat(nor), 3));
+            geo.setAttribute('uv', new THREE.BufferAttribute(cat(uvs), 2));
+            const merged = new THREE.Mesh(geo, list[0].material);
+            merged.castShadow = list[0].castShadow;
+            merged.receiveShadow = list[0].receiveShadow;
+            group.add(merged);
+            list.forEach(m => { group.remove(m); m.geometry.dispose(); });
+        });
+    }
+
     function addLowPolyTree(x, z, scale = 1) {
         const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5b3a29, roughness: 1 });
         const leafMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.9, flatShading: true });
@@ -913,17 +955,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // עשבונים קטנים רק במפות טבעיות.
         if (!isIce && !isVolcano) {
+            const grassMat = new THREE.MeshStandardMaterial({
+                color: GRASS_GREEN,
+                roughness: 1,
+                flatShading: true
+            });
             for (let i = 0; i < 18; i++) {
                 const side = i % 2 === 0 ? -1 : 1;
                 const x = side * (8.1 + Math.random() * 5.5);
                 const z = -4.5 - Math.random() * 11.5;
                 const scale = 0.45 + Math.random() * 0.45;
-
-                const grassMat = new THREE.MeshStandardMaterial({
-                    color: GRASS_GREEN,
-                    roughness: 1,
-                    flatShading: true
-                });
 
                 const blade = new THREE.Mesh(
                     new THREE.ConeGeometry(0.055 * scale, 0.5 * scale, 5),
@@ -941,6 +982,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 detailGroup.add(blade);
             }
         }
+        mergeGroupMeshes(detailGroup);
     }
 
     // ==========================================
@@ -1799,6 +1841,8 @@ window.addEventListener('DOMContentLoaded', () => {
             silhouette.receiveShadow = true;
             group.add(silhouette);
         }
+
+        mergeGroupMeshes(group);   // 34 קבוצות עשב וצלליות הופכות לשתי רשתות בלבד
 
         // שכבת אובך עדינה בגובה נמוך שמחברת את אמצע המפה לבסיס הפירמידות.
         const transitionHazeMat = new THREE.MeshBasicMaterial({
