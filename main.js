@@ -3383,10 +3383,30 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // פס שחור שעוטף את הכיפה מאמצע גובהה (לפי בקשת המשתמש)
+    {
+        const bpts = [];
+        const BN = 14, bLo = 0.56, bHi = 0.975; // טווח גובה הפס (חלק מגובה הכיפה)
+        const t0 = Math.asin(bLo), t1 = Math.asin(bHi);
+        for (let i = 0; i <= BN; i++) {
+            const t = t0 + (t1 - t0) * (i / BN);
+            bpts.push(new THREE.Vector2(
+                TUR_R * Math.pow(Math.cos(t), 2 / TUR_N) * 1.018,
+                TUR_H * Math.pow(Math.sin(t), 2 / TUR_N)
+            ));
+        }
+        turMetal.push({ geo: new THREE.LatheGeometry(bpts, 48), p: [0, TUR_BASE_Y, 0], c: 0x151a20 });
+    }
+
     const turBlueMesh = new THREE.Mesh(turMerge(turBlue), turBlueMat);
     turBlueMesh.castShadow = true;
     turBlueMesh.receiveShadow = true;
     cannonGroup.add(turBlueMesh);
+
+    const turMetalMesh = new THREE.Mesh(turMerge(turMetal), turMetalMat);
+    turMetalMesh.castShadow = true;
+    turMetalMesh.receiveShadow = true;
+    cannonGroup.add(turMetalMesh);
 
     // תושבת ומכלול הקנים נפרדים כדי שנוכל לתת רתיעה מכנית אמיתית.
     const barrelAssembly = new THREE.Group();
