@@ -5244,11 +5244,6 @@ window.addEventListener('DOMContentLoaded', () => {
         [new THREE.TorusGeometry(0.56, 0.055, 6, 30), 0, 1.25, 0.46, PI2, 0, 0],
         [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74]
     ];
-    [90, 210, 330].forEach(deg => {
-        const r = deg * Math.PI / 180;
-        hvDarkParts.push([new THREE.SphereGeometry(0.14, 8, 6), Math.cos(r) * 0.85, -0.02, Math.sin(r) * 0.85, 0, 0, 0, 1, 0.8, 1]);
-        hvDarkParts.push([new THREE.CylinderGeometry(0.04, 0.05, 0.22, 6), Math.cos(r) * 0.85, 0.10, Math.sin(r) * 0.85]);
-    });
     hoverRig.add(hvMerge(hvDarkParts, hvDarkMat));
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
@@ -5329,6 +5324,35 @@ window.addEventListener('DOMContentLoaded', () => {
         return m;
     })();
 
+    // טבעת אנרגיה שפועמת ומתרחבת על הקרקע מתחת לחללית (טקסטורה אחת, משתנה רק קנה מידה ושקיפות)
+    const hoverRing = (function () {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const cx = c.getContext('2d');
+        const gr = cx.createRadialGradient(64, 64, 20, 64, 64, 62);
+        gr.addColorStop(0, 'rgba(90,255,225,0)');
+        gr.addColorStop(0.60, 'rgba(90,255,225,0)');
+        gr.addColorStop(0.80, 'rgba(120,255,235,0.95)');
+        gr.addColorStop(0.92, 'rgba(60,220,210,0.35)');
+        gr.addColorStop(1, 'rgba(40,190,200,0)');
+        cx.fillStyle = gr;
+        cx.fillRect(0, 0, 128, 128);
+        const m = new THREE.Mesh(
+            new THREE.PlaneGeometry(3.6, 2.5),
+            new THREE.MeshBasicMaterial({
+                map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.6, depthWrite: false, fog: false,
+                blending: THREE.AdditiveBlending,
+                polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5
+            })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.y = -TIRE_GROUND_DROP + 0.04;
+        m.renderOrder = 4;
+        m.visible = false;
+        cannonGroup.add(m);
+        return m;
+    })();
+
     let hvLean = 0;
     function updateHoverCannon(time, dx) {
         const bob = Math.sin(time * 0.0024) * 0.08;
@@ -5340,7 +5364,10 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBarrels.position.y = -Math.min(0.14, cannonRecoil * 3.0);
         hvSpin.rotation.y += 0.02;
         hvBeamMat.opacity = 0.17 + Math.sin(time * 0.006) * 0.05;
-        hoverGlow.material.opacity = 0.42 + Math.sin(time * 0.005) * 0.10 - bob * 0.8;
+        hoverGlow.material.opacity = 0.20 - bob * 0.6;
+        const ph = (time * 0.00075) % 1;                    // מחזור פעימה של כ-1.3 שניות
+        hoverRing.scale.set(0.55 + ph * 0.60, 0.55 + ph * 0.60, 1);
+        hoverRing.material.opacity = 0.65 * (1 - ph) * Math.min(1, ph * 6);
     }
 
     // כשהתותח המרחף פעיל מסתירים את כל שאר החלקים של התותח (נשמר מצב קודם ומוחזר בהחלפה)
@@ -5351,10 +5378,11 @@ window.addEventListener('DOMContentLoaded', () => {
         hoverSavedVis = null;
         hoverRig.visible = false;
         hoverGlow.visible = false;
+        hoverRing.visible = false;
     }
     function enterHoverLook() {
         hoverSavedVis = cannonGroup.children.map(c => c.visible);
-        cannonGroup.children.forEach(c => { c.visible = (c === hoverRig || c === hoverGlow); });
+        cannonGroup.children.forEach(c => { c.visible = (c === hoverRig || c === hoverGlow || c === hoverRing); });
         mk2Tracks.visible = false;
     }
 
