@@ -5188,7 +5188,25 @@ window.addEventListener('DOMContentLoaded', () => {
     const HV_BLUE = 0x0015ff;   // הכחול של התותח המרחף (#0015FF)
     const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });   // גווני כחול בזוהר (צבע לכל חלק), הפעימה משנה רק את הבהירות
     const hvLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
-    const hvGlassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, emissive: 0x00093f, roughness: 0.10, metalness: 0.30, envMap: mk2Env, envMapIntensity: 0.4 });   // כיפה אטומה ומבריקה
+    const hvGlassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, emissive: 0x00093f, roughness: 0.10, metalness: 0.30, envMap: mk2Env, envMapIntensity: 0.6 });   // כיפה אטומה ומבריקה
+    // זוהר אורך לכל חריץ/נורה: מרובע רך עם דעיכה אליפטית, בחיבור-אור, צמוד לדופן (לא ערפל כללי). רשת אחת סטטית לגוף ועוד אחת לקנים.
+    const hvSmearMat = new THREE.MeshBasicMaterial({
+        map: (function () {
+            const c = document.createElement('canvas');
+            c.width = 128; c.height = 64;
+            const cx = c.getContext('2d');
+            cx.scale(1, 0.5);
+            const gr = cx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gr.addColorStop(0.00, 'rgba(170,225,255,0.95)');
+            gr.addColorStop(0.25, 'rgba(40,150,255,0.65)');
+            gr.addColorStop(0.55, 'rgba(10,80,255,0.22)');
+            gr.addColorStop(1.00, 'rgba(0,40,255,0)');
+            cx.fillStyle = gr;
+            cx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(c);
+        })(),
+        transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending, fog: false
+    });
     const hvBeamMat = new THREE.MeshBasicMaterial({ color: HV_BLUE, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, fog: false });
     const V2 = arr => arr.map(v => new THREE.Vector2(v[0], v[1]));
     const PI2 = Math.PI / 2;
@@ -5196,7 +5214,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // מעברי צבע לכל קודקוד: מתכת כהה שמתבהרת כלפי מעלה עם גוון כחול עדין, בלי שום עלות בזמן ריצה
     const hvHullGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 0.6) / 0.66)); const v = 0.115 + 0.17 * t; return [v * 0.96, v * 1.0, v * 1.10]; };
     const hvBowlGrad = (x, y) => { const t = Math.max(0, Math.min(1, y / 0.6)); const v = 0.07 + 0.11 * t; return [v * 0.92, v * 0.98, v * 1.22]; };
-    const hvDomeGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 1.24) / 0.52)); return [0.0 + 0.07 * t, 0.02 + 0.14 * t, 0.92 + 0.08 * t]; };
+    const hvDomeGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 1.24) / 0.52)); return [0.02 + 0.15 * t, 0.06 + 0.26 * t, 1.0]; };
 
     // ---- גוף: שכבה עליונה (מתכת כהה) ותחתית (כהה יותר), פרופיל חלק עם כתף מוגבהת ----
     hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[1.50, 0.60], [1.46, 0.74], [1.30, 0.92], [1.05, 1.08], [0.80, 1.18], [0.66, 1.24], [0.001, 1.26]]), 44), 0, 0, 0, 0, 0, 0, 1, 1, 1, hvHullGrad], [new THREE.CylinderGeometry(0.66, 0.74, 0.30, 32), 0, 1.10, 0.46, 0, 0, 0, 1, 1, 1, 0x0b1850]], hvHullMat));
@@ -5235,6 +5253,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     hvGlowParts.push([new THREE.TorusGeometry(1.20, 0.028, 6, 52), 0, 0.345, 0, PI2, 0, 0, 1, 1, 1, 0x1070ff]);
     hoverRig.add(hvMerge(hvGlowParts, hvGlowMat));
+    {
+        const sm = [];
+        for (let i = 0; i < 10; i++) {   // חריצים ארוכים בדופן
+            const phi = Math.PI / 2 + i / 10 * Math.PI * 2;
+            sm.push([new THREE.PlaneGeometry(1.0, 0.36).rotateX(-0.28), Math.cos(phi) * 1.515, 0.77, Math.sin(phi) * 1.515, 0, Math.PI / 2 - phi, 0]);
+        }
+        for (let i = 0; i < 12; i++) {   // נורות קטנות במדרגה העליונה
+            const phi = Math.PI / 2 + (i + 0.5) / 12 * Math.PI * 2;
+            sm.push([new THREE.PlaneGeometry(0.42, 0.24).rotateX(-1.1), Math.cos(phi) * 1.25, 1.07, Math.sin(phi) * 1.25, 0, Math.PI / 2 - phi, 0]);
+        }
+        const smm = hvMerge(sm, hvSmearMat);
+        smm.renderOrder = 5;
+        hoverRig.add(smm);
+    }
     // ---- טבעת נורות לבנות שמסתובבת לאט סביב השפה ----
     const hvSpin = new THREE.Group();
     hoverRig.add(hvSpin);
@@ -5276,6 +5308,13 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     hvBarrels.add(hvMerge(hvBarrelParts, hvSteelMat));
     hvBarrels.add(hvMerge(hvBarrelGlow, hvGlowMat));
+    {
+        const bs = [];
+        [-HV_BARREL_X, HV_BARREL_X].forEach(bx => { [1.49, 1.80, 2.10].forEach(gy => bs.push([new THREE.PlaneGeometry(0.78, 0.30), bx, gy, -0.74 + 0.27, 0, 0, 0])); });
+        const bsm = hvMerge(bs, hvSmearMat);
+        bsm.renderOrder = 5;
+        hvBarrels.add(bsm);
+    }
 
     // כתם אור על הקרקע מתחת לתותח (במקום צל אמיתי)
     const hoverGlow = (function () {
@@ -5313,8 +5352,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const gr = cx.createRadialGradient(64, 64, 20, 64, 64, 62);
         gr.addColorStop(0, 'rgba(0,21,255,0)');
         gr.addColorStop(0.60, 'rgba(0,21,255,0)');
-        gr.addColorStop(0.80, 'rgba(0,21,255,0.95)');
-        gr.addColorStop(0.92, 'rgba(0,21,255,0.40)');
+        gr.addColorStop(0.80, 'rgba(25,120,255,0.95)');
+        gr.addColorStop(0.92, 'rgba(25,120,255,0.40)');
         gr.addColorStop(1, 'rgba(0,21,255,0)');
         cx.fillStyle = gr;
         cx.fillRect(0, 0, 128, 128);
@@ -5355,6 +5394,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const ph2 = (ph + 0.5) % 1;
         hoverRing2.scale.set((0.55 + ph2 * 0.60) * HV_SIZE, (0.55 + ph2 * 0.60) * HV_SIZE, 1);
         hoverRing2.material.opacity = 0.8 * (1 - ph2) * Math.min(1, ph2 * 6);
+        hvSmearMat.opacity = 0.85 + 0.12 * Math.sin(time * 0.004);
         hvGlowMat.color.setScalar(1.0 + 0.16 * Math.sin(time * 0.004));        // הזוהר "נושם"
         hvGlassMat.emissiveIntensity = 1.0 + 0.35 * Math.sin(time * 0.004 + 1);   // והכיפה מתחלפת בין בהיר לכהה
     }
