@@ -5226,7 +5226,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x5b6472, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
     const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x4ff0d8 });
     const hvLightMat = new THREE.MeshBasicMaterial({ color: 0xe6fbff });
-    const hvGlassMat = new THREE.MeshBasicMaterial({ color: 0x0f7f77, transparent: true, opacity: 0.62, depthWrite: false });
+    const hvGlassMat = new THREE.MeshStandardMaterial({ color: 0x16a89c, emissive: 0x06403a, roughness: 0.12, metalness: 0.35, envMap: mk2Env, envMapIntensity: 1.3 });   // כיפה אטומה ומבריקה
     const hvBeamMat = new THREE.MeshBasicMaterial({ color: 0x4af0d0, transparent: true, opacity: 0.20, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false });
     const V2 = arr => arr.map(v => new THREE.Vector2(v[0], v[1]));
     const PI2 = Math.PI / 2;
@@ -5235,16 +5235,14 @@ window.addEventListener('DOMContentLoaded', () => {
     hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[1.50, 0.60], [1.46, 0.74], [1.30, 0.92], [1.05, 1.08], [0.80, 1.18], [0.66, 1.24], [0.001, 1.26]]), 44), 0, 0, 0]], hvHullMat));
     hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[0.001, 0.00], [0.35, 0.03], [0.75, 0.14], [1.15, 0.32], [1.40, 0.48], [1.50, 0.60]]), 44), 0, 0, 0]], hvBowlMat));
 
-    // ---- פרטים כהים: קווי פאנלים, מסגרת כיפה, בסיס קנים, רגליות, סנפירים וצינורות דחף אחוריים ----
+    // ---- פרטים כהים: קווי פאנלים, מסגרת כיפה, בסיס קנים, רגליות ----
     const hvDarkParts = [
         [new THREE.TorusGeometry(1.30, 0.022, 5, 48), 0, 0.93, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(1.05, 0.022, 5, 44), 0, 1.09, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(0.80, 0.022, 5, 40), 0, 1.19, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(1.15, 0.022, 5, 44), 0, 0.33, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(0.56, 0.055, 6, 30), 0, 1.25, 0.46, PI2, 0, 0],
-        [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74],
-        [new THREE.CylinderGeometry(0.13, 0.16, 0.40, 12), -0.62, 0.80, 1.12, PI2, 0, 0],
-        [new THREE.CylinderGeometry(0.13, 0.16, 0.40, 12), 0.62, 0.80, 1.12, PI2, 0, 0]
+        [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74]
     ];
     [90, 210, 330].forEach(deg => {
         const r = deg * Math.PI / 180;
@@ -5257,9 +5255,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvGlowParts = [
         [new THREE.TorusGeometry(1.45, 0.075, 7, 56), 0, 0.52, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0],
-        [new THREE.SphereGeometry(0.24, 14, 10), 0, 1.38, 0.46],
-        [new THREE.ConeGeometry(0.095, 0.30, 8), -0.62, 0.80, 1.47, PI2, 0, 0],
-        [new THREE.ConeGeometry(0.095, 0.30, 8), 0.62, 0.80, 1.47, PI2, 0, 0],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0],
         [new THREE.CylinderGeometry(0.30, 0.30, 0.03, 18), 0, -0.04, 0]
     ];
@@ -5277,8 +5272,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- ליבת האנרגיה הלבנה בתוך הכיפה והברקת זכוכית (רשת אחת) ----
     hoverRig.add(hvMerge([
-        [new THREE.SphereGeometry(0.11, 10, 8), 0, 1.38, 0.46],
-        [new THREE.SphereGeometry(0.07, 8, 6), -0.23, 1.60, 0.74, 0, 0, 0.5, 2.2, 0.6, 0.6]
+        [new THREE.SphereGeometry(0.07, 8, 6), -0.25, 1.65, 0.77, 0, 0, 0.5, 2.2, 0.6, 0.6]
     ], hvLightMat));
 
     // ---- כיפת זכוכית (רשת שקופה אחת) ----
