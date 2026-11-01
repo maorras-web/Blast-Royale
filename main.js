@@ -34,37 +34,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const FOG_FAR = 92;
     const SHOW_GRASS_ROCKS = false;   // true = מחזיר את האבנים והסלעים הקטנים שעל הדשא במפת הפירמידות
 
-    // ==========================================
-    // איכות אדפטיבית: מכשיר חזק = מראה מלא; חלש = פחות פיקסלים, בלי החלקת קצוות, צללים זולים.
-    // בנוסף מנגנון זמן-ריצה (qualityGovernor) שמוריד איכות אם ה-FPS נמוך, ושומר את ההחלטה לפעם הבאה.
-    // לבדיקה: הוסף לכתובת ?q=high / ?q=mid / ?q=low לכפיית דרגה, או ?q=reset לאיפוס ההחלטה השמורה.
-    // ==========================================
-    const QUALITY = (() => {
-        const params = new URLSearchParams(window.location.search);
-        const forced = params.get('q');
-        try { if (forced === 'reset') localStorage.removeItem('bb3d_q_drop'); } catch (e) {}
-        const cores = navigator.hardwareConcurrency || 4;
-        const mem = navigator.deviceMemory || 4;
-        let tier = cores >= 6 && mem >= 4 ? 'high' : (cores <= 4 || mem <= 3 ? 'low' : 'mid');
-        let saved = 0;
-        try { saved = parseInt(localStorage.getItem('bb3d_q_drop') || '0', 10) || 0; } catch (e) {}
-        if (forced === 'high' || forced === 'mid' || forced === 'low') { tier = forced; saved = 0; }
-        else {
-            if (saved >= 1 && tier === 'high') tier = 'mid';
-            if (saved >= 2 && tier === 'mid') tier = 'low';
-        }
-        const maxPR = tier === 'high' ? 1.5 : (tier === 'mid' ? 1.25 : 1.0);
-        return {
-            tier,
-            pixelRatio: Math.min(window.devicePixelRatio || 1, maxPR),
-            antialias: tier !== 'low',
-            shadowSize: tier === 'high' ? 2048 : 1024,
-            softShadows: tier === 'high',
-            drop: saved
-        };
-    })();
-    const SMALL_SHADOWS = QUALITY.tier === 'high';   // צללים של ברגים/קפיצים/עשבים זעירים: רק במכשיר חזק
-    if (QUALITY.tier === 'low') document.documentElement.classList.add('low-fx');
+    // איכות מלאה בכל המכשירים (כמו במשחק המקורי): רזולוציה עד 1.5, החלקת קצוות וצללים רכים. בלי הורדת איכות לפי מכשיר.
+    const QUALITY = {
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+        antialias: true,
+        softShadows: true
+    };
 
     // near=1.0 (במקום 0.1): אין שום דבר במרחק פחות מיחידה מהמצלמה, ודיוק העומק משתפר פי 10 (בלי הבהובי z-fighting).
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 1.0, 1000);
@@ -167,7 +142,7 @@ window.addEventListener('DOMContentLoaded', () => {
     sunLight.castShadow = true;
     // טלפונים חזקים מקבלים מפת צללים חדה פי 2 (2048), שאר הטלפונים נשארים על 1024.
     const isStrongPhone = (navigator.hardwareConcurrency || 4) >= 6 && (navigator.deviceMemory || 4) >= 4;
-    const SHADOW_MAP_SIZE = QUALITY.shadowSize;
+    const SHADOW_MAP_SIZE = isStrongPhone ? 2048 : 1024;
     sunLight.shadow.mapSize.width = SHADOW_MAP_SIZE;
     sunLight.shadow.mapSize.height = SHADOW_MAP_SIZE;
     sunLight.shadow.camera.near = 0.5;
@@ -931,7 +906,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 Math.random() * 0.5
             );
 
-            pebble.castShadow = SMALL_SHADOWS;
+            pebble.castShadow = true;
             pebble.receiveShadow = true;
             detailGroup.add(pebble);
         }
@@ -962,7 +937,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 );
 
                 blade.rotation.z = (Math.random() - 0.5) * 0.28;
-                blade.castShadow = SMALL_SHADOWS;
+                blade.castShadow = true;
                 detailGroup.add(blade);
             }
         }
@@ -1074,7 +1049,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const side = i % 2 === 0 ? -1 : 1;
                 shard.position.set(side * (6.4 + Math.random() * 4.8), 0.38, -3.0 - Math.random() * 10);
                 shard.rotation.set(Math.random() * 0.35, Math.random() * 1.5, (Math.random() - 0.5) * 0.22);
-                shard.castShadow = SMALL_SHADOWS;
+                shard.castShadow = true;
                 shard.receiveShadow = true;
                 group.add(shard);
             }
@@ -1589,7 +1564,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         layer.z - 0.45
                     );
 
-                    post.castShadow = SMALL_SHADOWS;
+                    post.castShadow = true;
                     post.receiveShadow = true;
                     group.add(post);
                 }
@@ -1601,7 +1576,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // דשא ריאליסטי: להבים עם מעבר צבע + שונות + רוח
     // ==========================================
     // כוונון מהיר (אם נראה כבד במובייל — להקטין GRASS_BLADE_COUNT):
-    const GRASS_BLADE_COUNT = QUALITY.tier === 'high' ? 24000 : (QUALITY.tier === 'mid' ? 14000 : 8000);
+    const GRASS_BLADE_COUNT = 24000;
     let grassWind = null; // { uTime } — מתעדכן בלולאת ה-animate
 
     function add3DGrass(mapId) {
@@ -1802,7 +1777,7 @@ window.addEventListener('DOMContentLoaded', () => {
             tuft.position.set(x, h * 0.5, z);
             tuft.rotation.z = (Math.random() - 0.5) * 0.35;
             tuft.rotation.y = Math.random() * Math.PI;
-            tuft.castShadow = SMALL_SHADOWS;
+            tuft.castShadow = true;
             group.add(tuft);
         }
 
@@ -2143,6 +2118,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const stroke = w => { c.strokeStyle = st.ink; c.lineWidth = w; c.stroke(); };
         const solid = () => { c.fillStyle = st.fill; c.fill(); stroke(0.07); };
         const line = () => { stroke(0.17); c.strokeStyle = st.fill; c.lineWidth = 0.08; c.stroke(); };
+        const lw = w => { c.strokeStyle = st.ink; c.lineWidth = w + 0.06; c.stroke(); c.strokeStyle = st.fill; c.lineWidth = w; c.stroke(); };
 
         switch (name) {
             case 'eye': {   // עין חורוס
@@ -2352,70 +2328,137 @@ window.addEventListener('DOMContentLoaded', () => {
             case 'seatedAnubis': case 'seatedHorus': case 'seatedHathor': case 'seatedPharaoh':
                 drawFigure(c, st, name);
                 break;
-            case 'owl': {
-                c.beginPath(); c.ellipse(0, 0.05, 0.2, 0.3, 0, 0, Math.PI * 2); solid();
-                c.beginPath(); c.arc(0, -0.28, 0.15, 0, Math.PI * 2); solid();
-                c.beginPath(); c.moveTo(0.02, -0.28); c.lineTo(0.12, -0.2); c.lineTo(0.0, -0.18); c.closePath(); stroke(0.05);
-                c.beginPath(); c.arc(-0.07, -0.3, 0.04, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
-                c.beginPath(); c.moveTo(-0.1, 0.2); c.lineTo(-0.1, 0.5); c.moveTo(0.1, 0.2); c.lineTo(0.1, 0.5); stroke(0.07);
+            // ---------- סימני הירוגליפים מפורטים (כל סימן בריבוע [-0.5,0.5]; "קטנים" ממלאים רק |y| <= 0.26 כדי להיערם זוגות) ----------
+            case 'owl': {   // ינשוף (m)
+                c.beginPath(); c.ellipse(0, 0.12, 0.2, 0.3, 0, 0, Math.PI * 2); solid();
+                for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(-0.11, 0.0 + k * 0.12); c.quadraticCurveTo(0, 0.08 + k * 0.12, 0.11, 0.0 + k * 0.12); stroke(0.035); }
+                c.beginPath(); c.arc(0, -0.26, 0.15, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(-0.13, -0.36); c.lineTo(-0.1, -0.5); c.lineTo(-0.03, -0.4); c.moveTo(0.13, -0.36); c.lineTo(0.1, -0.5); c.lineTo(0.03, -0.4); stroke(0.05);
+                for (const sd of [-1, 1]) {
+                    c.beginPath(); c.arc(sd * 0.065, -0.27, 0.042, 0, Math.PI * 2); c.fillStyle = st.cream; c.fill(); stroke(0.03);
+                    c.beginPath(); c.arc(sd * 0.065, -0.27, 0.016, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                }
+                c.beginPath(); c.moveTo(-0.025, -0.2); c.lineTo(0, -0.12); c.lineTo(0.025, -0.2); c.closePath(); c.fillStyle = st.ink; c.fill();
+                c.beginPath(); c.moveTo(-0.1, 0.4); c.lineTo(-0.1, 0.5); c.moveTo(0.1, 0.4); c.lineTo(0.1, 0.5); stroke(0.06);
                 break;
             }
-            case 'chick': {
-                c.beginPath(); c.ellipse(-0.02, 0.05, 0.28, 0.2, 0, 0, Math.PI * 2); solid();
-                c.beginPath(); c.arc(0.26, -0.12, 0.1, 0, Math.PI * 2); solid();
-                c.beginPath(); c.moveTo(0.35, -0.13); c.lineTo(0.46, -0.1); c.lineTo(0.35, -0.08); c.closePath(); stroke(0.05);
-                c.beginPath(); c.moveTo(-0.05, 0.22); c.lineTo(-0.05, 0.46); c.moveTo(0.1, 0.2); c.lineTo(0.1, 0.46); stroke(0.07);
+            case 'quail': case 'chick': {   // גוזל שליו (w)
+                c.beginPath(); c.ellipse(-0.04, 0.06, 0.3, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0.28, -0.12, 0.1, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.36, -0.14); c.lineTo(0.47, -0.1); c.lineTo(0.36, -0.07); c.closePath(); solid();
+                c.beginPath(); c.arc(0.3, -0.14, 0.02, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                c.beginPath(); c.moveTo(-0.24, 0.02); c.quadraticCurveTo(0.0, -0.12, 0.18, 0.08); stroke(0.04);
+                c.beginPath(); c.moveTo(-0.02, 0.24); c.lineTo(-0.02, 0.46); c.moveTo(0.1, 0.22); c.lineTo(0.1, 0.46); c.moveTo(-0.08, 0.46); c.lineTo(0.03, 0.46); c.moveTo(0.04, 0.46); c.lineTo(0.15, 0.46); stroke(0.055);
                 break;
             }
-            case 'reed': {
-                c.beginPath(); c.moveTo(0, 0.5); c.lineTo(0, -0.3); line();
-                c.beginPath(); c.moveTo(0, -0.3); c.quadraticCurveTo(0.12, -0.5, 0.03, -0.55); c.quadraticCurveTo(-0.06, -0.45, 0, -0.3); c.closePath(); solid();
-                c.beginPath(); c.moveTo(0, 0.1); c.quadraticCurveTo(0.2, 0.0, 0.3, -0.2); stroke(0.06);
+            case 'reed': {   // עלה קנה (i)
+                c.beginPath(); c.moveTo(0, 0.5); c.lineTo(0, -0.02); lw(0.06);
+                c.beginPath(); c.moveTo(0, -0.5); c.bezierCurveTo(0.2, -0.4, 0.18, -0.12, 0.0, -0.02); c.bezierCurveTo(-0.06, -0.15, -0.06, -0.38, 0, -0.5); c.closePath(); solid();
+                c.beginPath(); c.moveTo(0, 0.14); c.quadraticCurveTo(0.22, 0.12, 0.28, -0.1); c.quadraticCurveTo(0.12, -0.02, 0, 0.24); c.closePath(); solid();
                 break;
             }
-            case 'cloth': {
+            case 'ripple': {   // מים (n) - קטן
+                c.beginPath(); c.moveTo(-0.45, 0.1); c.lineTo(-0.27, -0.1); c.lineTo(-0.09, 0.1); c.lineTo(0.09, -0.1); c.lineTo(0.27, 0.1); c.lineTo(0.45, -0.1);
+                lw(0.075);
+                break;
+            }
+            case 'mouth': {   // פה (r) - קטן
+                c.beginPath(); c.ellipse(0, 0, 0.38, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0, -0.2); c.lineTo(0, 0.2); stroke(0.045);
+                c.beginPath(); c.moveTo(-0.22, -0.1); c.lineTo(-0.22, 0.1); c.moveTo(0.22, -0.1); c.lineTo(0.22, 0.1); stroke(0.03);
+                break;
+            }
+            case 'loaf': {   // כיכר לחם (t) - קטן
+                c.beginPath(); c.moveTo(-0.4, 0.22); c.quadraticCurveTo(-0.42, -0.26, 0, -0.26); c.quadraticCurveTo(0.42, -0.26, 0.4, 0.22); c.closePath(); solid();
+                c.beginPath(); c.moveTo(-0.2, 0.08); c.quadraticCurveTo(0, -0.08, 0.2, 0.08); stroke(0.03);
+                break;
+            }
+            case 'stool': {   // שרפרף / מחצלת (p) - קטן
+                c.beginPath(); c.moveTo(-0.4, 0.22); c.lineTo(-0.4, -0.04); c.lineTo(-0.16, -0.04); c.lineTo(-0.1, -0.24); c.lineTo(0.1, -0.24); c.lineTo(0.16, -0.04); c.lineTo(0.4, -0.04); c.lineTo(0.4, 0.22); c.closePath(); solid();
+                break;
+            }
+            case 'viper': {   // צפע קרני (f) - קטן
+                c.beginPath(); c.moveTo(-0.45, 0.14); c.bezierCurveTo(-0.3, -0.14, -0.15, 0.22, 0.0, 0.0); c.bezierCurveTo(0.1, -0.12, 0.2, 0.1, 0.3, 0.0);
+                lw(0.07);
+                c.beginPath(); c.ellipse(0.36, 0.0, 0.08, 0.055, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.34, -0.05); c.lineTo(0.38, -0.2); c.moveTo(0.4, -0.04); c.lineTo(0.46, -0.16); stroke(0.045);
+                break;
+            }
+            case 'foot': {   // כף רגל (b)
+                c.beginPath(); c.moveTo(-0.28, -0.5); c.lineTo(-0.02, -0.5); c.lineTo(-0.02, 0.1); c.lineTo(0.4, 0.1); c.lineTo(0.4, 0.34); c.lineTo(-0.28, 0.34); c.closePath(); solid();
+                c.beginPath(); c.moveTo(-0.28, -0.12); c.lineTo(-0.02, -0.12); stroke(0.04);
+                break;
+            }
+            case 'hand': {   // יד (d) - קטן
+                c.beginPath(); c.moveTo(-0.46, 0.02); c.lineTo(0.0, 0.02); lw(0.08);
+                c.beginPath(); c.moveTo(0, -0.1); c.lineTo(0.28, -0.12); c.lineTo(0.4, -0.22); c.lineTo(0.43, -0.1); c.lineTo(0.35, 0.0); c.lineTo(0.43, 0.1); c.lineTo(0.28, 0.14); c.lineTo(0, 0.1); c.closePath(); solid();
+                c.beginPath(); c.moveTo(0.1, -0.03); c.lineTo(0.3, -0.03); c.moveTo(0.1, 0.04); c.lineTo(0.3, 0.05); stroke(0.025);
+                break;
+            }
+            case 'arm': {   // זרוע כפופה (a) - קטן
+                c.beginPath(); c.moveTo(-0.42, 0.2); c.lineTo(-0.08, 0.2); c.lineTo(0.18, -0.02); lw(0.085);
+                c.beginPath(); c.ellipse(0.3, -0.1, 0.12, 0.075, -0.5, 0, Math.PI * 2); solid();
+                break;
+            }
+            case 'house': {   // בית (pr) - קטן
+                c.beginPath(); c.moveTo(-0.38, 0.25); c.lineTo(-0.38, -0.25); c.lineTo(0.38, -0.25); c.lineTo(0.38, 0.25); lw(0.07);
+                c.beginPath(); c.moveTo(-0.38, 0.25); c.lineTo(-0.12, 0.25); stroke(0.1);
+                c.beginPath(); c.rect(-0.1, -0.05, 0.2, 0.16); c.fillStyle = st.ink; c.fill();
+                break;
+            }
+            case 'disc': {   // דיסקת שמש (ra) - קטן
+                c.beginPath(); c.arc(0, 0, 0.25, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0, 0, 0.07, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
+                break;
+            }
+            case 'cloth': {   // בד מקופל (s)
                 c.beginPath(); c.moveTo(-0.3, -0.35); c.lineTo(0.3, -0.35); c.lineTo(0.24, 0.35); c.lineTo(-0.24, 0.35); c.closePath(); solid();
-                for (const yy of [-0.15, 0.0, 0.15]) { c.beginPath(); c.moveTo(-0.26, yy); c.lineTo(0.26, yy); stroke(0.05); }
+                for (const yy of [-0.15, 0.0, 0.15]) { c.beginPath(); c.moveTo(-0.26, yy); c.lineTo(0.26, yy); stroke(0.04); }
                 break;
             }
-            case 'basket': {
-                c.beginPath(); c.moveTo(-0.38, -0.05); c.lineTo(0.38, -0.05); c.lineTo(0.28, 0.35); c.lineTo(-0.28, 0.35); c.closePath(); solid();
-                c.beginPath(); c.arc(0, -0.05, 0.3, Math.PI, 2 * Math.PI); line();
+            case 'basket': {   // סל עם ידית (k) - קטן
+                c.beginPath(); c.moveTo(-0.38, 0.0); c.lineTo(0.38, 0.0); c.lineTo(0.28, 0.26); c.lineTo(-0.28, 0.26); c.closePath(); solid();
+                c.beginPath(); c.arc(0, 0.0, 0.25, Math.PI, 2 * Math.PI); lw(0.06);
+                c.beginPath(); c.moveTo(-0.33, 0.12); c.lineTo(0.33, 0.12); stroke(0.03);
                 break;
             }
-            case 'loaf': {
-                c.beginPath(); c.moveTo(-0.4, 0.25); c.quadraticCurveTo(0, -0.5, 0.4, 0.25); c.closePath(); solid();
+            case 'falcon': {   // נץ על בסיס
+                c.beginPath(); c.rect(-0.34, 0.38, 0.68, 0.12); solid();
+                c.beginPath(); c.moveTo(-0.08, 0.38); c.lineTo(-0.08, 0.2); c.moveTo(0.1, 0.38); c.lineTo(0.1, 0.2); lw(0.05);
+                c.beginPath(); c.ellipse(-0.02, 0.0, 0.26, 0.2, -0.5, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(-0.2, 0.1); c.lineTo(-0.46, 0.34); c.lineTo(-0.28, 0.34); c.lineTo(-0.1, 0.16); c.closePath(); solid();
+                c.beginPath(); c.arc(0.16, -0.26, 0.1, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.24, -0.28); c.lineTo(0.34, -0.22); c.lineTo(0.22, -0.2); c.closePath(); solid();
+                c.beginPath(); c.arc(0.18, -0.28, 0.018, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
                 break;
             }
-            case 'arm': {
-                c.beginPath(); c.moveTo(-0.45, 0.08); c.lineTo(0.1, 0.0); line();
-                c.beginPath(); c.moveTo(0.05, -0.1); c.lineTo(0.35, -0.1); c.lineTo(0.38, 0.08); c.lineTo(0.05, 0.12); c.closePath(); solid();
+            case 'ibis': {   // איביס של תחות'
+                c.beginPath(); c.ellipse(-0.06, 0.1, 0.25, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.1, 0.0); c.quadraticCurveTo(0.2, -0.1, 0.22, -0.28); lw(0.09);
+                c.beginPath(); c.arc(0.24, -0.32, 0.07, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(0.3, -0.34); c.quadraticCurveTo(0.5, -0.32, 0.47, -0.08); lw(0.04);
+                c.beginPath(); c.moveTo(-0.08, 0.28); c.lineTo(-0.08, 0.5); c.moveTo(0.06, 0.28); c.lineTo(0.06, 0.5); stroke(0.055);
+                c.beginPath(); c.moveTo(-0.28, 0.06); c.lineTo(-0.46, 0.2); c.lineTo(-0.26, 0.22); c.closePath(); solid();
                 break;
             }
-            case 'mouth': {
-                c.beginPath(); c.ellipse(0, 0, 0.36, 0.2, 0, 0, Math.PI * 2); solid();
-                c.beginPath(); c.moveTo(-0.3, 0); c.lineTo(0.3, 0); stroke(0.06);
+            case 'hare': {   // ארנבת (wn)
+                c.beginPath(); c.ellipse(-0.08, 0.12, 0.3, 0.2, 0, 0, Math.PI * 2); solid();
+                c.beginPath(); c.arc(0.26, 0.0, 0.11, 0, Math.PI * 2); solid();
+                c.beginPath(); c.ellipse(0.2, -0.28, 0.045, 0.17, 0.25, 0, Math.PI * 2); solid();
+                c.beginPath(); c.ellipse(0.3, -0.26, 0.045, 0.17, 0.45, 0, Math.PI * 2); solid();
+                c.beginPath(); c.moveTo(-0.14, 0.3); c.lineTo(-0.14, 0.5); c.moveTo(0.1, 0.3); c.lineTo(0.12, 0.5); stroke(0.06);
+                c.beginPath(); c.arc(-0.4, 0.1, 0.05, 0, Math.PI * 2); solid();
                 break;
             }
-            case 'disc': {
-                c.beginPath(); c.arc(0, 0, 0.32, 0, Math.PI * 2); solid();
-                c.beginPath(); c.arc(0, 0, 0.09, 0, Math.PI * 2); c.fillStyle = st.ink; c.fill();
-                break;
-            }
-            case 'snake': {
-                c.beginPath(); c.moveTo(-0.45, 0.2); c.bezierCurveTo(-0.2, -0.3, 0.05, 0.4, 0.3, -0.05); line();
-                c.beginPath(); c.arc(0.34, -0.1, 0.08, 0, Math.PI * 2); solid();
-                break;
-            }
-            case 'house': {
-                c.beginPath(); c.moveTo(-0.38, 0.35); c.lineTo(-0.38, -0.3); c.lineTo(0.38, -0.3); c.lineTo(0.38, 0.35); line();
-                c.beginPath(); c.moveTo(-0.38, 0.35); c.lineTo(-0.15, 0.35); stroke(0.1);
-                break;
-            }
-            case 'zig': {
-                c.beginPath(); c.moveTo(-0.45, 0.1);
-                for (let k = 1; k <= 6; k++) c.lineTo(-0.45 + k * 0.15, 0.1 + (k % 2 ? -0.2 : 0));
-                line();
+            case 'vcartouche': {   // קרטוש אנכי עם סימנים בפנים (גובה 1, רוחב ~0.26)
+                const w = 0.13;
+                c.beginPath();
+                c.moveTo(-w, -0.5 + w); c.arc(0, -0.5 + w, w, Math.PI, 2 * Math.PI);
+                c.lineTo(w, 0.5 - w); c.arc(0, 0.5 - w, w, 0, Math.PI);
+                c.closePath(); c.fillStyle = st.cream; c.fill(); stroke(0.016);
+                c.beginPath(); c.moveTo(-w - 0.05, 0.5 + 0.012); c.lineTo(w + 0.05, 0.5 + 0.012); stroke(0.018);
+                const inner = ['disc', 'feather', 'scarab', 'reed'];
+                inner.forEach((nm, i) => drawEgyptGlyph(c, nm, 0, -0.33 + i * 0.22, 0.2, st));
                 break;
             }
             case 'cartouche': {   // קרטוש עם סמלים בפנים (רוחב ~2.3)
@@ -2648,37 +2691,59 @@ window.addEventListener('DOMContentLoaded', () => {
         // 1. מסכת פרעה: מסגרת צרה וגבוהה (כמו בתמונה), בחלק העליון.
         glyph('mask', c0, slant * 0.30, 4.9 * k);
 
-        // 2. שורת הירוגליפים אחת מתחת למסכה.
-        const smallSet = ['eye', 'bird', 'water', 'feather', 'scarab', 'cobra', 'ankh', 'was', 'owl', 'chick', 'reed',
-            'cloth', 'basket', 'loaf', 'arm', 'mouth', 'disc', 'snake', 'house', 'zig', 'djed'];
-        const pick = () => smallSet[(rnd() * smallSet.length) | 0];
+        // 2. שורת עיטור מתחת למסכה: "חיים, שליטה, יציבות" (אנך, וואס, ג'ד) חוזר, כמו בכתובות מקדש אמיתיות.
         bar(slant * 0.392, 0.09 * k);
         {
-            const f = 0.414, half = baseW * f * 0.5 * 0.88;
-            for (let x = -half; x <= half; x += 0.72 * k) glyph(pick(), c0 + x, f * slant, 0.5 * k);
+            const f = 0.414, half = baseW * f * 0.5 * 0.86, motif = ['ankh', 'was', 'djed'];
+            let mi = 0;
+            for (let x = -half; x <= half; x += 0.95 * k) glyph(motif[mi++ % 3], c0 + x, f * slant, 0.82 * k);
         }
         bar(slant * 0.438, 0.09 * k);
 
-        // 3. "קיר" צפוף של עמודות הירוגליפים קטנות, עם קווי הפרדה בין קבוצות עמודות.
-        const colTop = 0.46, colBottom = 0.655;
-        const colStep = 0.6 * k, rowStep = 0.55 * k;
-        const nCols = Math.floor((baseW * 0.5) / colStep);
-        for (let ci = -nCols; ci <= nCols; ci++) {
-            const x = ci * colStep;
-            if (Math.abs(x) < 1.3 * k) continue;
-            const fTop = Math.max(colTop, (2 * Math.abs(x) + 0.7 * k) / baseW + 0.02);
-            for (let f = fTop; f <= colBottom; f += rowStep / slant) glyph(pick(), c0 + x, f * slant, 0.42 * k);
-        }
-        for (let j = 0; j < 4; j++) {
-            for (const sd of [-1, 1]) {
-                const lx = c0 + sd * (1.15 + 3.6 * j) * k;
-                const fTopL = Math.max(colTop, (2 * (1.15 + 3.6 * j) * k) / baseW + 0.02);
-                if (fTopL < colBottom) vline(lx, slant * fTopL, slant * (colBottom + 0.008));
+        // 3. כתובת בעמודות אנכיות: תאים מרובעים, סימנים גדולים וברורים, סימנים קטנים נערמים בזוגות (כמו שסופרים מצרים כתבו),
+        //    קווי הפרדה בין קבוצות עמודות, וקרטוש אנכי במרכז. הרצף נבחר בהסתברות לפי שכיחות סימנים בכתב המצרי.
+        const GDEF = {   // w = משקל שכיחות, h: 's' קטן (נערם בזוג) / 'f' מלא
+            ripple: { w: 6, h: 's' }, mouth: { w: 5, h: 's' }, loaf: { w: 5, h: 's' }, stool: { w: 4, h: 's' }, viper: { w: 3, h: 's' },
+            hand: { w: 4, h: 's' }, arm: { w: 3, h: 's' }, house: { w: 3, h: 's' }, disc: { w: 3, h: 's' }, basket: { w: 3, h: 's' },
+            reed: { w: 5, h: 'f' }, owl: { w: 4, h: 'f' }, quail: { w: 4, h: 'f' }, foot: { w: 3, h: 'f' }, eye: { w: 3, h: 'f' },
+            ankh: { w: 2, h: 'f' }, was: { w: 1, h: 'f' }, djed: { w: 1, h: 'f' }, scarab: { w: 2, h: 'f' }, bird: { w: 2, h: 'f' },
+            falcon: { w: 2, h: 'f' }, ibis: { w: 1, h: 'f' }, hare: { w: 1, h: 'f' }, cloth: { w: 2, h: 'f' }, cobra: { w: 2, h: 'f' },
+            feather: { w: 2, h: 'f' }
+        };
+        const bag = (kind) => { const a = []; for (const n in GDEF) if (!kind || GDEF[n].h === kind) for (let i = 0; i < GDEF[n].w; i++) a.push(n); return a; };
+        const bagAll = bag(), bagSmall = bag('s');
+        const pickFrom = (arr) => arr[(rnd() * arr.length) | 0];
+
+        const P = 0.8 * k;                                  // גודל תא = רוחב עמודה = גובה תא
+        const yBottom = slant * 0.655, yTopLimit = slant * 0.46;
+        const firstCenter = 1.3 * k;                        // מרכז העמודה הראשונה ליד הקרטוש האנכי
+        const maxJ = Math.ceil((baseW * 0.5 - firstCenter) / P);
+        const drawCell = (x, y) => {
+            const g = pickFrom(bagAll);
+            if (GDEF[g].h === 's') {                         // שני סימנים קטנים זה מעל זה בתא אחד
+                glyph(g, x, y - P * 0.25, P * 0.82);
+                glyph(pickFrom(bagSmall), x, y + P * 0.25, P * 0.82);
+            } else {
+                glyph(g, x, y, P * 0.82);
+            }
+        };
+        for (const sd of [-1, 1]) {
+            for (let j = 0; j <= maxJ; j++) {
+                const xc = sd * (firstCenter + j * P);
+                const yTop = Math.max(yTopLimit, slant * ((2 * (Math.abs(xc) + P * 0.5)) / baseW + 0.015));   // לא חורגים מקצה המשולש
+                for (let y = yBottom - P * 0.5; y - P * 0.5 >= yTop; y -= P) drawCell(c0 + xc, y);
+            }
+            for (let m = 0; m <= maxJ; m += 4) {                                  // קו הפרדה בין קבוצות של 4 עמודות
+                const lx = sd * (firstCenter - P * 0.5 + m * P);
+                const yT = Math.max(yTopLimit, slant * ((2 * Math.abs(lx) + 0.5 * k) / baseW + 0.012));
+                if (yT < yBottom - P) vline(c0 + lx, yT, yBottom + 0.1);
             }
         }
-        glyph('djed', c0, slant * 0.50, 1.3 * k);
-        glyph('ankh', c0, slant * 0.56, 1.3 * k);
-        glyph('was', c0, slant * 0.62, 1.3 * k);
+        // עמוד מרכזי: קרטוש אנכי גבוה עם סימנים בתוכו.
+        {
+            const H = yBottom - yTopLimit - 0.3 * k;
+            glyph('vcartouche', c0, yTopLimit + 0.15 * k + H / 2, H);
+        }
         bar(slant * 0.668, 0.09 * k);
 
         // 4. שורת אלים גבוהה: פפירוס, אנוביס יושב, פרעה, חתחור, חורוס יושב, פפירוס.
@@ -3183,7 +3248,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 boltMat
             );
             bolt.position.set(side * 1.155, 0.51, z);
-            bolt.castShadow = SMALL_SHADOWS;
+            bolt.castShadow = true;
             cannonGroup.add(bolt);
         });
     });
@@ -3201,7 +3266,7 @@ window.addEventListener('DOMContentLoaded', () => {
             panelLineMat
         );
         line.position.set(-0.48 + index * 0.48, 0.665, z * 0.7);
-        line.castShadow = SMALL_SHADOWS;
+        line.castShadow = true;
         cannonGroup.add(line);
     });
 
@@ -3213,7 +3278,7 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         brace.position.set(x, 0.67, 0.05);
         brace.rotation.y = x > 0 ? -0.08 : 0.08;
-        brace.castShadow = SMALL_SHADOWS;
+        brace.castShadow = true;
         cannonGroup.add(brace);
     });
 
@@ -3975,7 +4040,7 @@ window.addEventListener('DOMContentLoaded', () => {
             suspensionDarkMetalMat
         );
         joint.position.copy(position);
-        joint.castShadow = SMALL_SHADOWS;
+        joint.castShadow = true;
         joint.receiveShadow = true;
         cannonGroup.add(joint);
         if (sprung) suspensionJoints.push({ mesh: joint, rest: position.clone() });
@@ -3990,7 +4055,7 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         bolt.rotation.x = Math.PI / 2;
         bolt.position.copy(position);
-        bolt.castShadow = SMALL_SHADOWS;
+        bolt.castShadow = true;
         bolt.receiveShadow = true;
         cannonGroup.add(bolt);
         if (sprung) suspensionJoints.push({ mesh: bolt, rest: position.clone() });
@@ -4019,7 +4084,7 @@ window.addEventListener('DOMContentLoaded', () => {
             new THREE.CylinderGeometry(0.052, 0.052, length, 12),
             suspensionDarkMetalMat
         );
-        damper.castShadow = SMALL_SHADOWS;
+        damper.castShadow = true;
         damper.receiveShadow = true;
         group.add(damper);
 
@@ -4032,7 +4097,7 @@ window.addEventListener('DOMContentLoaded', () => {
             );
             coil.rotation.x = Math.PI / 2;
             coil.position.y = y;
-            coil.castShadow = SMALL_SHADOWS;
+            coil.castShadow = true;
             coil.receiveShadow = true;
             group.add(coil);
         });
@@ -4850,11 +4915,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // מוט כרום מרכזי + גוף בולם כהה בחצי התחתון
         const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, length, 16), mk2ArmMat);
-        rod.castShadow = SMALL_SHADOWS;
+        rod.castShadow = true;
         group.add(rod);
         const dmp = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, length * 0.50, 20), suspensionDarkMetalMat);
         dmp.position.y = -length * 0.22;
-        dmp.castShadow = SMALL_SHADOWS;
+        dmp.castShadow = true;
         group.add(dmp);
 
         // סליל קפיץ דק (הליקס) עם רווחים נראים בין הכריכות
@@ -4866,14 +4931,14 @@ window.addEventListener('DOMContentLoaded', () => {
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
         const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.072, 10, false), mk2CoilMat);
-        coil.castShadow = SMALL_SHADOWS;
+        coil.castShadow = true;
         group.add(coil);
 
         // טבעות כסופות בשני קצות הקפיץ
         [-1, 1].forEach(end => {
             const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 24), mk2DamperMat);
             collar.position.y = end * (length / 2 - 0.045);
-            collar.castShadow = SMALL_SHADOWS;
+            collar.castShadow = true;
             group.add(collar);
         });
 
@@ -4908,7 +4973,7 @@ window.addEventListener('DOMContentLoaded', () => {
             [upperBody, lowerBody].forEach(P => {
                 const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.10, 0.10, Math.abs(P[2] - zb) + 0.06, 16), nvSteel,
                     P[0], P[1] - MK2_BODY_RAISE, (P[2] + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
-                post.castShadow = SMALL_SHADOWS;
+                post.castShadow = true;
             });
 
             // שתי זרועות שטוחות ועבות במקביל + לוחית רכזת אנכית
@@ -4938,7 +5003,7 @@ window.addEventListener('DOMContentLoaded', () => {
             gGeo.translate(0, 0, -0.05);
             const gusset = new THREE.Mesh(gGeo, mk2PlateMat);
             gusset.position.set(hx, MK2_WHEEL_Y, zp - sgn * 0.02);
-            gusset.castShadow = SMALL_SHADOWS;
+            gusset.castShadow = true;
             gusset.receiveShadow = true;
             cannonGroup.add(gusset);
             mk2OnlyParts.push(gusset);
@@ -4958,7 +5023,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const wGeo = new THREE.ExtrudeGeometry(wShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.03, bevelSegments: 2, steps: 1 });
                 wGeo.translate(0, 0, -0.05);
                 const wedge = new THREE.Mesh(wGeo, mk2PlateMat);
-                wedge.castShadow = SMALL_SHADOWS;
+                wedge.castShadow = true;
                 wedge.receiveShadow = true;
                 gusset.add(wedge);
                 mk2Boss(lowerEnd[0], lowerEnd[1], zp + sgn * 0.12, 0.09, false);
@@ -4967,7 +5032,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const bolt = new THREE.Mesh(mk2BoltGeo, nvFin);
                 bolt.rotation.x = Math.PI / 2;
                 bolt.position.set(side * bp[0] * 0.80, bp[1] * 0.80, sgn * 0.11);
-                bolt.castShadow = SMALL_SHADOWS;
+                bolt.castShadow = true;
                 gusset.add(bolt);
             });
             }
@@ -8755,34 +8820,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 11. לולאת המשחק
     // ==========================================
-    // ---- מנגנון איכות אדפטיבי: אם ה-FPS בזמן משחק נמוך, מורידים איכות בהדרגה (פיקסלים, ואז צללים) ----
-    const perf = { last: 0, acc: 0, frames: 0, warm: 90, step: QUALITY.drop };
-    function degradeQuality(persist) {
-        let changed = true;
-        if (QUALITY.pixelRatio > 1.0) QUALITY.pixelRatio = Math.max(1.0, QUALITY.pixelRatio - 0.25);
-        else if (QUALITY.pixelRatio > 0.8) QUALITY.pixelRatio = Math.max(0.8, QUALITY.pixelRatio - 0.1);
-        else if (sunLight.castShadow) sunLight.castShadow = false;
-        else changed = false;
-        if (!changed) return;
-        perf.step++;
-        // שומרים לפעם הבאה רק אם המכשיר ממש איטי (>=40ms לפריים). מצב חיסכון בסוללה (~33ms) הוא הגבלת 30fps ולא חולשת מכשיר.
-        if (persist) { try { localStorage.setItem('bb3d_q_drop', String(Math.min(2, perf.step))); } catch (e) {} }
-        renderer.setPixelRatio(QUALITY.pixelRatio);
-        document.documentElement.classList.add('low-fx');   // מכבה גם טשטוש רקע של חלונות
-    }
-    function qualityGovernor(time) {
-        const dt = perf.last ? time - perf.last : 0;
-        perf.last = time;
-        if (dt <= 0 || dt > 250) { perf.acc = 0; perf.frames = 0; return; }   // חזרה מהשהיה/טאב: לא מודדים
-        if (perf.warm > 0) { perf.warm--; return; }                           // התחממות: קומפילציית שיידרים והעלאת טקסטורות
-        perf.acc += dt; perf.frames++;
-        if (perf.frames < 60) return;
-        const avg = perf.acc / perf.frames;
-        perf.acc = 0; perf.frames = 0;
-        if (avg < 26) return;                                                // מעל ~38fps: טוב מספיק
-        degradeQuality(avg >= 40);
-        perf.warm = 90;
-    }
     let idleFlip = false;
 
     function animate(time) {
@@ -8796,7 +8833,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (idleFlip) renderer.render(scene, camera);
             return;
         }
-        qualityGovernor(time);
 
         updateWeatherParticles();
 
