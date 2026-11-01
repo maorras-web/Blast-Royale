@@ -5181,8 +5181,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const HV_BASE_Y = -TIRE_GROUND_DROP + HV_CLEARANCE;
     const HV_MUZZLE_Y = 2.48;                         // גובה פתח הקנה מעל בסיס הגוף
     const HV_BARREL_X = 0.35;                         // אותו מרחק בין הקנים כמו בקלאסי
+    const HV_SIZE = 1.35;                             // גודל החללית (1.35 = אותו רוחב כמו התותח הקלאסי עם הגלגלים)
     const hoverRig = new THREE.Group();
     hoverRig.visible = false;
+    hoverRig.scale.setScalar(HV_SIZE);
     hoverRig.position.y = HV_BASE_Y;
     cannonGroup.add(hoverRig);
 
@@ -5318,6 +5320,7 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         m.rotation.x = -Math.PI / 2;
         m.position.y = -TIRE_GROUND_DROP + 0.035;
+        m.scale.set(HV_SIZE, HV_SIZE, 1);
         m.renderOrder = 3;
         m.visible = false;
         cannonGroup.add(m);
@@ -5366,7 +5369,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBeamMat.opacity = 0.17 + Math.sin(time * 0.006) * 0.05;
         hoverGlow.material.opacity = 0.20 - bob * 0.6;
         const ph = (time * 0.00075) % 1;                    // מחזור פעימה של כ-1.3 שניות
-        hoverRing.scale.set(0.55 + ph * 0.60, 0.55 + ph * 0.60, 1);
+        hoverRing.scale.set((0.55 + ph * 0.60) * HV_SIZE, (0.55 + ph * 0.60) * HV_SIZE, 1);
         hoverRing.material.opacity = 0.65 * (1 - ph) * Math.min(1, ph * 6);
     }
 
@@ -9242,8 +9245,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 muzzleY = cannonGroup.position.y + MK2_MUZZLE_Y * CANNON_SCALE;
                 muzzleXs = MK2_BARREL_X.map(bxw => cannonGroup.position.x + bxw * CANNON_SCALE);
             } else if (activeCannon === 'hover') {
-                muzzleY = cannonGroup.position.y + (hoverRig.position.y + HV_MUZZLE_Y) * CANNON_SCALE;
-                muzzleXs = [cannonGroup.position.x - HV_BARREL_X * CANNON_SCALE, cannonGroup.position.x + HV_BARREL_X * CANNON_SCALE];
+                muzzleY = cannonGroup.position.y + (hoverRig.position.y + HV_MUZZLE_Y * HV_SIZE) * CANNON_SCALE;
+                muzzleXs = [cannonGroup.position.x - HV_BARREL_X * HV_SIZE * CANNON_SCALE, cannonGroup.position.x + HV_BARREL_X * HV_SIZE * CANNON_SCALE];
             } else {
                 muzzleY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
                 muzzleXs = [cannonGroup.position.x - 0.35 * CANNON_SCALE, cannonGroup.position.x + 0.35 * CANNON_SCALE];
