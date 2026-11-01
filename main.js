@@ -5266,9 +5266,6 @@ window.addEventListener('DOMContentLoaded', () => {
         [new THREE.TorusGeometry(0.56, 0.055, 6, 30), 0, 1.25, 0.46, PI2, 0, 0],
         [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74]
     ];
-    [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4].forEach(ry => {
-        hvDarkParts.push([new THREE.TorusGeometry(0.548, 0.016, 5, 28), 0, 1.24, 0.46, 0, ry, 0, 1, 0.95, 1]);
-    });
     hoverRig.add(hvMerge(hvDarkParts, hvDarkMat));
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
@@ -5397,7 +5394,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hoverRig.position.y = HV_BASE_Y + bob;
         hoverRig.rotation.z = hvLean;
         hoverRig.rotation.x = Math.sin(time * 0.0017) * 0.02;
-        hvBarrels.position.y = -Math.min(0.14, cannonRecoil * 3.0);
+        hvBarrels.position.y = -Math.max(-0.04, Math.min(0.14, cannonRecoil * 3.0));
         hvSpin.rotation.y += 0.02;
         hvBeamMat.opacity = 0.17 + Math.sin(time * 0.006) * 0.05;
         hoverGlow.material.opacity = 0.30 - bob * 0.6;
@@ -7461,6 +7458,17 @@ window.addEventListener('DOMContentLoaded', () => {
         { ax: 0.37, ay: 2.55, bx: 0.37, by: 2.55, r: 0.20 }    // קנה ימין
     ];
 
+    // אזורי פגיעה של החללית: מותאמים לצורה האמיתית שלה (הגוף, הכיפה והקנים), לא לצורה של התותח הקלאסי.
+    const HOVER_COLLIDERS = (function () {
+        const S = HV_SIZE, y0 = HV_BASE_Y, bx = HV_BARREL_X * S;
+        return [
+            { ax: -1.15, ay: y0 + 0.60 * S, bx: 1.15, by: y0 + 0.60 * S, r: 0.85 },          // גוף הצלחת
+            { ax: 0, ay: y0 + 1.24 * S + 0.08, bx: 0, by: y0 + 1.24 * S + 0.08, r: 0.62 },    // כיפה
+            { ax: -bx, ay: y0 + 1.0 * S, bx: -bx, by: y0 + 2.25 * S, r: 0.32 },               // קנה שמאל
+            { ax: bx, ay: y0 + 1.0 * S, bx: bx, by: y0 + 2.25 * S, r: 0.32 }                  // קנה ימין
+        ];
+    })();
+
     // ==========================================
     // התנגשות סלע-סלע: הסלעים דוחפים זה את זה
     // ==========================================
@@ -7556,7 +7564,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const rockR = data.size * 0.95;
         let impact = 0;
 
-        for (const c of CANNON_COLLIDERS) {
+        const isHover = activeCannon === 'hover';
+        for (const c of (isHover ? HOVER_COLLIDERS : CANNON_COLLIDERS)) {
             const ax = cx + c.ax * s, ay = cy + c.ay * s;
             const bx = cx + c.bx * s, by = cy + c.by * s;
             const abx = bx - ax, aby = by - ay;
@@ -7584,9 +7593,10 @@ window.addEventListener('DOMContentLoaded', () => {
             // קפיצה: מחזירים את רכיב המהירות שלפני המשטח, ביחס לתותח הנע.
             const vn = (data.vx - cannonVx) * nx + data.vy * ny;
             if (vn < 0) {
-                const e = 0.92;
+                const e = isHover ? 0.68 : 0.92;           // החללית דוחפת בעדינות יותר
                 let j = -(1 + e) * vn;
-                if (-e * vn < 0.14) j = 0.14 - vn; // תמיד קפיצה מורגשת, לא "נדבק"
+                const minKick = isHover ? 0.08 : 0.14;
+                if (-e * vn < minKick) j = minKick - vn; // תמיד קפיצה מורגשת, לא "נדבק"
                 data.vx += j * nx;
                 data.vy += j * ny;
 
