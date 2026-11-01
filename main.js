@@ -3764,10 +3764,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const wheelDishGeo = mergeWheelParts(dishParts);
     // נפח צמיג דומה לנובה: הגומי (כולל שיני האחיזה) מורחב לרוחב ב-45%, והחישוק מורחב מעט כדי להישאר גלוי.
     // זה שינוי חד-פעמי בגיאומטריה המשותפת - אפס עלות בזמן ריצה, הרדיוס החיצוני (מגע עם הקרקע) לא משתנה.
-    const CLASSIC_TIRE_PUFF = 1.65, CLASSIC_RIM_R = 0.78;   // צמיג רחב ונפוח + חישוק קטן יותר שיושב עמוק בתוכו
+    const CLASSIC_TIRE_PUFF = 1.7, CLASSIC_RIM_R = 0.88;   // צמיג רחב ונפוח + חישוק קטן יותר שיושב עמוק בתוכו
     wheelRubberGeo.scale(1, 1, CLASSIC_TIRE_PUFF);
-    wheelChromeGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.0);
-    wheelDishGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.0);
+    wheelChromeGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.3);
+    wheelDishGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.3);
 
     // ---- חומרים ----
     const wheelRubberMat = new THREE.MeshStandardMaterial({
@@ -3854,30 +3854,14 @@ window.addEventListener('DOMContentLoaded', () => {
         nvTireGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     }
     const mk2TreadGeo = taperedBox(0.22, 0.14, 0.17, 'y', 0.78);   // שן אחיזה בולטת (בלוק מחורץ)
-    const wheelOuter_smooth = [];
-
-    wheelPositions.forEach(pos => {
-        // wheelOuter = מיקום הגלגל. wheel = הציר שמסתובב.
-        const wheelOuter = new THREE.Group();
-        wheelOuter.position.set(pos[0], pos[1], pos[2]);
-
-        const wheel = new THREE.Group();
-        wheelOuter.add(wheel);
-
-        const tireMesh = new THREE.Mesh(wheelRubberGeo, wheelRubberMat);
-        tireMesh.castShadow = true;
-        tireMesh.receiveShadow = true;
-        wheel.add(tireMesh);
-
-        // צמיג חלק עם דוגמת אחיזה נמוכה (קו חיצוני חלק כמו בתמונת המטרה) - מוצג רק בתותח האפור
-        const smoothTire = new THREE.Group();
-        smoothTire.visible = false;
+    // בונה גומי חלק ונפוח עם שיני אחיזה נמוכות (משמש גם את הנובה וגם את הקלאסי). W = יחס הרוחב של הצמיג.
+    function addNvRubber(smoothTire, W) {
         const smoothTorus = new THREE.Mesh(nvTireGeo, nvTireMat);
-        smoothTorus.scale.z = 1.6;
+        smoothTorus.scale.z = W;
         smoothTorus.castShadow = true;
         smoothTorus.receiveShadow = true;
         smoothTire.add(smoothTorus);
-        const TIRE_W = 1.6;
+        const TIRE_W = W;
         const treadMesh = new THREE.InstancedMesh(mk2TreadGeo, nvTreadMat, MK2_TREAD_N * MK2_TREAD_ROWS.length);
         const treadDummy = new THREE.Object3D();
         treadDummy.rotation.order = 'ZXY';
@@ -3920,6 +3904,27 @@ window.addEventListener('DOMContentLoaded', () => {
                 smoothTire.add(sideMesh);
             });
         }
+    }
+
+    const wheelOuter_smooth = [];
+
+    wheelPositions.forEach(pos => {
+        // wheelOuter = מיקום הגלגל. wheel = הציר שמסתובב.
+        const wheelOuter = new THREE.Group();
+        wheelOuter.position.set(pos[0], pos[1], pos[2]);
+
+        const wheel = new THREE.Group();
+        wheelOuter.add(wheel);
+
+        // צמיג קלאסי: אותו גומי חלק ונפוח של הנובה (עם שיני אחיזה קטנות), רחב יותר מהנובה
+        const tireMesh = new THREE.Group();
+        addNvRubber(tireMesh, CLASSIC_TIRE_PUFF);
+        wheel.add(tireMesh);
+
+        // צמיג חלק עם דוגמת אחיזה נמוכה (קו חיצוני חלק כמו בתמונת המטרה) - מוצג רק בתותח האפור
+        const smoothTire = new THREE.Group();
+        smoothTire.visible = false;
+        addNvRubber(smoothTire, 1.6);
         // (הפקעות הבולטות הוחלפו בדוגמה על הצמיג עצמו)
         // רכזת מתכת גלויה על שני צדי הגלגל: דיסק פלדה, מרכז כהה וחמישה ברגים
         [-1, 1].forEach(hs => {
