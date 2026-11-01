@@ -3764,10 +3764,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const wheelDishGeo = mergeWheelParts(dishParts);
     // נפח צמיג דומה לנובה: הגומי (כולל שיני האחיזה) מורחב לרוחב ב-45%, והחישוק מורחב מעט כדי להישאר גלוי.
     // זה שינוי חד-פעמי בגיאומטריה המשותפת - אפס עלות בזמן ריצה, הרדיוס החיצוני (מגע עם הקרקע) לא משתנה.
-    const CLASSIC_TIRE_PUFF = 1.45, CLASSIC_RIM_PUFF = 1.28;
+    const CLASSIC_TIRE_PUFF = 1.65, CLASSIC_RIM_R = 0.78;   // צמיג רחב ונפוח + חישוק קטן יותר שיושב עמוק בתוכו
     wheelRubberGeo.scale(1, 1, CLASSIC_TIRE_PUFF);
-    wheelChromeGeo.scale(1, 1, CLASSIC_RIM_PUFF);
-    wheelDishGeo.scale(1, 1, CLASSIC_RIM_PUFF);
+    wheelChromeGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.0);
+    wheelDishGeo.scale(CLASSIC_RIM_R, CLASSIC_RIM_R, 1.0);
 
     // ---- חומרים ----
     const wheelRubberMat = new THREE.MeshStandardMaterial({
