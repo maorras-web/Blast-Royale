@@ -5197,14 +5197,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const gr = cx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gr.addColorStop(0.00, 'rgba(210,228,255,1)');
         gr.addColorStop(0.12, 'rgba(120,165,255,0.85)');
-        gr.addColorStop(0.35, 'rgba(25,70,255,0.38)');
+        gr.addColorStop(0.35, 'rgba(25,70,255,0.45)');
         gr.addColorStop(0.65, 'rgba(10,30,255,0.10)');
         gr.addColorStop(1.00, 'rgba(0,10,255,0)');
         cx.fillStyle = gr;
         cx.fillRect(0, 0, 64, 64);
         return new THREE.CanvasTexture(c);
     })();
-    const hvGlowSprite = new THREE.PointsMaterial({ map: hvGlowTex, size: 0.7, sizeAttenuation: true, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+    const hvGlowSprite = new THREE.PointsMaterial({ map: hvGlowTex, size: 1.8, sizeAttenuation: true, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
     function hvGlowPoints(pts) {
         const arr = new Float32Array(pts.length * 3);
         pts.forEach((p, i) => { arr[i * 3] = p[0]; arr[i * 3 + 1] = p[1]; arr[i * 3 + 2] = p[2]; });
@@ -5249,7 +5249,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvSlope = Math.atan2(0.16, 0.25);   // שיפוע הכתף של הגוף
     for (let i = 0; i < 14; i++) {
         const phi = i / 14 * Math.PI * 2;
-        const pc = i % 2 ? 0x5a8cff : 0xa8ccff;
+        const pc = i % 2 ? 0x3a70ff : 0x70a8ff;
         hvGlowParts.push([new THREE.BoxGeometry(0.27, 0.04, 0.125).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.01, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
     }
     hvGlowParts.push([new THREE.TorusGeometry(1.20, 0.028, 6, 52), 0, 0.345, 0, PI2, 0, 0, 1, 1, 1, 0x1f45ff]);
@@ -5303,7 +5303,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBarrelParts.push([new THREE.CylinderGeometry(0.265, 0.265, 0.07, 16), bx, 2.30, bz, 0, 0, 0, 1, 1, 1, ST]);
         hvBarrelParts.push([new THREE.SphereGeometry(0.235, 16, 8, 0, Math.PI * 2, 0, PI2), bx, 2.335, bz, 0, 0, 0, 1, 0.7, 1, ST]);
         [1.49, 1.80, 2.10].forEach(gy => {
-            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.046, 6, 20), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x8ab6ff]);
+            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.046, 6, 20), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x4a80ff]);
         });
     });
     hvBarrels.add(hvMerge(hvBarrelParts, hvSteelMat));
