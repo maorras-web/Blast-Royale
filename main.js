@@ -1619,6 +1619,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // כוונון מהיר (אם נראה כבד במובייל — להקטין GRASS_BLADE_COUNT):
     const GRASS_BLADE_COUNT = 24000;
+    const GRASS_BLADE_COUNT_LOW = 16000;   // מכשיר עם כרטיס מסך חלש: שליש פחות עלים, כל עלה רחב יותר ב-12% כדי לשמור על הכיסוי
+    const GRASS_LOW_WIDTH_K = 1.12;
+    // מצב איכות מופחתת: נקבע לפי המפרט, או לפי מדידת מהירות המשחק בפועל (נשמר בין הפעלות)
+    let lowGfx = !isStrongPhone || localStorage.getItem('bb3d_low_gfx') === '1';
+    let grassGroupRef = null;
     let grassWind = null; // { uTime } — מתעדכן בלולאת ה-animate
 
     function add3DGrass(mapId) {
@@ -1626,6 +1631,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const grassGroup = new THREE.Group();
         mapGroup.add(grassGroup);
+        grassGroupRef = grassGroup;
+        const bladeCount = lowGfx ? GRASS_BLADE_COUNT_LOW : GRASS_BLADE_COUNT;
+        const widthK = lowGfx ? GRASS_LOW_WIDTH_K : 1;
 
         // להב אחד: בסיס רחב -> אמצע -> קצה מחודד ומעט כפוף קדימה.
         // גובה הגיאומטריה = 1; הגובה האמיתי נקבע לכל להב בנפרד (scale.y).
@@ -1683,11 +1691,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 #endif`);
         };
 
-        const mesh = new THREE.InstancedMesh(bladeGeo, grassMat, GRASS_BLADE_COUNT);
+        const mesh = new THREE.InstancedMesh(bladeGeo, grassMat, bladeCount);
         const dummy = new THREE.Object3D();
         const tint = new THREE.Color();
 
-        for (let i = 0; i < GRASS_BLADE_COUNT; i++) {
+        for (let i = 0; i < bladeCount; i++) {
             // יותר צפיפות קרוב למצלמה, פחות בטווח הרחוק.
             const z = 14 - 62 * Math.pow(Math.random(), 1.6);
             const x = (Math.random() - 0.5) * 36;
@@ -1701,7 +1709,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 0.34 + Math.random() * 0.34,
                 edge
             );
-            const width = 0.8 + Math.random() * 0.7;
+            const width = (0.8 + Math.random() * 0.7) * widthK;
 
             dummy.position.set(x, getForestTerrainHeight(x, z) + 0.03, z);
             dummy.rotation.set(
@@ -9079,6 +9087,26 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     let idleFlip = false;
 
+    // ---- איכות אדפטיבית: מודדים את מהירות המשחק בחמש השניות הראשונות של משחק פעיל ----
+    // אם המכשיר מתחת ל-42 פריימים בשנייה, עוברים פעם אחת לאיכות מופחתת ושומרים את ההחלטה.
+    let gfxChecked = lowGfx;     // אם כבר במצב מופחת אין מה למדוד
+    let gfxLast = 0, gfxAcc = 0, gfxFrames = 0, gfxWarm = 0;
+    function applyLowGfx() {
+        lowGfx = true;
+        try { localStorage.setItem('bb3d_low_gfx', '1'); } catch (e) { /* ignore */ }
+        // דשא: בונים מחדש עם פחות עלים
+        if (grassGroupRef) {
+            mapGroup.remove(grassGroupRef);
+            grassGroupRef.traverse(o => {
+                if (o.geometry) o.geometry.dispose();
+                if (o.material) o.material.dispose();
+            });
+            grassGroupRef = null;
+            add3DGrass(builtMapId);
+        }
+        // הצללים נשארים באיכות מלאה: מפחיתים רק את עלי הדשא
+    }
+
     function animate(time) {
         requestAnimationFrame(animate);
         if (grassWind) grassWind.uTime.value = time * 0.001;
@@ -9088,7 +9116,20 @@ window.addEventListener('DOMContentLoaded', () => {
             // מסכי המתנה (תפריט / השהיה / סיום / לפני גל): מציירים 30fps. חוסך סוללה וחום, ולא פוגע במשחק.
             idleFlip = !idleFlip;
             if (idleFlip) renderer.render(scene, camera);
+            gfxLast = 0;
             return;
+        }
+
+        if (!gfxChecked) {
+            if (gfxLast && ++gfxWarm > 60) {
+                const d = time - gfxLast;
+                if (d < 250) { gfxAcc += d; gfxFrames++; }
+                if (gfxAcc > 5000) {
+                    gfxChecked = true;
+                    if (gfxFrames * 1000 / gfxAcc < 42) applyLowGfx();
+                }
+            }
+            gfxLast = time;
         }
 
         updateWeatherParticles();
