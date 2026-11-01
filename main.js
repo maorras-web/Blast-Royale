@@ -5226,10 +5226,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvBowlMat = new THREE.MeshStandardMaterial({ color: 0x252b34, roughness: 0.34, metalness: 0.85, side: THREE.DoubleSide, envMap: mk2Env, envMapIntensity: 0.8 });
     const hvDarkMat = new THREE.MeshStandardMaterial({ color: 0x12151b, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.4 });
     const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x5b6472, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
-    const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x4ff0d8 });
+    const HV_BLUE = 0x0015ff;   // הכחול של התותח המרחף (#0015FF)
+    const hvGlowMat = new THREE.MeshBasicMaterial({ color: HV_BLUE });
     const hvLightMat = new THREE.MeshBasicMaterial({ color: 0xe6fbff });
-    const hvGlassMat = new THREE.MeshStandardMaterial({ color: 0x16a89c, emissive: 0x06403a, roughness: 0.12, metalness: 0.35, envMap: mk2Env, envMapIntensity: 1.3 });   // כיפה אטומה ומבריקה
-    const hvBeamMat = new THREE.MeshBasicMaterial({ color: 0x4af0d0, transparent: true, opacity: 0.20, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false });
+    const hvGlassMat = new THREE.MeshStandardMaterial({ color: HV_BLUE, emissive: 0x00063a, roughness: 0.12, metalness: 0.35, envMap: mk2Env, envMapIntensity: 1.3 });   // כיפה אטומה ומבריקה
+    const hvBeamMat = new THREE.MeshBasicMaterial({ color: HV_BLUE, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, fog: false });
     const V2 = arr => arr.map(v => new THREE.Vector2(v[0], v[1]));
     const PI2 = Math.PI / 2;
 
@@ -5304,9 +5305,9 @@ window.addEventListener('DOMContentLoaded', () => {
         c.width = c.height = 64;
         const cx = c.getContext('2d');
         const gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31);
-        gr.addColorStop(0, 'rgba(90,255,225,0.85)');
-        gr.addColorStop(0.5, 'rgba(50,210,200,0.35)');
-        gr.addColorStop(1, 'rgba(30,170,190,0)');
+        gr.addColorStop(0, 'rgba(0,21,255,0.85)');
+        gr.addColorStop(0.5, 'rgba(0,21,255,0.35)');
+        gr.addColorStop(1, 'rgba(0,21,255,0)');
         cx.fillStyle = gr;
         cx.fillRect(0, 0, 64, 64);
         const tex = new THREE.CanvasTexture(c);
@@ -5314,7 +5315,6 @@ window.addEventListener('DOMContentLoaded', () => {
             new THREE.PlaneGeometry(3.4, 2.4),
             new THREE.MeshBasicMaterial({
                 map: tex, transparent: true, opacity: 0.5, depthWrite: false, fog: false,
-                blending: THREE.AdditiveBlending,
                 polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
             })
         );
@@ -5333,18 +5333,17 @@ window.addEventListener('DOMContentLoaded', () => {
         c.width = c.height = 128;
         const cx = c.getContext('2d');
         const gr = cx.createRadialGradient(64, 64, 20, 64, 64, 62);
-        gr.addColorStop(0, 'rgba(90,255,225,0)');
-        gr.addColorStop(0.60, 'rgba(90,255,225,0)');
-        gr.addColorStop(0.80, 'rgba(120,255,235,0.95)');
-        gr.addColorStop(0.92, 'rgba(60,220,210,0.35)');
-        gr.addColorStop(1, 'rgba(40,190,200,0)');
+        gr.addColorStop(0, 'rgba(0,21,255,0)');
+        gr.addColorStop(0.60, 'rgba(0,21,255,0)');
+        gr.addColorStop(0.80, 'rgba(0,21,255,0.95)');
+        gr.addColorStop(0.92, 'rgba(0,21,255,0.40)');
+        gr.addColorStop(1, 'rgba(0,21,255,0)');
         cx.fillStyle = gr;
         cx.fillRect(0, 0, 128, 128);
         const m = new THREE.Mesh(
             new THREE.PlaneGeometry(3.6, 2.5),
             new THREE.MeshBasicMaterial({
                 map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.6, depthWrite: false, fog: false,
-                blending: THREE.AdditiveBlending,
                 polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5
             })
         );
@@ -5367,10 +5366,10 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBarrels.position.y = -Math.min(0.14, cannonRecoil * 3.0);
         hvSpin.rotation.y += 0.02;
         hvBeamMat.opacity = 0.17 + Math.sin(time * 0.006) * 0.05;
-        hoverGlow.material.opacity = 0.20 - bob * 0.6;
+        hoverGlow.material.opacity = 0.30 - bob * 0.6;
         const ph = (time * 0.00075) % 1;                    // מחזור פעימה של כ-1.3 שניות
         hoverRing.scale.set((0.55 + ph * 0.60) * HV_SIZE, (0.55 + ph * 0.60) * HV_SIZE, 1);
-        hoverRing.material.opacity = 0.65 * (1 - ph) * Math.min(1, ph * 6);
+        hoverRing.material.opacity = 0.85 * (1 - ph) * Math.min(1, ph * 6);
     }
 
     // כשהתותח המרחף פעיל מסתירים את כל שאר החלקים של התותח (נשמר מצב קודם ומוחזר בהחלפה)
