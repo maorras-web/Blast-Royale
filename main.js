@@ -4309,6 +4309,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // התותח האפור פעיל בלי לקנות אותו, המצלמה קרובה אליו, ושום דבר לא נשמר.
     const MK2_PREVIEW = /[?&]mk2view=1/.test(window.location.search) || /cannon\.html$/.test(window.location.pathname);
     let advancedCannonOwned = MK2_PREVIEW || localStorage.getItem('bb3d_cannon_mk2_owned') === '1';
+    const HOVER_CANNON_PRICE = 500;
+    let hoverCannonOwned = localStorage.getItem('bb3d_cannon_hover_owned') === '1';
     let activeCannon = MK2_PREVIEW ? 'mk2' : (localStorage.getItem('bb3d_active_cannon') || 'classic');
 
     const advancedCannonGroup = new THREE.Group();
@@ -5117,6 +5119,160 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionMotion.rest = false;
     }
 
+    // ==========================================================
+    // התותח המרחף (HOVER): קל במיוחד לרינדור.
+    // כל הגוף ממוזג ל-3 רשתות בלבד (לפי חומר) + רשת אחת לקנים + כתם אור על הקרקע.
+    // בלי גלגלים, בלי השעיה, בלי צללים אמיתיים ובלי אורות חדשים.
+    // האנימציה היא חישוב סינוס אחד לכל פריים, בלי יצירת אובייקטים חדשים.
+    // ==========================================================
+    const HV_CLEARANCE = 0.72;                        // כמה הגוף מרחף מעל הקרקע
+    const HV_BASE_Y = -TIRE_GROUND_DROP + HV_CLEARANCE;
+    const HV_MUZZLE_Y = 2.05;                         // גובה פתח הקנה מעל בסיס הגוף
+    const HV_BARREL_X = 0.35;                         // אותו מרחק בין הקנים כמו בקלאסי
+    const hoverRig = new THREE.Group();
+    hoverRig.visible = false;
+    hoverRig.position.y = HV_BASE_Y;
+    cannonGroup.add(hoverRig);
+
+    function hvMerge(parts, material) {
+        const pos = [], nor = [], uvs = [];
+        const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), eu = new THREE.Euler();
+        const sc = new THREE.Vector3(), ps = new THREE.Vector3();
+        parts.forEach(pt => {
+            let g = pt[0].clone();
+            ps.set(pt[1] || 0, pt[2] || 0, pt[3] || 0);
+            eu.set(pt[4] || 0, pt[5] || 0, pt[6] || 0);
+            q.setFromEuler(eu);
+            sc.set(pt[7] === undefined ? 1 : pt[7], pt[8] === undefined ? 1 : pt[8], pt[9] === undefined ? 1 : pt[9]);
+            m4.compose(ps, q, sc);
+            g.applyMatrix4(m4);
+            if (g.index) g = g.toNonIndexed();
+            pos.push(g.attributes.position.array);
+            nor.push(g.attributes.normal.array);
+            uvs.push(g.attributes.uv ? g.attributes.uv.array : new Float32Array((g.attributes.position.array.length / 3) * 2));
+        });
+        const cat = arrs => {
+            let n = 0; arrs.forEach(a => { n += a.length; });
+            const out = new Float32Array(n); let o = 0;
+            arrs.forEach(a => { out.set(a, o); o += a.length; });
+            return out;
+        };
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(cat(pos), 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(cat(nor), 3));
+        geo.setAttribute('uv', new THREE.BufferAttribute(cat(uvs), 2));
+        const mesh = new THREE.Mesh(geo, material);
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        return mesh;
+    }
+
+    const hvBlueMat = new THREE.MeshStandardMaterial({ color: 0x0c52b8, roughness: 0.34, metalness: 0.30, envMap: mk2Env, envMapIntensity: 0.35 });
+    const hvDarkMat = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 0.5, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.4 });
+    const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x8a919a, roughness: 0.32, metalness: 0.80, envMap: mk2Env, envMapIntensity: 0.8 });
+    const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x5ee7ff });
+
+    // גוף כחול: שכבה עליונה, כיפה וכמוסות צד
+    hoverRig.add(hvMerge([
+        [new THREE.CylinderGeometry(1.18, 1.00, 0.36, 28), 0, 0.52, 0],
+        [new THREE.SphereGeometry(0.64, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.70, 0, 0, 0, 0, 1, 0.78, 1],
+        [new THREE.SphereGeometry(0.34, 12, 8), -1.22, 0.46, 0.05, 0, 0, 0, 1.15, 0.72, 1.55],
+        [new THREE.SphereGeometry(0.34, 12, 8), 1.22, 0.46, 0.05, 0, 0, 0, 1.15, 0.72, 1.55]
+    ], hvBlueMat));
+
+    // חלקים כהים: בטן, נחירי דחף, סנפירי זנב ובסיס הקנים
+    hoverRig.add(hvMerge([
+        [new THREE.CylinderGeometry(0.98, 0.60, 0.34, 24), 0, 0.17, 0],
+        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), -0.58, -0.01, 0.30],
+        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), 0.58, -0.01, 0.30],
+        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), 0, -0.01, -0.50],
+        [new THREE.BoxGeometry(0.12, 0.62, 0.56), -0.60, 0.98, 0.82, -0.25, 0, 0],
+        [new THREE.BoxGeometry(0.12, 0.62, 0.56), 0.60, 0.98, 0.82, -0.25, 0, 0],
+        [new THREE.BoxGeometry(1.16, 0.30, 0.54), 0, 0.98, 0],
+        [new THREE.BoxGeometry(0.16, 0.10, 0.90), -1.22, 0.66, 0.05],
+        [new THREE.BoxGeometry(0.16, 0.10, 0.90), 1.22, 0.66, 0.05]
+    ], hvDarkMat));
+
+    // חלקים זוהרים (MeshBasic - בלי חישובי תאורה): טבעת סביב הגוף, פס "עין" וקצות דחף
+    hoverRig.add(hvMerge([
+        [new THREE.TorusGeometry(1.185, 0.045, 6, 40), 0, 0.64, 0, Math.PI / 2, 0, 0],
+        [new THREE.BoxGeometry(0.62, 0.075, 0.05), 0, 0.88, -0.30],
+        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), -0.58, -0.11, 0.30],
+        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), 0.58, -0.11, 0.30],
+        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), 0, -0.11, -0.50]
+    ], hvGlowMat));
+
+    // הקנים: זוג קנים אנכיים כמו בקלאסי (קבוצה אחת שזזה ברתיעה)
+    const hvBarrels = new THREE.Group();
+    hoverRig.add(hvBarrels);
+    hvBarrels.add(hvMerge([
+        [new THREE.CylinderGeometry(0.15, 0.17, 1.10, 14), -HV_BARREL_X, 1.50, 0],
+        [new THREE.CylinderGeometry(0.15, 0.17, 1.10, 14), HV_BARREL_X, 1.50, 0],
+        [new THREE.CylinderGeometry(0.22, 0.22, 0.10, 14), -HV_BARREL_X, 1.20, 0],
+        [new THREE.CylinderGeometry(0.22, 0.22, 0.10, 14), HV_BARREL_X, 1.20, 0],
+        [new THREE.CylinderGeometry(0.20, 0.20, 0.08, 14), -HV_BARREL_X, 1.78, 0],
+        [new THREE.CylinderGeometry(0.20, 0.20, 0.08, 14), HV_BARREL_X, 1.78, 0]
+    ], hvSteelMat));
+    hvBarrels.add(hvMerge([
+        [new THREE.TorusGeometry(0.17, 0.03, 6, 16), -HV_BARREL_X, HV_MUZZLE_Y - 0.02, 0, Math.PI / 2, 0, 0],
+        [new THREE.TorusGeometry(0.17, 0.03, 6, 16), HV_BARREL_X, HV_MUZZLE_Y - 0.02, 0, Math.PI / 2, 0, 0]
+    ], hvGlowMat));
+
+    // כתם אור על הקרקע מתחת לתותח (במקום צל אמיתי)
+    const hoverGlow = (function () {
+        const c = document.createElement('canvas');
+        c.width = c.height = 64;
+        const cx = c.getContext('2d');
+        const gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31);
+        gr.addColorStop(0, 'rgba(94,231,255,0.85)');
+        gr.addColorStop(0.5, 'rgba(60,170,255,0.35)');
+        gr.addColorStop(1, 'rgba(40,120,255,0)');
+        cx.fillStyle = gr;
+        cx.fillRect(0, 0, 64, 64);
+        const tex = new THREE.CanvasTexture(c);
+        const m = new THREE.Mesh(
+            new THREE.PlaneGeometry(3.4, 2.4),
+            new THREE.MeshBasicMaterial({
+                map: tex, transparent: true, opacity: 0.5, depthWrite: false, fog: false,
+                blending: THREE.AdditiveBlending,
+                polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+            })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.y = -TIRE_GROUND_DROP + 0.035;
+        m.renderOrder = 3;
+        m.visible = false;
+        cannonGroup.add(m);
+        return m;
+    })();
+
+    let hvLean = 0;
+    function updateHoverCannon(time, dx) {
+        const bob = Math.sin(time * 0.0024) * 0.08;
+        const wantRoll = Math.max(-0.26, Math.min(0.26, -dx * 0.10));
+        hvLean += (wantRoll - hvLean) * 0.15;
+        hoverRig.position.y = HV_BASE_Y + bob;
+        hoverRig.rotation.z = hvLean;
+        hoverRig.rotation.x = Math.sin(time * 0.0017) * 0.02;
+        hvBarrels.position.y = -Math.min(0.14, cannonRecoil * 3.0);
+        hoverGlow.material.opacity = 0.42 + Math.sin(time * 0.005) * 0.10 - bob * 0.8;
+    }
+
+    // כשהתותח המרחף פעיל מסתירים את כל שאר החלקים של התותח (נשמר מצב קודם ומוחזר בהחלפה)
+    let hoverSavedVis = null;
+    function leaveHoverLook() {
+        if (!hoverSavedVis) return;
+        cannonGroup.children.forEach((c, i) => { if (i < hoverSavedVis.length) c.visible = hoverSavedVis[i]; });
+        hoverSavedVis = null;
+        hoverRig.visible = false;
+        hoverGlow.visible = false;
+    }
+    function enterHoverLook() {
+        hoverSavedVis = cannonGroup.children.map(c => c.visible);
+        cannonGroup.children.forEach(c => { c.visible = (c === hoverRig || c === hoverGlow); });
+        mk2Tracks.visible = false;
+    }
+
     function applyCannonLook(isMk2) {
         // הגוף הקלאסי (גוף, כיפה, קנים) מוסתר כשהתותח האפור פעיל; הגלגלים נשארים
         classicBodyParts.forEach(part => { part.visible = !isMk2; });
@@ -5126,13 +5282,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function setActiveCannon(type) {
-        activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : 'classic';
+        leaveHoverLook();
+        activeCannon = type === 'mk2' && advancedCannonOwned ? 'mk2' : (type === 'hover' && hoverCannonOwned ? 'hover' : 'classic');
         advancedCannonGroup.visible = false;
         // הנובה גדול יותר; כל החישובים (קליעים, התנגשויות, גלגלים) משתמשים ב-CANNON_SCALE החי
         CANNON_SCALE = CANNON_BASE_SCALE * (activeCannon === 'mk2' ? NOVA_SIZE_BOOST : 1);
         cannonGroup.scale.setScalar(CANNON_SCALE);
         mk2Tracks.children.forEach((strip, i) => { strip.position.z = (i === 0 ? -1 : 1) * MK2_WHEEL_Z * CANNON_SCALE; });
         applyCannonLook(activeCannon === 'mk2');
+        if (activeCannon === 'hover') enterHoverLook();
         if (!MK2_PREVIEW) localStorage.setItem('bb3d_active_cannon', activeCannon);
     }
 
@@ -5398,6 +5556,8 @@ window.addEventListener('DOMContentLoaded', () => {
           desc: 'The reliable twin-barrel cannon. Balanced, steady and easy to control.' },
         { kind: 'cannon', id: 'mk2', name: 'Nova Cannon', icon: '🛡️', color: '#38bdf8', tag: 'CANNON',
           desc: 'Armored off-road cannon with powered suspension and big tyres. Bigger, tougher and ready for anything.' },
+        { kind: 'cannon', id: 'hover', name: 'Hover Cannon', icon: '🛸', color: '#5ee7ff', tag: 'CANNON',
+          desc: 'A floating cannon that glides above the sand on a cushion of light. No wheels, no friction, pure speed.' },
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
           stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
@@ -5414,9 +5574,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function invItemState(item) {
         if (item.kind === 'cannon') {
-            const price = item.id === 'mk2' ? ADVANCED_CANNON_PRICE : 0;
-            const owned = item.id === 'mk2' ? advancedCannonOwned : true;
-            const equipped = (activeCannon === 'mk2') === (item.id === 'mk2');
+            const price = item.id === 'mk2' ? ADVANCED_CANNON_PRICE : item.id === 'hover' ? HOVER_CANNON_PRICE : 0;
+            const owned = item.id === 'mk2' ? advancedCannonOwned : item.id === 'hover' ? hoverCannonOwned : true;
+            const equipped = activeCannon === item.id || (item.id === 'classic' && activeCannon === 'classic');
             return { owned, equipped, price };
         }
         const w = WEAPONS[item.id];
@@ -5433,6 +5593,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('bb3d_coins', coins);
             }
             setActiveCannon('mk2');
+        } else if (id === 'hover') {
+            if (!hoverCannonOwned) {
+                if (coins < HOVER_CANNON_PRICE) return;
+                coins -= HOVER_CANNON_PRICE;
+                hoverCannonOwned = true;
+                localStorage.setItem('bb3d_cannon_hover_owned', '1');
+                localStorage.setItem('bb3d_coins', coins);
+            }
+            setActiveCannon('hover');
         } else {
             setActiveCannon('classic');
         }
@@ -5598,10 +5767,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function updateCannonTiles() {
         const mk2Active = activeCannon === 'mk2';
+        const classicActive = activeCannon === 'classic';
         renderCannonTile(cannonClassicBtn, {
-            selected: !mk2Active,
+            selected: classicActive,
             owned: true,
-            label: !mk2Active ? 'Selected' : 'Select',
+            label: classicActive ? 'Selected' : 'Select',
             locked: false
         });
         renderCannonTile(cannonMk2Btn, {
@@ -8646,6 +8816,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (sc !== null) goals.push({ label: `${WEAPONS[activeWeapon].name} → ★${getStars(activeWeapon) + 1}`, cost: sc });
         }
         if (!advancedCannonOwned) goals.push({ label: 'Nova Cannon', cost: ADVANCED_CANNON_PRICE });
+        if (!hoverCannonOwned) goals.push({ label: 'Hover Cannon', cost: HOVER_CANNON_PRICE });
         const unaffordable = goals.filter(g => g.cost > coins).sort((a, b) => (a.cost - coins) - (b.cost - coins));
         if (unaffordable.length) return unaffordable[0];            // הכי קרוב להשגה
         return goals.sort((a, b) => b.cost - a.cost)[0];            // הכול בהישג יד: מציעים את היקר ביותר
@@ -8844,8 +9015,11 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonShadowSoft.position.x += (cannonGroup.position.x - cannonShadowSoft.position.x) * 0.32;
         {
             const shK = CANNON_SCALE / CANNON_BASE_SCALE;
-            cannonShadow.scale.set(1.18 * shK, 0.76 * shK, 1);
-            cannonShadowSoft.scale.set(1.10 * shK, 0.58 * shK, 1);
+            const hvK = activeCannon === 'hover' ? 0.86 : 1;
+            cannonShadow.scale.set(1.18 * shK * hvK, 0.76 * shK * hvK, 1);
+            cannonShadowSoft.scale.set(1.10 * shK * hvK, 0.58 * shK * hvK, 1);
+            cannonShadow.material.opacity = activeCannon === 'hover' ? 0.15 : 0.22;
+            cannonShadowSoft.material.opacity = activeCannon === 'hover' ? 0.07 : 0.10;
         }
         cannonRecoil *= 0.78;
 
@@ -8860,7 +9034,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // הגלגלים נשארים על הקרקע; הגוף הוא זה שצולל ומתרומם על המתלים.
         cannonGroup.position.y = getCannonBaseY();
-        updateSuspensionMotion();
+        if (activeCannon === 'hover') updateHoverCannon(time, targetX - cannonGroup.position.x);
+        else updateSuspensionMotion();
 
         // MK-II משתמש באותה תנועת גוף/מתלים בדיוק כמו התותח המקורי.
         // הוא נשאר תותח חדש מבחינת העיצוב, אבל לא מקבל מערכת תנועה נפרדת.
@@ -8892,7 +9067,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const wheelRadius = 0.60 * CANNON_SCALE;
         const spinAmount = wheelRadius > 0.001 ? wheelTravel / wheelRadius : 0;
 
-        cannonWheels.forEach(wheelOuter => {
+        if (activeCannon !== 'hover') cannonWheels.forEach(wheelOuter => {
             if (wheelOuter.userData.spinGroup && Math.abs(spinAmount) > 0.000001) {
                 wheelOuter.userData.spinGroup.rotation.z -= spinAmount;
             }
@@ -8909,6 +9084,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if (activeCannon === 'mk2') {
                 muzzleY = cannonGroup.position.y + MK2_MUZZLE_Y * CANNON_SCALE;
                 muzzleXs = MK2_BARREL_X.map(bxw => cannonGroup.position.x + bxw * CANNON_SCALE);
+            } else if (activeCannon === 'hover') {
+                muzzleY = cannonGroup.position.y + (hoverRig.position.y + HV_MUZZLE_Y) * CANNON_SCALE;
+                muzzleXs = [cannonGroup.position.x - HV_BARREL_X * CANNON_SCALE, cannonGroup.position.x + HV_BARREL_X * CANNON_SCALE];
             } else {
                 muzzleY = cannonGroup.position.y + (1.5 + CANNON_BODY_LIFT) * CANNON_SCALE;
                 muzzleXs = [cannonGroup.position.x - 0.35 * CANNON_SCALE, cannonGroup.position.x + 0.35 * CANNON_SCALE];
