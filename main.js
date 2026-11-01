@@ -4732,9 +4732,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // המידות כאן זהות למידות של התותח הקלאסי.
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
-    const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.72;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
-    const MK2_WHEEL_SCALE = 1.50;   // צמיגים גדולים יותר (היה 1.28)
+    const MK2_BODY_W = 2.30;        // רוחב הגוף (היה 2.30)
+    const MK2_WHEEL_SHIFT = 0.20;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    const MK2_WHEEL_SCALE = 1.30;   // צמיגים גדולים יותר (היה 1.28)
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
@@ -4744,8 +4744,8 @@ window.addEventListener('DOMContentLoaded', () => {
     bodyRig.add(mk2Head);
 
     // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
-    const nvBlack = new THREE.MeshPhysicalMaterial({ color: 0x083a86, emissive: 0x01050c, roughness: 0.28, metalness: 0.20, clearcoat: 0.9, clearcoatRoughness: 0.14, envMap: mk2Env, envMapIntensity: 0.38 });
-    const nvVisor = new THREE.MeshPhysicalMaterial({ color: 0x07080a, roughness: 0.22, metalness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.1, envMap: mk2Env, envMapIntensity: 0.6 });
+    const nvBlack = new THREE.MeshStandardMaterial({ color: 0x083a86, emissive: 0x01050c, roughness: 0.22, metalness: 0.25, envMap: mk2Env, envMapIntensity: 0.55 });
+    const nvVisor = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.18, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.8 });
     const nvFin = new THREE.MeshStandardMaterial({ color: 0x555a61, roughness: 0.42, metalness: 0.50, envMap: mk2Env, envMapIntensity: 0.30 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
     const nvDark  = new THREE.MeshStandardMaterial({ color: 0x0a0b0e, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.5 });
@@ -4808,7 +4808,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ומחובר לחזית הגוף בעמודי חיבור מוברגים. ההשעיה הקלאסית מוסתרת כשהאפור פעיל.
     // ==========================================================
     // פלדה מוברשת בהירה כמו בתמונת המטרה. הערכים הכהים הקודמים: זרועות 0x34383c, פלטות 0x1b1d20
-    const mk2ArmMat = new THREE.MeshPhysicalMaterial({ color: 0x46474b, emissive: 0x070809, roughness: 0.40, metalness: 0.90, clearcoat: 0.10, clearcoatRoughness: 0.20, envMap: mk2Env || null, envMapIntensity: 0.85 });
+    const mk2ArmMat = new THREE.MeshStandardMaterial({ color: 0x46474b, emissive: 0x070809, roughness: 0.38, metalness: 0.90, envMap: mk2Env || null, envMapIntensity: 0.85 });
     const mk2PlateMat = new THREE.MeshStandardMaterial({ color: 0x3c3e42, roughness: 0.46, metalness: 0.80, envMap: mk2Env || null, envMapIntensity: 0.8 });
     const mk2BossMat = new THREE.MeshStandardMaterial({ color: 0x34363a, roughness: 0.38, metalness: 0.80, envMap: wheelEnvMap || null, envMapIntensity: 0.8 });
     const MK2_HUB_X = WHEEL_X + MK2_WHEEL_SHIFT;   // מרכז הגלגל (אחרי ההזזה)
@@ -5301,6 +5301,18 @@ window.addEventListener('DOMContentLoaded', () => {
         hoverSavedVis = cannonGroup.children.map(c => c.visible);
         cannonGroup.children.forEach(c => { c.visible = (c === hoverRig || c === hoverGlow); });
         mk2Tracks.visible = false;
+    }
+
+    // הקלה על הנובה: אין צללים אמיתיים לחלקים (נשאר צל הגוף הראשי + כתם הצל שעל הקרקע)
+    {
+        const noShadow = o => { if (o.isMesh) o.castShadow = false; };
+        const mainBody = mk2Head.children[0];
+        mk2Head.traverse(noShadow);
+        if (mainBody && mainBody.isMesh) mainBody.castShadow = true;
+        mk2OnlyParts.forEach(m => m.traverse(noShadow));
+        suspensionLinks.forEach(L => { if (L.mk2Only) L.mesh.traverse(noShadow); });
+        suspensionSprings.forEach(K => { if (K.mk2Only) K.group.traverse(noShadow); });
+        wheelOuter_smooth.forEach(w => { if (w && w.smooth) w.smooth.traverse(noShadow); });
     }
 
     function applyCannonLook(isMk2) {
