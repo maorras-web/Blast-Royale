@@ -5191,8 +5191,6 @@ window.addEventListener('DOMContentLoaded', () => {
         [new THREE.TorusGeometry(1.15, 0.022, 5, 44), 0, 0.33, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(0.66, 0.06, 6, 30), 0, 1.25, 0.12, PI2, 0, 0],
         [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74],
-        [new THREE.BoxGeometry(0.62, 0.06, 0.36), -1.60, 0.64, 0.05, 0, 0, 0.18],
-        [new THREE.BoxGeometry(0.62, 0.06, 0.36), 1.60, 0.64, 0.05, 0, 0, -0.18],
         [new THREE.CylinderGeometry(0.21, 0.24, 0.62, 14), -0.70, 0.78, 1.22, PI2, 0, 0],
         [new THREE.CylinderGeometry(0.21, 0.24, 0.62, 14), 0.70, 0.78, 1.22, PI2, 0, 0]
     ];
@@ -5207,8 +5205,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvGlowParts = [
         [new THREE.TorusGeometry(1.43, 0.04, 6, 52), 0, 0.50, 0, PI2, 0, 0],
         [new THREE.SphereGeometry(0.25, 12, 9), 0, 1.45, 0.12],
-        [new THREE.CylinderGeometry(0.012, 0.012, 0.42, 5), 0, 2.05, 0.12],
-        [new THREE.SphereGeometry(0.05, 8, 6), 0, 2.28, 0.12],
         [new THREE.CylinderGeometry(0.16, 0.16, 0.04, 14), -0.70, 0.78, 1.54, PI2, 0, 0],
         [new THREE.CylinderGeometry(0.16, 0.16, 0.04, 14), 0.70, 0.78, 1.54, PI2, 0, 0],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0],
