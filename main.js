@@ -5226,7 +5226,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x5b6472, roughness: 0.28, metalness: 0.9, envMap: mk2Env, envMapIntensity: 1.0 });
     const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x4ff0d8 });
     const hvLightMat = new THREE.MeshBasicMaterial({ color: 0xe6fbff });
-    const hvGlassMat = new THREE.MeshBasicMaterial({ color: 0x2bbfb0, transparent: true, opacity: 0.55, depthWrite: false });
+    const hvGlassMat = new THREE.MeshBasicMaterial({ color: 0x0f7f77, transparent: true, opacity: 0.62, depthWrite: false });
     const hvBeamMat = new THREE.MeshBasicMaterial({ color: 0x4af0d0, transparent: true, opacity: 0.20, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false });
     const V2 = arr => arr.map(v => new THREE.Vector2(v[0], v[1]));
     const PI2 = Math.PI / 2;
@@ -5255,8 +5255,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
     const hvGlowParts = [
-        [new THREE.TorusGeometry(1.43, 0.04, 6, 52), 0, 0.50, 0, PI2, 0, 0],
-        [new THREE.SphereGeometry(0.25, 12, 9), 0, 1.45, 0.12],
+        [new THREE.TorusGeometry(1.45, 0.075, 7, 56), 0, 0.52, 0, PI2, 0, 0],
+        [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0],
+        [new THREE.SphereGeometry(0.27, 14, 10), 0, 1.40, 0.12],
         [new THREE.CylinderGeometry(0.16, 0.16, 0.04, 14), -0.70, 0.78, 1.54, PI2, 0, 0],
         [new THREE.CylinderGeometry(0.16, 0.16, 0.04, 14), 0.70, 0.78, 1.54, PI2, 0, 0],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0],
@@ -5270,9 +5271,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvLights = [];
     for (let i = 0; i < 16; i++) {
         const r = i / 16 * Math.PI * 2;
-        hvLights.push([new THREE.SphereGeometry(i % 2 ? 0.06 : 0.085, 6, 5), Math.cos(r) * 1.52, 0.62, Math.sin(r) * 1.52]);
+        hvLights.push([new THREE.SphereGeometry(i % 2 ? 0.075 : 0.11, 7, 6), Math.cos(r) * 1.53, 0.64, Math.sin(r) * 1.53]);
     }
     hvSpin.add(hvMerge(hvLights, hvLightMat));
+
+    // ---- ליבת האנרגיה הלבנה בתוך הכיפה והברקת זכוכית (רשת אחת) ----
+    hoverRig.add(hvMerge([
+        [new THREE.SphereGeometry(0.12, 10, 8), 0, 1.40, 0.12],
+        [new THREE.SphereGeometry(0.075, 8, 6), -0.27, 1.62, 0.50, 0, 0, 0.5, 2.2, 0.6, 0.6]
+    ], hvLightMat));
 
     // ---- כיפת זכוכית (רשת שקופה אחת) ----
     hoverRig.add(hvMerge([[new THREE.SphereGeometry(0.62, 24, 12, 0, Math.PI * 2, 0, PI2), 0, 1.24, 0.12, 0, 0, 0, 1, 1.0, 1]], hvGlassMat));
@@ -5286,14 +5293,16 @@ window.addEventListener('DOMContentLoaded', () => {
     hoverRig.add(hvBarrels);
     const hvBarrelParts = [], hvBarrelGlow = [];
     [-HV_BARREL_X, HV_BARREL_X].forEach(bx => {
-        hvBarrelParts.push([new THREE.CylinderGeometry(0.21, 0.23, 0.30, 14), bx, 1.32, -0.74]);
-        hvBarrelParts.push([new THREE.CylinderGeometry(0.12, 0.15, 1.20, 14), bx, 1.72, -0.74]);
-        hvBarrelParts.push([new THREE.CylinderGeometry(0.19, 0.19, 0.07, 14), bx, 1.62, -0.74]);
-        hvBarrelParts.push([new THREE.CylinderGeometry(0.19, 0.19, 0.07, 14), bx, 2.02, -0.74]);
-        hvBarrelParts.push([new THREE.CylinderGeometry(0.20, 0.12, 0.16, 14), bx, 2.38, -0.74]);
-        hvBarrelGlow.push([new THREE.TorusGeometry(0.155, 0.022, 5, 16), bx, 1.82, -0.74, PI2, 0, 0]);
-        hvBarrelGlow.push([new THREE.TorusGeometry(0.155, 0.022, 5, 16), bx, 1.42, -0.74, PI2, 0, 0]);
-        hvBarrelGlow.push([new THREE.SphereGeometry(0.075, 8, 6), bx, HV_MUZZLE_Y - 0.02, -0.74]);
+        hvBarrelParts.push([new THREE.CylinderGeometry(0.30, 0.335, 0.36, 16), bx, 1.30, -0.74]);   // בסיס רחב שמתחבר לגוף
+        hvBarrelParts.push([new THREE.CylinderGeometry(0.19, 0.235, 1.15, 16), bx, 1.78, -0.74]);   // גוף הקנה (עבה)
+        hvBarrelParts.push([new THREE.CylinderGeometry(0.27, 0.27, 0.08, 16), bx, 1.58, -0.74]);
+        hvBarrelParts.push([new THREE.CylinderGeometry(0.255, 0.255, 0.08, 16), bx, 2.02, -0.74]);
+        hvBarrelParts.push([new THREE.CylinderGeometry(0.285, 0.20, 0.20, 16), bx, 2.36, -0.74]);   // פיה מתרחבת
+        hvBarrelGlow.push([new THREE.TorusGeometry(0.215, 0.032, 6, 18), bx, 1.80, -0.74, PI2, 0, 0]);
+        hvBarrelGlow.push([new THREE.TorusGeometry(0.245, 0.032, 6, 18), bx, 1.42, -0.74, PI2, 0, 0]);
+        hvBarrelGlow.push([new THREE.BoxGeometry(0.07, 0.62, 0.03), bx, 1.80, -0.74 + 0.22]);        // חריץ אנרגיה בחזית הקנה
+        hvBarrelGlow.push([new THREE.TorusGeometry(0.255, 0.04, 6, 18), bx, HV_MUZZLE_Y - 0.03, -0.74, PI2, 0, 0]);
+        hvBarrelGlow.push([new THREE.SphereGeometry(0.12, 10, 8), bx, HV_MUZZLE_Y - 0.06, -0.74]);
     });
     hvBarrels.add(hvMerge(hvBarrelParts, hvSteelMat));
     hvBarrels.add(hvMerge(hvBarrelGlow, hvGlowMat));
