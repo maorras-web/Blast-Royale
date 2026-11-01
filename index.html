@@ -1,697 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Blast Royale 3D</title>
+    <meta name="theme-color" content="#1e1b18">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Blast Royale</title>
+    <link rel="icon" href="data:,">
     
-    <!-- פונטים -->
+    <!-- פונט Rubik מודרני -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
     
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <style>
-        /* ==========================================
-           1. איפוס בסיסי ומניעת גלילה שבורה
-           ========================================== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            font-family: 'Rubik', sans-serif;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            overscroll-behavior: none;
-            background-color: #1e1b18;
-            position: fixed;
-            inset: 0;
-        }
-
-        canvas {
-            display: block;
-            width: 100vw !important;
-            height: 100dvh !important;
-            position: fixed !important;
-            inset: 0 !important;
-            touch-action: none !important;
-        }
-
-        /* ==========================================
-           2. UI עליון (HUD) - תצוגה מצרית ממוטבת
-           ========================================== */
-        #ui-container {
-            --gold: #e8b83a;
-            --gold-hi: #fbe08a;
-            --gold-dk: #7a5412;
-            position: absolute;
-            top: max(12px, env(safe-area-inset-top));
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(94vw, 500px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 18px 6px 8px;
-            border-radius: 12px;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 0 2px, transparent 3px) 0 0 / 22px 22px,
-                linear-gradient(180deg, #57524b 0%, #3a3631 45%, #2a2723 100%);
-            border: 2px solid #1a1713;
-            box-shadow:
-                inset 0 0 0 1px #8a7d68,
-                inset 0 2px 3px rgba(255, 255, 255, 0.18),
-                0 8px 20px rgba(0, 0, 0, 0.6);
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        #ui-container::after {
-            content: '';
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            width: 20px;
-            height: 30px;
-            transform: translateY(-50%);
-            background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g fill='none' stroke-linecap='round'><ellipse cx='20' cy='12' rx='6.5' ry='8.5' stroke='%231a1713' stroke-width='7'/><path d='M20 20 V37 M11 24 H29' stroke='%231a1713' stroke-width='7'/><ellipse cx='20' cy='12' rx='6.5' ry='8.5' stroke='%23e8b83a' stroke-width='4'/><path d='M20 20 V37 M11 24 H29' stroke='%23e8b83a' stroke-width='4'/></g></svg>") center / contain no-repeat;
-        }
-
-        .ui-card {
-            background: none;
-            border: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: auto 1fr;
-            column-gap: 5px;
-            flex: 1 1 auto;
-            min-width: 0;
-            align-items: center;
-            font-family: 'Cinzel', Georgia, serif;
-            pointer-events: auto;
-        }
-
-        .ui-card::before {
-            content: '';
-            grid-row: 1 / span 2;
-            width: 18px;
-            height: 22px;
-            background: center / contain no-repeat;
-            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
-        }
-
-        .ui-card:nth-child(1)::before {
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><path d='M20 34 C12 30 8 22 10 12 C15 16 18 22 20 34Z M20 34 C28 30 32 22 30 12 C25 16 22 22 20 34Z M20 34 C16 24 16 12 20 5 C24 12 24 24 20 34Z M8 36 H32' fill='%23e8b83a' stroke='%237a5412' stroke-width='1.6' stroke-linejoin='round'/></svg>");
-        }
-
-        .ui-card:nth-child(2)::before {
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g fill='none' stroke-linecap='round'><ellipse cx='20' cy='12' rx='6.5' ry='8.5' stroke='%237a5412' stroke-width='6.5'/><path d='M20 20 V37 M11 24 H29' stroke='%237a5412' stroke-width='6.5'/><ellipse cx='20' cy='12' rx='6.5' ry='8.5' stroke='%23e8b83a' stroke-width='3.6'/><path d='M20 20 V37 M11 24 H29' stroke='%23e8b83a' stroke-width='3.6'/></g></svg>");
-        }
-
-        .ui-title {
-            font-size: clamp(8px, 2.2vw, 10px);
-            white-space: nowrap;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            color: var(--gold);
-            text-shadow: 0 1px 1px #000;
-        }
-
-        .ui-value {
-            font-size: clamp(13px, 4vw, 17px);
-            white-space: nowrap;
-            font-weight: 900;
-            color: var(--gold-hi);
-            text-shadow: 0 1px 0 #7a5412, 0 2px 3px rgba(0, 0, 0, 0.9);
-        }
-
-        .ui-card:nth-child(3) {
-            flex: 0 0 auto;
-            width: 52px;
-            margin: -10px 0;
-            padding: 2px 4px 4px;
-            grid-template-columns: 1fr;
-            justify-items: center;
-            background: linear-gradient(180deg, #3b362f, #26231f);
-            border: 2px solid var(--gold);
-            border-radius: 14px;
-            box-shadow: 0 0 0 2px #1a1713, 0 4px 8px rgba(0, 0, 0, 0.6);
-            position: relative;
-        }
-
-        .ui-card:nth-child(3)::before {
-            grid-column: 1;
-            width: 30px;
-            height: 26px;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><g stroke='%237a5412' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><path d='M10 14 L3 8 M10 22 L2 24 M11 30 L4 37 M30 14 L37 8 M30 22 L38 24 M29 30 L36 37' fill='none'/><ellipse cx='20' cy='24' rx='10' ry='12.5' fill='%23e8b83a'/><circle cx='20' cy='10' r='5' fill='%23e8b83a'/><path d='M20 14 V36' fill='none'/><circle cx='20' cy='4' r='3' fill='%23c8321a'/></g></svg>");
-        }
-
-        .ui-card:nth-child(3) .ui-title {
-            font-size: 8px;
-            letter-spacing: 0.5px;
-        }
-
-        .ui-card:nth-child(3) .ui-value {
-            position: absolute;
-            left: 50%;
-            bottom: 4px;
-            transform: translateX(-50%);
-            font-size: 13px;
-            color: #2a1a06;
-            text-shadow: 0 1px 0 rgba(255, 235, 170, 0.7);
-        }
-
-        #hp-container {
-            flex: 1.2;
-            min-width: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        #hp-container::before {
-            display: none;
-        }
-
-        .hp-bar-bg {
-            height: 10px;
-            margin-top: 2px;
-            background: #14110e;
-            border: 1px solid #6f6453;
-            border-radius: 6px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
-            overflow: hidden;
-        }
-
-        #hp-bar {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #22c55e, #4ade80);
-            transition: width 0.2s ease-out;
-        }
-
-        /* ==========================================
-           3. תפריט חנות ומודאלים (Glassmorphism)
-           ========================================== */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 13, 11, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            z-index: 100;
-            padding-bottom: max(16px, env(safe-area-inset-bottom));
-        }
-
-        .splash-sheet {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: min(94vw, 420px);
-            max-height: min(70dvh, 520px);
-            padding: 16px;
-            border-radius: 22px;
-            background:
-                linear-gradient(180deg, rgba(255, 214, 120, 0.08) 0%, rgba(255, 214, 120, 0) 26%),
-                linear-gradient(180deg, rgba(36, 27, 18, 0.95), rgba(17, 12, 8, 0.98));
-            border: 1px solid rgba(250, 204, 21, 0.35);
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
-        }
-
-        .splash-head {
-            display: flex;
-            gap: 8px;
-            flex: none;
-        }
-
-        .head-stat {
-            flex: 1;
-            height: 40px;
-            padding: 0 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-        }
-
-        .head-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #cbd5e1;
-            text-transform: uppercase;
-        }
-
-        .head-stat strong {
-            font-size: 16px;
-            font-weight: 900;
-            color: #fde047;
-        }
-
-        .splash-scroll {
-            flex: 1 1 auto;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .splash-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .shop-section-title {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: #ead9a6;
-        }
-
-        .upgrades-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .upgrade-item {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 12px;
-        }
-
-        .upg-name {
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff7e0;
-        }
-
-        .upg-lvl {
-            font-size: 10px;
-            color: #cbd5e1;
-        }
-
-        .btn-upg {
-            background: linear-gradient(180deg, #ffd84d, #e0a100);
-            border: none;
-            color: #2b1a02;
-            font-weight: 800;
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(224, 161, 0, 0.25);
-            transition: transform 0.1s, opacity 0.2s;
-        }
-
-        .btn-upg:active:not(:disabled),
-        .btn-primary:active {
-            transform: scale(0.96);
-        }
-
-        .btn-upg:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            width: 100%;
-            min-height: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 14px;
-            background: linear-gradient(180deg, #38d871, #16a34a);
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
-            transition: transform 0.1s;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* ==========================================
-           4. חסימת מחשב נייח/מצב מאוזן (Orientation & Desktop Blockers)
-           ========================================== */
-        .device-blocker {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: #11100f;
-            color: #fff;
-            text-align: center;
-        }
-
-        .device-blocker-card {
-            width: min(88vw, 340px);
-            padding: 24px 18px;
-            border-radius: 20px;
-            background: rgba(35, 31, 27, 0.96);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .device-blocker-icon {
-            font-size: 40px;
-            margin-bottom: 8px;
-        }
-
-        .device-blocker h2 {
-            font-size: 20px;
-            margin-bottom: 6px;
-        }
-
-        .device-blocker p {
-            font-size: 13px;
-            color: #e5e7eb;
-        }
-
-        @media (min-width: 769px) {
-            #desktop-blocker { display: flex; }
-        }
-
-        @media (max-width: 768px) and (orientation: landscape) {
-            #landscape-blocker { display: flex; }
-            #ui-container, #splash-screen { visibility: hidden; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css?v=11">
+    
+    <!-- ספריית Three.js -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- HUD עליון -->
+    <!-- שכבת הגבלה: המשחק מיועד לטלפונים בלבד ובמצב אנכי -->
+    <div id="desktop-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">📱</div>
+            <h2>Mobile Only</h2>
+            <p>This game is designed for phones in portrait mode.</p>
+            <small>Open the game on your phone to play.</small>
+        </div>
+    </div>
+
+    <div id="landscape-blocker" class="device-blocker">
+        <div class="device-blocker-card">
+            <div class="device-blocker-icon">↕️</div>
+            <h2>Rotate your phone</h2>
+            <p>Switch your phone to portrait mode to play.</p>
+        </div>
+    </div>
+
+    <!-- UI עליון בזמן משחק -->
     <div id="ui-container">
         <div class="ui-card">
             <span class="ui-title">SCORE</span>
-            <span class="ui-value" id="ui-score">0</span>
+            <span id="score-val" class="ui-value">0</span>
         </div>
+
         <div class="ui-card">
             <span class="ui-title">COINS</span>
-            <span class="ui-value" id="ui-coins">0</span>
+            <span id="coins-val" class="ui-value">0</span>
         </div>
+
         <div class="ui-card">
-            <span class="ui-title">STAGE</span>
-            <span class="ui-value" id="ui-level">1</span>
+            <span class="ui-title">LEVEL</span>
+            <span id="level-text" class="ui-value">1</span>
         </div>
+
         <div class="ui-card" id="hp-container">
-            <span class="ui-title">HEALTH</span>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #a1a1aa;">
+                <span>HP</span>
+                <span id="hp-text">100 / 100</span>
+            </div>
             <div class="hp-bar-bg">
                 <div id="hp-bar"></div>
             </div>
         </div>
     </div>
 
-    <!-- מסך פתיחה / חנות שדרוגים -->
-    <div id="splash-screen" class="modal-overlay">
-        <div class="splash-sheet">
+    <!-- מסך פתיחה (Splash / Start) -->
+    <div id="splash-screen" class="modal-overlay intro-only">
+        <div class="modal-card splash-sheet">
+            <h1 class="game-title">BLAST<br><span>ROYALE</span></h1>
+
+            <!-- שורת נתונים קבועה: מטבעות ושיא -->
             <div class="splash-head">
                 <div class="head-stat">
-                    <span class="head-label">COINS</span>
-                    <strong id="shop-coins">0</strong>
+                    <span class="head-label">🪙 Coins</span>
+                    <strong id="start-coins">0</strong>
                 </div>
                 <div class="head-stat">
-                    <span class="head-label">BEST SCORE</span>
-                    <strong id="shop-best">0</strong>
+                    <span class="head-label">🏆 Best</span>
+                    <strong id="start-best-score">0</strong>
                 </div>
             </div>
 
+            <!-- אזור הגלילה: תותח, שדרוגים, מפה -->
             <div class="splash-scroll">
-                <div class="shop-section-title">CANNON UPGRADES</div>
-                <div class="upgrades-list">
-                    <div class="upgrade-item">
-                        <span class="upg-name">Fire Rate</span>
-                        <span class="upg-lvl" id="lvl-firerate">Lvl 1</span>
-                        <button class="btn-upg" id="btn-buy-firerate">100 COINS</button>
+                <section class="splash-section">
+                    <div class="shop-section-title">Upgrades</div>
+                    <div class="upgrades-list">
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">Fire Power</div>
+                                <div id="power-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-power-btn" class="btn-upg">50 C</button>
+                        </div>
+
+                        <div class="upgrade-item">
+                            <div>
+                                <div class="upg-name">Fire Rate</div>
+                                <div id="rate-lvl-text" class="upg-lvl">Lvl 1</div>
+                            </div>
+                            <button id="buy-rate-btn" class="btn-upg">60 C</button>
+                        </div>
                     </div>
-                    <div class="upgrade-item">
-                        <span class="upg-name">Fire Power</span>
-                        <span class="upg-lvl" id="lvl-power">Lvl 1</span>
-                        <button class="btn-upg" id="btn-buy-power">150 COINS</button>
+                </section>
+
+                <section class="splash-section">
+                    <div class="shop-section-title">Map</div>
+                    <div class="maps-grid">
+                        <button class="map-card selected owned" data-map-id="forest" type="button">
+                            <span class="map-icon">🔺</span>
+                            <span class="map-info"><strong>PYRAMIDS</strong><small>Pyramids</small></span>
+                            <span class="map-action">Selected</span>
+                        </button>
+                        <button class="map-card owned" data-map-id="sand" type="button">
+                            <span class="map-icon">🏜️</span>
+                            <span class="map-info"><strong>DESERT</strong><small>Golden sands</small></span>
+                            <span class="map-action">Select</span>
+                        </button>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <button class="btn-primary" id="btn-start">TAP TO PLAY</button>
+            <button id="inventory-btn" class="inv-open" type="button"><span>🎒</span>INVENTORY</button>
+
+            <button id="start-btn" class="btn-primary" type="button">Start Game</button>
         </div>
     </div>
 
-    <!-- חוסמי מסך -->
-    <div id="desktop-blocker" class="device-blocker">
-        <div class="device-blocker-card">
-            <div class="device-blocker-icon">📱</div>
-            <h2>Mobile Only</h2>
-            <p>This game is optimized for mobile devices in portrait mode.</p>
-        </div>
-    </div>
-
-    <div id="landscape-blocker" class="device-blocker">
-        <div class="device-blocker-card">
-            <div class="device-blocker-icon">🔄</div>
-            <h2>Rotate Device</h2>
-            <p>Please rotate your device back to portrait mode to play.</p>
-        </div>
-    </div>
-
-    <!-- לוגיקת המשחק הראשית -->
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-
-            if (typeof THREE === 'undefined') {
-                console.error('Three.js library failed to load!');
-                return;
-            }
-
-            // ==========================================
-            // 1. הגדרת סצנה, מצלמה ורנדרר
-            // ==========================================
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1e1b18);
-            scene.fog = new THREE.FogExp2(0x1e1b18, 0.018);
-
-            // אופטימיזציה לניידים: הגבלת DPI ל-1.5 מקסימום למניעת חימום
-            const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
-            
-            const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 500);
-            
-            const renderer = new THREE.WebGLRenderer({ 
-                antialias: true, 
-                powerPreference: "high-performance",
-                precision: "mediump"
-            });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(pixelRatio);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            document.body.appendChild(renderer.domElement);
-
-            // ==========================================
-            // 2. תאורה ממוטבת
-            // ==========================================
-            const ambientLight = new THREE.AmbientLight(0xfff5ea, 0.6);
-            scene.add(ambientLight);
-
-            const sunLight = new THREE.DirectionalLight(0xffd8a8, 1.4);
-            sunLight.position.set(-10, 20, 15);
-            sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
-            sunLight.shadow.camera.near = 0.5;
-            sunLight.shadow.camera.far = 50;
-            sunLight.shadow.camera.left = -15;
-            sunLight.shadow.camera.right = 15;
-            sunLight.shadow.camera.top = 20;
-            sunLight.shadow.camera.bottom = -10;
-            scene.add(sunLight);
-
-            // ==========================================
-            // 3. בניית התותח (הגלגלים פונים צדדית לתנועת ימין/שמאל בלבד)
-            // ==========================================
-            const cannonGroup = new THREE.Group();
-            scene.add(cannonGroup);
-            cannonGroup.position.set(0, 0, 10);
-
-            // גוף התותח
-            const bodyGeo = new THREE.BoxGeometry(1.6, 0.6, 1.2);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc8963e, roughness: 0.4 });
-            const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            bodyMesh.position.y = 0.6;
-            bodyMesh.castShadow = true;
-            cannonGroup.add(bodyMesh);
-
-            // קנה התותח (מוטה כלפי מעלה)
-            const barrelGeo = new THREE.CylinderGeometry(0.3, 0.45, 1.8, 16);
-            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
-            const barrelMesh = new THREE.Mesh(barrelGeo, barrelMat);
-            barrelMesh.rotation.x = -Math.PI / 3;
-            barrelMesh.position.set(0, 1.1, -0.2);
-            barrelMesh.castShadow = true;
-            cannonGroup.add(barrelMesh);
-
-            // גלגלים: פונים הצידה (Z-axis rotation) לתנועה אופקית בלבד
-            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.25, 16);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.8 });
-
-            const wheelPositions = [
-                [-0.9, 0.4, 0.4],  // קדמי שמאלי
-                [0.9, 0.4, 0.4],   // קדמי ימני
-                [-0.9, 0.4, -0.4], // אחורי שמאלי
-                [0.9, 0.4, -0.4]   // אחורי ימני
-            ];
-
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                wheel.rotation.z = Math.PI / 2; // הגלגלים פונים צדדית
-                wheel.position.set(...pos);
-                wheel.castShadow = true;
-                cannonGroup.add(wheel);
-            });
-
-            // ==========================================
-            // 4. משטח קרקע
-            // ==========================================
-            const groundGeo = new THREE.PlaneGeometry(30, 100);
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a2e2b, roughness: 0.9 });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.position.set(0, 0, -20);
-            ground.receiveShadow = true;
-            scene.add(ground);
-
-            // ==========================================
-            // 5. ניהול מצב משחק (State)
-            // ==========================================
-            let gameState = {
-                playing: false,
-                score: 0,
-                coins: parseInt(localStorage.getItem('br_coins') || '0'),
-                bestScore: parseInt(localStorage.getItem('br_best') || '0'),
-                hp: 100,
-                level: 1,
-                fireRateLvl: parseInt(localStorage.getItem('br_upg_fr') || '1'),
-                powerLvl: parseInt(localStorage.getItem('br_upg_pw') || '1')
-            };
-
-            const uiScore = document.getElementById('ui-score');
-            const uiCoins = document.getElementById('ui-coins');
-            const uiLevel = document.getElementById('ui-level');
-            const hpBar = document.getElementById('hp-bar');
-            const shopCoins = document.getElementById('shop-coins');
-            const shopBest = document.getElementById('shop-best');
-            const splashScreen = document.getElementById('splash-screen');
-            const btnStart = document.getElementById('btn-start');
-
-            function updateUI() {
-                uiScore.textContent = gameState.score;
-                uiCoins.textContent = gameState.coins;
-                uiLevel.textContent = gameState.level;
-                hpBar.style.width = gameState.hp + '%';
-                shopCoins.textContent = gameState.coins;
-                shopBest.textContent = gameState.bestScore;
-            }
-            updateUI();
-
-            // ==========================================
-            // 6. בקרת מגע ותנועה
-            // ==========================================
-            let isDragging = false;
-            let previousTouchX = 0;
-            const BOUNDS_X = 5.5;
-
-            window.addEventListener('touchstart', (e) => {
-                if (!gameState.playing) return;
-                isDragging = true;
-                previousTouchX = e.touches[0].clientX;
-            }, { passive: true });
-
-            window.addEventListener('touchmove', (e) => {
-                if (!isDragging || !gameState.playing) return;
-                const deltaX = e.touches[0].clientX - previousTouchX;
-                previousTouchX = e.touches[0].clientX;
-
-                // הזזת התותח
-                cannonGroup.position.x += deltaX * 0.025;
-                cannonGroup.position.x = Math.max(-BOUNDS_X, Math.min(BOUNDS_X, cannonGroup.position.x));
-            }, { passive: true });
-
-            window.addEventListener('touchend', () => { isDragging = false; });
-
-            // ==========================================
-            // 7. ניהול כפתורים ושדרוגים
-            // ==========================================
-            btnStart.addEventListener('click', () => {
-                splashScreen.classList.add('hidden');
-                gameState.playing = true;
-                gameState.score = 0;
-                gameState.hp = 100;
-                updateUI();
-            });
-
-            // ==========================================
-            // 8. עדכון מצלמה ואירועי מסך
-            // ==========================================
-            function updateCamera() {
-                const width = window.innerWidth;
-                const height = Math.max(window.innerHeight, 1);
-                camera.aspect = width / height;
-                camera.position.set(0, 10, 23);
-                camera.lookAt(0, 2.5, -5);
-                camera.updateProjectionMatrix();
-                renderer.setSize(width, height, false);
-            }
-            window.addEventListener('resize', updateCamera, { passive: true });
-            updateCamera();
-
-            // ==========================================
-            // 9. לולאת רינדור ראשית
-            // ==========================================
-            let lastTime = performance.now();
-
-            function animate(now) {
-                requestAnimationFrame(animate);
-
-                const dt = Math.min((now - lastTime) / 1000, 0.1);
-                lastTime = now;
-
-                if (gameState.playing) {
-                    // לוגיקה בזמן משחק פעיל
-                }
-
-                renderer.render(scene, camera);
-            }
-
-            animate(performance.now());
-        });
-    </script>
+    <!-- קובץ המשחק הראשי -->
+    <script defer src="main.js?v=145"></script>
 </body>
 </html>
