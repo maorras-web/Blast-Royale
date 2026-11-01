@@ -3334,139 +3334,171 @@ window.addEventListener('DOMContentLoaded', () => {
         cannonGroup.add(brace);
     });
 
-    // טבעת מסתובבת לבסיס הצריח.
-    const turretRing = new THREE.Mesh(
-        new THREE.TorusGeometry(0.82, 0.10, 8, 24),
-        edgeMetalMat
-    );
-    turretRing.rotation.x = Math.PI / 2;
-    turretRing.position.set(0, 0.72, 0);
-    turretRing.castShadow = true;
-    cannonGroup.add(turretRing);
+    // ==========================================================
+    // צריח קלאסי משודרג: כיפה משוריינת (פרופיל "סופר-אליפסה" מלא יותר) עם מעבר צבע, חישוק בסיס,
+    // תפר שריון, פתח עליון, פתחי אוורור, לוחות כתף, לוח קדמי עם סורג, וקנים עם מעטפת כחולה ובלם לוע.
+    // כדי לא להכביד: כל הצריח ממוזג ל-2 רשתות בלבד (כחול + מתכת) והקנים לרשת אחת, צבעים דרך צבעי-קודקודים
+    // (בלי טקסטורות, בלי אורות חדשים, בלי חומרי Physical). מיקומי הקנים, הרתיעה והירי לא השתנו.
+    // ==========================================================
+    function turMerge(parts) {
+        const pos = [], nor = [], col = [];
+        const tc = new THREE.Color();
+        const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion(), ee = new THREE.Euler();
+        const vv = new THREE.Vector3(), ss = new THREE.Vector3();
+        parts.forEach(pt => {
+            const g = pt.geo.index ? pt.geo.toNonIndexed() : pt.geo.clone();
+            if (pt.q) qq.copy(pt.q);
+            else qq.setFromEuler(ee.set(pt.r ? pt.r[0] : 0, pt.r ? pt.r[1] : 0, pt.r ? pt.r[2] : 0));
+            vv.set(pt.p[0], pt.p[1], pt.p[2]);
+            ss.set(pt.s ? pt.s[0] : 1, pt.s ? pt.s[1] : 1, pt.s ? pt.s[2] : 1);
+            m4.compose(vv, qq, ss);
+            g.applyMatrix4(m4);
+            const p = g.attributes.position.array, n = g.attributes.normal.array;
+            for (let i = 0; i < p.length; i++) { pos.push(p[i]); nor.push(n[i]); }
+            for (let i = 0; i < p.length; i += 3) {
+                tc.set(typeof pt.c === 'function' ? pt.c(p[i], p[i + 1], p[i + 2]) : pt.c);
+                col.push(tc.r, tc.g, tc.b);
+            }
+            g.dispose();
+        });
+        const out = new THREE.BufferGeometry();
+        out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+        out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        return out;
+    }
 
-    // גוף צריח חצי-כיפתי.
-    const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(0.90, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-        new THREE.MeshPhysicalMaterial({
-            color: 0x1f7fc4,
-            emissive: 0x06304f,
-            roughness: 0.28,
-            metalness: 0.2,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.12
-        })
-    );
-    dome.position.y = 0.60;
-    dome.castShadow = true;
-    dome.receiveShadow = true;
-    cannonGroup.add(dome);
-
-    // צוואר צריח קטן — כחול כדי שלא יופיע חלק שחור על/מתחת לכיפה הכחולה.
-    // שינוי ויזואלי בלבד: לא נוגעים במיקום, בגלגלים, במתלים או בפיזיקה.
-    const turretCollarMat = new THREE.MeshPhysicalMaterial({
-        color: 0x1f7fc4,
-        emissive: 0x06304f,
-        roughness: 0.30,
-        metalness: 0.18,
-        clearcoat: 0.85,
-        clearcoatRoughness: 0.14
+    const turBlueMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff, vertexColors: true, roughness: 0.34, metalness: 0.22,
+        emissive: 0x04223a
+    });
+    const turMetalMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff, vertexColors: true, roughness: 0.30, metalness: 0.78
     });
 
-    const turretCollar = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.67, 0.74, 0.20, 20),
-        turretCollarMat
-    );
-    turretCollar.position.y = 0.67;
-    turretCollar.castShadow = true;
-    turretCollar.receiveShadow = true;
-    cannonGroup.add(turretCollar);
+    const TUR_R = 0.90, TUR_H = 0.90, TUR_N = 2.35, TUR_BASE_Y = 0.60;
+    const _tc1 = new THREE.Color(), _tc2 = new THREE.Color();
+    function turGrad(lo, hi, y0, y1) {
+        return (x, y, z) => _tc1.setHex(lo).lerp(_tc2.setHex(hi), Math.min(Math.max((y - y0) / (y1 - y0), 0), 1));
+    }
+    // נקודה על פני הכיפה לפי זווית סיבוב (az) וזווית עלייה (t), עם נורמל.
+    function turDomeAt(az, t, lift) {
+        const k = 2 / TUR_N;
+        const r = TUR_R * Math.pow(Math.cos(t), k), y = TUR_H * Math.pow(Math.sin(t), k);
+        const nr = Math.pow(r / TUR_R, TUR_N - 1) / TUR_R, ny = Math.pow(y / TUR_H, TUR_N - 1) / TUR_H;
+        const sa = Math.sin(az), ca = Math.cos(az);
+        const n = new THREE.Vector3(sa * nr, ny, ca * nr).normalize();
+        const p = new THREE.Vector3(sa * r, TUR_BASE_Y + y, ca * r).addScaledVector(n, lift || 0);
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+        return { p: [p.x, p.y, p.z], q, r, y };
+    }
 
-    const rearHousing = new THREE.Mesh(
-        createRoundedBoxGeometry(0.94, 0.32, 0.34, 0.10, 0.035, 2),
-        darkMetalMat
-    );
-    rearHousing.position.set(0, 0.84, -0.63);
-    rearHousing.castShadow = true;
-    cannonGroup.add(rearHousing);
+    const turBlue = [], turMetal = [];
 
-    // לוחית צבע קטנה שנותנת נקודת חומר שונה על הגוף.
-    const accentPlate = new THREE.Mesh(
-        createRoundedBoxGeometry(0.54, 0.12, 0.48, 0.045, 0.02, 2),
-        edgeMetalMat
-    );
-    accentPlate.position.set(0, 0.73, -0.40);
-    accentPlate.castShadow = true;
-    cannonGroup.add(accentPlate);
+    // כיפה
+    {
+        const pts = [];
+        const DN = 16;
+        for (let i = 0; i <= DN; i++) {
+            const t = (i / DN) * Math.PI / 2;
+            pts.push(new THREE.Vector2(
+                Math.max(TUR_R * Math.pow(Math.cos(t), 2 / TUR_N), 0.0001),
+                TUR_H * Math.pow(Math.sin(t), 2 / TUR_N)
+            ));
+        }
+        turBlue.push({
+            geo: new THREE.LatheGeometry(pts, 36), p: [0, TUR_BASE_Y, 0],
+            c: turGrad(0x135a93, 0x66bdf4, TUR_BASE_Y, TUR_BASE_Y + TUR_H)
+        });
+    }
 
-    // לוח קדמי כהה לצריח.
-    // לוח הצריח הקדמי נשאר בגיאומטריה המקורית, אבל כחול כדי שלא יכסה
-    // את הכיפה הכחולה בכתם שחור. שינוי חומר בלבד — ללא שינוי במיקום/פיזיקה.
-    const frontPlate = new THREE.Mesh(
-        createRoundedBoxGeometry(1.62, 0.48, 0.16, 0.12, 0.04, 2),
-        turretCollarMat
-    );
-    frontPlate.position.set(0, 0.70, 0.70);
-    frontPlate.castShadow = true;
-    cannonGroup.add(frontPlate);
+    // חישוק בסיס כהה + שפה בהירה מעליו + טבעת תחתונה
+    turMetal.push({ geo: new THREE.CylinderGeometry(0.93, 0.99, 0.15, 36), p: [0, 0.66, 0], c: turGrad(0x0e171e, 0x2c3d49, 0.58, 0.74) });
+    turMetal.push({ geo: new THREE.TorusGeometry(0.94, 0.032, 6, 40), p: [0, 0.735, 0], r: [Math.PI / 2, 0, 0], c: 0x9db8cc });
+    turMetal.push({ geo: new THREE.TorusGeometry(0.985, 0.026, 6, 40), p: [0, 0.60, 0], r: [Math.PI / 2, 0, 0], c: 0x1b2832 });
+
+    // תפר שריון סביב הכיפה
+    {
+        const d = turDomeAt(0, 0.60, 0);
+        turMetal.push({ geo: new THREE.TorusGeometry(d.r + 0.004, 0.022, 6, 40), p: [0, TUR_BASE_Y + d.y, 0], r: [Math.PI / 2, 0, 0], c: 0x0d3556 });
+    }
+
+    // פתח עליון אחורי: טבעת כהה + מכסה בהיר
+    {
+        const h = turDomeAt(Math.PI, 1.08, -0.012);
+        turMetal.push({ geo: new THREE.CylinderGeometry(0.19, 0.21, 0.05, 20), p: h.p, q: h.q, c: 0x172530 });
+        const h2 = turDomeAt(Math.PI, 1.08, 0.020);
+        turBlue.push({ geo: new THREE.CylinderGeometry(0.125, 0.14, 0.035, 20), p: h2.p, q: h2.q, c: 0x8fd0ff });
+    }
+
+    // לוחות כתף משוריינים + פתחי אוורור בצדדים
+    [-1, 1].forEach(side => {
+        const az = side * Math.PI / 2;
+        const pod = turDomeAt(az, 0.62, 0.035);
+        turBlue.push({
+            geo: createRoundedBoxGeometry(0.22, 0.20, 0.36, 0.07, 0.03, 2),
+            p: pod.p, q: pod.q, c: turGrad(0x1b6ba8, 0x7cc9f7, 0.9, 1.4)
+        });
+        [0.20, 0.30, 0.40].forEach(t => {
+            const v = turDomeAt(az, t, 0.010);
+            turMetal.push({ geo: new THREE.BoxGeometry(0.035, 0.035, 0.34), p: v.p, q: v.q, c: 0x0b141a });
+        });
+        // ברגים על לוח הכתף
+        [-0.12, 0.12].forEach(dz => {
+            const b = turDomeAt(az, 0.62, 0.15);
+            turMetal.push({ geo: new THREE.SphereGeometry(0.028, 8, 6), p: [b.p[0], b.p[1], b.p[2] + dz], c: 0xaebdc7 });
+        });
+    });
+
+    // גב: בית אחורי + לוחית
+    turMetal.push({ geo: createRoundedBoxGeometry(0.94, 0.32, 0.34, 0.10, 0.035, 2), p: [0, 0.84, -0.63], c: turGrad(0x121c24, 0x2a3b47, 0.68, 1.0) });
+    [-0.27, 0, 0.27].forEach(x => {
+        turMetal.push({ geo: new THREE.BoxGeometry(0.15, 0.05, 0.03), p: [x, 0.80, -0.80], c: 0x04080b });
+    });
+    turMetal.push({ geo: createRoundedBoxGeometry(0.54, 0.12, 0.48, 0.045, 0.02, 2), p: [0, 0.73, -0.40], c: 0x6a8497 });
+
+    // לוח קדמי כחול (אותה גיאומטריה) + סורג + ברגים
+    turBlue.push({ geo: createRoundedBoxGeometry(1.62, 0.48, 0.16, 0.12, 0.04, 2), p: [0, 0.70, 0.70], c: turGrad(0x135a93, 0x5db4ee, 0.46, 0.94) });
+    [0.60, 0.70, 0.80].forEach(y => {
+        turMetal.push({ geo: new THREE.BoxGeometry(0.50, 0.035, 0.025), p: [0, y, 0.785], c: 0x0b141a });
+    });
+    [-1, 1].forEach(side => {
+        turMetal.push({ geo: new THREE.SphereGeometry(0.04, 8, 6), p: [side * 0.66, 0.70, 0.785], c: 0xaebdc7 });
+        turMetal.push({ geo: new THREE.BoxGeometry(0.06, 0.34, 0.03), p: [side * 0.50, 0.70, 0.785], c: 0x1a4f7e });
+    });
+
+    const turBlueMesh = new THREE.Mesh(turMerge(turBlue), turBlueMat);
+    turBlueMesh.castShadow = true;
+    turBlueMesh.receiveShadow = true;
+    cannonGroup.add(turBlueMesh);
+
+    const turMetalMesh = new THREE.Mesh(turMerge(turMetal), turMetalMat);
+    turMetalMesh.castShadow = true;
+    turMetalMesh.receiveShadow = true;
+    cannonGroup.add(turMetalMesh);
 
     // תושבת ומכלול הקנים נפרדים כדי שנוכל לתת רתיעה מכנית אמיתית.
     const barrelAssembly = new THREE.Group();
     barrelAssembly.position.set(0, 0.82, 0.05);
     cannonGroup.add(barrelAssembly);
 
-    // בסיס הקנים צר ורדוד מספיק כדי להישאר כולו בתוך הכיפה גם בזמן רתיעה -
-    // קודם הפינות שלו בלטו מבעד לכיפה ויצרו שתי נקודות שחורות בכל ירייה.
-    const barrelBase = new THREE.Mesh(
-        createRoundedBoxGeometry(0.96, 0.24, 0.60, 0.10, 0.045, 2),
-        darkMetalMat
-    );
-    barrelBase.position.set(0, 0.06, 0.0);
-    barrelBase.castShadow = true;
-    barrelAssembly.add(barrelBase);
-
-    const barrelMat = new THREE.MeshStandardMaterial({
-        color: 0x3d4e5a,
-        metalness: 0.82,
-        roughness: 0.22
-    });
-
-    const muzzleMat = new THREE.MeshStandardMaterial({
-        color: 0x11191f,
-        metalness: 0.68,
-        roughness: 0.25
-    });
-
-    const barrelGeo = new THREE.CylinderGeometry(0.13, 0.15, 0.98, 18);
-    const muzzleGeo = new THREE.CylinderGeometry(0.17, 0.15, 0.12, 18, 1, false);
-    const muzzleBoreGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.125, 16, 1, true);
-
+    // בסיס הקנים נשאר צר ורדוד כדי להישאר בתוך הכיפה גם בזמן רתיעה.
+    const brl = [];
+    brl.push({ geo: createRoundedBoxGeometry(0.96, 0.24, 0.60, 0.10, 0.045, 2), p: [0, 0.06, 0], c: 0x18232d });
     [-0.37, 0.37].forEach(x => {
-        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-        barrel.position.set(x, 0.61, 0);
-        barrel.castShadow = true;
-        barrelAssembly.add(barrel);
-
-        const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.145, 0.028, 6, 16),
-            edgeMetalMat
-        );
-        ring.rotation.x = Math.PI / 2;
-        ring.position.set(x, 0.56, 0);
-        ring.castShadow = true;
-        barrelAssembly.add(ring);
-
-        const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
-        muzzle.position.set(x, 1.12, 0);
-        muzzle.castShadow = true;
-        barrelAssembly.add(muzzle);
-
-        const bore = new THREE.Mesh(
-            muzzleBoreGeo,
-            new THREE.MeshBasicMaterial({ color: 0x020507 })
-        );
-        bore.position.set(x, 1.125, 0);
-        barrelAssembly.add(bore);
+        // קנה + מעטפת כחולה עם טבעות + בלם לוע בשלוש מדרגות + פתח שחור
+        brl.push({ geo: new THREE.CylinderGeometry(0.13, 0.15, 0.98, 20), p: [x, 0.61, 0], c: turGrad(0x32424e, 0x667c8c, 0.12, 1.1) });
+        brl.push({ geo: new THREE.CylinderGeometry(0.19, 0.215, 0.44, 22), p: [x, 0.33, 0], c: turGrad(0x13588f, 0x4aa4e6, 0.11, 0.55) });
+        brl.push({ geo: new THREE.TorusGeometry(0.195, 0.03, 6, 22), p: [x, 0.55, 0], r: [Math.PI / 2, 0, 0], c: 0xa3bccd });
+        brl.push({ geo: new THREE.TorusGeometry(0.16, 0.024, 6, 20), p: [x, 0.80, 0], r: [Math.PI / 2, 0, 0], c: 0x8aa2b3 });
+        brl.push({ geo: new THREE.CylinderGeometry(0.20, 0.20, 0.05, 20), p: [x, 1.055, 0], c: 0x10181e });
+        brl.push({ geo: new THREE.CylinderGeometry(0.17, 0.17, 0.065, 20), p: [x, 1.11, 0], c: 0x7d93a3 });
+        brl.push({ geo: new THREE.CylinderGeometry(0.205, 0.185, 0.05, 20), p: [x, 1.168, 0], c: 0x10181e });
+        brl.push({ geo: new THREE.CylinderGeometry(0.088, 0.088, 0.012, 16), p: [x, 1.198, 0], c: 0x010304 });
     });
+    const barrelMesh = new THREE.Mesh(turMerge(brl), turMetalMat);
+    barrelMesh.castShadow = true;
+    barrelAssembly.add(barrelMesh);
 
     // =========================================================
     // הגבהת גוף התותח ביחס לגלגלים
@@ -3738,7 +3770,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // גוף הצמיג (כהה יותר ליד החישוק, כאילו יש צל).
     rubberParts.push({
-        geo: new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 40),
+        geo: new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 20, 44),
         m: partMatrix(0, 0, 0),
         color: COLOR_TIRE,
         shade: (x, y) => 0.6 + 0.9 * smooth01((Math.hypot(x, y) - 0.17) / 0.38)
@@ -3823,6 +3855,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const wheelRubberGeo = mergeWheelParts(rubberParts);
     const wheelChromeGeo = mergeWheelParts(chromeParts);
     const wheelDishGeo = mergeWheelParts(dishParts);
+    // נפח צמיג דומה לנובה: הגומי (כולל שיני האחיזה) מורחב לרוחב ב-45%, והחישוק מורחב מעט כדי להישאר גלוי.
+    // זה שינוי חד-פעמי בגיאומטריה המשותפת - אפס עלות בזמן ריצה, הרדיוס החיצוני (מגע עם הקרקע) לא משתנה.
+    const CLASSIC_TIRE_PUFF = 1.45, CLASSIC_RIM_PUFF = 1.28;
+    wheelRubberGeo.scale(1, 1, CLASSIC_TIRE_PUFF);
+    wheelChromeGeo.scale(1, 1, CLASSIC_RIM_PUFF);
+    wheelDishGeo.scale(1, 1, CLASSIC_RIM_PUFF);
 
     // ---- חומרים ----
     const wheelRubberMat = new THREE.MeshStandardMaterial({
