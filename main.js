@@ -5214,27 +5214,27 @@ window.addEventListener('DOMContentLoaded', () => {
     // מעברי צבע לכל קודקוד: מתכת כהה שמתבהרת כלפי מעלה עם גוון כחול עדין, בלי שום עלות בזמן ריצה
     const hvHullGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 0.6) / 0.66)); const v = 0.115 + 0.17 * t; return [v * 0.96, v * 1.0, v * 1.10]; };
     const hvBowlGrad = (x, y) => { const t = Math.max(0, Math.min(1, y / 0.6)); const v = 0.07 + 0.11 * t; return [v * 0.92, v * 0.98, v * 1.22]; };
-    const hvDomeGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 1.15) / 0.55)); return [0.0 + 0.04 * t, 0.05 + 0.15 * t, 1.0]; };
+    const hvDomeGrad = (x, y) => { const t = Math.max(0, Math.min(1, (y - 1.20) / 0.55)); return [0.0 + 0.04 * t, 0.05 + 0.15 * t, 1.0]; };
 
     // ---- גוף: שכבה עליונה (מתכת כהה) ותחתית (כהה יותר), פרופיל חלק עם כתף מוגבהת ----
-    hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[1.50, 0.60], [1.46, 0.74], [1.30, 0.92], [1.05, 1.08], [0.80, 1.18], [0.66, 1.24], [0.001, 1.26]]), 44), 0, 0, 0, 0, 0, 0, 1, 1, 1, hvHullGrad], [new THREE.CylinderGeometry(0.66, 0.74, 0.30, 32), 0, 1.01, 0.46, 0, 0, 0, 1, 1, 1, 0x080e24]], hvHullMat));
-    hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[0.001, 0.00], [0.35, 0.03], [0.75, 0.14], [1.15, 0.32], [1.40, 0.48], [1.50, 0.60]]), 44), 0, 0, 0, 0, 0, 0, 1, 1, 1, hvBowlGrad]], hvBowlMat));
+    hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[1.50, 0.50], [1.50, 0.68], [1.44, 0.86], [1.30, 0.98], [1.05, 1.12], [0.80, 1.22], [0.66, 1.27], [0.001, 1.29]]), 44), 0, 0, 0, 0, 0, 0, 1, 1, 1, hvHullGrad], [new THREE.CylinderGeometry(0.66, 0.74, 0.30, 32), 0, 1.06, 0.46, 0, 0, 0, 1, 1, 1, 0x080e24]], hvHullMat));
+    hoverRig.add(hvMerge([[new THREE.LatheGeometry(V2([[0.001, 0.00], [0.35, 0.03], [0.75, 0.14], [1.15, 0.30], [1.40, 0.40], [1.50, 0.50]]), 44), 0, 0, 0, 0, 0, 0, 1, 1, 1, hvBowlGrad]], hvBowlMat));
 
     // ---- פרטים כהים: קווי פאנלים, מסגרת כיפה, בסיס קנים, רגליות ----
     const hvDarkParts = [
-        [new THREE.TorusGeometry(1.30, 0.022, 5, 48), 0, 0.93, 0, PI2, 0, 0],
-        [new THREE.TorusGeometry(1.05, 0.022, 5, 44), 0, 1.09, 0, PI2, 0, 0],
-        [new THREE.TorusGeometry(0.80, 0.022, 5, 40), 0, 1.19, 0, PI2, 0, 0],
+        [new THREE.TorusGeometry(1.30, 0.022, 5, 48), 0, 0.98, 0, PI2, 0, 0],
+        [new THREE.TorusGeometry(1.05, 0.022, 5, 44), 0, 1.12, 0, PI2, 0, 0],
+        [new THREE.TorusGeometry(0.80, 0.022, 5, 40), 0, 1.22, 0, PI2, 0, 0],
         [new THREE.TorusGeometry(1.15, 0.022, 5, 44), 0, 0.33, 0, PI2, 0, 0],
-        [new THREE.TorusGeometry(0.62, 0.05, 6, 32), 0, 1.16, 0.46, PI2, 0, 0],
+        [new THREE.TorusGeometry(0.62, 0.05, 6, 32), 0, 1.21, 0.46, PI2, 0, 0],
         [new THREE.BoxGeometry(1.14, 0.24, 0.46), 0, 1.16, -0.74]
     ];
     hoverRig.add(hvMerge(hvDarkParts, hvDarkMat));
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
     const hvGlowParts = [
-        [new THREE.TorusGeometry(1.45, 0.03, 7, 56), 0, 0.52, 0, PI2, 0, 0, 1, 1, 1, 0x0a50d8],
-        [new THREE.TorusGeometry(1.52, 0.022, 5, 56), 0, 0.60, 0, PI2, 0, 0, 1, 1, 1, 0x2a5acc],
+        [new THREE.TorusGeometry(1.46, 0.035, 7, 56), 0, 0.47, 0, PI2, 0, 0, 1, 1, 1, 0x0a3cc8],
+        [new THREE.TorusGeometry(1.52, 0.022, 5, 56), 0, 0.58, 0, PI2, 0, 0, 1, 1, 1, 0x16306e],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0, 1, 1, 1, 0x2f5bff],
         [new THREE.CylinderGeometry(0.30, 0.30, 0.03, 18), 0, -0.04, 0, 0, 0, 0, 1, 1, 1, 0x9ab8ff]
     ];
@@ -5243,13 +5243,13 @@ window.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 12; i++) {
         const phi = Math.PI / 2 + (i + 0.5) / 12 * Math.PI * 2;
         const pc = i % 2 ? 0x1a84ff : 0x3a9cff;
-        hvGlowParts.push([new THREE.BoxGeometry(0.17, 0.035, 0.085).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.01, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
+        hvGlowParts.push([new THREE.BoxGeometry(0.17, 0.035, 0.085).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.06, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
     }
     // חריצי אור ארוכים על דופן הגוף: מעטפת כחולה-תכלכלה + פס ליבה בהיר דק
     for (let i = 0; i < 10; i++) {
         const phi = Math.PI / 2 + i / 10 * Math.PI * 2;
-        hvGlowParts.push([new THREE.BoxGeometry(0.46, 0.075, 0.05).rotateX(-0.28), Math.cos(phi) * 1.462, 0.76, Math.sin(phi) * 1.462, 0, Math.PI / 2 - phi, 0, 1, 1, 1, 0x0a6cff]);
-        hvGlowParts.push([new THREE.BoxGeometry(0.34, 0.026, 0.05).rotateX(-0.28), Math.cos(phi) * 1.470, 0.762, Math.sin(phi) * 1.470, 0, Math.PI / 2 - phi, 0, 1, 1, 1, 0xa8dcff]);
+        hvGlowParts.push([new THREE.BoxGeometry(0.50, 0.11, 0.05).rotateX(-0.12), Math.cos(phi) * 1.492, 0.745, Math.sin(phi) * 1.492, 0, Math.PI / 2 - phi, 0, 1, 1, 1, 0x0a6cff]);
+        hvGlowParts.push([new THREE.BoxGeometry(0.40, 0.045, 0.05).rotateX(-0.12), Math.cos(phi) * 1.500, 0.747, Math.sin(phi) * 1.500, 0, Math.PI / 2 - phi, 0, 1, 1, 1, 0x5ec0ff]);
     }
     hvGlowParts.push([new THREE.TorusGeometry(1.20, 0.028, 6, 52), 0, 0.345, 0, PI2, 0, 0, 1, 1, 1, 0x1070ff]);
     hoverRig.add(hvMerge(hvGlowParts, hvGlowMat));
@@ -5257,11 +5257,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const sm = [];
         for (let i = 0; i < 10; i++) {   // חריצים ארוכים בדופן
             const phi = Math.PI / 2 + i / 10 * Math.PI * 2;
-            sm.push([new THREE.PlaneGeometry(0.80, 0.30).rotateX(-0.28), Math.cos(phi) * 1.49, 0.77, Math.sin(phi) * 1.49, 0, Math.PI / 2 - phi, 0]);
+            sm.push([new THREE.PlaneGeometry(0.86, 0.34).rotateX(-0.12), Math.cos(phi) * 1.525, 0.745, Math.sin(phi) * 1.525, 0, Math.PI / 2 - phi, 0]);
         }
         for (let i = 0; i < 12; i++) {   // נורות קטנות במדרגה העליונה
             const phi = Math.PI / 2 + (i + 0.5) / 12 * Math.PI * 2;
-            sm.push([new THREE.PlaneGeometry(0.42, 0.24).rotateX(-1.1), Math.cos(phi) * 1.25, 1.07, Math.sin(phi) * 1.25, 0, Math.PI / 2 - phi, 0]);
+            sm.push([new THREE.PlaneGeometry(0.42, 0.24).rotateX(-1.1), Math.cos(phi) * 1.25, 1.12, Math.sin(phi) * 1.25, 0, Math.PI / 2 - phi, 0]);
         }
         const smm = hvMerge(sm, hvSmearMat);
         smm.renderOrder = 5;
@@ -5282,7 +5282,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ], hvLightMat));
 
     // ---- כיפת זכוכית (רשת שקופה אחת) ----
-    hoverRig.add(hvMerge([[new THREE.SphereGeometry(0.58, 28, 14, 0, Math.PI * 2, 0, PI2), 0, 1.15, 0.46, 0, 0, 0, 1, 1.0, 1, hvDomeGrad]], hvGlassMat));
+    hoverRig.add(hvMerge([[new THREE.SphereGeometry(0.58, 28, 14, 0, Math.PI * 2, 0, PI2), 0, 1.20, 0.46, 0, 0, 0, 1, 1.0, 1, hvDomeGrad]], hvGlassMat));
 
     // ---- קרן טרקטור שקופה מתחת (חרוט אחד) ----
     const hvBeam = hvMerge([[new THREE.CylinderGeometry(0.55, 1.05, 0.72, 24, 1, true), 0, -0.36, 0]], hvBeamMat);
