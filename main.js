@@ -5167,55 +5167,72 @@ window.addEventListener('DOMContentLoaded', () => {
         return mesh;
     }
 
-    const hvBlueMat = new THREE.MeshStandardMaterial({ color: 0x0c52b8, roughness: 0.34, metalness: 0.30, envMap: mk2Env, envMapIntensity: 0.35 });
-    const hvDarkMat = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 0.5, metalness: 0.55, envMap: mk2Env, envMapIntensity: 0.4 });
-    const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x8a919a, roughness: 0.32, metalness: 0.80, envMap: mk2Env, envMapIntensity: 0.8 });
-    const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x5ee7ff });
+    const hvBlueMat = new THREE.MeshStandardMaterial({ color: 0xaab3c2, roughness: 0.26, metalness: 0.85, side: THREE.DoubleSide, envMap: mk2Env, envMapIntensity: 0.9 });   // גוף הצלחת: מתכת כסופה
+    const hvDarkMat = new THREE.MeshStandardMaterial({ color: 0x232833, roughness: 0.5, metalness: 0.6, envMap: mk2Env, envMapIntensity: 0.4 });
+    const hvSteelMat = new THREE.MeshStandardMaterial({ color: 0x6f7886, roughness: 0.30, metalness: 0.85, envMap: mk2Env, envMapIntensity: 0.9 });
+    const hvGlowMat = new THREE.MeshBasicMaterial({ color: 0x7dff6a });
+    const hvGlassMat = new THREE.MeshBasicMaterial({ color: 0x8dffc4, transparent: true, opacity: 0.42, depthWrite: false });
+    const hvEyeMat = new THREE.MeshBasicMaterial({ color: 0x05080a });
 
-    // גוף כחול: שכבה עליונה, כיפה וכמוסות צד
+    // חללית חייזרים: גוף צלחת חלק (פרופיל אחד), כיפת זכוכית ירוקה עם חייזר קטן בפנים
+    const hvProfile = [[0.001, 0.00], [0.45, 0.03], [0.95, 0.15], [1.30, 0.33], [1.42, 0.41], [1.30, 0.49], [0.95, 0.63], [0.62, 0.72], [0.001, 0.76]]
+        .map(v => new THREE.Vector2(v[0], v[1]));
     hoverRig.add(hvMerge([
-        [new THREE.CylinderGeometry(1.18, 1.00, 0.36, 28), 0, 0.52, 0],
-        [new THREE.SphereGeometry(0.64, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.70, 0, 0, 0, 0, 1, 0.78, 1],
-        [new THREE.SphereGeometry(0.34, 12, 8), -1.22, 0.46, 0.05, 0, 0, 0, 1.15, 0.72, 1.55],
-        [new THREE.SphereGeometry(0.34, 12, 8), 1.22, 0.46, 0.05, 0, 0, 0, 1.15, 0.72, 1.55]
+        [new THREE.LatheGeometry(hvProfile, 40), 0, 0, 0]
     ], hvBlueMat));
 
-    // חלקים כהים: בטן, נחירי דחף, סנפירי זנב ובסיס הקנים
-    hoverRig.add(hvMerge([
-        [new THREE.CylinderGeometry(0.98, 0.60, 0.34, 24), 0, 0.17, 0],
-        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), -0.58, -0.01, 0.30],
-        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), 0.58, -0.01, 0.30],
-        [new THREE.CylinderGeometry(0.27, 0.20, 0.20, 14), 0, -0.01, -0.50],
-        [new THREE.BoxGeometry(0.12, 0.62, 0.56), -0.60, 0.98, 0.82, -0.25, 0, 0],
-        [new THREE.BoxGeometry(0.12, 0.62, 0.56), 0.60, 0.98, 0.82, -0.25, 0, 0],
-        [new THREE.BoxGeometry(1.16, 0.30, 0.54), 0, 0.98, 0],
-        [new THREE.BoxGeometry(0.16, 0.10, 0.90), -1.22, 0.66, 0.05],
-        [new THREE.BoxGeometry(0.16, 0.10, 0.90), 1.22, 0.66, 0.05]
-    ], hvDarkMat));
+    // חלקים כהים: טבעת אמצע, בטן, שלוש רגליות ובסיס הקנים
+    const hvDarkParts = [
+        [new THREE.TorusGeometry(1.40, 0.045, 6, 44), 0, 0.41, 0, Math.PI / 2, 0, 0],
+        [new THREE.CylinderGeometry(0.50, 0.36, 0.14, 20), 0, -0.04, 0],
+        [new THREE.BoxGeometry(1.04, 0.20, 0.42), 0, 0.80, -0.42]
+    ];
+    [90, 210, 330].forEach(deg => {
+        const r = deg * Math.PI / 180;
+        hvDarkParts.push([new THREE.SphereGeometry(0.15, 8, 6), Math.cos(r) * 0.78, -0.06, Math.sin(r) * 0.78, 0, 0, 0, 1, 0.8, 1]);
+    });
+    hoverRig.add(hvMerge(hvDarkParts, hvDarkMat));
 
-    // חלקים זוהרים (MeshBasic - בלי חישובי תאורה): טבעת סביב הגוף, פס "עין" וקצות דחף
-    hoverRig.add(hvMerge([
-        [new THREE.TorusGeometry(1.185, 0.045, 6, 40), 0, 0.64, 0, Math.PI / 2, 0, 0],
-        [new THREE.BoxGeometry(0.62, 0.075, 0.05), 0, 0.88, -0.30],
-        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), -0.58, -0.11, 0.30],
-        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), 0.58, -0.11, 0.30],
-        [new THREE.CylinderGeometry(0.19, 0.19, 0.03, 12), 0, -0.11, -0.50]
-    ], hvGlowMat));
+    // חלקים זוהרים (MeshBasic - בלי חישובי תאורה): 12 נורות סביב השפה, טבעת בבסיס הכיפה, ראש החייזר
+    const hvGlowParts = [
+        [new THREE.TorusGeometry(0.62, 0.035, 6, 28), 0, 0.73, 0.25, Math.PI / 2, 0, 0, 1, 1, 1],
+        [new THREE.SphereGeometry(0.22, 12, 9), 0, 0.90, 0.25, 0, 0, 0, 1, 1.15, 1],
+        [new THREE.CylinderGeometry(0.17, 0.17, 0.03, 12), -HV_BARREL_X, 0.70, -0.42]
+    ];
+    hvGlowParts.pop();
+    for (let i = 0; i < 12; i++) {
+        const r = i / 12 * Math.PI * 2;
+        hvGlowParts.push([new THREE.SphereGeometry(0.068, 6, 5), Math.cos(r) * 1.43, 0.41, Math.sin(r) * 1.43]);
+    }
+    hoverRig.add(hvMerge(hvGlowParts, hvGlowMat));
 
-    // הקנים: זוג קנים אנכיים כמו בקלאסי (קבוצה אחת שזזה ברתיעה)
+    // עיני החייזר
+    hoverRig.add(hvMerge([
+        [new THREE.SphereGeometry(0.055, 6, 5), -0.095, 0.93, 0.455, 0, 0, 0, 1.5, 0.8, 0.6],
+        [new THREE.SphereGeometry(0.055, 6, 5), 0.095, 0.93, 0.455, 0, 0, 0, 1.5, 0.8, 0.6]
+    ], hvEyeMat));
+
+    // כיפת זכוכית שקופה (רשת אחת)
+    hoverRig.add(hvMerge([
+        [new THREE.SphereGeometry(0.52, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.72, 0.25, 0, 0, 0, 1, 0.92, 1]
+    ], hvGlassMat));
+
+    // הקנים: זוג קנים אנכיים כמו בקלאסי, מותקנים בחזית הצלחת (קבוצה אחת שזזה ברתיעה)
     const hvBarrels = new THREE.Group();
     hoverRig.add(hvBarrels);
     hvBarrels.add(hvMerge([
-        [new THREE.CylinderGeometry(0.15, 0.17, 1.10, 14), -HV_BARREL_X, 1.50, 0],
-        [new THREE.CylinderGeometry(0.15, 0.17, 1.10, 14), HV_BARREL_X, 1.50, 0],
-        [new THREE.CylinderGeometry(0.22, 0.22, 0.10, 14), -HV_BARREL_X, 1.20, 0],
-        [new THREE.CylinderGeometry(0.22, 0.22, 0.10, 14), HV_BARREL_X, 1.20, 0],
-        [new THREE.CylinderGeometry(0.20, 0.20, 0.08, 14), -HV_BARREL_X, 1.78, 0],
-        [new THREE.CylinderGeometry(0.20, 0.20, 0.08, 14), HV_BARREL_X, 1.78, 0]
+        [new THREE.CylinderGeometry(0.12, 0.16, 1.10, 14), -HV_BARREL_X, 1.35, -0.42],
+        [new THREE.CylinderGeometry(0.12, 0.16, 1.10, 14), HV_BARREL_X, 1.35, -0.42],
+        [new THREE.CylinderGeometry(0.21, 0.21, 0.09, 14), -HV_BARREL_X, 1.05, -0.42],
+        [new THREE.CylinderGeometry(0.21, 0.21, 0.09, 14), HV_BARREL_X, 1.05, -0.42],
+        [new THREE.CylinderGeometry(0.19, 0.19, 0.08, 14), -HV_BARREL_X, 1.68, -0.42],
+        [new THREE.CylinderGeometry(0.19, 0.19, 0.08, 14), HV_BARREL_X, 1.68, -0.42]
     ], hvSteelMat));
     hvBarrels.add(hvMerge([
-        [new THREE.TorusGeometry(0.17, 0.03, 6, 16), -HV_BARREL_X, HV_MUZZLE_Y - 0.02, 0, Math.PI / 2, 0, 0],
-        [new THREE.TorusGeometry(0.17, 0.03, 6, 16), HV_BARREL_X, HV_MUZZLE_Y - 0.02, 0, Math.PI / 2, 0, 0]
+        [new THREE.TorusGeometry(0.15, 0.03, 6, 16), -HV_BARREL_X, HV_MUZZLE_Y - 0.12, -0.42, Math.PI / 2, 0, 0],
+        [new THREE.TorusGeometry(0.15, 0.03, 6, 16), HV_BARREL_X, HV_MUZZLE_Y - 0.12, -0.42, Math.PI / 2, 0, 0],
+        [new THREE.SphereGeometry(0.085, 8, 6), -HV_BARREL_X, HV_MUZZLE_Y - 0.08, -0.42],
+        [new THREE.SphereGeometry(0.085, 8, 6), HV_BARREL_X, HV_MUZZLE_Y - 0.08, -0.42]
     ], hvGlowMat));
 
     // כתם אור על הקרקע מתחת לתותח (במקום צל אמיתי)
@@ -5224,9 +5241,9 @@ window.addEventListener('DOMContentLoaded', () => {
         c.width = c.height = 64;
         const cx = c.getContext('2d');
         const gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31);
-        gr.addColorStop(0, 'rgba(94,231,255,0.85)');
-        gr.addColorStop(0.5, 'rgba(60,170,255,0.35)');
-        gr.addColorStop(1, 'rgba(40,120,255,0)');
+        gr.addColorStop(0, 'rgba(125,255,106,0.85)');
+        gr.addColorStop(0.5, 'rgba(70,230,110,0.35)');
+        gr.addColorStop(1, 'rgba(40,200,90,0)');
         cx.fillStyle = gr;
         cx.fillRect(0, 0, 64, 64);
         const tex = new THREE.CanvasTexture(c);
@@ -5556,8 +5573,8 @@ window.addEventListener('DOMContentLoaded', () => {
           desc: 'The reliable twin-barrel cannon. Balanced, steady and easy to control.' },
         { kind: 'cannon', id: 'mk2', name: 'Nova Cannon', icon: '🛡️', color: '#38bdf8', tag: 'CANNON',
           desc: 'Armored off-road cannon with powered suspension and big tyres. Bigger, tougher and ready for anything.' },
-        { kind: 'cannon', id: 'hover', name: 'Hover Cannon', icon: '🛸', color: '#5ee7ff', tag: 'CANNON',
-          desc: 'A floating cannon that glides above the sand on a cushion of light. No wheels, no friction, pure speed.' },
+        { kind: 'cannon', id: 'hover', name: 'Hover Cannon', icon: '🛸', color: '#7dff6a', tag: 'CANNON',
+          desc: 'An alien flying saucer that glides above the sand on a cushion of green light. No wheels, no friction, pure speed.' },
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
           stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
