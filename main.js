@@ -5215,8 +5215,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- זוהר טורקיז (MeshBasic): פס שפה, ליבת כיפה, אנטנה, מגיני דחף, כור מתחת ----
     const hvGlowParts = [
-        [new THREE.TorusGeometry(1.45, 0.095, 7, 56), 0, 0.52, 0, PI2, 0, 0, 1, 1, 1, 0x2a5bff],
-        [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0, 1, 1, 1, 0x7fa0ff],
+        [new THREE.TorusGeometry(1.45, 0.095, 7, 56), 0, 0.52, 0, PI2, 0, 0, 1, 1, 1, 0x0a22ff],
+        [new THREE.TorusGeometry(1.38, 0.035, 6, 52), 0, 0.83, 0, PI2, 0, 0, 1, 1, 1, 0x1a30ff],
         [new THREE.TorusGeometry(1.52, 0.022, 5, 56), 0, 0.60, 0, PI2, 0, 0, 1, 1, 1, 0xc4d2ff],
         [new THREE.TorusGeometry(0.40, 0.05, 6, 24), 0, -0.01, 0, PI2, 0, 0, 1, 1, 1, 0x2f5bff],
         [new THREE.CylinderGeometry(0.30, 0.30, 0.03, 18), 0, -0.04, 0, 0, 0, 0, 1, 1, 1, 0x9ab8ff]
@@ -5224,7 +5224,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvSlope = Math.atan2(0.16, 0.25);   // שיפוע הכתף של הגוף
     for (let i = 0; i < 14; i++) {
         const phi = i / 14 * Math.PI * 2;
-        const pc = i % 2 ? 0x2f66ff : 0x58a0ff;
+        const pc = i % 2 ? 0x0a1cff : 0x0a38ff;
         hvGlowParts.push([new THREE.BoxGeometry(0.27, 0.04, 0.125).rotateX(hvSlope), Math.cos(phi) * 1.19, 1.01, Math.sin(phi) * 1.19, 0, Math.PI / 2 - phi, 0, 1, 1, 1, pc]);
     }
     hvGlowParts.push([new THREE.TorusGeometry(1.20, 0.028, 6, 52), 0, 0.345, 0, PI2, 0, 0, 1, 1, 1, 0x1f45ff]);
@@ -5236,7 +5236,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hvLights = [];
     for (let i = 0; i < 16; i++) {
         const r = i / 16 * Math.PI * 2;
-        hvLights.push([new THREE.SphereGeometry(i % 2 ? 0.04 : 0.058, 7, 6), Math.cos(r) * 1.53, 0.64, Math.sin(r) * 1.53, 0, 0, 0, 1, 1, 1, i % 2 ? 0x2a55ff : 0x5a85ff]);
+        hvLights.push([new THREE.SphereGeometry(i % 2 ? 0.04 : 0.058, 7, 6), Math.cos(r) * 1.53, 0.64, Math.sin(r) * 1.53, 0, 0, 0, 1, 1, 1, i % 2 ? 0x0a28ff : 0x3a58ff]);
     }
     hvSpin.add(hvMerge(hvLights, hvLightMat));
 
@@ -5266,7 +5266,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hvBarrelParts.push([new THREE.CylinderGeometry(0.265, 0.265, 0.07, 16), bx, 2.30, bz, 0, 0, 0, 1, 1, 1, ST]);
         hvBarrelParts.push([new THREE.SphereGeometry(0.235, 16, 8, 0, Math.PI * 2, 0, PI2), bx, 2.335, bz, 0, 0, 0, 1, 0.7, 1, ST]);
         [1.49, 1.80, 2.10].forEach(gy => {
-            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.046, 6, 20), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x3a78ff]);
+            hvBarrelGlow.push([new THREE.TorusGeometry(0.235, 0.046, 6, 20), bx, gy, bz, PI2, 0, 0, 1, 1, 1, 0x0a24ff]);
         });
     });
     hvBarrels.add(hvMerge(hvBarrelParts, hvSteelMat));
