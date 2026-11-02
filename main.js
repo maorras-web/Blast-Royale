@@ -3390,9 +3390,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const t0 = Math.asin(bLo), t1 = Math.asin(bHi);
         for (let i = 0; i <= BN; i++) {
             const t = t0 + (t1 - t0) * (i / BN);
+            const LIFT = 0.022; // הרמה לאורך הנורמל כדי שהפס לא ייצמד לכיפה (מונע הבהוב)
             bpts.push(new THREE.Vector2(
-                TUR_R * Math.pow(Math.cos(t), 2 / TUR_N) * 1.018,
-                TUR_H * Math.pow(Math.sin(t), 2 / TUR_N)
+                TUR_R * Math.pow(Math.cos(t), 2 / TUR_N) + LIFT * Math.cos(t),
+                TUR_H * Math.pow(Math.sin(t), 2 / TUR_N) + LIFT * Math.sin(t)
             ));
         }
         turMetal.push({ geo: new THREE.LatheGeometry(bpts, 48), p: [0, TUR_BASE_Y, 0], c: 0x151a20 });
@@ -4091,7 +4092,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // מיקום פנימי ובטוח: הקפיץ נמצא בין הגוף לגלגל, אך לא בתוך הצמיג.
         const springX = side * 1.17;
         const springTop = new THREE.Vector3(springX, 1.03, z);
-        const springBottom = new THREE.Vector3(side * 1.47, WHEEL_Y + 0.16, z);
+        const springBottom = new THREE.Vector3(side * 1.28, WHEEL_Y + 0.16, z);
         const direction = new THREE.Vector3().subVectors(springBottom, springTop);
         const length = direction.length();
 
@@ -4138,7 +4139,7 @@ window.addEventListener('DOMContentLoaded', () => {
         );
         addSuspensionCylinderBetween(
             springBottom,
-            new THREE.Vector3(side * 1.54, WHEEL_Y + 0.16, z),
+            new THREE.Vector3(side * 1.31, WHEEL_Y + 0.16, z),
             0.060,
             suspensionMetalMat,
             12,
@@ -4254,7 +4255,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function addReferenceCoiloverSuspension(side, z) {
-        const outerX = side * (WHEEL_X - 0.10);
+        const outerX = side * (WHEEL_X - 0.44);   // הזרועות נעצרות מחוץ לצמיג הרחב
 
         // נקודות inner-pivot בגוף: שתי זרועות לכל A-arm, כמו ברפרנס.
         const lowerInnerFront = new THREE.Vector3(side * 0.70, 0.40, z - 0.20);
@@ -4306,6 +4307,26 @@ window.addEventListener('DOMContentLoaded', () => {
             12,
             true,
             true
+        );
+
+        // ציר קצר + מפרק עמוד שמחברים את הזרועות לנאבה של הגלגל בלי לחדור לצמיג.
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(outerX, WHEEL_Y, z),
+            new THREE.Vector3(side * WHEEL_X, WHEEL_Y, z),
+            0.075,
+            suspensionDarkMetalMat,
+            12,
+            false,
+            false
+        );
+        addSuspensionCylinderBetween(
+            new THREE.Vector3(outerX, WHEEL_Y - 0.05, z),
+            new THREE.Vector3(outerX, WHEEL_Y + 0.30, z),
+            0.070,
+            suspensionDarkMetalMat,
+            12,
+            false,
+            false
         );
 
         addCoilOver(side, z);
