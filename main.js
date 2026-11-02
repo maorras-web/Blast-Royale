@@ -3213,24 +3213,24 @@ window.addEventListener('DOMContentLoaded', () => {
     // חומרים שונים כדי שהמתכת, הגומי והצבע לא ייראו כמו חומר אחד.
     const darkMetalMat = new THREE.MeshStandardMaterial({
         color: 0x18232d,
-        roughness: 0.26,
-        metalness: 0.72
+        roughness: 0.50,
+        metalness: 0.55
     });
 
     const bodyMetalMat = new THREE.MeshPhysicalMaterial({
         color: 0x2d3e49,
-        roughness: 0.27,
-        metalness: 0.72,
-        clearcoat: 0.22,
-        clearcoatRoughness: 0.18
+        roughness: 0.46,
+        metalness: 0.60,
+        clearcoat: 0.05,
+        clearcoatRoughness: 0.55
     });
 
     const edgeMetalMat = new THREE.MeshPhysicalMaterial({
         color: 0x526572,
-        roughness: 0.20,
-        metalness: 0.88,
-        clearcoat: 0.16,
-        clearcoatRoughness: 0.16
+        roughness: 0.42,
+        metalness: 0.70,
+        clearcoat: 0.03,
+        clearcoatRoughness: 0.55
     });
 
     const rubberMat = new THREE.MeshStandardMaterial({
@@ -3241,14 +3241,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const hubMat = new THREE.MeshStandardMaterial({
         color: 0x778994,
-        roughness: 0.28,
-        metalness: 0.78
+        roughness: 0.48,
+        metalness: 0.62
     });
 
     const boltMat = new THREE.MeshStandardMaterial({
         color: 0x9aa7ae,
-        roughness: 0.22,
-        metalness: 0.88
+        roughness: 0.46,
+        metalness: 0.65
     });
 
     // גוף ראשי מעוגל.
@@ -3339,11 +3339,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const turBlueMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff, vertexColors: true, roughness: 0.34, metalness: 0.22,
+        color: 0xffffff, vertexColors: true, roughness: 0.50, metalness: 0.15,
         emissive: 0x04223a
     });
     const turMetalMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff, vertexColors: true, roughness: 0.30, metalness: 0.78
+        color: 0xffffff, vertexColors: true, roughness: 0.55, metalness: 0.50
     });
 
     const TUR_R = 0.90, TUR_H = 0.90, TUR_N = 2.0, TUR_BASE_Y = 0.60;
@@ -3599,7 +3599,7 @@ window.addEventListener('DOMContentLoaded', () => {
             g.fillRect(0, 0, 256, 128);
 
             // השמש (בכיוון אור השמש של הסצנה) + זוהר חם מאחור.
-            [[217, 29, 34, 'rgba(255,248,225,1)'], [46, 56, 40, 'rgba(255,176,74,0.9)']].forEach(([x, y, r, col]) => {
+            [[217, 29, 52, 'rgba(255,238,205,0.85)'], [46, 56, 48, 'rgba(255,176,74,0.7)']].forEach(([x, y, r, col]) => {
                 const glow = g.createRadialGradient(x, y, 0, x, y, r);
                 glow.addColorStop(0, col);
                 glow.addColorStop(1, 'rgba(255,170,80,0)');
@@ -3754,7 +3754,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     [-1, 1].forEach(side => {
         // טבעת כרום עבה בקצה החישוק.
-        chromeParts.push({ geo: lipGeo, m: partMatrix(0, 0, side * 0.19) });
+        dishParts.push({ geo: lipGeo, m: partMatrix(0, 0, side * 0.19) });  // כהה: טבעת דקה בהירה גרמה להבהובים
 
         // 5 חישורים עם שיפוע בקצוות + 5 אומי גלגל בין החישורים.
         for (let i = 0; i < 5; i++) {
@@ -3800,19 +3800,19 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     const chromeMat = new THREE.MeshStandardMaterial({
-        color: 0xe6ebee,
-        roughness: 0.16,
-        metalness: 1.0,
+        color: 0x969ea4,
+        roughness: 0.55,
+        metalness: 0.80,
         envMap: wheelEnvMap,
-        envMapIntensity: 1.25
+        envMapIntensity: 0.55
     });
 
     const gunmetalMat = new THREE.MeshStandardMaterial({
         color: 0x2a3036,
-        roughness: 0.32,
-        metalness: 1.0,
+        roughness: 0.50,
+        metalness: 0.9,
         envMap: wheelEnvMap,
-        envMapIntensity: 1.0
+        envMapIntensity: 0.8
     });
 
     if (!wheelEnvMap) {
@@ -3824,7 +3824,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const nvTireMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.82, metalness: 0.0 });
-    const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.34, metalness: 0.75 });
+    const hubSteelMat = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.50, metalness: 0.62 });
     const hubDarkMat = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.5, metalness: 0.5 });
     const hubBoltGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.04, 6);
     const nvRingMat = new THREE.MeshStandardMaterial({ color: 0x080605, roughness: 0.8, metalness: 0.0 });
@@ -4008,16 +4008,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const suspensionMetalMat = new THREE.MeshPhysicalMaterial({
         color: 0xb8bec1,
-        roughness: 0.20,
-        metalness: 0.94,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.10
+        roughness: 0.46,
+        metalness: 0.75,
+        clearcoat: 0.04,
+        clearcoatRoughness: 0.55
     });
 
     const suspensionDarkMetalMat = new THREE.MeshStandardMaterial({
         color: 0x242a2d,
-        roughness: 0.23,
-        metalness: 0.92
+        roughness: 0.46,
+        metalness: 0.75
     });
 
     function addSuspensionCylinderBetween(a, b, radius, material, segments = 14, aSprung = false, bSprung = false) {
