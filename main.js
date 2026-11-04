@@ -1699,8 +1699,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < bladeCount; i++) {
             // יותר צפיפות קרוב למצלמה, פחות בטווח הרחוק.
-            const z = 14 - 62 * Math.pow(Math.random(), 1.6);
-            const x = (Math.random() - 0.5) * 36;
+            // פיזור "רשת עם רעידה": כל להב בתא משלו, כדי שלא יישארו כתמים ריקים (פיזור אקראי טהור יוצר חורים).
+            const GCOLS = 76, GROWS = Math.ceil(bladeCount / GCOLS);
+            const ga = (Math.floor(i / GCOLS) + Math.random()) / GROWS;
+            const gb = ((i % GCOLS) + Math.random()) / GCOLS;
+            const z = 14 - 62 * Math.pow(Math.min(ga, 0.9999), 1.6);
+            const x = (gb - 0.5) * 36;
 
             // מחוץ לנתיב: דשא גבוה יותר. בתוך הנתיב: מכוסח ונמוך (שלא יכסה את הגלגלים).
             const t = (12 - z) / 64;
@@ -2007,14 +2011,14 @@ window.addEventListener('DOMContentLoaded', () => {
             return palette[2];
         };
         ctx.lineCap = 'round';
-        for (let i = 0; i < 11000; i++) {
+        for (let i = 0; i < 30000; i++) {   // היה 11000: רצפת דשא צפופה יותר (עלות רק בטעינה, לא במשחק)
             const x = Math.random() * size, y = Math.random() * size;
-            const len = 5 + Math.random() * 9;
+            const len = 4 + Math.random() * 9;
             const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.3;
             const dx = Math.cos(ang) * len, dy = Math.sin(ang) * len;
             ctx.strokeStyle = pick();
             ctx.globalAlpha = 0.55 + Math.random() * 0.4;
-            ctx.lineWidth = 0.8 + Math.random() * 0.9;
+            ctx.lineWidth = 0.7 + Math.random() * 0.8;
             wrapped(x, y, 14, (px, py) => {
                 ctx.beginPath();
                 ctx.moveTo(px, py);
