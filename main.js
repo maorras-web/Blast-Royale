@@ -6504,8 +6504,42 @@ window.addEventListener('DOMContentLoaded', () => {
         return mesh;
     }
 
+    // ברקים ממאגר: 3 סרטים קבועים לכל ברק, שנעשים בהם שימוש חוזר (בלי יצירת גיאומטריה וחומר בכל פגיעה).
+    const BOLT_SEGS = 7;
+    const BOLT_IDX = (function () {
+        const idx = [];
+        for (let i = 0; i < BOLT_SEGS; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+        return idx;
+    })();
+    const BOLT_LAYERS = [[0.50, 0x2a1fd0, 0.5], [0.20, 0x6fd8ff, 0.9], [0.07, 0xffffff, 1.0]];
+    const boltPool = [];
+    function getBoltFx() {
+        let g = boltPool.pop();
+        if (!g) {
+            g = new THREE.Group();
+            BOLT_LAYERS.forEach(([w, c, o]) => {
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((BOLT_SEGS + 1) * 2 * 3), 3));
+                geo.setIndex(BOLT_IDX);
+                const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+                    color: c, transparent: true, opacity: o, depthWrite: false, depthTest: false,
+                    blending: THREE.NormalBlending, side: THREE.DoubleSide
+                }));
+                mesh.renderOrder = 20;
+                mesh.frustumCulled = false;
+                mesh.userData.baseOpacity = o;
+                mesh.userData.w = w;
+                g.add(mesh);
+            });
+            g.userData = { type: 'bolt', life: 9, maxLife: 9 };
+        }
+        g.userData.life = 9;
+        g.userData.maxLife = 9;
+        return g;
+    }
+
     function spawnBolt(x1, y1, x2, y2) {
-        const segs = 7;
+        const segs = BOLT_SEGS;
         const dx = x2 - x1, dy = y2 - y1;
         const len = Math.hypot(dx, dy) || 1;
         const px = -dy / len, py = dx / len;
@@ -6515,20 +6549,33 @@ window.addEventListener('DOMContentLoaded', () => {
             const j = (i === 0 || i === segs) ? 0 : (Math.random() - 0.5) * 0.7;
             pts.push([x1 + dx * t + px * j, y1 + dy * t + py * j]);
         }
-        const g = new THREE.Group();
-        [[0.50, 0x2a1fd0, 0.5], [0.20, 0x6fd8ff, 0.9], [0.07, 0xffffff, 1.0]].forEach(([w, c, o]) => {
-            const rb = makeRibbon(pts, w, c, o);
-            rb.material.blending = THREE.NormalBlending;
-            g.add(rb);
+        const g = getBoltFx();
+        const n = pts.length;
+        g.children.forEach(mesh => {
+            const width = mesh.userData.w;
+            const arr = mesh.geometry.attributes.position.array;
+            for (let i = 0; i < n; i++) {
+                const a = pts[Math.max(0, i - 1)];
+                const b = pts[Math.min(n - 1, i + 1)];
+                let ddx = b[0] - a[0], ddy = b[1] - a[1];
+                const l = Math.hypot(ddx, ddy) || 1;
+                ddx /= l; ddy /= l;
+                const nx = -ddy, ny = ddx;
+                const hw = width * 0.5 * (0.45 + 0.55 * Math.sin(Math.PI * i / (n - 1)));
+                const o = i * 6;
+                arr[o] = pts[i][0] + nx * hw; arr[o + 1] = pts[i][1] + ny * hw; arr[o + 2] = 0.4;
+                arr[o + 3] = pts[i][0] - nx * hw; arr[o + 4] = pts[i][1] - ny * hw; arr[o + 5] = 0.4;
+            }
+            mesh.geometry.attributes.position.needsUpdate = true;
+            mesh.material.opacity = mesh.userData.baseOpacity;
         });
-        g.userData = { type: 'bolt', life: 9, maxLife: 9 };
         scene.add(g);
         weaponFx.push(g);
     }
 
     function spawnBlastFx(x, y, R) {
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.78, 1.0, 32),
+            FX_GEO.blastRing,
             new THREE.MeshBasicMaterial({ color: 0x6fd8ff, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
         );
         ring.position.set(x, y, 0.5);
@@ -6538,7 +6585,7 @@ window.addEventListener('DOMContentLoaded', () => {
         weaponFx.push(ring);
 
         const ball = new THREE.Mesh(
-            new THREE.SphereGeometry(1, 14, 10),
+            FX_GEO.blastBall,
             new THREE.MeshBasicMaterial({ color: 0x1f8cff, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })
         );
         ball.position.set(x, y, 0.5);
@@ -6553,11 +6600,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function disposeWeaponFx(fx) {
         scene.remove(fx);
+        if (fx.userData && fx.userData.type === 'bolt') { boltPool.push(fx); return; }   // חוזר למאגר
         fx.traverse(c => {
-            if (c.geometry) c.geometry.dispose();
+            if (c.geometry && !c.geometry.userData.shared) c.geometry.dispose();
             if (c.material) c.material.dispose();
         });
     }
+    // גיאומטריות משותפות לטבעות/כדורים של הפגיעות (לא נוצרות ולא נמחקות בכל פגיעה)
+    const FX_GEO = {
+        blastRing: new THREE.RingGeometry(0.78, 1.0, 32),
+        blastBall: new THREE.SphereGeometry(1, 14, 10),
+        plasmaRing: new THREE.RingGeometry(0.88, 1.0, 32),
+        plasmaFlash: new THREE.SphereGeometry(1, 12, 10)
+    };
+    Object.values(FX_GEO).forEach(g => { g.userData.shared = true; });
 
     function updateWeaponFx() {
         for (let i = weaponFx.length - 1; i >= 0; i--) {
@@ -6592,7 +6648,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // פגיעת פלזמה: טבעת תכולה + הבזק לבן-כחול
     function spawnPlasmaImpact(x, y) {
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.88, 1.0, 32),
+            FX_GEO.plasmaRing,
             new THREE.MeshBasicMaterial({ color: 0x3fb8ff, transparent: true, opacity: 0.85, depthWrite: false, depthTest: false, blending: THREE.NormalBlending, side: THREE.DoubleSide })
         );
         ring.position.set(x, y, 0.5);
@@ -6602,7 +6658,7 @@ window.addEventListener('DOMContentLoaded', () => {
         weaponFx.push(ring);
 
         const flash = new THREE.Mesh(
-            new THREE.SphereGeometry(1, 12, 10),
+            FX_GEO.plasmaFlash,
             new THREE.MeshBasicMaterial({ color: 0x59d0ff, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false, blending: THREE.NormalBlending })
         );
         flash.position.set(x, y, 0.5);
