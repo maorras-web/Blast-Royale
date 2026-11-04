@@ -4792,8 +4792,8 @@ window.addEventListener('DOMContentLoaded', () => {
     mk2Head.position.y = -BODY_PIVOT_Y + MK2_BODY_RAISE;
     bodyRig.add(mk2Head);
 
-    // צבע הגוף והכיפה: כחול מבריק כמו בתמונת המטרה (השם nvBlack נשאר כדי לא לשבור הפניות)
-    const nvBlack = new THREE.MeshStandardMaterial({ color: 0x083a86, emissive: 0x01050c, roughness: 0.22, metalness: 0.25, envMap: mk2Env, envMapIntensity: 0.55 });
+    // צבע הגוף והכיפה: חום צבאי (לפי בקשת המשתמש; היה כחול מבריק) (השם nvBlack נשאר כדי לא לשבור הפניות)
+    const nvBlack = new THREE.MeshStandardMaterial({ color: 0x1d1709, emissive: 0x030201, roughness: 0.38, metalness: 0.18, envMap: mk2Env, envMapIntensity: 0.35 });
     const nvVisor = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.18, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.8 });
     const nvFin = new THREE.MeshStandardMaterial({ color: 0x555a61, roughness: 0.42, metalness: 0.50, envMap: mk2Env, envMapIntensity: 0.30 });
     const nvGoldGlow = new THREE.MeshBasicMaterial({ color: 0xffc94a });
@@ -4842,10 +4842,7 @@ window.addEventListener('DOMContentLoaded', () => {
     MK2_BARREL_X.forEach(bx => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
         nvCyl(mk2BarrelsRig, 0.21, 0.23, 1.00, nvBarrelMat, bx, 2.70, -0.15);
-        [2.40, 2.95].forEach(ry => nvCyl(mk2BarrelsRig, 0.255, 0.255, 0.07, nvDark, bx, ry, -0.15));
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.225, 0.225, 0.04, 22), nvGoldGlow, bx, 3.10, -0.15, 0, 0, 0, false);
-        // לוחית "אוזן" בהירה מאחורי כל קנה
-        nvBox(mk2BarrelsRig, 0.66, 1.15, 0.10, 0.05, 0.02, nvEarMat, bx, 2.75, -0.32);
         nvCyl(mk2BarrelsRig, 0.24, 0.21, 0.16, nvDark, bx, 3.28, -0.15);
         nvAdd(mk2BarrelsRig, new THREE.CylinderGeometry(0.12, 0.12, 0.01, 16), nvBoreMat, bx, 3.365, -0.15, 0, 0, 0, false);
     });
