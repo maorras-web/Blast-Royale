@@ -7534,11 +7534,6 @@ window.addEventListener('DOMContentLoaded', () => {
         bolt.position.y = size * 0.06;
         bolt.renderOrder = 19;
         rock.add(bolt);
-        // כדור מגן שקוף סביב הסלע
-        const bubble = new THREE.Sprite(tex.bubble);
-        bubble.scale.set(size * 2.55, size * 2.55, 1);
-        bubble.renderOrder = 18;
-        rock.add(bubble);
         return extras;
     }
 
