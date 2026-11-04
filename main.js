@@ -1618,9 +1618,10 @@ window.addEventListener('DOMContentLoaded', () => {
     // דשא ריאליסטי: להבים עם מעבר צבע + שונות + רוח
     // ==========================================
     // כוונון מהיר (אם נראה כבד במובייל — להקטין GRASS_BLADE_COUNT):
-    const GRASS_BLADE_COUNT = 24000;
-    const GRASS_BLADE_COUNT_LOW = 16000;   // מכשיר עם כרטיס מסך חלש: שליש פחות עלים, כל עלה רחב יותר ב-12% כדי לשמור על הכיסוי
-    const GRASS_LOW_WIDTH_K = 1.12;
+    const GRASS_BLADE_COUNT = 11000;      // היה 24000: הופחת כדי שמפת הדשא תרוץ חלק כמו מפת הפרמידות
+    const GRASS_BLADE_COUNT_LOW = 11000;   // היה 16000   // מכשיר עם כרטיס מסך חלש: שליש פחות עלים, כל עלה רחב יותר ב-12% כדי לשמור על הכיסוי
+    const GRASS_LOW_WIDTH_K = 1.30;      // להבים רחבים יותר כדי לשמור על הכיסוי עם פחות להבים
+    const GRASS_WIDTH_K = 1.30;
     // מצב איכות מופחתת: נקבע לפי המפרט, או לפי מדידת מהירות המשחק בפועל (נשמר בין הפעלות)
     let lowGfx = !isStrongPhone || localStorage.getItem('bb3d_low_gfx') === '1';
     let grassGroupRef = null;
@@ -1633,7 +1634,7 @@ window.addEventListener('DOMContentLoaded', () => {
         mapGroup.add(grassGroup);
         grassGroupRef = grassGroup;
         const bladeCount = lowGfx ? GRASS_BLADE_COUNT_LOW : GRASS_BLADE_COUNT;
-        const widthK = lowGfx ? GRASS_LOW_WIDTH_K : 1;
+        const widthK = lowGfx ? GRASS_LOW_WIDTH_K : GRASS_WIDTH_K;
 
         // להב אחד: בסיס רחב -> אמצע -> קצה מחודד ומעט כפוף קדימה.
         // גובה הגיאומטריה = 1; הגובה האמיתי נקבע לכל להב בנפרד (scale.y).
@@ -5660,12 +5661,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const forestMapButtons = mapButtons.filter(btn => MAPS[btn.dataset.mapId]);
 
     // ==========================================
-    // נשקים (נפרד מהתותח): Standard / Fists (מזהה פנימי 'rocket') / Lightning / Laser
+    // נשקים (נפרד מהתותח): Standard / Water (מזהה פנימי 'rocket') / Lightning / Laser
     // המחירים כאן - אפשר לשנות. הנשק שנבחר נשמר בין משחקים.
     // ==========================================
     const WEAPONS = {
         standard:  { name: 'Standard',  price: 0 },
-        rocket:    { name: 'Fists',     price: 0 },
+        rocket:    { name: 'Water',     price: 0 },
         lightning: { name: 'Lightning', price: 0 },
         laser:     { name: 'Laser',     price: 0 }
     };
@@ -5762,9 +5763,9 @@ window.addEventListener('DOMContentLoaded', () => {
         { kind: 'weapon', id: 'standard', name: 'Standard', icon: '🔫', color: '#fbbf24', tag: 'WEAPON',
           desc: 'Twin golden shots. Dependable damage at a steady rate.',
           stars: ['+20% damage', 'Fan shots: 2 extra angled bullets', '+25% damage', 'Wide fan: 4 extra angled bullets'] },
-        { kind: 'weapon', id: 'rocket', name: 'Fists', icon: '🥊', color: '#ef4444', tag: 'WEAPON',
-          desc: 'Slow, heavy red boxing-glove punches that smash on impact and damage every rock around the hit.',
-          stars: ['+20% impact radius', '+25% damage', '+20% impact radius', 'Shockwave: each punch sets off 4 mini-impacts'] },
+        { kind: 'weapon', id: 'rocket', name: 'Water', icon: '💧', color: '#38bdf8', tag: 'WEAPON',
+          desc: 'Glowing water particles that splash on impact and soak every rock around the hit.',
+          stars: ['+20% splash radius', '+25% damage', '+20% splash radius', 'Tidal burst: each splash sets off 4 mini-splashes'] },
         { kind: 'weapon', id: 'lightning', name: 'Lightning', icon: '⚡', color: '#60a5fa', tag: 'WEAPON',
           desc: 'Plasma orbs that arc between nearby rocks. Perfect against crowded waves.',
           stars: ['+1 chain jump', '+25% damage', '+1 chain jump', 'Overcharge: +1 chain jump and +25% damage'] },
@@ -6423,72 +6424,49 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // אגרוף זהוב: תמונה מצוירת אחת (קנבס משותף) על Sprite שפונה למצלמה — זול מאוד ונראה כמו אגרוף אמיתי.
-    const ROCKET_GEO = {
-        flame: new THREE.ConeGeometry(0.15, 0.7, 8)
-    };
-    function makeFistTexture() {
-        const c = document.createElement('canvas');
-        c.width = 256; c.height = 256;
+    // נשק מים: טיפת מים זוהרת + שובל בועות קטנות. שני קנבסים משותפים, Sprites בלבד — זול מאוד.
+    function makeBubbleTextures() {
+        // בועה: מילוי שקוף-תכלכל, שפה בהירה וניצוץ
+        const c = document.createElement('canvas'); c.width = c.height = 128;
         const g = c.getContext('2d');
-        const OUT = '#3a0a05';
-        function rr(x, y, w, h, r) {
-            g.beginPath();
-            g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
-            g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
-            g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
-        }
-        function fill(x, y, w, h, r, c1, c2, lw) {
-            const gr = g.createLinearGradient(x, y, x + w, y + h);
-            gr.addColorStop(0, c1); gr.addColorStop(1, c2);
-            rr(x, y, w, h, r);
-            g.fillStyle = gr; g.fill();
-            g.lineWidth = lw || 7; g.strokeStyle = OUT; g.lineJoin = 'round'; g.stroke();
-        }
-        // שרוול (מאחור)
-        fill(66, 168, 124, 44, 10, '#ffffff', '#c9d0da', 7);
-        g.fillStyle = '#d3261a'; g.fillRect(70, 186, 116, 8);   // פס אדום על השרוול הלבן
-        // כף היד מאחור
-        fill(48, 60, 160, 118, 30, '#d0180e', '#9a0d07', 7);
-        // ארבע אצבעות מכופפות (מפרקים עגולים למעלה)
-        for (let i = 0; i < 4; i++) {
-            fill(46 + i * 41, 28, 44, 104, 21, '#ff5a48', '#d91d12', 7);
-            // ברק קטן על כל מפרק
-            g.fillStyle = 'rgba(255,255,255,0.55)';
-            g.beginPath(); g.ellipse(68 + i * 41, 52, 9, 13, -0.25, 0, Math.PI * 2); g.fill();
-        }
-        // אגודל שחוצה את האצבעות
-        g.save();
-        g.translate(128, 128); g.rotate(-0.10);
-        fill(-86, -22, 172, 46, 23, '#ff4a3a', '#c4150c', 7);
-        g.fillStyle = 'rgba(255,255,255,0.5)';
-        g.beginPath(); g.ellipse(-52, -9, 22, 6, 0, 0, Math.PI * 2); g.fill();
-        g.restore();
-        // קווי מהירות מאחור
-        g.strokeStyle = 'rgba(255,90,60,0.85)'; g.lineWidth = 8; g.lineCap = 'round';
-        [92, 128, 164].forEach((x, i) => { g.beginPath(); g.moveTo(x, 224 + (i === 1 ? 0 : 6)); g.lineTo(x, 248); g.stroke(); });
-        const tex = new THREE.CanvasTexture(c);
-        tex.encoding = THREE.sRGBEncoding;
-        return tex;
+        let gr = g.createRadialGradient(64, 64, 8, 64, 64, 58);
+        gr.addColorStop(0, 'rgba(120,215,255,0.55)'); gr.addColorStop(0.75, 'rgba(70,170,255,0.55)'); gr.addColorStop(1, 'rgba(160,230,255,0.95)');
+        g.fillStyle = gr; g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.fill();
+        g.lineWidth = 5; g.strokeStyle = 'rgba(225,248,255,0.95)'; g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.95)'; g.beginPath(); g.ellipse(46, 44, 13, 8, -0.7, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.arc(82, 86, 5, 0, Math.PI * 2); g.fill();
+        const bubble = new THREE.CanvasTexture(c); bubble.encoding = THREE.sRGBEncoding;
+        // זוהר רך מאחורי הטיפה
+        const c2 = document.createElement('canvas'); c2.width = c2.height = 128;
+        const g2 = c2.getContext('2d');
+        gr = g2.createRadialGradient(64, 64, 4, 64, 64, 62);
+        gr.addColorStop(0, 'rgba(210,245,255,0.9)'); gr.addColorStop(0.35, 'rgba(70,175,255,0.55)'); gr.addColorStop(1, 'rgba(30,120,255,0)');
+        g2.fillStyle = gr; g2.fillRect(0, 0, 128, 128);
+        const glow = new THREE.CanvasTexture(c2); glow.encoding = THREE.sRGBEncoding;
+        return { bubble, glow };
     }
+    const WATER_TEX = makeBubbleTextures();
     const ROCKET_MAT = {
-        fist: new THREE.SpriteMaterial({ map: makeFistTexture(), transparent: true, depthWrite: false }),
-        flame: new THREE.MeshBasicMaterial({ color: 0xffa400, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })
+        bubble: new THREE.SpriteMaterial({ map: WATER_TEX.bubble, transparent: true, depthWrite: false }),
+        glow: new THREE.SpriteMaterial({ map: WATER_TEX.glow, transparent: true, depthWrite: false })
     };
+    const WATER_TRAIL = [[-0.42, 0.30, 0.20], [-0.80, -0.14, 0.15], [-1.12, 0.16, 0.11], [-1.40, -0.08, 0.08]];   // [y, x, גודל]
 
     function spawnRocket(x, y, z) {
         const g = new THREE.Group();
-        const fist = new THREE.Sprite(ROCKET_MAT.fist);
-        fist.scale.set(0.9, 0.9, 0.9);
-        const flame = new THREE.Mesh(ROCKET_GEO.flame, ROCKET_MAT.flame);   // פס מהירות מאחורי האגרוף
-        flame.rotation.x = Math.PI;
-        flame.position.y = -0.78;
-        flame.scale.set(0.8, 0.9, 0.8);
-        flame.visible = false;   // הפס כבר מצויר בתמונת האגרוף
-        g.add(fist, flame);
+        const glow = new THREE.Sprite(ROCKET_MAT.glow);
+        glow.scale.set(1.15, 1.15, 1);
+        const drop = new THREE.Sprite(ROCKET_MAT.bubble);
+        drop.scale.set(0.58, 0.58, 1);
+        g.add(glow, drop);
+        WATER_TRAIL.forEach(([ty, tx, ts]) => {
+            const sp = new THREE.Sprite(ROCKET_MAT.bubble);
+            sp.position.set(tx * 0.5, ty * 0.75, 0);
+            sp.scale.set(ts * 1.6, ts * 1.6, 1);
+            g.add(sp);
+        });
         g.position.set(x, y, z);
-        g.userData = { weapon: 'rocket', speed: ROCKET_SPEED, flame };
+        g.userData = { weapon: 'rocket', speed: ROCKET_SPEED, flame: new THREE.Object3D() };   // flame: ריק (הקוד הישן רק משנה לו גודל)
         scene.add(g);
         bullets.push(g);
     }
@@ -6546,7 +6524,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function spawnBlastFx(x, y, R) {
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(0.78, 1.0, 32),
-            new THREE.MeshBasicMaterial({ color: 0xffb050, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
+            new THREE.MeshBasicMaterial({ color: 0x6fd8ff, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
         );
         ring.position.set(x, y, 0.5);
         ring.renderOrder = 20;
@@ -6556,7 +6534,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const ball = new THREE.Mesh(
             new THREE.SphereGeometry(1, 14, 10),
-            new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.7, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })
+            new THREE.MeshBasicMaterial({ color: 0x1f8cff, transparent: true, opacity: 0.55, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })
         );
         ball.position.set(x, y, 0.5);
         ball.renderOrder = 19;
@@ -6564,8 +6542,8 @@ window.addEventListener('DOMContentLoaded', () => {
         scene.add(ball);
         weaponFx.push(ball);
 
-        spawnImpactBurst(x, y, 0, 0xffa040);
-        spawnImpactBurst(x, y, 0, 0xffe08a);
+        spawnImpactBurst(x, y, 0, 0x4fb8ff);
+        spawnImpactBurst(x, y, 0, 0xd8f4ff);
     }
 
     function disposeWeaponFx(fx) {
