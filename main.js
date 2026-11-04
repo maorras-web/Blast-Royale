@@ -7461,14 +7461,97 @@ window.addEventListener('DOMContentLoaded', () => {
         const childHp = Math.max(1, Math.floor(data.maxHp / 2));
         const childSize = data.size * ROCK_CHILD_SCALE;
         const speed = data.speedX || ROCK_SPEED_X;
-        spawnRock(r.position.x - 0.3, r.position.y, childHp, childSize, -speed, 0.09);
-        spawnRock(r.position.x + 0.3, r.position.y, childHp, childSize, speed, 0.09);
+        spawnRock(r.position.x - 0.3, r.position.y, childHp, childSize, -speed, 0.09, false, !!data.crystal);
+        spawnRock(r.position.x + 0.3, r.position.y, childHp, childSize, speed, 0.09, false, !!data.crystal);
     }
 
-    function spawnRock(x, y, hp, size, launchVx = null, launchVy = null, entering = false) {
+    // ==========================================
+    // סלעי קריסטל קרח: מופיעים רק בשלבים מסוימים (שלב 3, 6, 9, 12, 18... ולא בשלבי בוס)
+    // ==========================================
+    const CRYSTAL_EVERY = 3;
+    const CRYSTAL_FLASH_COLOR = new THREE.Color(0xdff6ff);
+    function isCrystalLevel(lv) {
+        return lv % CRYSTAL_EVERY === 0 && lv % BOSS_EVERY !== 0;
+    }
+    let crystalTex = null;
+    function getCrystalTextures() {
+        if (crystalTex) return crystalTex;
+        // כדור מגן: הילה כחולה רכה עם טבעת דקה בקצה
+        const a = document.createElement('canvas'); a.width = a.height = 128;
+        const g = a.getContext('2d');
+        const gr = g.createRadialGradient(64, 64, 20, 64, 64, 62);
+        gr.addColorStop(0, 'rgba(150,215,255,0.00)');
+        gr.addColorStop(0.72, 'rgba(150,215,255,0.16)');
+        gr.addColorStop(0.92, 'rgba(190,235,255,0.50)');
+        gr.addColorStop(1, 'rgba(190,235,255,0)');
+        g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+        // סמל ברק זוהר
+        const b = document.createElement('canvas'); b.width = b.height = 128;
+        const h = b.getContext('2d');
+        h.shadowColor = 'rgba(255,255,255,0.9)'; h.shadowBlur = 14;
+        h.fillStyle = '#4a5cf0';
+        h.beginPath();
+        h.moveTo(74, 10); h.lineTo(34, 70); h.lineTo(60, 70); h.lineTo(48, 118);
+        h.lineTo(96, 50); h.lineTo(68, 50); h.closePath();
+        h.fill();
+        const ta = new THREE.CanvasTexture(a), tb = new THREE.CanvasTexture(b);
+        ta.generateMipmaps = false; tb.generateMipmaps = false;
+        ta.minFilter = THREE.LinearFilter; tb.minFilter = THREE.LinearFilter;
+        crystalTex = {
+            bubble: new THREE.SpriteMaterial({ map: ta, transparent: true, depthWrite: false }),
+            bolt: new THREE.SpriteMaterial({ map: tb, transparent: true, depthTest: false, opacity: 1 })
+        };
+        return crystalTex;
+    }
+    // גוף קריסטל: כדור פאות מוארך וחד, בלי צבעי קודקודים (הצבע בא מהחומר)
+    function createCrystalGeometry(size) {
+        const geo = new THREE.IcosahedronGeometry(1, 1).toNonIndexed();
+        const pos = geo.attributes.position;
+        const ph = [Math.random() * 6.28, Math.random() * 6.28, Math.random() * 6.28];
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+            const l = Math.hypot(x, y, z) || 1;
+            const nx = x / l, ny = y / l, nz = z / l;
+            const r = 1 + 0.16 * Math.sin(nx * 3.1 + ph[0]) * Math.cos(ny * 2.7 + ph[1]) + 0.10 * Math.sin(nz * 4.3 + ph[2]);
+            pos.setXYZ(i, nx * r * size * 0.92, ny * r * size * 1.10, nz * r * size * 0.80);
+        }
+        geo.computeVertexNormals();
+        return geo;
+    }
+    function addCrystalLook(rock, size) {
+        const tex = getCrystalTextures();
+        const extras = [];
+        // ליבה כהה יותר בפנים: נותנת עומק לקרח
+        const coreGeo = createCrystalGeometry(size * 0.60);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x3b7fe0, transparent: true, opacity: 0.45, depthWrite: false });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.rotation.set(0.5, 0.7, 0.2);
+        rock.add(core);
+        extras.push(coreGeo, coreMat);
+        // סמל הברק מאחורי המספר
+        const bolt = new THREE.Sprite(tex.bolt);
+        bolt.scale.set(size * 1.45, size * 1.45, 1);
+        bolt.position.y = size * 0.06;
+        bolt.renderOrder = 19;
+        rock.add(bolt);
+        // כדור מגן שקוף סביב הסלע
+        const bubble = new THREE.Sprite(tex.bubble);
+        bubble.scale.set(size * 2.55, size * 2.55, 1);
+        bubble.renderOrder = 18;
+        rock.add(bubble);
+        return extras;
+    }
+
+    function spawnRock(x, y, hp, size, launchVx = null, launchVy = null, entering = false, crystal = false) {
         const tier = getRockTier(hp);
-        const geo = createIrregularRockGeometry(size, hp);
-        const mat = new THREE.MeshStandardMaterial({
+        const geo = crystal ? createCrystalGeometry(size) : createIrregularRockGeometry(size, hp);
+        const mat = crystal
+            ? new THREE.MeshStandardMaterial({
+                color: 0xbfe6ff, roughness: 0.12, metalness: 0.15, flatShading: true,
+                transparent: true, opacity: 0.84, side: THREE.DoubleSide, depthWrite: false,
+                emissive: 0x2a79c8, emissiveIntensity: 0.7
+            })
+            : new THREE.MeshStandardMaterial({
             color: getRockColor(),
             vertexColors: true,
             roughness: 0.95,
@@ -7530,8 +7613,11 @@ window.addEventListener('DOMContentLoaded', () => {
             texture,
             hitCooldown: 0,
             flash: 0,                                   // הבהוב קצר בפגיעת כדור (0..1)
-            baseEmissive: new THREE.Color(tier.emissive)
+            baseEmissive: new THREE.Color(crystal ? 0x2a79c8 : tier.emissive),
+            crystal: !!crystal,
+            extras: null
         };
+        if (crystal) rock.userData.extras = addCrystalLook(rock, size);
 
         rock.userData.contactShadow = createRockContactShadow(size);
 
@@ -7840,8 +7926,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function removeRock(rock, index) {
         if (rock.userData.isBoss) onBossDefeated(rock);
-        spawnImpactBurst(rock.position.x, rock.position.y, rock.position.z);
-        if (rock.position.y < 2.2) {
+        spawnImpactBurst(rock.position.x, rock.position.y, rock.position.z, rock.userData.crystal ? 0x9fdcff : 0xfde68a);
+        if (rock.userData.crystal) spawnImpactBurst(rock.position.x, rock.position.y, rock.position.z, 0xe6f8ff);
+        if (rock.userData.extras) rock.userData.extras.forEach(e => e.dispose());
+        if (rock.position.y < 2.2 && !rock.userData.crystal) {
             spawnDustBurst(rock.position.x, rock.position.y, rock.position.z);
         }
 
@@ -8187,6 +8275,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             const count = Math.min(2 + Math.floor(level / 2), 5);
+            const crystalWave = isCrystalLevel(level);
             // כמו במשחק ההשראה: הסלעים נכנסים מצדי המסך (לסירוגין) בגובה קבוע, ורק אחרי שנכנסו מתחילה הכבידה.
             const topY = getScreenTopWorldY();
             const enterY = 0.2 + (topY - 0.2) * 0.62;
@@ -8197,7 +8286,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const lane = Math.floor(i / 2);
                 const spawnX = side * (screenLimitX + 2.6 + size + lane * (size * 2.6 + 0.6));
                 const spawnY = Math.min(enterY, topY - size - 2.5);
-                spawnRock(spawnX, spawnY, hp, size, -side * ROCK_SPEED_X * (0.92 + Math.random() * 0.16), 0, true);
+                spawnRock(spawnX, spawnY, hp, size, -side * ROCK_SPEED_X * (0.92 + Math.random() * 0.16), 0, true, crystalWave);
             }
 
             updateUI();
@@ -9470,7 +9559,7 @@ window.addEventListener('DOMContentLoaded', () => {
             // הבהוב פגיעה: הסלע מתחמם לרגע ו"קופץ" מעט בגודל, ואז חוזר לרגיל.
             if (data.flash > 0) {
                 data.flash = Math.max(0, data.flash - 0.12);
-                r.material.emissive.copy(data.baseEmissive).lerp(ROCK_FLASH_COLOR, data.flash);
+                r.material.emissive.copy(data.baseEmissive).lerp(data.crystal ? CRYSTAL_FLASH_COLOR : ROCK_FLASH_COLOR, data.flash);
                 r.material.emissiveIntensity = 0.5 + data.flash * 0.8;
                 r.scale.setScalar(1 + data.flash * 0.05);
             }
