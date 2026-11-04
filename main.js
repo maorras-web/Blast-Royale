@@ -1640,18 +1640,19 @@ window.addEventListener('DOMContentLoaded', () => {
         // גובה הגיאומטריה = 1; הגובה האמיתי נקבע לכל להב בנפרד (scale.y).
         const w = 0.045;
         const bend = 0.32;
+        // 4 נקודות => 2 משולשים לכל צד (היה 3): בסיס שמאל, בסיס ימין, אמצע-ימין, קצה.
         const P = [
             [-w, 0, 0], [w, 0, 0],
-            [-w * 0.72, 0.5, bend * 0.3], [w * 0.72, 0.5, bend * 0.3],
+            [w * 0.62, 0.5, bend * 0.3],
             [0, 1, bend]
         ];
         // צבעים (ליניאריים): בסיס כהה -> אמצע -> קצה בהיר, כמו דשא אמיתי.
         const C = [
             [0.020, 0.075, 0.008], [0.020, 0.075, 0.008],
-            [0.075, 0.270, 0.028], [0.075, 0.270, 0.028],
+            [0.075, 0.270, 0.028],
             [0.300, 0.560, 0.085]
         ];
-        const tris = [0, 1, 2, 1, 3, 2, 2, 3, 4];
+        const tris = [0, 1, 2, 0, 2, 3];
         const pos = [], col = [], nor = [];
         // כל משולש פעמיים (קדמי + אחורי) כדי שהלהב ייראה משני הצדדים עם תאורה זהה.
         [false, true].forEach(back => {
@@ -1706,8 +1707,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const pathHalf = 5.65 - THREE.MathUtils.clamp(t, 0, 1) * 3.05;
             const edge = THREE.MathUtils.smoothstep(Math.abs(x) - pathHalf, -0.4, 2.2);
             const height = THREE.MathUtils.lerp(
-                0.15 + Math.random() * 0.12,
-                0.34 + Math.random() * 0.34,
+                0.10 + Math.random() * 0.08,
+                0.22 + Math.random() * 0.22,
                 edge
             );
             const width = (0.8 + Math.random() * 0.7) * widthK;
