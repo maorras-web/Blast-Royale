@@ -3519,8 +3519,108 @@ window.addEventListener('DOMContentLoaded', () => {
         return new THREE.MeshStandardMaterial(Object.assign({ map: skin.map, normalMap: skin.nmap, normalScale: new THREE.Vector2(0.9, 0.9) }, opt));
     }
 
+    // ---- עור התותח הקלאסי ----
+    const CLASSIC_SKIN = true;
+    function makeClassicBodySkin(W, H, D) {
+        const BL = [205, 215, 225];
+        return makeBoxSkin(W, H, D, 190, 'rgb(132,144,152)', {
+            front: (w, hh, T) => {
+                const c = T.c, h = T.h, m = 20, my = 14;
+                T.rectG(m, my, w - m * 2, hh - my * 2);
+                // סבכה רחבה במרכז (חורים עגולים)
+                const gx = w * 0.30, gw = w * 0.40, gy = hh * 0.30, gh = hh * 0.42;
+                c.fillStyle = 'rgba(14,16,18,0.92)'; c.fillRect(gx, gy, gw, gh); h.fillStyle = 'rgb(40,40,40)'; h.fillRect(gx, gy, gw, gh);
+                for (let y = gy + 6; y < gy + gh - 3; y += 9) for (let x = gx + 6 + ((y / 9 | 0) % 2) * 4.5; x < gx + gw - 3; x += 9) {
+                    c.fillStyle = 'rgb(120,134,144)'; c.beginPath(); c.arc(x, y, 3, 0, Math.PI * 2); c.fill();
+                    c.fillStyle = 'rgb(8,9,10)'; c.beginPath(); c.arc(x + 0.6, y + 0.6, 2.1, 0, Math.PI * 2); c.fill();
+                    h.fillStyle = 'rgb(150,150,150)'; h.beginPath(); h.arc(x, y, 3, 0, Math.PI * 2); h.fill(); h.fillStyle = 'rgb(30,30,30)'; h.beginPath(); h.arc(x, y, 2.1, 0, Math.PI * 2); h.fill();
+                }
+                T.rectG(gx - 2, gy - 2, gw + 4, gh + 4);
+                // שני פנסים עגולים
+                [w * 0.17, w * 0.83].forEach(x => {
+                    const y = hh * 0.50, r = hh * 0.17;
+                    const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 1, x, y, r);
+                    g.addColorStop(0, 'rgb(255,250,225)'); g.addColorStop(0.45, 'rgb(250,215,140)'); g.addColorStop(1, 'rgb(110,80,40)');
+                    c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+                    c.strokeStyle = 'rgb(30,34,38)'; c.lineWidth = 4; c.beginPath(); c.arc(x, y, r + 2, 0, Math.PI * 2); c.stroke();
+                    h.fillStyle = 'rgb(175,175,175)'; h.beginPath(); h.arc(x, y, r, 0, Math.PI * 2); h.fill();
+                    h.strokeStyle = 'rgb(60,60,60)'; h.lineWidth = 4; h.beginPath(); h.arc(x, y, r + 2, 0, Math.PI * 2); h.stroke();
+                });
+                T.label(w / 2 - 30, hh * 0.76, 60, 18, 'CL-01', 'rgb(235,240,245)');
+                for (let x = m + 10; x < w - m - 4; x += 20) { T.bolt(x, my + 7, 2.6, BL); T.bolt(x, hh - my - 7, 2.6, BL); }
+                T.scratches(w, hh, 40); T.edgeWear(w, hh); T.grime(w, hh, 0.45); T.edgeAO(w, hh, 0.35);
+            },
+            back: (w, hh, T) => {
+                const m = 20, my = 14; T.rectG(m, my, w - m * 2, hh - my * 2);
+                T.vent(w * 0.2, hh * 0.3, w * 0.22, hh * 0.4, 4, [150, 165, 175]); T.vent(w * 0.58, hh * 0.3, w * 0.22, hh * 0.4, 4, [150, 165, 175]);
+                T.scratches(w, hh, 30); T.edgeWear(w, hh); T.grime(w, hh, 0.45); T.edgeAO(w, hh, 0.35);
+            },
+            side: (w, hh, T) => {
+                const m = 18, my = 12; T.rectG(m, my, w - m * 2, hh - my * 2);
+                T.rectG(w * 0.25, hh * 0.24, w * 0.5, hh * 0.52);
+                [[w * 0.25 + 6, hh * 0.24 + 6], [w * 0.75 - 6, hh * 0.24 + 6], [w * 0.25 + 6, hh * 0.76 - 6], [w * 0.75 - 6, hh * 0.76 - 6]].forEach(([x, y]) => T.bolt(x, y, 3, BL));
+                const c = T.c; c.fillStyle = 'rgba(235,240,245,0.75)';   // חץ מסומן
+                c.beginPath(); c.moveTo(w * 0.40, hh * 0.50); c.lineTo(w * 0.56, hh * 0.50); c.lineTo(w * 0.56, hh * 0.42); c.lineTo(w * 0.64, hh * 0.53); c.lineTo(w * 0.56, hh * 0.64); c.lineTo(w * 0.56, hh * 0.56); c.lineTo(w * 0.40, hh * 0.56); c.fill();
+                T.scratches(w, hh, 25); T.edgeWear(w, hh); T.grime(w, hh, 0.5); T.edgeAO(w, hh, 0.35);
+            },
+            top: (w, hh, T) => {
+                const c = T.c, h = T.h, m = 20;
+                T.rectG(m, m, w - m * 2, hh - m * 2);
+                // משטח יהלומים מחוספס בקדמת הגג
+                for (let y = hh * 0.66; y < hh - m - 6; y += 10) for (let x = m + 8 + ((y / 10 | 0) % 2) * 5; x < w - m - 8; x += 10) {
+                    c.save(); c.translate(x, y); c.rotate((((x + y) / 10 | 0) % 2) ? 0.6 : -0.6);
+                    c.fillStyle = 'rgba(190,205,215,0.45)'; c.fillRect(-3.5, -1, 7, 2); c.restore();
+                    h.fillStyle = 'rgb(165,165,165)'; h.fillRect(x - 3, y - 1, 6, 2);
+                }
+                // שני מכסים עם ידיות
+                [w * 0.18, w * 0.62].forEach(x => {
+                    const hw = w * 0.20, hy = m + 14, hh2 = hh * 0.40;
+                    T.rectG(x, hy, hw, hh2);
+                    c.fillStyle = 'rgb(40,46,52)'; c.fillRect(x + hw / 2 - 18, hy + hh2 / 2 - 4, 36, 8); h.fillStyle = 'rgb(200,200,200)'; h.fillRect(x + hw / 2 - 18, hy + hh2 / 2 - 4, 36, 8);
+                    [[x + 6, hy + 6], [x + hw - 6, hy + 6], [x + 6, hy + hh2 - 6], [x + hw - 6, hy + hh2 - 6]].forEach(([bx, by]) => T.bolt(bx, by, 2.6, BL));
+                });
+                T.scratches(w, hh, 45); T.edgeWear(w, hh); T.edgeAO(w, hh, 0.35);
+                for (let i = 0; i < 140; i++) { c.fillStyle = `rgba(215,180,120,${0.08 + T.rnd() * 0.18})`; c.beginPath(); c.arc(T.rnd() * w, T.rnd() * hh, 0.6 + T.rnd() * 1.8, 0, Math.PI * 2); c.fill(); }
+            }
+        }, 11);
+    }
+    // כיפת זכוכית: מסגרת מתכת (צלעות + טבעת), השתקפות רכה ולכלוך בבסיס. מוכפל בצבע הכחול של הכיפה.
+    function makeClassicDomeSkin() {
+        const SW = 1024, SH = 512, T = skinTools(SW, SH, 'rgb(235,240,245)', 13), { c, h, rnd } = T;
+        // v=0 בבסיס (תחתית התמונה), v=1 בקודקוד (ראש התמונה)
+        const rib = (x1, y1, x2, y2, w) => {
+            c.strokeStyle = 'rgb(70,78,86)'; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+            c.strokeStyle = 'rgba(220,230,240,0.55)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x1 - w * 0.3, y1); c.lineTo(x2 - w * 0.3, y2); c.stroke();
+            h.strokeStyle = 'rgb(210,210,210)'; h.lineWidth = w; h.beginPath(); h.moveTo(x1, y1); h.lineTo(x2, y2); h.stroke();
+        };
+        for (let i = 0; i < 6; i++) { const x = (i + 0.5) * SW / 6; rib(x, SH * 0.12, x, SH, 14); }
+        rib(0, SH * 0.55, SW, SH * 0.55, 12); rib(0, SH * 0.97, SW, SH * 0.97, 16);
+        c.fillStyle = 'rgb(70,78,86)'; c.fillRect(0, 0, SW, SH * 0.12);   // כובע מתכת קטן בקודקוד
+        h.fillStyle = 'rgb(200,200,200)'; h.fillRect(0, 0, SW, SH * 0.12);
+        for (let i = 0; i < 24; i++) T.bolt((i + 0.5) * SW / 24, SH * 0.97, 3, [210, 220, 230]);
+        // השתקפות רכה (פס בהיר אלכסוני) בכל פלח
+        for (let i = 0; i < 6; i++) {
+            const x = (i + 0.2) * SW / 6, g = c.createLinearGradient(x, 0, x + 50, 0);
+            g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+            c.fillStyle = g; c.fillRect(x, SH * 0.18, 50, SH * 0.32);
+        }
+        const g = c.createLinearGradient(0, SH * 0.7, 0, SH); g.addColorStop(0, 'rgba(60,45,25,0)'); g.addColorStop(1, 'rgba(60,45,25,0.45)');
+        c.fillStyle = g; c.fillRect(0, SH * 0.7, SW, SH * 0.3);
+        for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(200,170,120,${0.10 + rnd() * 0.2})`; c.beginPath(); c.arc(rnd() * SW, SH * (0.75 + rnd() * 0.25), 0.8 + rnd() * 2, 0, Math.PI * 2); c.fill(); }
+        return skinFinish(T, 512, 256, 2.0, true);
+    }
+    // מתכת מוברשת כללית לקנים ולפס הכיפה (מוכפלת בצבעים הקיימים שלהם)
+    function makeClassicMetalSkin() {
+        const SW = 256, SH = 512, T = skinTools(SW, SH, 'rgb(225,228,232)', 17), { c, rnd } = T;
+        for (let i = 0; i < 500; i++) { const x = rnd() * SW, y = rnd() * SH, l = 20 + rnd() * 120, b = rnd() < 0.5 ? 255 : 60;
+            c.strokeStyle = `rgba(${b},${b},${b},${0.05 + rnd() * 0.09})`; c.lineWidth = 0.6 + rnd(); c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + l); c.stroke(); }
+        for (let i = 0; i < 30; i++) { const x = rnd() * SW, y = rnd() * SH, r = 6 + rnd() * 16;
+            const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(60,50,35,0.18)'); g.addColorStop(1, 'rgba(60,50,35,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+        return skinFinish(T, 256, 512, 1.5, true);
+    }
+
     // גוף ראשי מעוגל.
-    addCannonPart(
+    const classicBodyMesh = addCannonPart(
         createRoundedBoxGeometry(
             2.25,
             0.64,
@@ -3532,6 +3632,12 @@ window.addEventListener('DOMContentLoaded', () => {
         bodyMetalMat,
         new THREE.Vector3(0, 0.34, 0)
     );
+    if (CLASSIC_SKIN) {
+        const sk = makeClassicBodySkin(2.45, 0.84, 1.92);
+        applyBoxSkinUV(classicBodyMesh.geometry, sk, 2.45, 0.84, 1.92);
+        classicBodyMesh.material = skinMaterial(sk, { roughness: 0.44, metalness: 0.32 });
+        classicBodyMesh.material.userData.wantEnv = 0.9;
+    }
 
     // מסגרת תחתונה שנותנת משקל ותחושת שלדה.
     addCannonPart(
@@ -3579,7 +3685,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // (בלי טקסטורות, בלי אורות חדשים, בלי חומרי Physical). מיקומי הקנים, הרתיעה והירי לא השתנו.
     // ==========================================================
     function turMerge(parts) {
-        const pos = [], nor = [], col = [];
+        const pos = [], nor = [], col = [], uvs = [];
         const tc = new THREE.Color();
         const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion(), ee = new THREE.Euler();
         const vv = new THREE.Vector3(), ss = new THREE.Vector3();
@@ -3593,6 +3699,8 @@ window.addEventListener('DOMContentLoaded', () => {
             g.applyMatrix4(m4);
             const p = g.attributes.position.array, n = g.attributes.normal.array;
             for (let i = 0; i < p.length; i++) { pos.push(p[i]); nor.push(n[i]); }
+            const ua = g.attributes.uv ? g.attributes.uv.array : null;
+            for (let i = 0; i < p.length / 3; i++) { uvs.push(ua ? ua[i * 2] : 0, ua ? ua[i * 2 + 1] : 0); }
             for (let i = 0; i < p.length; i += 3) {
                 tc.set(typeof pt.c === 'function' ? pt.c(p[i], p[i + 1], p[i + 2]) : pt.c);
                 col.push(tc.r, tc.g, tc.b);
@@ -3603,6 +3711,7 @@ window.addEventListener('DOMContentLoaded', () => {
         out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
         out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
         out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+        out.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         return out;
     }
 
@@ -3667,6 +3776,11 @@ window.addEventListener('DOMContentLoaded', () => {
         turMetal.push({ geo: new THREE.LatheGeometry(bpts, 48), p: [0, TUR_BASE_Y, 0], c: 0x151a20 });
     }
 
+    if (CLASSIC_SKIN) {
+        const ds = makeClassicDomeSkin(), ms = makeClassicMetalSkin();
+        Object.assign(turBlueMat, { map: ds.map, normalMap: ds.nmap, roughness: 0.25, metalness: 0.35 }); turBlueMat.needsUpdate = true; turBlueMat.userData.wantEnv = 0.8;
+        Object.assign(turMetalMat, { map: ms.map, normalMap: ms.nmap, roughness: 0.35, metalness: 0.7 }); turMetalMat.needsUpdate = true; turMetalMat.userData.wantEnv = 1.0;
+    }
     const turBlueMesh = new THREE.Mesh(turMerge(turBlue), turBlueMat);
     turBlueMesh.castShadow = true;
     turBlueMesh.receiveShadow = true;
@@ -6078,6 +6192,12 @@ window.addEventListener('DOMContentLoaded', () => {
             m.metalness = Math.max(m.metalness, METAL_LOOK);
             m.roughness = Math.max(0.16, m.roughness * 0.75);
             m.needsUpdate = true;
+        });
+        cannonGroup.traverse(o => {   // חלקים עם עור צבוע מקבלים את אותה השתקפות שקיעה
+            const m = o.material;
+            if (o.isMesh && m && !Array.isArray(m) && m.userData && m.userData.wantEnv && !m.envMap && cannonSunsetEnv) {
+                m.envMap = cannonSunsetEnv; m.envMapIntensity = m.userData.wantEnv; m.needsUpdate = true;
+            }
         });
         window.__scratchMats = panelMats.size;
     }
@@ -10456,5 +10576,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     syncViewport();
 
+    // הכנה מראש: מציירים פעם אחת את כל חלקי שני התותחים (גם המוסתרים) לתמונה זעירה בזמן הטעינה.
+    // כך כל התמונות והאפקטים כבר מוכנים בכרטיס הגרפיקה, ואין עצירה כשתותח מופיע בפעם הראשונה.
+    (function prewarmCannons() {
+        try {
+            const saved = [];
+            cannonGroup.traverse(o => { saved.push([o, o.visible]); o.visible = true; });
+            const rt = new THREE.WebGLRenderTarget(4, 4);
+            renderer.setRenderTarget(rt);
+            renderer.render(scene, camera);
+            renderer.setRenderTarget(null);
+            rt.dispose();
+            saved.forEach(([o, v]) => { o.visible = v; });
+        } catch (e) { /* לא קריטי */ }
+    })();
     animate(0);
 });
