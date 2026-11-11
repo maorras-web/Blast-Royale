@@ -5702,9 +5702,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const SCRATCH_STRENGTH = 1.0;
     const SCRATCH_SCALE = 0.75;
     if (SCRATCHES) {
-        const S = 256;
-        const cc = document.createElement('canvas'); cc.width = cc.height = S;
+        const S = 256, RES = 512;   // הציור מתוכנן ב-256 ונשמר ב-512 לחדות
+        const cc = document.createElement('canvas'); cc.width = cc.height = RES;
         const cx = cc.getContext('2d');
+        cx.scale(RES / S, RES / S);
         cx.fillStyle = 'rgb(128,128,128)'; cx.fillRect(0, 0, S, S);   // 128 = בלי שינוי
         let seed = 11;
         const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -5737,6 +5738,23 @@ window.addEventListener('DOMContentLoaded', () => {
             cx.fillStyle = 'rgba(15,15,15,0.9)'; cx.beginPath(); cx.arc(x + ox, y + oy, 2.6, 0, Math.PI * 2); cx.fill();
             cx.fillStyle = 'rgba(235,235,235,0.8)'; cx.beginPath(); cx.arc(x + ox - 0.8, y + oy - 0.8, 1.1, 0, Math.PI * 2); cx.fill();
         }));
+        // מחשבים מראש את השיפוע של כל פיקסל (לעומק החריצים) ושומרים אותו בערוצי הצבע: אדום = גובה, ירוק/כחול = שיפוע.
+        // כך העומק חלק וחד, ועדיין רק דגימה אחת בכל פיקסל.
+        {
+            const id = cx.getImageData(0, 0, RES, RES), d = id.data, h = new Float32Array(RES * RES);
+            for (let k = 0; k < RES * RES; k++) h[k] = d[k * 4 + 1] / 255;
+            const H = (x, y) => h[((y + RES) % RES) * RES + ((x + RES) % RES)];
+            for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
+                const gx = (H(x + 1, y - 1) + 2 * H(x + 1, y) + H(x + 1, y + 1) - H(x - 1, y - 1) - 2 * H(x - 1, y) - H(x - 1, y + 1)) / 8;
+                const gy = (H(x - 1, y + 1) + 2 * H(x, y + 1) + H(x + 1, y + 1) - H(x - 1, y - 1) - 2 * H(x, y - 1) - H(x + 1, y - 1)) / 8;
+                const k = (y * RES + x) * 4;
+                d[k] = Math.round(H(x, y) * 255);
+                d[k + 1] = Math.max(0, Math.min(255, Math.round(128 + gx * 255)));
+                d[k + 2] = Math.max(0, Math.min(255, Math.round(128 - gy * 255)));   // הטקסטורה הפוכה לאורך
+                d[k + 3] = 255;
+            }
+            cx.putImageData(id, 0, 0);
+        }
         const scratchTex = new THREE.CanvasTexture(cc);
         scratchTex.wrapS = scratchTex.wrapT = THREE.RepeatWrapping;
         const scratchUniforms = { scratchMap: { value: scratchTex }, scratchK: { value: new THREE.Vector2(SCRATCH_SCALE, SCRATCH_STRENGTH) } };
@@ -5750,7 +5768,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     '#include <map_fragment>',
                     ' vec3 scA = abs(vScrN);',
                     ' vec2 scUv = (scA.x > scA.y && scA.x > scA.z) ? vScrP.zy : ((scA.y > scA.z) ? vScrP.xz : vScrP.xy);',
-                    ' float scT = texture2D(scratchMap, scUv * scratchK.x).g * 2.0 - 1.0;',   // -1 כתם, 0 רגיל, 1 שריטה
+                    ' vec2 scTc = scUv * scratchK.x;',
+                    ' vec4 scS = texture2D(scratchMap, scTc);',
+                    ' float scT = scS.r * 2.0 - 1.0;',
+                    ' vec2 scG = (scS.gb - 0.5) * 2.0 * 512.0;',   // שיפוע הגובה לכל יחידת טקסטורה   // -1 כתם, 0 רגיל, 1 שריטה
                     ' diffuseColor.rgb *= 1.0 + scT * (scT < 0.0 ? 0.62 : 0.30) * scratchK.y;'].join('\n'))
                 .replace('#include <normal_fragment_maps>', [
                     '#include <normal_fragment_maps>',
@@ -5759,7 +5780,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     '  vec3 scSx = dFdx(scVp), scSy = dFdy(scVp);',
                     '  vec3 scR1 = cross(scSy, normal), scR2 = cross(normal, scSx);',
                     '  float scDet = dot(scSx, scR1) * (gl_FrontFacing ? 1.0 : -1.0);',
-                    '  vec2 scDH = vec2(dFdx(scT), dFdy(scT)) * scratchK.y * 0.025;',
+                    '  vec2 scDH = vec2(dot(scG, dFdx(scTc)), dot(scG, dFdy(scTc))) * scratchK.y * 0.025;',
                     '  vec3 scGrad = sign(scDet) * (scDH.x * scR1 + scDH.y * scR2);',
                     '  normal = normalize(abs(scDet) * normal - scGrad);',
                     ' }'].join('\n'))
