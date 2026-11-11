@@ -3793,6 +3793,9 @@ window.addEventListener('DOMContentLoaded', () => {
     cannonGroup.add(turBlueMesh);
 
     const turMetalMesh = new THREE.Mesh(turMerge(turMetal), turMetalMat);
+    // הכיפה קצת פחות עמוקה מקדימה, כדי שהבסיס שלה לא יגלוש על הקצה הקדמי של הגוף
+    turBlueMesh.scale.set(0.97, 1, 0.88);
+    turMetalMesh.scale.set(0.97, 1, 0.88);
     turMetalMesh.castShadow = true;
     turMetalMesh.receiveShadow = true;
     cannonGroup.add(turMetalMesh);
@@ -6106,6 +6109,11 @@ window.addEventListener('DOMContentLoaded', () => {
             shader.vertexShader = 'varying float vM3Y;\n' + shader.vertexShader.replace('#include <worldpos_vertex>',
                 '#include <worldpos_vertex>\n vM3Y = (modelMatrix * vec4(transformed, 1.0)).y;');
             shader.fragmentShader = 'uniform vec2 m3dK;\nuniform vec3 m3Sky;\nuniform vec3 m3Ground;\nuniform vec3 m3Rim;\nvarying float vM3Y;\n' + shader.fragmentShader
+                .replace('#include <normal_fragment_maps>', [
+                    '#include <normal_fragment_maps>',
+                    // נגד הבהובים: איפה שהמשטח מתעקם מהר על המסך (קפיצים, ברגים, קצוות), הברק נעשה רחב ורך יותר במקום לנצנץ
+                    ' { vec3 saD = fwidth(normal); float saK = min(2.0 * dot(saD, saD), 0.22);',
+                    '   roughnessFactor = sqrt(roughnessFactor * roughnessFactor + saK); }'].join('\n'))
                 .replace('#include <tonemapping_fragment>', [
                     ' {',
                     '  float m3Up = dot(normal, normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz));',
@@ -6174,6 +6182,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 const gg = eg.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, col); gg.addColorStop(1, 'rgba(255,230,180,0)');
                 eg.fillStyle = gg; eg.fillRect(x - r, y - r, r * 2, r * 2);
             });
+            // 'אורות סטודיו': פסים בהירים רכים בשמיים שיוצרים ברק ארוך ונקי על המתכת (כמו בצילומי רכב)
+            [[20, 18, 70, 7, 0.55], [150, 26, 60, 6, 0.45], [100, 8, 90, 4, 0.35]].forEach(([x, y, w, h, a]) => {
+                const sg = eg.createLinearGradient(0, y - h, 0, y + h);
+                sg.addColorStop(0, 'rgba(255,245,230,0)'); sg.addColorStop(0.5, `rgba(255,245,230,${a})`); sg.addColorStop(1, 'rgba(255,245,230,0)');
+                eg.fillStyle = sg; eg.fillRect(x, y - h, w, h * 2);
+            });
+            eg.fillStyle = 'rgba(255,250,235,0.55)'; eg.fillRect(0, 63, 256, 1.5);   // קו אופק חד = קו ברק נקי לאורך הגוף
             const et = new THREE.CanvasTexture(ec); et.encoding = THREE.sRGBEncoding;
             const pm = new THREE.PMREMGenerator(renderer);
             cannonSunsetEnv = pm.fromEquirectangular(et).texture;
@@ -6317,6 +6332,10 @@ window.addEventListener('DOMContentLoaded', () => {
             m.roughness = Math.max(0.16, m.roughness * 0.75);
             m.needsUpdate = true;
         });
+        cannonGroup.traverse(o => {   // כל המתכת בשני התותחים משקפת את אותה סביבה (מראה אחיד)
+            const m = o.material;
+            if (o.isMesh && m && !Array.isArray(m) && m.isMeshStandardMaterial && m.envMap && m.envMap !== cannonSunsetEnv && cannonSunsetEnv && !m.transparent) { m.envMap = cannonSunsetEnv; m.needsUpdate = true; }
+        });
         cannonGroup.traverse(o => {   // חלקים עם עור צבוע מקבלים את אותה השתקפות שקיעה
             const m = o.material;
             if (o.isMesh && m && !Array.isArray(m) && m.userData && m.userData.wantEnv && !m.envMap && cannonSunsetEnv) {
@@ -6329,6 +6348,19 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!o.isMesh || !m || Array.isArray(m) || !m.isMeshStandardMaterial || m.onBeforeCompile.toString().length > 30) return;
             m.onBeforeCompile = addMetal3D; m.needsUpdate = true;
         });
+        cannonGroup.traverse(o => {   // חישובי נגד-הבהוב צריכים את הרחבה הזו (קיימת בכל טלפון)
+            const m = o.material;
+            if (o.isMesh && m && !Array.isArray(m) && m.isMeshStandardMaterial) m.extensions = Object.assign(m.extensions || {}, { derivatives: true });
+        });
+        // כיפת הקלאסי: זכוכית מבריקה במקום 'מתכת' - השתקפות חדה של השמיים ופסי האור, צבע כחול עמוק יותר
+        if (typeof turBlueMat !== 'undefined' && !CLASSIC_SKIN) {
+            turBlueMat.metalness = 0.0; turBlueMat.roughness = 0.08;
+            turBlueMat.envMap = cannonSunsetEnv; turBlueMat.envMapIntensity = 1.6;
+            turBlueMat.emissive.setHex(0x031a30); turBlueMat.needsUpdate = true;
+        }
+        if (typeof turMetalMat !== 'undefined' && !CLASSIC_SKIN) {   // פס הכיפה: מתכת כהה מלוטשת
+            turMetalMat.metalness = 0.9; turMetalMat.roughness = 0.22; turMetalMat.needsUpdate = true;
+        }
         window.__scratchMats = panelMats.size;
     }
 
