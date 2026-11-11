@@ -2957,7 +2957,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // רקע טפט: מפה שהיא תמונה אחת במקום עולם תלת-ממדי (הרבה יותר קל לטלפונים חלשים).
     // להוסיף טפט למפה: לשים את התמונה בתיקיית המשחק ולרשום את שמה כאן.
     // ==========================================
-    const MAP_WALLPAPERS = { sand: 'bg_pyramids.jpg?v=1' };
+    const MAP_WALLPAPERS = { sand: 'bg_pyramids.jpg?v=3' };
     let mapUsesWallpaper = false;
     let classicBlobRef = null, cannonLookIsMk2 = false;   // צל רך מתחת לתותח הקלאסי, רק במפת טפט
     function updateWallpaperBlob() { if (classicBlobRef) classicBlobRef.visible = mapUsesWallpaper && !cannonLookIsMk2; }
@@ -2976,6 +2976,20 @@ window.addEventListener('DOMContentLoaded', () => {
         const imgA = t.image.width / t.image.height, scrA = camera.aspect;
         if (scrA < imgA) { t.repeat.set(scrA / imgA, 1); t.offset.set((1 - scrA / imgA) / 2, 0); }
         else { t.repeat.set(1, imgA / scrA); t.offset.set(0, 0); }
+        wallpaperBaseX = t.offset.x;
+        t.updateMatrix();
+        wallpaperMat.uniforms.uvT.value.copy(t.matrix);
+    }
+    // המצלמה זזה קצת עם התותח. התמונה זזה איתה בדיוק כמו החול שליד התותח, כדי שהסלעים, הצללים והתותח
+    // יישארו צמודים לחול המצויר (בלי זה העולם נראה כאילו מחליק מעל התמונה).
+    let wallpaperBaseX = 0;
+    const wallpaperProbe = new THREE.Vector3();
+    function panWallpaper() {
+        const t = wallpaperTex;
+        if (!t || !t.image) return;
+        wallpaperProbe.set(0, 0, 0).project(camera);
+        const maxX = 1 - t.repeat.x;
+        t.offset.x = Math.min(maxX, Math.max(0, wallpaperBaseX - wallpaperProbe.x * 0.5 * t.repeat.x));
         t.updateMatrix();
         wallpaperMat.uniforms.uvT.value.copy(t.matrix);
     }
@@ -9929,7 +9943,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const edgeStart = screenLimitX * 0.55;
         const edgeOver = Math.sign(cannonX) * Math.max(0, Math.abs(cannonX) - edgeStart);
 
-        const cameraTargetX = cannonX * 0.10 + edgeOver * 1.15;
+        // במפת טפט המצלמה כמעט לא זזה (רק כמה שצריך כדי שהתותח לא ייחתך בקצה), כדי שהעולם יישאר צמוד לתמונה
+        const cameraTargetX = mapUsesWallpaper ? edgeOver * 0.55 : cannonX * 0.10 + edgeOver * 1.15;
         const cameraTargetY = CAM_BASE_Y + 0.2 + Math.abs(cannonX) * 0.035;
         const cameraTargetZ = CAM_BASE_Z + 0.2 + Math.abs(cannonX) * 0.045;
 
@@ -9937,7 +9952,7 @@ window.addEventListener('DOMContentLoaded', () => {
         camera.position.y += (cameraTargetY - camera.position.y) * 0.035;
         camera.position.z += (cameraTargetZ - camera.position.z) * 0.035;
 
-        const lookX = cannonX * 0.08 + edgeOver * 0.75;
+        const lookX = mapUsesWallpaper ? edgeOver * 0.35 : cannonX * 0.08 + edgeOver * 0.75;
         const lookY = 2.45 + cannonRecoil * 0.15;
         const lookZ = -8.1;
 
@@ -9947,6 +9962,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
             camera.lookAt(lookX, lookY, lookZ);
         }
+        if (mapUsesWallpaper) { camera.updateMatrixWorld(); panWallpaper(); }
 
         renderer.render(scene, camera);
     }
