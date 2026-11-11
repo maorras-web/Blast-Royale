@@ -6220,6 +6220,14 @@ window.addEventListener('DOMContentLoaded', () => {
         // מחשבים מראש את השיפוע של כל פיקסל (לעומק החריצים) ושומרים אותו בערוצי הצבע: אדום = גובה, ירוק/כחול = שיפוע.
         // כך העומק חלק וחד, ועדיין רק דגימה אחת בכל פיקסל.
         {
+            // ריכוך קל של הקווים (פחות ריצוד בתנועה). להגדיל = רך יותר, 0 = חד לגמרי
+            const SCRATCH_SOFTEN = 1.3;
+            if (SCRATCH_SOFTEN > 0) {
+                const tmp = document.createElement('canvas'); tmp.width = tmp.height = RES;
+                const tx = tmp.getContext('2d'); tx.filter = `blur(${SCRATCH_SOFTEN}px)`;
+                for (let ox = -RES; ox <= RES; ox += RES) for (let oy = -RES; oy <= RES; oy += RES) tx.drawImage(cc, ox, oy);   // רציף בקצוות
+                cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, RES, RES); cx.drawImage(tmp, 0, 0);
+            }
             const id = cx.getImageData(0, 0, RES, RES), d = id.data, h = new Float32Array(RES * RES);
             for (let k = 0; k < RES * RES; k++) h[k] = d[k * 4 + 1] / 255;
             const H = (x, y) => h[((y + RES) % RES) * RES + ((x + RES) % RES)];
@@ -6262,7 +6270,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 .replace('#include <normal_fragment_maps>', [
                     '#include <normal_fragment_maps>',
                     ' {',   // עומק לחריצים: הנורמל מוטה לפי שיפוע הגובה שנשמר בטקסטורה, בכיווני המשטח הקבועים (יציב בתנועה)
-                    '  vec2 scDH = scG * scratchK.x * scratchK.y * 0.006;',
+                    '  vec2 scDH = scG * scratchK.x * scratchK.y * 0.0075;',
                     '  normal = normalize(normal - clamp(scDH.x, -0.8, 0.8) * vScrTU + clamp(scDH.y, -0.8, 0.8) * vScrTV);',
                     ' }'].join('\n'))
                 .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = clamp(roughnessFactor * (1.0 - max(scT, 0.0) * 0.6 * scratchK.y - min(scT, 0.0) * 0.4 * scratchK.y), 0.04, 1.0);');
