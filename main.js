@@ -3933,6 +3933,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // תותח נובה מופשט: בלי זרועות ההשעיה, בלי דיסקיות הבלם ובלי כיסוי המרכז של הג'אנט (לא הכרחיים ויקרים: ~21 אלף משולשים).
+    // false = מחזיר הכל כמו קודם.
+    const NOVA_SIMPLE = true;
     const wheelOuter_smooth = [];
 
     wheelPositions.forEach(pos => {
@@ -3984,7 +3987,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
         wheel.add(smoothTire);
-        wheelOuter_smooth.push({ tire: tireMesh, smooth: smoothTire });
 
         const rimMesh = new THREE.Mesh(wheelChromeGeo, chromeMat);
         wheel.add(rimMesh);
@@ -3992,6 +3994,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const dishMesh = new THREE.Mesh(wheelDishGeo, gunmetalMat);
         dishMesh.receiveShadow = true;
         wheel.add(dishMesh);
+        wheelOuter_smooth.push({ tire: tireMesh, smooth: smoothTire, extra: [rimMesh, dishMesh] });
 
         // אין היגוי מלאכותי: התותח נע ימינה/שמאלה, ולכן כל ארבעת הגלגלים
         // מתגלגלים יחד סביב ציר Z. זה מונע סיבוב עקום בזמן שינוי כיוון.
@@ -4907,6 +4910,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return g;
     }
     function mk2Link(a, b, w, d, material, aSprung, bSprung, wHub) {
+        if (NOVA_SIMPLE) return null;   // בלי זרועות ההשעיה
         addSuspensionArmBetween(new THREE.Vector3(a[0], a[1], a[2]), new THREE.Vector3(b[0], b[1], b[2]), w, d, material, aSprung, bSprung);
         const L = suspensionLinks[suspensionLinks.length - 1];
         L.mk2Only = true;
@@ -5018,7 +5022,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const lowerEnd  = [hx - side * 1.05, MK2_WHEEL_Y + 0.30, zp];   // הזרוע התחתונה נגמרת על הפינה של לוחית הטריז
 
             // עמודי חיבור מוברגים מפני הגוף אל מישור הזרועות
-            [upperBody, lowerBody].forEach(P => {
+            if (!NOVA_SIMPLE) [upperBody, lowerBody].forEach(P => {
                 const post = nvAdd(mk2Head, new THREE.CylinderGeometry(0.10, 0.10, Math.abs(P[2] - zb) + 0.06, 16), nvSteel,
                     P[0], P[1] - MK2_BODY_RAISE, (P[2] + zb) / 2 - sgn * 0.02, Math.PI / 2, 0, 0);
                 post.castShadow = true;
@@ -5035,7 +5039,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 sgn > 0 ? 0.30 : 0.24, 0.07, sgn > 0 ? mk2ArmMat : nvSteel, true, true, sgn > 0 ? 0.34 : 0.26);
 
             // פלטת חיבור רחבה שמחברת את שתי הזרועות לגלגל (כמו בתמונת המטרה) - רק בצד שפונה למצלמה
-            if (sgn > 0) {
+            if (sgn > 0 && !NOVA_SIMPLE) {
             const gShape = new THREE.Shape();
             {
                 const KX = -side * 0.72, KY = 0.82, rH = 0.34, rK = 0.19;
@@ -5089,15 +5093,19 @@ window.addEventListener('DOMContentLoaded', () => {
             const dBody = [side * 0.95, 1.40 + MK2_BODY_RAISE, sgn * 1.00];
             const dHub  = [side * (MK2_HUB_X - 0.48), MK2_WHEEL_Y + 0.55, zp + sgn * 0.10];
             const dMid  = [dBody[0] + (dHub[0] - dBody[0]) * 0.62, dBody[1] + (dHub[1] - dBody[1]) * 0.62, dBody[2]];
+            if (!NOVA_SIMPLE) {
             mk2Rod(dBody, dMid, 0.115, mk2ArmMat, true, false);
             mk2Rod(dMid, dHub, 0.07, mk2ArmMat, false, false);
+            }
 
             // דיסקים עם ברגים בקצות הזרועות
             const zf = zp + sgn * 0.10, zfU = zU + sgn * 0.12;
+            if (!NOVA_SIMPLE) {
             mk2Boss(upperBody[0], upperBody[1], upperBody[2] + sgn * 0.11, 0.13, true);
             mk2Boss(lowerBody[0], lowerBody[1], lowerBody[2] + sgn * 0.11, 0.13, true);
             mk2Boss(upperHub[0], upperHub[1], zfU, 0.10, false);
             mk2Boss(hx, MK2_WHEEL_Y, zf, 0.13, false);
+            }
 
             // קפיץ סלילי שחור בין הגוף לגלגל (נראה מאחורי הזרועות, כמו בתמונת המטרה)
             addMk2Spring(side, sgn);
@@ -5157,7 +5165,7 @@ window.addEventListener('DOMContentLoaded', () => {
             wheelOuter.position.z = isMk2 ? Math.sign(wheelPositions[i][2]) * MK2_WHEEL_Z : wheelPositions[i][2];
             wheelOuter.scale.setScalar(isMk2 ? MK2_WHEEL_SCALE : 1);
             const sw = wheelOuter_smooth[i];
-            if (sw) { sw.tire.visible = !isMk2; sw.smooth.visible = isMk2; }
+            if (sw) { sw.tire.visible = !isMk2; sw.smooth.visible = isMk2; sw.extra.forEach(m => { m.visible = !(isMk2 && NOVA_SIMPLE); }); }
         });
         // צמיגים עם גוון אבק חום-אפור כמו בתמונת המטרה (רק בתותח האפור)
         wheelRubberMat.emissive.setHex(isMk2 ? 0x030303 : 0x000000);
@@ -5475,6 +5483,103 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionLinks.forEach(L => { if (L.mk2Only) L.mesh.traverse(noShadow); });
         suspensionSprings.forEach(K => { if (K.mk2Only) K.group.traverse(noShadow); });
         wheelOuter_smooth.forEach(w => { if (w && w.smooth) w.smooth.traverse(noShadow); });
+    }
+
+    // ==========================================
+    // איחוד חלקים קבועים להפחתת קריאות ציור (draw calls)
+    // ==========================================
+    // כל רשת נפרדת עולה קריאת ציור משלה. כאן מחברים רשתות שזזות יחד (קבועות זו ביחס לזו) ויש להן אותו חומר
+    // לרשת אחת: אותו מראה בדיוק, פחות קריאות. חלקים שזזים לבד (מתלים, קפיצים, חלקים שמוסתרים/מוצגים) לא נוגעים.
+    // מאחדים רק ילדים ישירים של הקבוצה שנשלחת, כך שכל קבוצה שמוסתרת או מוצגת (כמו הצמיג החלק) נשארת שלמה.
+    function mergeStaticMeshes(root, exclude) {
+        root.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        const buckets = new Map();
+        root.children.slice().forEach(c => {
+            if (!c.isMesh || c.isInstancedMesh || c.isSkinnedMesh || Array.isArray(c.material)) return;
+            if (exclude && exclude.has(c)) return;
+            const g = c.geometry;
+            if (!g || !g.attributes.position || !g.attributes.normal) return;
+            const key = c.material.uuid + '|' + (c.castShadow ? 1 : 0) + (c.receiveShadow ? 1 : 0) + '|' +
+                c.renderOrder + '|' + c.visible + '|' + Object.keys(g.attributes).sort().join(',');
+            if (!buckets.has(key)) buckets.set(key, []);
+            buckets.get(key).push(c);
+        });
+        let removed = 0, added = 0;
+        buckets.forEach(list => {
+            if (list.length < 2) return;
+            const names = Object.keys(list[0].geometry.attributes);
+            const data = {};
+            names.forEach(n => { data[n] = []; });
+            const rel = new THREE.Matrix4();
+            const nm = new THREE.Matrix3();
+            const v = new THREE.Vector3();
+            list.forEach(c => {
+                const g = c.geometry;
+                rel.multiplyMatrices(inv, c.matrixWorld);
+                nm.getNormalMatrix(rel);
+                const flip = rel.determinant() < 0;
+                const idx = g.index;
+                const triCount = (idx ? idx.count : g.attributes.position.count) / 3;
+                for (let t = 0; t < triCount; t++) {
+                    const order = flip ? [0, 2, 1] : [0, 1, 2];
+                    for (let k = 0; k < 3; k++) {
+                        const vi = idx ? idx.getX(t * 3 + order[k]) : t * 3 + order[k];
+                        names.forEach(n => {
+                            const at = g.attributes[n];
+                            if (n === 'position') {
+                                v.fromBufferAttribute(at, vi).applyMatrix4(rel);
+                                data[n].push(v.x, v.y, v.z);
+                            } else if (n === 'normal') {
+                                v.fromBufferAttribute(at, vi).applyMatrix3(nm).normalize();
+                                data[n].push(v.x, v.y, v.z);
+                            } else {
+                                for (let q = 0; q < at.itemSize; q++) data[n].push(at.array[vi * at.itemSize + q]);
+                            }
+                        });
+                    }
+                }
+            });
+            const mg = new THREE.BufferGeometry();
+            names.forEach(n => {
+                mg.setAttribute(n, new THREE.Float32BufferAttribute(data[n], list[0].geometry.attributes[n].itemSize));
+            });
+            const first = list[0];
+            const merged = new THREE.Mesh(mg, first.material);
+            merged.castShadow = first.castShadow;
+            merged.receiveShadow = first.receiveShadow;
+            merged.renderOrder = first.renderOrder;
+            merged.visible = first.visible;
+            root.add(merged);
+            list.forEach(c => root.remove(c));
+            removed += list.length;
+            added += 1;
+        });
+        return { removed, added };
+    }
+    {
+        const keep = new Set();
+        suspensionLinks.forEach(L => keep.add(L.mesh));
+        suspensionJoints.forEach(J => keep.add(J.mesh));
+        suspensionOuterParts.forEach(P => keep.add(P.mesh));
+        wheelOuter_smooth.forEach(w => w.extra.forEach(m => keep.add(m)));
+        mk2OnlyParts.forEach(m => keep.add(m));
+        classicBodyParts.forEach(m => keep.add(m));
+        let saved = 0;
+        // גלגלים: כל קבוצה (צמיג, צמיג חלק, ציר) בנפרד כדי שהחלפת מראה ממשיכה לעבוד
+        classicCannonWheels.forEach(wo => {
+            const spin = wo.userData.spinGroup;
+            [spin, ...spin.children.filter(c => c.isGroup)].forEach(grp => {
+                const r = mergeStaticMeshes(grp, keep);
+                saved += r.removed - r.added;
+            });
+        });
+        // ראש הנובה (גוף, כיפה, מצחייה, לוחות וברגים) וקני הנובה
+        [mk2Head, mk2BarrelsRig].forEach(grp => {
+            const r = mergeStaticMeshes(grp, keep);
+            saved += r.removed - r.added;
+        });
+        window.__mergeSaved = saved;
     }
 
     function applyCannonLook(isMk2) {
