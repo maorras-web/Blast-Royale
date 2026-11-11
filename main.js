@@ -5695,108 +5695,89 @@ window.addEventListener('DOMContentLoaded', () => {
         window.__mergeSaved = saved;
     }
 
-    // ---- שרטוטי פאנלים: קווים דקים חרוטים שמחלקים את המתכת ללוחות (כמו בחלליות) ----
-    // טקסטורה קטנה אחת (256x256) משותפת לכל חלקי המתכת של שני התותחים, מונחת לפי הצורה של כל חלק
-    // (לא נמתחת), דגימה אחת לכל פיקסל. קו = חריץ כהה עם שפה בהירה דקה לידו, כמו לוחות מתכת מחוברים.
-    // לבטל: SCRATCHES = false. עוצמה: SCRATCH_STRENGTH (0.0 - 1.0). גודל: SCRATCH_SCALE (יותר = לוחות קטנים יותר).
-    const SCRATCHES = true;
-    const SCRATCH_STRENGTH = 1.0;
-    const SCRATCH_SCALE = 0.5;
-    if (SCRATCHES) {
-        const S = 256, RES = 512;   // הציור מתוכנן ב-256 ונשמר ב-512 לחדות
-        const cc = document.createElement('canvas'); cc.width = cc.height = RES;
-        const cx = cc.getContext('2d');
-        cx.scale(RES / S, RES / S);
-        cx.fillStyle = 'rgb(128,128,128)'; cx.fillRect(0, 0, S, S);   // 128 = בלי שינוי
-        let seed = 11;
-        const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-        const tiled = fn => { for (let ox = -S; ox <= S; ox += S) for (let oy = -S; oy <= S; oy += S) fn(ox, oy); };   // רציף מעבר לקצוות
-        const groove = (x1, y1, x2, y2) => {   // חריץ כהה + שפה בהירה צמודה
-            tiled((ox, oy) => {
-                cx.lineCap = 'square';
-                cx.strokeStyle = 'rgba(230,230,230,0.75)'; cx.lineWidth = 1.6;
-                cx.beginPath(); cx.moveTo(x1 + ox + 2.2, y1 + oy + 2.2); cx.lineTo(x2 + ox + 2.2, y2 + oy + 2.2); cx.stroke();
-                cx.strokeStyle = 'rgba(10,10,10,0.95)'; cx.lineWidth = 2.6;
-                cx.beginPath(); cx.moveTo(x1 + ox, y1 + oy); cx.lineTo(x2 + ox, y2 + oy); cx.stroke();
-            });
+    // ---- שרטוטי פאנלים: קווי חיבור חרוטים בין לוחות מתכת (כמו בחלליות) ----
+    // רק על הלוחות הגדולים של הגוף. הקווים סימטריים ומותאמים לגודל של כל חלק: מסגרת פנימית,
+    // קו אמצע לאורך ולרוחב, וברגים בפינות. הם מחושבים במתמטיקה (בלי תמונה), ולכן חדים בכל רזולוציה.
+    // על משטחים מעוגלים (כיפות, פינות עגולות, קפיצים) הקווים נעלמים, כדי שלא יימתחו.
+    // לבטל: PANEL_LINES = false. עוצמה: PANEL_STRENGTH (0 - 1). רוחב החריץ: PANEL_WIDTH (ביחידות עולם).
+    const PANEL_LINES = true;
+    const PANEL_STRENGTH = 1.0;
+    const PANEL_WIDTH = 0.014;
+    const PANEL_MIN_SIZE = 1.8;   // חלק נחשב 'לוח גוף' אם המידה הגדולה שלו לפחות כזו
+    const METAL_LOOK = 0.65;      // מינימום 'מתכתיות' לחלקי המתכת (0 = צבע, 1 = מתכת מלאה)
+    {
+        const pnK = { value: new THREE.Vector2(PANEL_WIDTH, PANEL_STRENGTH) };
+        // מראה מתכתי ותלת-ממדי (כמה פעולות חשבון לכל פיקסל, בלי טקסטורות ובלי משולשים נוספים):
+        // 1. אור קצה חם בשוליים של כל חלק (פרנל) - הצורה בולטת מהרקע כמו מתכת אמיתית.
+        // 2. הצללה רכה מלמטה (כמו AO) - החלקים התחתונים כהים יותר, נותן עומק.
+        const M3D_RIM = 0.9;      // עוצמת אור הקצה
+        const M3D_SHADE = 0.45;    // כמה החלק התחתון כהה יותר
+        const m3dK = { value: new THREE.Vector2(M3D_RIM, M3D_SHADE) };
+        const addMetal3D = shader => {
+            shader.uniforms.m3dK = m3dK;
+            shader.vertexShader = 'varying float vM3Y;\n' + shader.vertexShader.replace('#include <worldpos_vertex>',
+                '#include <worldpos_vertex>\n vM3Y = (modelMatrix * vec4(transformed, 1.0)).y;');
+            shader.fragmentShader = 'uniform vec2 m3dK;\nvarying float vM3Y;\n' + shader.fragmentShader
+                .replace('#include <tonemapping_fragment>', [
+                    ' {',
+                    '  float m3Shade = mix(1.0 - m3dK.y, 1.0, smoothstep(0.3, 2.1, vM3Y));',
+                    '  float m3Fr = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);',
+                    '  float m3Up = dot(normal, normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz));',   // פנים למעלה מוארות, פנים למטה כהות
+                    '  m3Shade *= 1.0 + (m3Up > 0.0 ? 0.30 : 0.55) * m3Up;',
+                    '  m3Fr *= smoothstep(-0.3, 0.6, m3Up);',   // אור הקצה בעיקר בשוליים העליונים, כמו שקיעה מאחור
+                    '  gl_FragColor.rgb = gl_FragColor.rgb * m3Shade + vec3(1.0, 0.62, 0.32) * m3Fr * m3dK.x * clamp(m3Shade, 0.0, 1.0);',
+                    ' }',
+                    '#include <tonemapping_fragment>'].join('\n'));
         };
-        const rect = (x, y, w, h) => { groove(x, y, x + w, y); groove(x + w, y, x + w, y + h); groove(x + w, y + h, x, y + h); groove(x, y + h, x, y); };
-        // חלוקה ללוחות: רשת לא אחידה (רציפה בקצוות)
-        const cols = [0, 92, 170], rows = [0, 70, 150, 205];
-        cols.forEach(x => groove(x, 0, x, S));
-        rows.forEach((y, ri) => {   // קווים אופקיים, כל שורה נשברת במקום אחר כמו לוחות מוזזים
-            const a = cols[ri % cols.length], b = cols[(ri + 1) % cols.length];
-            groove(0, y, S, y);
-            if (ri % 2) groove(a + 40, y, a + 40, rows[(ri + 1) % rows.length] || S);
-        });
-        // לוחות פנימיים קטנים ופתחי שירות
-        rect(110, 18, 40, 30); rect(20, 165, 52, 24); rect(186, 85, 50, 46); rect(196, 92, 30, 32);
-        // קווי שירות קצרים בצורת L, כמו מעגלים על הכדור הזהב
-        [[30, 30, 60, 30, 60, 52], [120, 95, 150, 95, 150, 130], [180, 220, 230, 220, 230, 240], [100, 180, 100, 200, 140, 200]]
-            .forEach(([a, b, c, d, e, f]) => { groove(a, b, c, d); groove(c, d, e, f); });
-        // ברגים קטנים בפינות הלוחות
-        [[8, 8], [84, 8], [100, 62], [162, 62], [178, 142], [248, 142], [8, 197], [84, 197]].forEach(([x, y]) => tiled((ox, oy) => {
-            cx.fillStyle = 'rgba(15,15,15,0.9)'; cx.beginPath(); cx.arc(x + ox, y + oy, 2.6, 0, Math.PI * 2); cx.fill();
-            cx.fillStyle = 'rgba(235,235,235,0.8)'; cx.beginPath(); cx.arc(x + ox - 0.8, y + oy - 0.8, 1.1, 0, Math.PI * 2); cx.fill();
-        }));
-        // מחשבים מראש את השיפוע של כל פיקסל (לעומק החריצים) ושומרים אותו בערוצי הצבע: אדום = גובה, ירוק/כחול = שיפוע.
-        // כך העומק חלק וחד, ועדיין רק דגימה אחת בכל פיקסל.
-        {
-            const id = cx.getImageData(0, 0, RES, RES), d = id.data, h = new Float32Array(RES * RES);
-            for (let k = 0; k < RES * RES; k++) h[k] = d[k * 4 + 1] / 255;
-            const H = (x, y) => h[((y + RES) % RES) * RES + ((x + RES) % RES)];
-            for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
-                const gx = (H(x + 1, y - 1) + 2 * H(x + 1, y) + H(x + 1, y + 1) - H(x - 1, y - 1) - 2 * H(x - 1, y) - H(x - 1, y + 1)) / 8;
-                const gy = (H(x - 1, y + 1) + 2 * H(x, y + 1) + H(x + 1, y + 1) - H(x - 1, y - 1) - 2 * H(x, y - 1) - H(x + 1, y - 1)) / 8;
-                const k = (y * RES + x) * 4;
-                d[k] = Math.round(H(x, y) * 255);
-                d[k + 1] = Math.max(0, Math.min(255, Math.round(128 + gx * 255)));
-                d[k + 2] = Math.max(0, Math.min(255, Math.round(128 - gy * 255)));   // הטקסטורה הפוכה לאורך
-                d[k + 3] = 255;
-            }
-            cx.putImageData(id, 0, 0);
-        }
-        const scratchTex = new THREE.CanvasTexture(cc);
-        scratchTex.wrapS = scratchTex.wrapT = THREE.RepeatWrapping;
-        scratchTex.anisotropy = 4;   // קווים חדים גם על משטחים נטויים
-        const scratchUniforms = { scratchMap: { value: scratchTex }, scratchK: { value: new THREE.Vector2(SCRATCH_SCALE, SCRATCH_STRENGTH) } };
-        const addScratches = shader => {
-            shader.uniforms.scratchMap = scratchUniforms.scratchMap;
-            shader.uniforms.scratchK = scratchUniforms.scratchK;
-            shader.vertexShader = 'varying vec3 vScrP;\nvarying vec3 vScrN;\n' + shader.vertexShader.replace('#include <begin_vertex>',
-                '#include <begin_vertex>\n vScrP = position; vScrN = normal;');
-            shader.fragmentShader = 'uniform sampler2D scratchMap;\nuniform vec2 scratchK;\nvarying vec3 vScrP;\nvarying vec3 vScrN;\n' + shader.fragmentShader
+        const addPanels = shader => {
+            addMetal3D(shader);
+            shader.uniforms.pnK = pnK;
+            shader.vertexShader = 'attribute vec3 pnC;\nattribute vec3 pnH;\nvarying vec3 vPnP;\nvarying vec3 vPnN;\nvarying vec3 vPnC;\nvarying vec3 vPnH;\n'
+                + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vPnP = position; vPnN = normal; vPnC = pnC; vPnH = pnH;');
+            shader.fragmentShader = [
+                'uniform vec2 pnK;', 'varying vec3 vPnP;', 'varying vec3 vPnN;', 'varying vec3 vPnC;', 'varying vec3 vPnH;',
+                'float pnLine(float d, float w) { float aa = max(fwidth(d), 1e-5); return 1.0 - smoothstep(w - aa * 0.75, w + aa * 0.75, abs(d)); }',
+                ''].join('\n') + shader.fragmentShader
                 .replace('#include <map_fragment>', [
                     '#include <map_fragment>',
-                    ' vec3 scA = abs(vScrN);',
-                    ' vec2 scUv = (scA.x > scA.y && scA.x > scA.z) ? vScrP.zy : ((scA.y > scA.z) ? vScrP.xz : vScrP.xy);',
-                    ' vec2 scTc = scUv * scratchK.x;',
-                    ' vec4 scS = texture2D(scratchMap, scTc);',
-                    ' float scT = scS.r * 2.0 - 1.0;',
-                    ' vec2 scG = (scS.gb - 0.5) * 2.0 * 512.0;',   // שיפוע הגובה לכל יחידת טקסטורה   // -1 כתם, 0 רגיל, 1 שריטה
-                    ' diffuseColor.rgb *= 1.0 + scT * (scT < 0.0 ? 0.62 : 0.30) * scratchK.y;'].join('\n'))
-                .replace('#include <normal_fragment_maps>', [
-                    '#include <normal_fragment_maps>',
-                    ' {',   // עומק לחריצים: הנורמל מוטה לפי שינוי הגובה של הטקסטורה על המסך (בלי דגימות נוספות)
-                    '  vec3 scVp = -vViewPosition;',
-                    '  vec3 scSx = dFdx(scVp), scSy = dFdy(scVp);',
-                    '  vec3 scR1 = cross(scSy, normal), scR2 = cross(normal, scSx);',
-                    '  float scDet = dot(scSx, scR1) * (gl_FrontFacing ? 1.0 : -1.0);',
-                    '  vec2 scDH = vec2(dot(scG, dFdx(scTc)), dot(scG, dFdy(scTc))) * scratchK.y * 0.035;',
-                    '  vec3 scGrad = sign(scDet) * (scDH.x * scR1 + scDH.y * scR2);',
-                    '  normal = normalize(abs(scDet) * normal - scGrad);',
-                    ' }'].join('\n'))
-                .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = clamp(roughnessFactor * (1.0 - max(scT, 0.0) * 0.6 * scratchK.y - min(scT, 0.0) * 0.4 * scratchK.y), 0.04, 1.0);');
+                    ' float pnCore = 0.0, pnLip = 0.0;',
+                    ' {',
+                    '  vec3 pa = abs(normalize(vPnN));',
+                    '  float pnFlat = smoothstep(0.94, 0.99, max(pa.x, max(pa.y, pa.z)));',   // רק משטחים ישרים
+                    '  vec3 p = vPnP - vPnC, h = max(vPnH, vec3(0.001));',
+                    '  vec2 q; vec2 hh;',
+                    '  if (pa.z >= pa.x && pa.z >= pa.y) { q = p.xy; hh = h.xy; }',        // חזית/גב
+                    '  else if (pa.x >= pa.y) { q = p.zy; hh = h.zy; }',                   // צדדים
+                    '  else { q = p.xz; hh = h.xz; }',                                      // למעלה/למטה
+                    '  float w = pnK.x, L = w * 1.7;',
+                    '  vec2 fr = hh * vec2(0.84, 0.68);',                                   // מסגרת פנימית
+                    '  float inU = step(abs(q.y), fr.y + w), inV = step(abs(q.x), fr.x + w);',
+                    '  pnCore = max(pnCore, pnLine(abs(q.x) - fr.x, w) * inU);',
+                    '  pnCore = max(pnCore, pnLine(abs(q.y) - fr.y, w) * inV);',
+                    '  pnCore = max(pnCore, pnLine(q.x, w) * inU * step(0.22, hh.y));',     // קו אמצע אנכי
+                    '  pnCore = max(pnCore, pnLine(q.y, w) * inV * step(0.22, hh.y));',     // קו אמצע אופקי
+                    '  pnLip = max(pnLip, pnLine(abs(q.x) - fr.x - L, w * 0.55) * inU);',  // שפה בהירה צמודה לחריץ
+                    '  pnLip = max(pnLip, pnLine(q.y - fr.y - L, w * 0.55) * inV);',
+                    '  pnLip = max(pnLip, pnLine(-q.y - fr.y + L, w * 0.55) * inV);',
+                    '  pnLip = max(pnLip, pnLine(q.x - L, w * 0.55) * inU * step(0.22, hh.y));',
+                    '  pnLip = max(pnLip, pnLine(q.y - L, w * 0.55) * inV * step(0.22, hh.y));',
+                    '  vec2 bq = abs(q) - (fr - hh * 0.07);',                               // ברגים בפינות המסגרת
+                    '  float bolt = 1.0 - smoothstep(w * 1.6 - fwidth(bq.x), w * 1.6 + fwidth(bq.x), length(bq));',
+                    '  pnCore = max(pnCore, bolt * 0.85);',
+                    '  float k = pnFlat * pnK.y;',
+                    '  pnCore *= k; pnLip *= k * (1.0 - pnCore);',
+                    ' }',
+                    ' diffuseColor.rgb *= (1.0 - 0.58 * pnCore) * (1.0 + 0.32 * pnLip);'].join('\n'))
+                .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = clamp(roughnessFactor * (1.0 + 0.5 * pnCore - 0.45 * pnLip), 0.04, 1.0);');
         };
-        // השתקפות שקיעה: שמיים סגולים-כתומים, פס אופק בהיר, חול חם למטה. נבנית פעם אחת.
-        const METAL_LOOK = 0.55;   // מינימום 'מתכתיות' לחלקי המתכת (0 = צבע, 1 = מתכת מלאה)
+        // השתקפות שקיעה: שמיים סגולים-כתומים, פס אופק בהיר, חול חם למטה. נבנית פעם אחת, משותפת לכל המתכת.
         let cannonSunsetEnv = null;
         try {
             const ec = document.createElement('canvas'); ec.width = 256; ec.height = 128;
             const eg = ec.getContext('2d');
             const gr = eg.createLinearGradient(0, 0, 0, 128);
             gr.addColorStop(0.00, '#5e4c6e'); gr.addColorStop(0.30, '#c0785a'); gr.addColorStop(0.46, '#ffcf8a');
-            gr.addColorStop(0.50, '#ffe6b8'); gr.addColorStop(0.53, '#a87a44'); gr.addColorStop(0.75, '#6e4e2a'); gr.addColorStop(1.00, '#2c2014');
+            gr.addColorStop(0.50, '#fff0cc'); gr.addColorStop(0.52, '#7a5630'); gr.addColorStop(0.70, '#3e2c18'); gr.addColorStop(1.00, '#17110a');
             eg.fillStyle = gr; eg.fillRect(0, 0, 256, 128);
             [[64, 50, 30, 'rgba(255,225,160,0.95)'], [192, 40, 22, 'rgba(255,240,215,0.7)']].forEach(([x, y, r, col]) => {
                 const gg = eg.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, col); gg.addColorStop(1, 'rgba(255,230,180,0)');
@@ -5807,22 +5788,41 @@ window.addEventListener('DOMContentLoaded', () => {
             cannonSunsetEnv = pm.fromEquirectangular(et).texture;
             et.dispose(); pm.dispose();
         } catch (e) { cannonSunsetEnv = null; }
-        const done = new Set([chromeMat, gunmetalMat, hubSteelMat, hubDarkMat]);   // חישוקי הגלגלים בלי שרטוטים (נראה עמוס)
+        const skipMats = new Set([chromeMat, gunmetalMat, hubSteelMat, hubDarkMat]);   // חישוקי הגלגלים נשארים כמו שהם
+        const metalMats = new Set(), panelMats = new Set();
+        const isMetal = m => m && !Array.isArray(m) && m.isMeshStandardMaterial && !m.transparent && !m.map
+            && (m.metalness || 0) >= 0.12 && !((m.transmission || 0) > 0) && !skipMats.has(m);
+        const sizeOf = g => { if (!g.boundingBox) g.computeBoundingBox(); return g.boundingBox.getSize(new THREE.Vector3()); };
         cannonGroup.traverse(o => {
-            const m = o.material;
-            if (!o.isMesh || o.isInstancedMesh || !m || Array.isArray(m) || done.has(m)) return;
-            if (!m.isMeshStandardMaterial || m.transparent || m.map || (m.metalness || 0) < 0.12 || (m.transmission || 0) > 0 || m.onBeforeCompile.toString().length > 30) return;
-            done.add(m);
-            m.onBeforeCompile = addScratches;
-            m.extensions = Object.assign(m.extensions || {}, { derivatives: true });
-            // מראה מתכתי: השתקפות שקיעה חמה (טקסטורה אחת משותפת), יותר מתכת ופחות מט
+            if (!o.isMesh || o.isInstancedMesh || !isMetal(o.material)) return;
+            metalMats.add(o.material);
+            const sz = sizeOf(o.geometry);
+            if (PANEL_LINES && Math.max(sz.x, sz.y, sz.z) >= PANEL_MIN_SIZE && o.material.onBeforeCompile.toString().length <= 30) panelMats.add(o.material);
+        });
+        // כל חלק שמשתמש בחומר עם שרטוטים מקבל את המרכז והגודל שלו (כדי שהקווים יתאימו לחלק)
+        cannonGroup.traverse(o => {
+            if (!o.isMesh || !panelMats.has(o.material) || o.geometry.attributes.pnC) return;
+            const g = o.geometry, n = g.attributes.position.count;
+            const bb = g.boundingBox || (g.computeBoundingBox(), g.boundingBox);
+            const c = bb.getCenter(new THREE.Vector3()), hs = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+            const ca = new Float32Array(n * 3), ha = new Float32Array(n * 3);
+            for (let k = 0; k < n; k++) { ca[k * 3] = c.x; ca[k * 3 + 1] = c.y; ca[k * 3 + 2] = c.z; ha[k * 3] = hs.x; ha[k * 3 + 1] = hs.y; ha[k * 3 + 2] = hs.z; }
+            g.setAttribute('pnC', new THREE.BufferAttribute(ca, 3));
+            g.setAttribute('pnH', new THREE.BufferAttribute(ha, 3));
+        });
+        metalMats.forEach(m => {
+            if (panelMats.has(m)) {
+                m.onBeforeCompile = addPanels;
+                m.extensions = Object.assign(m.extensions || {}, { derivatives: true });
+            } else if (m.onBeforeCompile.toString().length <= 30) m.onBeforeCompile = addMetal3D;
+            // מראה מתכתי: השתקפות שקיעה חמה, יותר מתכת ופחות מט
             if (!m.envMap && cannonSunsetEnv) { m.envMap = cannonSunsetEnv; m.envMapIntensity = 1.0; }
-            else if (m.envMap) m.envMapIntensity = Math.max(m.envMapIntensity, 0.85);
+            else if (m.envMap) m.envMapIntensity = Math.max(m.envMapIntensity, 1.0);
             m.metalness = Math.max(m.metalness, METAL_LOOK);
-            m.roughness = Math.max(0.18, m.roughness * 0.82);
+            m.roughness = Math.max(0.16, m.roughness * 0.75);
             m.needsUpdate = true;
         });
-        window.__scratchMats = done.size - 4;
+        window.__scratchMats = panelMats.size;
     }
 
     function applyCannonLook(isMk2) {
