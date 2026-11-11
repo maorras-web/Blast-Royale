@@ -36,7 +36,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // איכות מלאה בכל המכשירים (כמו במשחק המקורי): רזולוציה עד 1.5, החלקת קצוות וצללים רכים. בלי הורדת איכות לפי מכשיר.
     const QUALITY = {
-        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+        // רזולוציה עד 2 (חדות). אם המכשיר לא עומד בזה (בדיקה אוטומטית בתחילת המשחק), יורדים ל-1.5 ושומרים.
+        pixelRatio: Math.min(window.devicePixelRatio || 1, (() => { try { return localStorage.getItem('bb3d_low_res') === '1'; } catch (e) { return false; } })() ? 1.5 : 2),
         antialias: true,
         softShadows: true
     };
@@ -5700,7 +5701,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // לבטל: SCRATCHES = false. עוצמה: SCRATCH_STRENGTH (0.0 - 1.0). גודל: SCRATCH_SCALE (יותר = לוחות קטנים יותר).
     const SCRATCHES = true;
     const SCRATCH_STRENGTH = 1.0;
-    const SCRATCH_SCALE = 0.75;
+    const SCRATCH_SCALE = 0.5;
     if (SCRATCHES) {
         const S = 256, RES = 512;   // הציור מתוכנן ב-256 ונשמר ב-512 לחדות
         const cc = document.createElement('canvas'); cc.width = cc.height = RES;
@@ -5713,9 +5714,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const groove = (x1, y1, x2, y2) => {   // חריץ כהה + שפה בהירה צמודה
             tiled((ox, oy) => {
                 cx.lineCap = 'square';
-                cx.strokeStyle = 'rgba(230,230,230,0.75)'; cx.lineWidth = 1.2;
-                cx.beginPath(); cx.moveTo(x1 + ox + 1.6, y1 + oy + 1.6); cx.lineTo(x2 + ox + 1.6, y2 + oy + 1.6); cx.stroke();
-                cx.strokeStyle = 'rgba(10,10,10,0.95)'; cx.lineWidth = 1.8;
+                cx.strokeStyle = 'rgba(230,230,230,0.75)'; cx.lineWidth = 1.6;
+                cx.beginPath(); cx.moveTo(x1 + ox + 2.2, y1 + oy + 2.2); cx.lineTo(x2 + ox + 2.2, y2 + oy + 2.2); cx.stroke();
+                cx.strokeStyle = 'rgba(10,10,10,0.95)'; cx.lineWidth = 2.6;
                 cx.beginPath(); cx.moveTo(x1 + ox, y1 + oy); cx.lineTo(x2 + ox, y2 + oy); cx.stroke();
             });
         };
@@ -5757,6 +5758,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         const scratchTex = new THREE.CanvasTexture(cc);
         scratchTex.wrapS = scratchTex.wrapT = THREE.RepeatWrapping;
+        scratchTex.anisotropy = 4;   // קווים חדים גם על משטחים נטויים
         const scratchUniforms = { scratchMap: { value: scratchTex }, scratchK: { value: new THREE.Vector2(SCRATCH_SCALE, SCRATCH_STRENGTH) } };
         const addScratches = shader => {
             shader.uniforms.scratchMap = scratchUniforms.scratchMap;
@@ -5780,7 +5782,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     '  vec3 scSx = dFdx(scVp), scSy = dFdy(scVp);',
                     '  vec3 scR1 = cross(scSy, normal), scR2 = cross(normal, scSx);',
                     '  float scDet = dot(scSx, scR1) * (gl_FrontFacing ? 1.0 : -1.0);',
-                    '  vec2 scDH = vec2(dot(scG, dFdx(scTc)), dot(scG, dFdy(scTc))) * scratchK.y * 0.025;',
+                    '  vec2 scDH = vec2(dot(scG, dFdx(scTc)), dot(scG, dFdy(scTc))) * scratchK.y * 0.035;',
                     '  vec3 scGrad = sign(scDet) * (scDH.x * scR1 + scDH.y * scR2);',
                     '  normal = normalize(abs(scDet) * normal - scGrad);',
                     ' }'].join('\n'))
@@ -5805,7 +5807,7 @@ window.addEventListener('DOMContentLoaded', () => {
             cannonSunsetEnv = pm.fromEquirectangular(et).texture;
             et.dispose(); pm.dispose();
         } catch (e) { cannonSunsetEnv = null; }
-        const done = new Set();
+        const done = new Set([chromeMat, gunmetalMat, hubSteelMat, hubDarkMat]);   // חישוקי הגלגלים בלי שרטוטים (נראה עמוס)
         cannonGroup.traverse(o => {
             const m = o.material;
             if (!o.isMesh || o.isInstancedMesh || !m || Array.isArray(m) || done.has(m)) return;
@@ -5820,7 +5822,7 @@ window.addEventListener('DOMContentLoaded', () => {
             m.roughness = Math.max(0.18, m.roughness * 0.82);
             m.needsUpdate = true;
         });
-        window.__scratchMats = done.size;
+        window.__scratchMats = done.size - 4;
     }
 
     function applyCannonLook(isMk2) {
@@ -9700,6 +9702,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // אם המכשיר מתחת ל-42 פריימים בשנייה, עוברים פעם אחת לאיכות מופחתת ושומרים את ההחלטה.
     let gfxChecked = lowGfx;     // אם כבר במצב מופחת אין מה למדוד
     let gfxLast = 0, gfxAcc = 0, gfxFrames = 0, gfxWarm = 0;
+    let resChecked = (window.devicePixelRatio || 1) <= 1.5, resLast = 0, resAcc = 0, resFrames = 0, resWarm = 0;
     function applyLowGfx() {
         lowGfx = true;
         try { localStorage.setItem('bb3d_low_gfx', '1'); } catch (e) { /* ignore */ }
@@ -9726,9 +9729,26 @@ window.addEventListener('DOMContentLoaded', () => {
             idleFlip = !idleFlip;
             if (idleFlip) renderer.render(scene, camera);
             gfxLast = 0;
+            resLast = 0;
             return;
         }
 
+        // בדיקת רזולוציה: 5 שניות משחק ראשונות. מתחת ל-45 פריימים בשנייה ברזולוציה גבוהה -> יורדים ל-1.5 לתמיד.
+        if (!resChecked) {
+            if (resLast && ++resWarm > 60) {
+                const d = time - resLast;
+                if (d < 250) { resAcc += d; resFrames++; }
+                if (resAcc > 5000) {
+                    resChecked = true;
+                    if (resFrames * 1000 / resAcc < 45 && QUALITY.pixelRatio > 1.5) {
+                        QUALITY.pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+                        try { localStorage.setItem('bb3d_low_res', '1'); } catch (e) { /* ignore */ }
+                        updateCameraForDevice();
+                    }
+                }
+            }
+            resLast = time;
+        }
         if (!gfxChecked) {
             if (gfxLast && ++gfxWarm > 60) {
                 const d = time - gfxLast;
