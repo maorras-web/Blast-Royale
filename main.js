@@ -2953,12 +2953,75 @@ window.addEventListener('DOMContentLoaded', () => {
         return geo;
     }
 
+    // ==========================================
+    // רקע טפט: מפה שהיא תמונה אחת במקום עולם תלת-ממדי (הרבה יותר קל לטלפונים חלשים).
+    // להוסיף טפט למפה: לשים את התמונה בתיקיית המשחק ולרשום את שמה כאן.
+    // ==========================================
+    const MAP_WALLPAPERS = { sand: 'bg_pyramids.jpg?v=1' };
+    let mapUsesWallpaper = false;
+    let classicBlobRef = null, cannonLookIsMk2 = false;   // צל רך מתחת לתותח הקלאסי, רק במפת טפט
+    function updateWallpaperBlob() { if (classicBlobRef) classicBlobRef.visible = mapUsesWallpaper && !cannonLookIsMk2; }
+    let wallpaperTex = null;
+    // התמונה מצוירת על משטח אחד שממלא את המסך, בצבעים המקוריים בדיוק (בלי עיבוד התאורה של הסצנה)
+    const wallpaperMat = new THREE.ShaderMaterial({
+        uniforms: { map: { value: null }, uvT: { value: new THREE.Matrix3() } },
+        vertexShader: 'uniform mat3 uvT; varying vec2 vUv; void main(){ vUv = (uvT * vec3(uv, 1.0)).xy; gl_Position = vec4(position.xy, 0.9999, 1.0); }',
+        fragmentShader: 'uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor = texture2D(map, vUv); }',
+        depthTest: false, depthWrite: false, toneMapped: false, fog: false
+    });
+    const wallpaperGeo = new THREE.PlaneGeometry(2, 2);
+    function fitWallpaper() {   // ממלא את כל המסך בלי מתיחה (חותך מהצדדים, או מהשמיים למעלה)
+        const t = wallpaperTex;
+        if (!t || !t.image) return;
+        const imgA = t.image.width / t.image.height, scrA = camera.aspect;
+        if (scrA < imgA) { t.repeat.set(scrA / imgA, 1); t.offset.set((1 - scrA / imgA) / 2, 0); }
+        else { t.repeat.set(1, imgA / scrA); t.offset.set(0, 0); }
+        t.updateMatrix();
+        wallpaperMat.uniforms.uvT.value.copy(t.matrix);
+    }
+    window.addEventListener('resize', fitWallpaper);
+    function buildWallpaperMap(mapId) {
+        mapUsesWallpaper = true;
+        scene.background = new THREE.Color(0xc98a4a);   // עד שהתמונה נטענת
+        new THREE.TextureLoader().load(MAP_WALLPAPERS[mapId], tex => {
+            if (builtMapId !== mapId) { tex.dispose(); return; }
+            tex.generateMipmaps = false;
+            tex.minFilter = THREE.LinearFilter;
+            if (wallpaperTex) wallpaperTex.dispose();
+            wallpaperTex = tex;
+            wallpaperMat.uniforms.map.value = tex;
+            fitWallpaper();
+            const bg = new THREE.Mesh(wallpaperGeo, wallpaperMat);
+            bg.frustumCulled = false;
+            bg.renderOrder = -1000;
+            bg.userData.keep = true;
+            mapGroup.add(bg);
+        });
+        // קרקע שקופה: לא רואים אותה, רק את הצללים שנופלים עליה (התותח נוסע על החול שבתמונה)
+        const shadowGround = new THREE.Mesh(new THREE.PlaneGeometry(60, 90), new THREE.ShadowMaterial({ opacity: 0.42 }));
+        shadowGround.rotation.x = -Math.PI / 2;
+        shadowGround.position.y = 0.0;
+        shadowGround.receiveShadow = true;
+        mapGroup.add(shadowGround);
+        scene.fog.near = 55; scene.fog.far = 340;
+        sunLight.color.set(0xffbd78);
+        sunLight.intensity = 1.75;
+        hemiLight.color.set(0xffd9a0);
+        hemiLight.groundColor.set(0x4a3418);
+        hemiLight.intensity = 0.30;
+    }
+
     let builtMapId = null;
     function buildMap(mapId) {
         if (!MAPS[mapId]) mapId = 'forest';
         // המפה סטטית: אין סיבה לבנות אותה מחדש בכל התחלת משחק (בנייה = גיאומטריות, טקסטורות והעלאה למעבד הגרפי).
         if (mapId === builtMapId && mapGroup.children.length) return;
         builtMapId = mapId;
+        if (MAP_WALLPAPERS[mapId]) { clearMapGroup(); buildWallpaperMap(mapId); updateWallpaperBlob(); return; }
+        mapUsesWallpaper = false;
+        if (!scene.background || !scene.background.isColor) scene.background = new THREE.Color(FOG_COLOR);
+        if (wallpaperTex) { wallpaperTex.dispose(); wallpaperTex = null; }
+        updateWallpaperBlob();
         const isSand = mapId === 'sand';
         const theme = 'desert'; // שמיים/שמש/ערפל משותפים לשתי המפות; ההבדל: דשא + פירמידות סלע מול חול + פירמידות זהב
         clearMapGroup();
@@ -3741,7 +3804,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // טבעת הגנה מורמת סביב החישוק, בכל צד.
     [-1, 1].forEach(side => {
         rubberParts.push({
-            geo: new THREE.TorusGeometry(0.335, 0.022, 6, 40),
+            geo: new THREE.TorusGeometry(0.335, 0.022, 4, 28),
             m: partMatrix(0, 0, side * 0.183),
             color: COLOR_LUG
         });
@@ -3752,11 +3815,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const dishParts = [];
     const spokeGeoPos = taperedBox(0.25, 0.085, 0.045, 'z', 0.7);
     const spokeGeoNeg = taperedBox(0.25, 0.085, 0.045, '-z', 0.7);
-    const lipGeo = new THREE.TorusGeometry(0.29, 0.032, 10, 36);
+    const lipGeo = new THREE.TorusGeometry(0.29, 0.032, 5, 28);
     const nutGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.05, 6);
-    const domeGeo = new THREE.SphereGeometry(0.09, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+    const domeGeo = new THREE.SphereGeometry(0.09, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2);
     const capBaseGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.03, 20);
-    const dishOuterGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.04, 36);
+    const dishOuterGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.04, 24);
     const dishInnerGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.04, 28);
 
     [-1, 1].forEach(side => {
@@ -3838,7 +3901,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const nvTreadMat = new THREE.MeshStandardMaterial({ color: 0x090908, roughness: 0.85, metalness: 0.0 });
     const MK2_TREAD_N = 18;            // פקעות בכל שורה
     const MK2_TREAD_ROWS = [-0.20, 0.0, 0.20];   // שלוש שורות לרוחב הצמיג, מתחלפות
-    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 36, 96);
+    const nvTireGeo = new THREE.TorusGeometry(TIRE_MAJOR_R, TIRE_MINOR_R, 16, 44);
     {
         const pos = nvTireGeo.attributes.position;
         const col = new Float32Array(pos.count * 3);
@@ -3960,21 +4023,21 @@ window.addEventListener('DOMContentLoaded', () => {
         [-1, 1].forEach(hs => {
             const hz = hs * 0.19;   // החישוק שקוע בתוך הצמיג
             [[0.30, 0.322], [0.42, 0.318]].forEach(rr => {
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(rr[0], 0.012, 8, 40), nvRingMat);
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(rr[0], 0.012, 3, 28), nvRingMat);
                 ring.position.z = hs * rr[1];
                 smoothTire.add(ring);
             });
-            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.05, 28), hubSteelMat);
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.05, 20), hubSteelMat);
             disc.rotation.x = Math.PI / 2;
             disc.position.z = hz;
             smoothTire.add(disc);
-            const well = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.03, 8, 36), nvRingMat);
+            const well = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.03, 4, 24), nvRingMat);
             well.position.z = hz - hs * 0.005;
             smoothTire.add(well);
-            const flange = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.036, 10, 40), hubSteelMat);   // שפת חישוק בולטת
+            const flange = new THREE.Mesh(new THREE.TorusGeometry(0.245, 0.036, 5, 28), hubSteelMat);   // שפת חישוק בולטת
             flange.position.z = hs * 0.235;
             smoothTire.add(flange);
-            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.06, 20), hubDarkMat);
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.06, 12), hubDarkMat);
             cap.rotation.x = Math.PI / 2;
             cap.position.z = hz + hs * 0.012;
             smoothTire.add(cap);
@@ -4068,7 +4131,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addSuspensionJoint(position, radius = 0.105, sprung = false) {
         const joint = new THREE.Mesh(
-            new THREE.SphereGeometry(radius, 16, 12),
+            new THREE.SphereGeometry(radius, 10, 6),
             suspensionDarkMetalMat
         );
         joint.position.copy(position);
@@ -4082,7 +4145,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addBolt(position, radius = 0.055, sprung = false) {
         const bolt = new THREE.Mesh(
-            new THREE.CylinderGeometry(radius, radius, 0.065, 14),
+            new THREE.CylinderGeometry(radius, radius, 0.065, 8),
             suspensionMetalMat
         );
         bolt.rotation.x = Math.PI / 2;
@@ -4124,7 +4187,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const coilYs = [-0.33, -0.235, -0.14, -0.045, 0.05, 0.145, 0.24, 0.335];
         coilYs.forEach((y, i) => {
             const coil = new THREE.Mesh(
-                new THREE.TorusGeometry(0.115 + (i % 2 ? 0.008 : 0), 0.027, 8, 22),
+                new THREE.TorusGeometry(0.115 + (i % 2 ? 0.008 : 0), 0.027, 4, 14),
                 suspensionRubberMat
             );
             coil.rotation.x = Math.PI / 2;
@@ -4885,6 +4948,11 @@ window.addEventListener('DOMContentLoaded', () => {
         groundShadow.visible = false;
         cannonGroup.add(groundShadow);
         mk2GroundShadowRef = groundShadow;
+        const classicBlob = groundShadow.clone();
+        classicBlob.scale.set(0.82, 0.82, 1);
+        cannonGroup.add(classicBlob);
+        classicBlobRef = classicBlob;
+        updateWallpaperBlob();
     }
     const mk2OnlyParts = [];
     mk2OnlyParts.push(mk2GroundShadowRef);                       // חלקים שנראים רק בתותח האפור
@@ -4982,7 +5050,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const ang = t * coilTurns * Math.PI * 2;
             return (target || new THREE.Vector3()).set(Math.cos(ang) * coilR, (t - 0.5) * coilH, Math.sin(ang) * coilR);
         };
-        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 18, 0.072, 10, false), mk2CoilMat);
+        const coil = new THREE.Mesh(new THREE.TubeGeometry(helix, coilTurns * 10, 0.072, 6, false), mk2CoilMat);
         coil.castShadow = true;
         group.add(coil);
 
@@ -5157,6 +5225,7 @@ window.addEventListener('DOMContentLoaded', () => {
         suspensionOuterParts.forEach(P => { P.mesh.visible = !isMk2; });
         centralFrameParts.forEach(m => { m.visible = !isMk2; });
         mk2OnlyParts.forEach(m => { m.visible = isMk2; });
+        cannonLookIsMk2 = isMk2; updateWallpaperBlob();
         // הגלגלים: בתותח האפור הם רחוקים יותר מהגוף
         cannonWheels.forEach((wheelOuter, i) => {
             const baseX = wheelPositions[i][0];
@@ -9420,6 +9489,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let skyLastTime = null;
     function updateSkyTraffic(time) {
+        skyGroup.visible = !mapUsesWallpaper;   // מטוסים לא עוברים מול פירמידות מצוירות
+        if (mapUsesWallpaper) return;
         if (skyLastTime === null) skyLastTime = time;
         const dt = Math.min(0.1, Math.max(0, (time - skyLastTime) / 1000));
         skyLastTime = time;
