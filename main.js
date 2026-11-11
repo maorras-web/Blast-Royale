@@ -5169,14 +5169,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
     // ---- מידות התותח האפור (אפשר לשחק איתן) ----
     const MK2_BODY_W = 2.60;        // רוחב הגוף (היה 2.30)
-    const MK2_WHEEL_SHIFT = 0.72;   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
+    // גודל גוף הנובה (גוף + כיפה + מצחייה + קנים). 1 = כמו קודם. הגלגלים והקפיצים זזים החוצה בהתאם כדי להישאר מחוברים.
+    const NOVA_BODY_K = 1.31;
+    const NOVA_BODY_BOTTOM = 1.035;   // תחתית הגוף נשארת במקום, הגוף גדל כלפי מעלה ולצדדים
+    const MK2_WHEEL_SHIFT = 0.72 + 1.46 * (NOVA_BODY_K - 1);   // כמה הגלגלים זזים החוצה (כדי שהזרועות יהיו ארוכות כמו בתמונת המטרה)
     const MK2_WHEEL_SCALE = 1.50;   // צמיגים גדולים יותר (היה 1.28)
     const MK2_WHEEL_Z = 0.96;       // מרחק הגלגלים קדימה/אחורה מהמרכז (במקום 0.72)   // גלגלים גדולים ועבים כמו בתמונת המטרה (1 = הגודל הקלאסי)
     // מרכז הגלגל המוגדל: התחתית נשארת על אותה קרקע כמו בגלגל הרגיל.
     const MK2_WHEEL_Y = (WHEEL_Y - TIRE_OUTER_R) + TIRE_OUTER_R * MK2_WHEEL_SCALE + 0.03;
 
     const mk2Head = new THREE.Group();
-    mk2Head.position.y = -BODY_PIVOT_Y + MK2_BODY_RAISE;
+    mk2Head.position.y = -BODY_PIVOT_Y + MK2_BODY_RAISE + NOVA_BODY_BOTTOM * (1 - NOVA_BODY_K);
+    mk2Head.scale.setScalar(NOVA_BODY_K);
     bodyRig.add(mk2Head);
 
     // צבע הגוף והכיפה: חום צבאי (לפי בקשת המשתמש; היה כחול מבריק) (השם nvBlack נשאר כדי לא לשבור הפניות)
@@ -5446,8 +5450,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const z = sgn * 0.40;           // על החלק השטוח של צד הגוף (הפינות מעוגלות)
         // הקצה התחתון מעל פסגת הצמיג הגדול (כדי שהקפיץ לא ייכנס לגומי)
         const springTopY = MK2_WHEEL_Y + TIRE_OUTER_R * MK2_WHEEL_SCALE;
-        const top = new THREE.Vector3(side * 1.46, 1.72 + MK2_BODY_RAISE, z);
-        const bottom = new THREE.Vector3(side * 2.00, MK2_WHEEL_Y + 0.26, z);
+        const top = new THREE.Vector3(side * 1.46 * NOVA_BODY_K, NOVA_BODY_BOTTOM + (1.72 - NOVA_BODY_BOTTOM) * NOVA_BODY_K + MK2_BODY_RAISE, z);
+        const bottom = new THREE.Vector3(side * (2.00 + 1.46 * (NOVA_BODY_K - 1)), MK2_WHEEL_Y + 0.26, z);
         const dir = new THREE.Vector3().subVectors(bottom, top);
         const length = dir.length();
 
@@ -5488,7 +5492,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // עמוד חיבור קצר מפני הגוף אל קצה הקפיץ העליון (נע עם הגוף)
         const zbBody = sgn * 0.875;
         // תושבת ברזל צמודה לחלק השטוח של צד הגוף, והקפיץ תלוי עליה בעין עם בורג
-        const yb = top.y - MK2_BODY_RAISE;
+        const yb = 1.72;   // בקואורדינטות של הגוף (לפני ההגדלה) - התושבת גדלה יחד עם הגוף
         nvAdd(mk2Head, new THREE.BoxGeometry(0.07, 0.56, 0.34), mk2PlateMat, side * 1.335, yb - 0.15, z, 0, 0, 0).castShadow = true;
         nvAdd(mk2Head, new THREE.BoxGeometry(0.12, 0.20, 0.30), mk2PlateMat, side * 1.43, yb, z, 0, 0, 0).castShadow = true;
         nvAdd(mk2Head, new THREE.CylinderGeometry(0.05, 0.05, 0.40, 14), mk2ArmMat, side * 1.46, yb, z, Math.PI / 2, 0, 0).castShadow = true;
@@ -5602,6 +5606,10 @@ window.addEventListener('DOMContentLoaded', () => {
             addMk2Spring(side, sgn);
         });
     });
+
+    // הגוף הוגדל: נקודות הירי (פתחי הקנים) זזות איתו
+    MK2_MUZZLE_Y = NOVA_BODY_BOTTOM + (2.95 - NOVA_BODY_BOTTOM) * NOVA_BODY_K + MK2_BODY_RAISE;
+    for (let i = 0; i < MK2_BARREL_X.length; i++) MK2_BARREL_X[i] *= NOVA_BODY_K;
 
     // ---- סימני צמיגים על הדשא (רק כשהתותח האפור פעיל) ----
     const mk2Tracks = new THREE.Group();
@@ -6228,14 +6236,20 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         const scratchTex = new THREE.CanvasTexture(cc);
         scratchTex.wrapS = scratchTex.wrapT = THREE.RepeatWrapping;
-        scratchTex.anisotropy = 4;   // קווים חדים גם על משטחים נטויים
+        scratchTex.anisotropy = 8;   // קווים חדים גם על משטחים נטויים
+        scratchTex.minFilter = THREE.LinearMipmapLinearFilter;   // מעבר רך בין רמות פירוט = בלי ריצוד בתנועה
         const scratchUniforms = { scratchMap: { value: scratchTex }, scratchK: { value: new THREE.Vector2(SCRATCH_SCALE, SCRATCH_STRENGTH) } };
         const addScratches = shader => {
             shader.uniforms.scratchMap = scratchUniforms.scratchMap;
             shader.uniforms.scratchK = scratchUniforms.scratchK;
-            shader.vertexShader = 'varying vec3 vScrP;\nvarying vec3 vScrN;\n' + shader.vertexShader.replace('#include <begin_vertex>',
-                '#include <begin_vertex>\n vScrP = position; vScrN = normal;');
-            shader.fragmentShader = 'uniform sampler2D scratchMap;\nuniform vec2 scratchK;\nvarying vec3 vScrP;\nvarying vec3 vScrN;\n' + shader.fragmentShader
+            // כיווני המשטח מחושבים מראש (לפי הצורה של החלק) - בלי חישובי מסך שמהבהבים כשהתותח זז
+            shader.vertexShader = 'varying vec3 vScrP;\nvarying vec3 vScrN;\nvarying vec3 vScrTU;\nvarying vec3 vScrTV;\n' + shader.vertexShader.replace('#include <begin_vertex>',
+                '#include <begin_vertex>\n vScrP = position; vScrN = normal;\n'
+                + ' vec3 scAv = abs(normal);\n'
+                + ' vec3 scU = (scAv.x > scAv.y && scAv.x > scAv.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);\n'
+                + ' vec3 scV = (scAv.x > scAv.y && scAv.x > scAv.z) ? vec3(0.0, 1.0, 0.0) : ((scAv.y > scAv.z) ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0));\n'
+                + ' vScrTU = normalize(normalMatrix * scU); vScrTV = normalize(normalMatrix * scV);');
+            shader.fragmentShader = 'uniform sampler2D scratchMap;\nuniform vec2 scratchK;\nvarying vec3 vScrP;\nvarying vec3 vScrN;\nvarying vec3 vScrTU;\nvarying vec3 vScrTV;\n' + shader.fragmentShader
                 .replace('#include <map_fragment>', [
                     '#include <map_fragment>',
                     ' vec3 scA = abs(vScrN);',
@@ -6247,14 +6261,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     ' diffuseColor.rgb *= 1.0 + scT * (scT < 0.0 ? 0.62 : 0.30) * scratchK.y;'].join('\n'))
                 .replace('#include <normal_fragment_maps>', [
                     '#include <normal_fragment_maps>',
-                    ' {',   // עומק לחריצים: הנורמל מוטה לפי שינוי הגובה של הטקסטורה על המסך (בלי דגימות נוספות)
-                    '  vec3 scVp = -vViewPosition;',
-                    '  vec3 scSx = dFdx(scVp), scSy = dFdy(scVp);',
-                    '  vec3 scR1 = cross(scSy, normal), scR2 = cross(normal, scSx);',
-                    '  float scDet = dot(scSx, scR1) * (gl_FrontFacing ? 1.0 : -1.0);',
-                    '  vec2 scDH = vec2(dot(scG, dFdx(scTc)), dot(scG, dFdy(scTc))) * scratchK.y * 0.035;',
-                    '  vec3 scGrad = sign(scDet) * (scDH.x * scR1 + scDH.y * scR2);',
-                    '  normal = normalize(abs(scDet) * normal - scGrad);',
+                    ' {',   // עומק לחריצים: הנורמל מוטה לפי שיפוע הגובה שנשמר בטקסטורה, בכיווני המשטח הקבועים (יציב בתנועה)
+                    '  vec2 scDH = scG * scratchK.x * scratchK.y * 0.006;',
+                    '  normal = normalize(normal - clamp(scDH.x, -0.8, 0.8) * vScrTU + clamp(scDH.y, -0.8, 0.8) * vScrTV);',
                     ' }'].join('\n'))
                 .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = clamp(roughnessFactor * (1.0 - max(scT, 0.0) * 0.6 * scratchK.y - min(scT, 0.0) * 0.4 * scratchK.y), 0.04, 1.0);');
         };
