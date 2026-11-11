@@ -3364,6 +3364,161 @@ window.addEventListener('DOMContentLoaded', () => {
         metalness: 0.65
     });
 
+    // ==========================================================
+    // עורות צבועים לתותחים: כל הפרטים (לוחות, ברגים, פתחים, שחיקה, אבק, צל רך) מצוירים על תמונה
+    // שעוטפת את החלק, + מפת בליטות לעומק. מצוירים פעם אחת בחדות גבוהה ונשמרים מוקטנים (חוסך זיכרון גרפיקה).
+    // ==========================================================
+    function skinTools(SW, SH, base, seed0) {
+        const cc = document.createElement('canvas'); cc.width = SW; cc.height = SH;
+        const hc = document.createElement('canvas'); hc.width = SW; hc.height = SH;
+        const c = cc.getContext('2d'), h = hc.getContext('2d');
+        c.fillStyle = base; c.fillRect(0, 0, SW, SH); h.fillStyle = 'rgb(128,128,128)'; h.fillRect(0, 0, SW, SH);
+        let seed = seed0 || 3; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+        const groove = (x1, y1, x2, y2, w = 3) => {
+            c.lineCap = h.lineCap = 'butt';
+            c.strokeStyle = 'rgba(255,235,190,0.28)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x1 + 1.7, y1 + 1.7); c.lineTo(x2 + 1.7, y2 + 1.7); c.stroke();
+            c.strokeStyle = 'rgba(12,9,5,0.95)'; c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+            h.strokeStyle = 'rgb(40,40,40)'; h.lineWidth = w + 0.6; h.beginPath(); h.moveTo(x1, y1); h.lineTo(x2, y2); h.stroke();
+        };
+        const rectG = (x, y, w, hh) => { groove(x, y, x + w, y); groove(x + w, y, x + w, y + hh); groove(x + w, y + hh, x, y + hh); groove(x, y + hh, x, y); };
+        const bolt = (x, y, r = 3.4, tint) => {
+            const t = tint || [220, 200, 150];
+            const g = c.createRadialGradient(x - r * 0.35, y - r * 0.35, 0.2, x, y, r);
+            g.addColorStop(0, `rgb(${t[0]},${t[1]},${t[2]})`); g.addColorStop(0.5, `rgb(${t[0] * 0.55 | 0},${t[1] * 0.55 | 0},${t[2] * 0.55 | 0})`); g.addColorStop(1, 'rgb(30,26,20)');
+            c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+            const gh = h.createRadialGradient(x, y, 0, x, y, r); gh.addColorStop(0, 'rgb(230,230,230)'); gh.addColorStop(1, 'rgb(128,128,128)');
+            h.fillStyle = gh; h.beginPath(); h.arc(x, y, r, 0, Math.PI * 2); h.fill();
+        };
+        const vent = (x, y, w, hh, n, light) => {
+            const L = light || [150, 128, 80];
+            c.fillStyle = 'rgba(12,9,5,0.92)'; c.fillRect(x, y, w, hh); h.fillStyle = 'rgb(30,30,30)'; h.fillRect(x, y, w, hh);
+            for (let i = 0; i < n; i++) {
+                const yy = y + (i + 0.5) * hh / n;
+                const g = c.createLinearGradient(0, yy - hh / n * 0.4, 0, yy + hh / n * 0.4);
+                g.addColorStop(0, `rgb(${L[0]},${L[1]},${L[2]})`); g.addColorStop(1, `rgb(${L[0] * 0.37 | 0},${L[1] * 0.37 | 0},${L[2] * 0.37 | 0})`);
+                c.fillStyle = g; c.fillRect(x + 2, yy - hh / n * 0.3, w - 4, hh / n * 0.55);
+                h.fillStyle = 'rgb(150,150,150)'; h.fillRect(x + 2, yy - hh / n * 0.3, w - 4, hh / n * 0.55);
+                c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(x + 2, yy + hh / n * 0.25, w - 4, hh / n * 0.18);
+            }
+            rectG(x - 1, y - 1, w + 2, hh + 2);
+        };
+        const grime = (w, hh, k, dust) => {
+            const D = dust || [205, 170, 110];
+            const g = c.createLinearGradient(0, 0, 0, hh);
+            g.addColorStop(0, 'rgba(255,230,170,0.10)'); g.addColorStop(0.55, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(20,12,4,${k})`);
+            c.fillStyle = g; c.fillRect(-8, -8, w + 16, hh + 16);
+            for (let i = 0; i < w * hh / 140; i++) {
+                const x = rnd() * w, y = hh * (0.55 + 0.45 * Math.pow(rnd(), 0.6)), r = 0.6 + rnd() * 2.2;
+                c.fillStyle = `rgba(${D[0] + rnd() * 30 | 0},${D[1] + rnd() * 25 | 0},${D[2] + rnd() * 20 | 0},${0.10 + rnd() * 0.22})`;
+                c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+            }
+            for (let i = 0; i < 10; i++) {
+                const x = rnd() * w, y = rnd() * hh, r = 8 + rnd() * 22;
+                const gg = c.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, 'rgba(30,20,8,0.16)'); gg.addColorStop(1, 'rgba(30,20,8,0)');
+                c.fillStyle = gg; c.fillRect(x - r, y - r, r * 2, r * 2);
+            }
+        };
+        const edgeAO = (w, hh, k) => {
+            [[0, 0, 0, 1], [0, hh, 0, -1], [0, 0, 1, 0], [w, 0, -1, 0]].forEach(([x1, y1, nx, ny]) => {
+                const g = c.createLinearGradient(x1, y1, x1 + nx * 26, y1 + ny * 26);
+                g.addColorStop(0, `rgba(12,8,4,${k})`); g.addColorStop(1, 'rgba(12,8,4,0)');
+                c.fillStyle = g;
+                c.fillRect(Math.min(x1, x1 + nx * 26) - (nx ? 0 : 8), Math.min(y1, y1 + ny * 26) - (ny ? 0 : 8), nx ? 26 : w + 16, ny ? 26 : hh + 16);
+            });
+        };
+        const edgeWear = (w, hh) => {
+            for (let i = 0; i < (w + hh) / 8; i++) {
+                const s = Math.floor(rnd() * 4), t = rnd();
+                const x = s === 0 ? t * w : s === 1 ? w - rnd() * 6 : s === 2 ? t * w : rnd() * 6;
+                const y = s === 0 ? rnd() * 6 : s === 1 ? t * hh : s === 2 ? hh - rnd() * 6 : t * hh;
+                c.fillStyle = `rgba(205,195,175,${0.25 + rnd() * 0.35})`; c.fillRect(x, y, 1 + rnd() * 4, 1 + rnd() * 2);
+            }
+        };
+        const scratches = (w, hh, n) => {
+            for (let i = 0; i < n; i++) {
+                const x = rnd() * w, y = rnd() * hh, a = (rnd() < 0.7 ? 0.25 : 1.9) + (rnd() - 0.5) * 0.5, l = 6 + rnd() * 26;
+                c.strokeStyle = `rgba(215,205,180,${0.18 + rnd() * 0.25})`; c.lineWidth = 0.7;
+                c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+            }
+        };
+        const label = (x, y, w, hh, text, col) => {
+            c.fillStyle = 'rgba(25,20,12,0.85)'; c.fillRect(x, y, w, hh);
+            c.fillStyle = col || 'rgb(225,190,90)'; c.font = `bold ${Math.round(hh * 0.68)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+            c.fillText(text, x + w / 2, y + hh / 2 + 0.5); rectG(x, y, w, hh);
+        };
+        return { cc, hc, c, h, rnd, groove, rectG, bolt, vent, grime, edgeAO, edgeWear, scratches, label };
+    }
+    // מקטין קנבס (ציור חד -> שמירה קטנה)
+    function skinShrink(src, w, h) {
+        if (src.width === w && src.height === h) return src;
+        const d = document.createElement('canvas'); d.width = w; d.height = h;
+        const x = d.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, w, h); return d;
+    }
+    function skinNormal(hcanvas, k, wrap) {
+        const SW = hcanvas.width, SH = hcanvas.height, hd = hcanvas.getContext('2d').getImageData(0, 0, SW, SH).data;
+        const nc = document.createElement('canvas'); nc.width = SW; nc.height = SH;
+        const nx = nc.getContext('2d'), img = nx.createImageData(SW, SH), nd = img.data;
+        const Hh = wrap ? (x, y) => hd[(((y + SH) % SH) * SW + ((x + SW) % SW)) * 4] / 255
+                        : (x, y) => hd[(Math.min(SH - 1, Math.max(0, y)) * SW + Math.min(SW - 1, Math.max(0, x))) * 4] / 255;
+        for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+            const dx = (Hh(x + 1, y) - Hh(x - 1, y)) * k, dy = (Hh(x, y + 1) - Hh(x, y - 1)) * k;
+            const l = Math.hypot(dx, dy, 1), i = (y * SW + x) * 4;
+            nd[i] = (-dx / l * 0.5 + 0.5) * 255; nd[i + 1] = (dy / l * 0.5 + 0.5) * 255; nd[i + 2] = (1 / l * 0.5 + 0.5) * 255; nd[i + 3] = 255;
+        }
+        nx.putImageData(img, 0, 0);
+        return nc;
+    }
+    // סיום: מקטינים את הצבע ל-(cw,ch) ואת הבליטות לחצי מזה
+    function skinFinish(T, cw, ch, nk, wrap) {
+        const map = new THREE.CanvasTexture(skinShrink(T.cc, cw, ch)); map.encoding = THREE.sRGBEncoding; map.anisotropy = 4;
+        const nmap = new THREE.CanvasTexture(skinNormal(skinShrink(T.hc, Math.max(8, cw >> 1), Math.max(8, ch >> 1)), nk, wrap)); nmap.anisotropy = 4;
+        if (wrap) { map.wrapS = nmap.wrapS = THREE.RepeatWrapping; }
+        return { map, nmap };
+    }
+    // עור לקופסה מעוגלת: חזית, גב, גג, צד (שני הצדדים זהים), תחתית כהה. paint = { front, back, top, side }
+    function makeBoxSkin(W, H, D, PX, base, paint, seed, outScale) {
+        const G = 10;
+        const fw = Math.ceil(W * PX), fh = Math.ceil(H * PX), dw = Math.ceil(D * PX);
+        const R = { front: { x: G, y: G, w: fw, h: fh }, back: { x: G * 2 + fw, y: G, w: fw, h: fh },
+            top: { x: G, y: G * 2 + fh, w: fw, h: dw }, side: { x: G * 2 + fw, y: G * 2 + fh, w: dw, h: fh } };
+        R.bottom = { x: R.side.x + 8, y: R.side.y + fh + G + 6, w: 4, h: 4 };
+        const SW = Math.max(R.back.x + fw, R.side.x + dw) + G, SH = Math.max(R.top.y + dw, R.bottom.y + 10) + G;
+        const T = skinTools(SW, SH, base, seed);
+        ['front', 'back', 'top', 'side'].forEach(k => {
+            if (!paint[k]) return;
+            const r = R[k];
+            T.c.save(); T.h.save();
+            T.c.beginPath(); T.c.rect(r.x - 8, r.y - 8, r.w + 16, r.h + 16); T.c.clip(); T.h.beginPath(); T.h.rect(r.x - 8, r.y - 8, r.w + 16, r.h + 16); T.h.clip();
+            T.c.translate(r.x, r.y); T.h.translate(r.x, r.y);
+            paint[k](r.w, r.h, T);
+            T.c.restore(); T.h.restore();
+        });
+        T.c.fillStyle = 'rgb(18,14,9)'; T.c.fillRect(R.bottom.x - 4, R.bottom.y - 4, 12, 12);
+        const sc = outScale || 1, cw = Math.round(SW * sc), ch = Math.round(SH * sc);
+        const out = skinFinish(T, cw, ch, 2.2, false);
+        out.R = R; out.PX = PX; out.SW = SW; out.SH = SH;
+        return out;
+    }
+    // מיפוי קופסה מעוגלת לעור (כל משטח לפי הכיוון שלו)
+    function applyBoxSkinUV(geo, skin, W, H, D) {
+        const pos = geo.attributes.position, nor = geo.attributes.normal, n = pos.count, uv = new Float32Array(n * 2);
+        const { R, PX, SW, SH } = skin;
+        for (let i = 0; i < n; i++) {
+            const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), nX = nor.getX(i), nY = nor.getY(i), nZ = nor.getZ(i);
+            const ax = Math.abs(nX), ay = Math.abs(nY), az = Math.abs(nZ);
+            let r, u, v;
+            if (az >= ax && az >= ay) { r = nZ > 0 ? R.front : R.back; u = (nZ > 0 ? x : -x) + W / 2; v = H / 2 - y; }
+            else if (ax >= ay) { r = R.side; u = (nX > 0 ? -z : z) + D / 2; v = H / 2 - y; }
+            else if (nY > 0) { r = R.top; u = x + W / 2; v = z + D / 2; }
+            else { r = R.bottom; u = 0; v = 0; }
+            uv[i * 2] = (r.x + u * (r === R.bottom ? 0 : PX)) / SW; uv[i * 2 + 1] = 1 - (r.y + v * (r === R.bottom ? 0 : PX)) / SH;
+        }
+        geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
+    function skinMaterial(skin, opt) {
+        return new THREE.MeshStandardMaterial(Object.assign({ map: skin.map, normalMap: skin.nmap, normalScale: new THREE.Vector2(0.9, 0.9) }, opt));
+    }
+
     // גוף ראשי מעוגל.
     addCannonPart(
         createRoundedBoxGeometry(
@@ -4930,13 +5085,111 @@ window.addEventListener('DOMContentLoaded', () => {
         return nvAdd(parent, new THREE.CylinderGeometry(rTop, rBottom, h, 24), material, x, y, z, 0, 0, 0, cast);
     }
 
+    // ---- עור הנובה (אושר) ----
+    const NOVA_SKIN = true;
+    function makeNovaBodySkin(W, H, D) {
+        const fourBolts = (T, w, hh, m, my) => [[m + 6, my + 6], [w - m - 6, my + 6], [m + 6, hh - my - 6], [w - m - 6, hh - my - 6]].forEach(([x, y]) => T.bolt(x, y));
+        return makeBoxSkin(W, H, D, 190, 'rgb(112,92,50)', {
+            front: (w, hh, T) => {
+                const m = 22, my = m * 0.7;
+                T.rectG(m, my, w - m * 2, hh - my * 2); T.groove(w / 2, my, w / 2, hh - my);
+                T.vent(m + 18, hh * 0.30, w * 0.22, hh * 0.36, 5);
+                T.vent(w - m - 18 - w * 0.22, hh * 0.30, w * 0.22, hh * 0.36, 5);
+                T.label(w / 2 - 34, hh * 0.36, 68, 22, 'NV-02');
+                const sy = hh - my - 16, c = T.c;
+                c.save(); c.beginPath(); c.rect(m + 4, sy, w - m * 2 - 8, 11); c.clip();
+                c.fillStyle = 'rgb(205,160,40)'; c.fillRect(m, sy, w, 11); c.fillStyle = 'rgb(25,18,8)';
+                for (let x = m - 20; x < w; x += 18) { c.beginPath(); c.moveTo(x, sy + 11); c.lineTo(x + 9, sy); c.lineTo(x + 18, sy); c.lineTo(x + 9, sy + 11); c.fill(); }
+                c.restore();
+                fourBolts(T, w, hh, m, my); T.bolt(w / 2 - 10, my + 6); T.bolt(w / 2 + 10, my + 6);
+                T.scratches(w, hh, 40); T.edgeWear(w, hh); T.grime(w, hh, 0.45); T.edgeAO(w, hh, 0.35);
+            },
+            back: (w, hh, T) => {
+                const m = 22, my = m * 0.7; T.rectG(m, my, w - m * 2, hh - my * 2); T.groove(w / 2, my, w / 2, hh - my);
+                T.vent(w / 2 - 60, hh * 0.3, 120, hh * 0.35, 4); fourBolts(T, w, hh, m, my);
+                T.scratches(w, hh, 30); T.edgeWear(w, hh); T.grime(w, hh, 0.45); T.edgeAO(w, hh, 0.35);
+            },
+            side: (w, hh, T) => {
+                const m = 18, my = m * 0.7; T.rectG(m, my, w - m * 2, hh - my * 2);
+                T.rectG(w * 0.28, hh * 0.25, w * 0.44, hh * 0.45);
+                [[w * 0.28 + 6, hh * 0.25 + 6], [w * 0.72 - 6, hh * 0.25 + 6], [w * 0.28 + 6, hh * 0.70 - 6], [w * 0.72 - 6, hh * 0.70 - 6]].forEach(([x, y]) => T.bolt(x, y, 3));
+                for (let x = m + 10; x < w - m; x += 22) T.bolt(x, hh - my - 7, 2.4);
+                T.scratches(w, hh, 25); T.edgeWear(w, hh); T.grime(w, hh, 0.5); T.edgeAO(w, hh, 0.35);
+            },
+            top: (w, hh, T) => {
+                const m = 22, c = T.c, h = T.h; T.rectG(m, m, w - m * 2, hh - m * 2); T.groove(w / 2, m, w / 2, hh - m); T.groove(m, hh / 2, w - m, hh / 2);
+                for (let y = m + 10; y < hh * 0.42; y += 9) for (let x = m + 10; x < w * 0.42; x += 9) { c.fillStyle = 'rgba(30,20,8,0.35)'; c.fillRect(x, y, 4, 2); h.fillStyle = 'rgb(160,160,160)'; h.fillRect(x, y, 4, 2); }
+                T.vent(w * 0.62, hh * 0.62, w * 0.22, hh * 0.18, 4); fourBolts(T, w, hh, m, m);
+                T.scratches(w, hh, 45); T.edgeWear(w, hh); T.edgeAO(w, hh, 0.35);
+                for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(215,180,120,${0.08 + T.rnd() * 0.18})`; c.beginPath(); c.arc(T.rnd() * w, T.rnd() * hh, 0.6 + T.rnd() * 1.8, 0, Math.PI * 2); c.fill(); }
+            }
+        }, 3);
+    }
+    function makeNovaDomeSkin() {
+        const SW = 1024, SH = 512, T = skinTools(SW, SH, 'rgb(112,92,50)', 5), { c, rnd, groove, bolt } = T;
+        const g = c.createLinearGradient(0, 0, 0, SH);
+        g.addColorStop(0, 'rgba(255,235,180,0.18)'); g.addColorStop(0.45, 'rgba(0,0,0,0)'); g.addColorStop(0.62, 'rgba(15,9,3,0.45)'); g.addColorStop(1, 'rgba(15,9,3,0.6)');
+        c.fillStyle = g; c.fillRect(0, 0, SW, SH);
+        const ringY = SH * 0.40, capY = SH * 0.10;
+        for (let i = 0; i < 8; i++) { const x = (i + 0.5) * SW / 8; groove(x, capY, x, ringY); }
+        groove(0, ringY, SW, ringY); groove(0, capY, SW, capY);
+        for (let i = 0; i < 16; i++) bolt((i + 0.25) * SW / 16, ringY + 9, 3.2);
+        const hx = SW * 0.25, hy = SH * 0.25;
+        c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(hx - 48, hy - 26, 96, 52); T.rectG(hx - 48, hy - 26, 96, 52);
+        [[-40, -18], [40, -18], [-40, 18], [40, 18]].forEach(([dx, dy]) => bolt(hx + dx, hy + dy, 2.8));
+        for (let i = 0; i < 70; i++) { const x = rnd() * SW, y = rnd() * SH * 0.5, a = 0.2 + (rnd() - 0.5) * 0.6, l = 6 + rnd() * 24;
+            c.strokeStyle = `rgba(215,200,165,${0.15 + rnd() * 0.25})`; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke(); }
+        for (let i = 0; i < 200; i++) { c.fillStyle = `rgba(215,180,120,${0.08 + rnd() * 0.2})`; c.beginPath(); c.arc(rnd() * SW, SH * (0.3 + rnd() * 0.25), 0.6 + rnd() * 2, 0, Math.PI * 2); c.fill(); }
+        return skinFinish(T, 512, 256, 2.0, true);
+    }
+    function makeNovaVisorSkin(W, H, D) {
+        return makeBoxSkin(W, H, D, 250, 'rgb(22,24,28)', {
+            front: (w, hh, T) => {
+                const c = T.c, n = 4, gap = 10, ww = (w - gap * (n + 1)) / n;
+                for (let i = 0; i < n; i++) {
+                    const x = gap + i * (ww + gap), y = 6, h2 = hh - 12;
+                    const g = c.createLinearGradient(x, y, x + ww, y + h2);
+                    g.addColorStop(0, 'rgb(40,70,95)'); g.addColorStop(0.45, 'rgb(14,28,42)'); g.addColorStop(0.55, 'rgb(90,140,170)'); g.addColorStop(0.62, 'rgb(14,28,42)'); g.addColorStop(1, 'rgb(8,14,22)');
+                    c.fillStyle = g; c.fillRect(x, y, ww, h2); c.strokeStyle = 'rgba(150,160,170,0.6)'; c.lineWidth = 1.2; c.strokeRect(x, y, ww, h2);
+                }
+                [[5, hh / 2], [w - 5, hh / 2]].forEach(([x, y]) => { const g = c.createRadialGradient(x, y, 0, x, y, 6); g.addColorStop(0, 'rgb(255,200,90)'); g.addColorStop(1, 'rgba(255,150,40,0)'); c.fillStyle = g; c.fillRect(x - 6, y - 6, 12, 12); });
+            },
+            top: (w, hh, T) => { for (let x = 20; x < w - 20; x += 12) { T.h.fillStyle = 'rgb(60,60,60)'; T.h.fillRect(x, 20, 5, hh - 40); T.c.fillStyle = 'rgba(0,0,0,0.6)'; T.c.fillRect(x, 20, 5, hh - 40); } }
+        }, 7, 0.5);
+    }
+    function makeNovaBarrelSkin() {
+        const SW = 512, SH = 1024, T = skinTools(SW, SH, 'rgb(150,154,160)', 9), { c, rnd, groove } = T;
+        for (let i = 0; i < 900; i++) { const x = rnd() * SW, y = rnd() * SH, l = 20 + rnd() * 160, b = rnd() < 0.5 ? 255 : 40;
+            c.strokeStyle = `rgba(${b},${b},${b},${0.04 + rnd() * 0.08})`; c.lineWidth = 0.6 + rnd(); c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + l); c.stroke(); }
+        const heat = c.createLinearGradient(0, 0, 0, SH * 0.35);
+        heat.addColorStop(0, 'rgba(70,60,140,0.55)'); heat.addColorStop(0.4, 'rgba(190,140,60,0.40)'); heat.addColorStop(1, 'rgba(190,140,60,0)');
+        c.fillStyle = heat; c.fillRect(0, 0, SW, SH * 0.35);
+        [SH * 0.18, SH * 0.24, SH * 0.82].forEach(y => groove(0, y, SW, y, 5));
+        c.save(); c.translate(SW * 0.03, SH * 0.55); c.rotate(-Math.PI / 2);
+        c.fillStyle = 'rgba(40,40,45,0.75)'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('MK-II 40mm', 0, 0); c.restore();
+        const bot = c.createLinearGradient(0, SH * 0.85, 0, SH); bot.addColorStop(0, 'rgba(0,0,0,0)'); bot.addColorStop(1, 'rgba(10,10,12,0.55)');
+        c.fillStyle = bot; c.fillRect(0, SH * 0.85, SW, SH * 0.15);
+        return skinFinish(T, 256, 512, 2.0, true);
+    }
+
     // ---- גוף עגול וגבוה ----
-    nvBox(mk2Head, MK2_BODY_W, 1.00, 1.75, 0.42, 0.12, nvBlack, 0, 1.535, 0);
+    const nvBodyMesh = nvBox(mk2Head, MK2_BODY_W, 1.00, 1.75, 0.42, 0.12, nvBlack, 0, 1.535, 0);
+    if (NOVA_SKIN) {
+        const sk = makeNovaBodySkin(MK2_BODY_W, 1.00, 1.75);
+        applyBoxSkinUV(nvBodyMesh.geometry, sk, MK2_BODY_W, 1.00, 1.75);
+        nvBodyMesh.material = skinMaterial(sk, { roughness: 0.48, metalness: 0.45, envMap: mk2Env, envMapIntensity: 0.7 });
+    }
     // מצחייה כהה לרוחב חזית הגוף (כמו הפס השחור בתמונת המטרה)
-    nvBox(mk2Head, MK2_BODY_W * 0.64, 0.14, 0.62, 0.05, 0.02, nvVisor, 0, 2.04, 0.56);
+    const nvVisorMesh = nvBox(mk2Head, MK2_BODY_W * 0.64, 0.14, 0.62, 0.05, 0.02, nvVisor, 0, 2.04, 0.56);
+    if (NOVA_SKIN) {
+        const vs = makeNovaVisorSkin(MK2_BODY_W * 0.64, 0.14, 0.62);
+        applyBoxSkinUV(nvVisorMesh.geometry, vs, MK2_BODY_W * 0.64, 0.14, 0.62);
+        nvVisorMesh.material = skinMaterial(vs, { normalScale: new THREE.Vector2(1, 1), roughness: 0.2, metalness: 0.5, envMap: mk2Env, envMapIntensity: 0.9 });
+    }
     // כיפה כחולה גדולה ומעוגלת
     const nvDome = nvAdd(mk2Head, new THREE.SphereGeometry(0.62, 32, 20), nvBlack, 0, 1.99, 0.10);
     nvDome.scale.y = 0.85;
+    if (NOVA_SKIN) nvDome.material = skinMaterial(makeNovaDomeSkin(), { roughness: 0.42, metalness: 0.5, envMap: mk2Env, envMapIntensity: 0.75 });
     // גומה כחולה קטנה מול הכיפה, מעל המצחייה
     const nvNub = nvAdd(mk2Head, new THREE.SphereGeometry(0.26, 24, 14), nvBlack, 0, 2.06, 0.62);
     nvNub.scale.y = 0.55;
@@ -4948,6 +5201,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ---- שני קנים עבים מאחורי הכיפה, בתוך קבוצה שזזה אחורה בכל ירייה ----
     const mk2BarrelsRig = new THREE.Group();
+    if (NOVA_SKIN) {
+        const bs = makeNovaBarrelSkin();
+        nvBarrelMat.color.set(0xffffff); nvBarrelMat.map = bs.map; nvBarrelMat.normalMap = bs.nmap; nvBarrelMat.roughness = 0.3; nvBarrelMat.needsUpdate = true;
+    }
     mk2Head.add(mk2BarrelsRig);
     MK2_BARREL_X.forEach(bx => {
         nvCyl(mk2BarrelsRig, 0.24, 0.27, 0.30, nvDark, bx, 2.05, -0.15);
